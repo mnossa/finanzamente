@@ -1,0 +1,63 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: finanzamente-app
+    container_name: finanzamente-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - finanzamente
+    ports:
+      - "9000:9000"
+    depends_on:
+      - db
+      - nginx
+  db:
+    image: mysql:8.0
+    container_name: finanzamente-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: finanzamente
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: finanzamente
+      MYSQL_PASSWORD: finanzamente
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - finanzamente
+    ports:
+      - "3306:3306"
+  nginx:
+    image: nginx:alpine
+    container_name: finanzamente-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - finanzamente
+    # depends_on rimosso per evitare ciclo di dipendenze
+
+  node:
+    image: node:20
+    container_name: finanzamente-node
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - finanzamente
+    tty: true
+    user: "${UID}:${GID}"
+    ports:
+      - "5174:5174"
+volumes:
+  dbdata:
+networks:
+  finanzamente:
+    driver: bridge
