@@ -1,4 +1,8 @@
 # copilot-instructions.md
+# Ambiente di Sviluppo
+Tutto lo sviluppo e il deploy avverranno tramite Docker, per garantire coerenza tra ambienti, facilità di setup e portabilità. Il progetto includerà file di configurazione Docker per tutti i servizi necessari (PHP, MySQL, Node, ecc.).
+
+**Web server consigliato:** Nginx è preferibile rispetto ad Apache per progetti Laravel moderni, grazie a migliori performance, semplicità di configurazione e minore consumo di risorse. Tuttavia, Apache può essere usato se richiesto da specifiche esigenze o compatibilità. La configurazione di default sarà con Nginx.
 
 ## Obiettivo del Progetto
 Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia tra i 18 e i 45 anni. L'applicazione deve essere full responsive, mobile first, in lingua italiana, con un database MySQL ottimizzato e facilmente scalabile.
@@ -23,8 +27,9 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 
 ## Backend
 - L’intero backend sarà sviluppato in Laravel, adottando le best practice e gli helpers forniti dal framework.
-- **API RESTful**: Esporre funzionalità tramite API RESTful, documentate e versionate.
-- **Sicurezza**: Gestire autenticazione, autorizzazione e validazione input.
+- **Rotte Web e Controller**: La dashboard autenticata e le funzionalità principali useranno rotte web e controller Laravel tradizionali, sfruttando Blade e Inertia.js per la presentazione. L'autenticazione sarà gestita tramite le sessioni Laravel.
+- **API RESTful**: Da utilizzare solo se necessario per integrazioni esterne o funzionalità future. Per ora, evitare la creazione di API RESTful dedicate.
+- **Sicurezza**: Gestire autenticazione, autorizzazione e validazione input tramite i meccanismi standard di Laravel (sessioni, middleware, policy).
 - **Ottimizzazione**: Scrivere query efficienti e utilizzare Eloquent ORM e gli strumenti Laravel dove opportuno.
 
 ## Best Practice
@@ -62,8 +67,7 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 > Seguire queste istruzioni per mantenere coerenza, qualità e scalabilità nel progetto. Aggiornare questo file in caso di modifiche rilevanti all'architettura o alle linee guida.
 
 ## Stack Tecnologico Consigliato
-- **Backend**: Laravel per autenticazione, sicurezza, API RESTful, migrazioni, validazione, gestione utenti/household e logiche di business. Utilizzare Eloquent ORM, Service Layer, Policy, Request Validation e tutte le best practice del framework.
-- **Frontend autenticato**: React con Inertia.js per interfacce dinamiche, modulari e reattive, integrato con il backend Laravel. Consigliato l’uso di TypeScript per robustezza e manutenibilità.
+- **Backend**: Laravel per autenticazione, sicurezza, rotte web e controller tradizionali, migrazioni, validazione, gestione utenti/household e logiche di business. Utilizzare Eloquent ORM, Service Layer, Policy, Request Validation e tutte le best practice del framework. Le API RESTful sono da implementare solo se richieste da future estensioni o integrazioni esterne.
 - **Frontend pubblico/SSR**: Blade per pagine pubbliche, SEO, SSR e caricamento veloce, con possibilità di integrare componenti React dove necessario.
 
 ## Best Practice di Architettura
