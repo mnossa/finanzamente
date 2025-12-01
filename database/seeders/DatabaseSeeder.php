@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed currencies first (required for accounts)
+        $this->call(CurrencySeeder::class);
+
         // User::factory(10)->create();
 
         User::factory()->create([

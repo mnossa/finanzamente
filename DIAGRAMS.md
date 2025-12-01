@@ -7,6 +7,8 @@ erDiagram
     USERS ||--o{ HOUSEHOLD_USER : "ruoli e permessi"
     HOUSEHOLDS ||--o{ ACCOUNTS : "conti"
     ACCOUNTS ||--o{ TRANSACTIONS : "transazioni"
+    ACCOUNTS ||--o{ TRANSFERS : "trasferimenti"
+    TRANSFERS ||--o{ TRANSACTIONS : "collega transazioni"
     TRANSACTIONS ||--o{ TAGS : "tag"
     TRANSACTIONS ||--o{ ATTACHMENTS : "allegati"
     HOUSEHOLDS ||--o{ CATEGORIES : "categorie"

@@ -101,3 +101,11 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 - Garantire accessibilità (WCAG 2.1) e performance anche nella dashboard.
 - Documentare i componenti e mantenere una struttura modulare e scalabile.
 - Integrare test automatici (unitari e di integrazione) per i componenti principali.
+
+## Localizzazione e Lingua
+- **Lingua dell'interfaccia**: Tutti i testi visibili all'utente (label, bottoni, messaggi, titoli, placeholder, notifiche, email) devono essere in **italiano**.
+- **Codice e struttura dati**: Nomi di variabili, funzioni, tabelle, colonne, rotte e API devono essere in **inglese** per favorire interoperabilità e standard internazionali.
+- **Messaggi di errore e validazione**: Configurare Laravel per restituire messaggi di validazione in italiano (file `lang/it/validation.php`).
+- **Date e numeri**: Formattare date, orari e numeri secondo le convenzioni italiane (es. `dd/mm/yyyy`, separatore decimale `,`, separatore migliaia `.`).
+- **Valuta**: Usare Euro (€) come valuta predefinita, con possibilità di supporto multi-currency in futuro.
+- **Nessun sistema i18n complesso**: Non è previsto supporto multilingua. L'app sarà esclusivamente in italiano.

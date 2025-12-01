@@ -2,15 +2,62 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
+    
+    /**
+     * User
+     *
+     * Rappresenta un utente dell'applicazione. Contiene relazioni verso
+     * households, accounts, transazioni e investimenti.
+     *
+     * Relazioni principali:
+     * - households(): belongsToMany(Household)
+     * - ownedHouseholds(): hasMany(Household)
+     * - activeHousehold(): belongsTo(Household)
+     * - accounts(): hasMany(Account)
+     */
+    
+    // Relations
+    public function households()
+    {
+        return $this->belongsToMany(Household::class, 'household_user')
+            ->withPivot(['role', 'permissions'])
+            ->withTimestamps();
+    }
+
+    public function ownedHouseholds()
+    {
+        return $this->hasMany(Household::class, 'owner_user_id');
+    }
+
+    public function activeHousehold()
+    {
+        return $this->belongsTo(Household::class, 'active_household_id');
+    }
+
+    public function accounts()
+    {
+        return $this->hasMany(Account::class, 'owner_user_id');
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function investments()
+    {
+        return $this->hasMany(Investment::class);
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -19,8 +66,14 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
+        'birth_date',
+        'status',
+        'preferences',
+        'active_household_id',
     ];
 
     /**
@@ -43,6 +96,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birth_date' => 'date',
+            'preferences' => 'array',
         ];
     }
 }

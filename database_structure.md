@@ -88,6 +88,25 @@ Di seguito la struttura delle principali tabelle del database, con descrizione d
 | is_private   | BOOLEAN      | Se true, solo il proprietario vede i dettagli, altri membri vedono solo il totale o una voce generica |
 | created_at/updated_at| TIMESTAMP | Timestamps Laravel                    |
 | deleted_at   | TIMESTAMP    | Soft delete (opzionale)                     |
+| transfer_id  | BIGINT FK    | Collegamento opzionale a `transfers` (se la transazione fa parte di un transfer) |
+
+## transfers
+| Campo               | Tipo           | Descrizione                                                                 |
+|---------------------|----------------|-----------------------------------------------------------------------------|
+| id                  | BIGINT PK      | Identificativo univoco transfer                                              |
+| uuid                | VARCHAR UNIQUE | UUID pubblico per idempotency / riferimento esterno                          |
+| source_account_id   | BIGINT FK      | Account sorgente del trasferimento                                           |
+| destination_account_id | BIGINT FK   | Account destinazione del trasferimento                                       |
+| source_amount       | DECIMAL(18,8)  | Importo in valuta sorgente (absolute)                                        |
+| source_currency     | VARCHAR FK     | Codice valuta sorgente (es. EUR)                                             |
+| dest_amount         | DECIMAL(18,8)  | Importo in valuta destinazione (absolute)                                    |
+| dest_currency       | VARCHAR FK     | Codice valuta destinazione (es. USD)                                         |
+| exchange_rate       | DECIMAL(28,12) | Tasso di cambio usato (nullable)                                             |
+| fee                 | DECIMAL(18,8)  | Commissione applicata (nullable)                                             |
+| user_id             | BIGINT FK      | Utente che ha iniziato/possiede il trasferimento (nullable)                 |
+| status              | ENUM           | Stato (completed, cancelled) — per tracking; default completed               |
+| created_at/updated_at| TIMESTAMP     | Timestamps Laravel                                                           |
+| deleted_at          | TIMESTAMP      | Soft delete (opzionale)                                                      |
 
 ## recurring_transactions
 | Campo         | Tipo         | Descrizione                                 |

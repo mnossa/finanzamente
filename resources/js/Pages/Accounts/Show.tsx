@@ -1,0 +1,180 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, Link } from '@inertiajs/react';
+import clsx from 'clsx';
+
+interface Category {
+    id: number;
+    name: string;
+    color: string | null;
+    icon: string | null;
+}
+
+interface Transaction {
+    id: number;
+    amount: number;
+    date: string;
+    description: string | null;
+    category: Category | null;
+    user: {
+        id: number;
+        name: string;
+    };
+}
+
+interface Account {
+    id: number;
+    name: string;
+    type: string;
+    type_label: string;
+    initial_balance: number;
+    current_balance: number;
+    currency_code: string;
+    active: boolean;
+    is_private: boolean;
+    created_at: string;
+}
+
+interface ShowProps {
+    account: Account;
+    recentTransactions: Transaction[];
+}
+
+function formatCurrency(amount: number, currency: string = 'EUR'): string {
+    return new Intl.NumberFormat('it-IT', {
+        style: 'currency',
+        currency: currency,
+    }).format(amount);
+}
+
+function getAccountTypeIcon(type: string): string {
+    const icons: Record<string, string> = {
+        bank: '🏦',
+        cash: '💵',
+        card: '💳',
+        broker: '📈',
+        crypto: '₿',
+        other: '💰',
+    };
+    return icons[type] || '💰';
+}
+
+function TransactionRow({ transaction, currency }: { transaction: Transaction; currency: string }) {
+    const isIncome = transaction.amount > 0;
+
+    return (
+        <div className="flex items-center justify-between border-b border-gray-100 py-3 last:border-0 dark:border-gray-700">
+            <div className="flex items-center space-x-3">
+                <div
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
+                    style={{
+                        backgroundColor: transaction.category?.color
+                            ? `${transaction.category.color}20`
+                            : isIncome
+                            ? '#22c55e20'
+                            : '#ef444420',
+                    }}
+                >
+                    {transaction.category?.icon || (isIncome ? '💰' : '💸')}
+                </div>
+                <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                        {transaction.description || transaction.category?.name || 'Transazione'}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(transaction.date).toLocaleDateString('it-IT')}
+                    </p>
+                </div>
+            </div>
+            <p
+                className={clsx(
+                    'font-semibold',
+                    isIncome ? 'text-green-500' : 'text-red-500'
+                )}
+            >
+                {isIncome ? '+' : ''}
+                {formatCurrency(transaction.amount, currency)}
+            </p>
+        </div>
+    );
+}
+
+export default function Show({ account, recentTransactions }: ShowProps) {
+    return (
+        <AuthenticatedLayout
+            header={
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
+                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                            {account.name}
+                        </h2>
+                    </div>
+                    <Link
+                        href={route('accounts.edit', account.id)}
+                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    >
+                        Modifica
+                    </Link>
+                </div>
+            }
+        >
+            <Head title={account.name} />
+
+            <div className="py-6">
+                <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    {/* Riepilogo */}
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Saldo corrente
+                            </p>
+                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                                {formatCurrency(account.current_balance, account.currency_code)}
+                            </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Saldo iniziale
+                            </p>
+                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                                {formatCurrency(account.initial_balance, account.currency_code)}
+                            </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Creato il
+                            </p>
+                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                                {account.created_at}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Transazioni Recenti */}
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                                Ultime transazioni
+                            </h3>
+                        </div>
+                        <div className="p-4">
+                            {recentTransactions.length > 0 ? (
+                                recentTransactions.map((transaction) => (
+                                    <TransactionRow
+                                        key={transaction.id}
+                                        transaction={transaction}
+                                        currency={account.currency_code}
+                                    />
+                                ))
+                            ) : (
+                                <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                                    Nessuna transazione recente.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}

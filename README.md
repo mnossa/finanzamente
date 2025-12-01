@@ -78,4 +78,93 @@ Finanzamente è una webapp di gestione finanziaria personale e familiare, pensat
 
 ---
 
+## Trasferimenti: contratto Frontend → Backend
+
+Il backend calcola `dest_amount` in modo autoritativo. Il frontend non deve inviarlo, ma può mostrare una stima locale.
+
+- Endpoint: `POST /transfers`
+- Richiesta (senza `dest_amount`):
+	- `source_account_id` (number, required)
+	- `destination_account_id` (number, required)
+	- `source_amount` (number, required, valore assoluto)
+	- `source_currency` (string, required, es. `EUR`)
+	- `dest_currency` (string, required)
+	- `exchange_rate` (number, required se valuta diversa; altrimenti opzionale)
+	- `source_category_id` (number, required, tipo `expense`)
+	- `dest_category_id` (number, required, tipo `income`)
+	- `fee` (number, optional, valore assoluto, addebito su conto sorgente)
+	- `fee_category_id` (number, optional; se assente verrà creata/riutilizzata la categoria "Fee")
+	- `date` (string, optional, ISO `YYYY-MM-DD`)
+	- `description` (string, optional)
+	- `is_private` (boolean, optional)
+
+Risposta: include il `transfer` con `dest_amount` calcolato lato server e le transazioni collegate.
+
+### Stima locale `dest_amount`
+
+Disponibili helper JS in `resources/js/transfers/estimate.js` ed esposti globalmente come `window.Transfers`:
+
+```js
+const estimate = window.Transfers.estimateDestAmount({
+	sourceAmount: 123.45,
+	exchangeRate: 1.10234,
+	sourceCurrency: 'EUR',
+	destCurrency: 'USD',
+});
+// Mostra la stringa stima (arrotondata a 8 decimali)
+
+const payload = window.Transfers.buildTransferPayload({
+	source_account_id: 1,
+	destination_account_id: 2,
+	source_amount: 123.45,
+	source_currency: 'EUR',
+	dest_currency: 'USD',
+	exchange_rate: 1.10234,
+	source_category_id: 10, // expense
+	dest_category_id: 11,   // income
+	fee: 0.5, // opzionale
+});
+
+window.Transfers.submitTransfer(payload).then(console.log);
+```
+
+Regole di calcolo della stima:
+- Stessa valuta: `dest = source_amount`.
+- Valute diverse: `dest = round(source_amount * exchange_rate, 8)`.
+
+## Permessi e Ownership (Docker)
+
+Per evitare file creati con utente `root` (es. `public/hot`) i container `app` e `node` usano le variabili `LOCAL_UID` e `LOCAL_GID`.
+
+### Avvio consigliato
+
+```bash
+make up        # avvia tutto con UID/GID correnti
+make dev       # avvia Vite nel container node
+make fix-perms # riallinea i permessi in caso di problemi
+```
+
+Il file `docker-compose.yml` usa `user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"`. Se non passi le variabili saranno usati i default `1000:1000`.
+
+### Reimpostare manualmente
+
+```bash
+export LOCAL_UID=$(id -u)
+export LOCAL_GID=$(id -g)
+docker compose down && docker compose up -d
+```
+
+### Script Permessi
+
+Lo script `fix-permissions.sh` esegue:
+- chown ricorsivo al progetto
+- imposta permessi 775 su `storage` e `bootstrap/cache`
+- rimuove `public/hot` se bloccato
+
+Usare dopo anomalie di ownership:
+
+```bash
+make fix-perms
+```
+
 > Per linee guida tecniche, convenzioni di sviluppo e best practice, consultare il file `.github/copilot-instructions.md`.

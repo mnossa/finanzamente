@@ -7,6 +7,10 @@ services:
     container_name: finanzamente-app
     restart: unless-stopped
     working_dir: /var/www
+    # Usa UID/GID locali passati da shell (esportare LOCAL_UID/LOCAL_GID o usare Makefile)
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file:
+      - .env.docker
     volumes:
       - ./:/var/www
     networks:
@@ -48,14 +52,28 @@ services:
     image: node:20
     container_name: finanzamente-node
     working_dir: /var/www
+    env_file:
+      - .env.docker
     volumes:
       - ./:/var/www
     networks:
       - finanzamente
     tty: true
-    user: "${UID}:${GID}"
+    # Allinea utente del container node con quello host per evitare file root/public/hot
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     ports:
       - "5174:5174"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: finanzamente-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    networks:
+      - finanzamente
+
 volumes:
   dbdata:
 networks:
