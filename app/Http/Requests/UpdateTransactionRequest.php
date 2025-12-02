@@ -44,6 +44,8 @@ class UpdateTransactionRequest extends FormRequest
             'date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'is_private' => ['boolean'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
         ];
     }
 

@@ -2,51 +2,265 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBudgetRequest;
+use App\Http\Requests\UpdateBudgetRequest;
 use App\Models\Budget;
+use App\Models\Category;
+use App\Models\Currency;
+use App\Models\Transaction;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class BudgetController extends Controller
 {
-    public function index()
+    /**
+     * Mostra l'elenco dei budget della household attiva.
+     */
+    public function index(Request $request): Response
     {
-        return response()->json(Budget::all());
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        $budgets = Budget::where('household_id', $householdId)
+            ->with(['category', 'currency'])
+            ->orderBy('period_start', 'desc')
+            ->get()
+            ->map(function ($budget) use ($householdId) {
+                // Calcola la spesa effettiva per questo budget
+                $spent = Transaction::where('household_id', $householdId)
+                    ->where('category_id', $budget->category_id)
+                    ->where('type', 'expense')
+                    ->whereBetween('date', [$budget->period_start, $budget->period_end])
+                    ->sum('amount');
+
+                $percentage = $budget->amount > 0 
+                    ? min(100, round(($spent / $budget->amount) * 100, 1)) 
+                    : 0;
+
+                return [
+                    'id' => $budget->id,
+                    'category' => [
+                        'id' => $budget->category->id,
+                        'name' => $budget->category->name,
+                        'icon' => $budget->category->icon,
+                    ],
+                    'amount' => $budget->amount,
+                    'spent' => $spent,
+                    'remaining' => max(0, $budget->amount - $spent),
+                    'percentage' => $percentage,
+                    'currency' => [
+                        'code' => $budget->currency->code,
+                        'symbol' => $budget->currency->symbol,
+                    ],
+                    'period_start' => $budget->period_start->format('Y-m-d'),
+                    'period_end' => $budget->period_end->format('Y-m-d'),
+                    'description' => $budget->description,
+                    'is_exceeded' => $spent > $budget->amount,
+                    'is_active' => $budget->period_start <= now() && $budget->period_end >= now(),
+                ];
+            });
+
+        return Inertia::render('Budgets/Index', [
+            'budgets' => $budgets,
+        ]);
     }
 
-    public function store(Request $request)
+    /**
+     * Mostra il form per creare un nuovo budget.
+     */
+    public function create(): Response
     {
-        $data = $request->validate([
-            'household_id' => 'required|exists:households,id',
-            'category_id' => 'nullable|exists:categories,id',
-            'amount' => 'required|numeric',
-            'currency_code' => 'required|string|exists:currencies,code',
-            'period_start' => 'required|date',
-            'period_end' => 'required|date',
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        // Solo categorie di spesa
+        $categories = Category::where('household_id', $householdId)
+            ->where('type', 'expense')
+            ->orderBy('name')
+            ->get()
+            ->map(fn($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'icon' => $cat->icon,
+            ]);
+
+        $currencies = Currency::where('is_active', true)
+            ->orderBy('code')
+            ->get()
+            ->map(fn($c) => [
+                'code' => $c->code,
+                'name' => $c->name,
+                'symbol' => $c->symbol,
+            ]);
+
+        return Inertia::render('Budgets/Create', [
+            'categories' => $categories,
+            'currencies' => $currencies,
+        ]);
+    }
+
+    /**
+     * Salva un nuovo budget.
+     */
+    public function store(StoreBudgetRequest $request): RedirectResponse
+    {
+        $user = Auth::user();
+        $validated = $request->validated();
+
+        Budget::create([
+            'household_id' => $user->active_household_id,
+            'category_id' => $validated['category_id'],
+            'amount' => $validated['amount'],
+            'currency_code' => $validated['currency_code'],
+            'period_start' => $validated['period_start'],
+            'period_end' => $validated['period_end'],
+            'description' => $validated['description'] ?? null,
         ]);
 
-        $budget = Budget::create($data);
-        return response()->json($budget, 201);
+        return redirect()
+            ->route('budgets.index')
+            ->with('success', 'Budget creato con successo.');
     }
 
-    public function show(Budget $budget)
+    /**
+     * Mostra i dettagli di un budget.
+     */
+    public function show(Budget $budget): Response
     {
-        return response()->json($budget);
-    }
+        $this->authorizeBudget($budget);
 
-    public function update(Request $request, Budget $budget)
-    {
-        $data = $request->validate([
-            'amount' => 'sometimes|numeric',
-            'period_start' => 'sometimes|date',
-            'period_end' => 'sometimes|date',
+        $householdId = Auth::user()->active_household_id;
+
+        // Transazioni associate a questo budget
+        $transactions = Transaction::where('household_id', $householdId)
+            ->where('category_id', $budget->category_id)
+            ->where('type', 'expense')
+            ->whereBetween('date', [$budget->period_start, $budget->period_end])
+            ->with(['account'])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'description' => $t->description,
+                'amount' => $t->amount,
+                'date' => $t->date->format('Y-m-d'),
+                'account' => $t->account->name,
+            ]);
+
+        $spent = $transactions->sum('amount');
+        $percentage = $budget->amount > 0 
+            ? min(100, round(($spent / $budget->amount) * 100, 1)) 
+            : 0;
+
+        return Inertia::render('Budgets/Show', [
+            'budget' => [
+                'id' => $budget->id,
+                'category' => [
+                    'id' => $budget->category->id,
+                    'name' => $budget->category->name,
+                    'icon' => $budget->category->icon,
+                ],
+                'amount' => $budget->amount,
+                'spent' => $spent,
+                'remaining' => max(0, $budget->amount - $spent),
+                'percentage' => $percentage,
+                'currency' => [
+                    'code' => $budget->currency->code,
+                    'symbol' => $budget->currency->symbol,
+                ],
+                'period_start' => $budget->period_start->format('Y-m-d'),
+                'period_end' => $budget->period_end->format('Y-m-d'),
+                'description' => $budget->description,
+                'is_exceeded' => $spent > $budget->amount,
+            ],
+            'transactions' => $transactions,
         ]);
-
-        $budget->update($data);
-        return response()->json($budget);
     }
 
-    public function destroy(Budget $budget)
+    /**
+     * Mostra il form per modificare un budget.
+     */
+    public function edit(Budget $budget): Response
     {
+        $this->authorizeBudget($budget);
+
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        $categories = Category::where('household_id', $householdId)
+            ->where('type', 'expense')
+            ->orderBy('name')
+            ->get()
+            ->map(fn($cat) => [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'icon' => $cat->icon,
+            ]);
+
+        $currencies = Currency::where('is_active', true)
+            ->orderBy('code')
+            ->get()
+            ->map(fn($c) => [
+                'code' => $c->code,
+                'name' => $c->name,
+                'symbol' => $c->symbol,
+            ]);
+
+        return Inertia::render('Budgets/Edit', [
+            'budget' => [
+                'id' => $budget->id,
+                'category_id' => $budget->category_id,
+                'amount' => $budget->amount,
+                'currency_code' => $budget->currency_code,
+                'period_start' => $budget->period_start->format('Y-m-d'),
+                'period_end' => $budget->period_end->format('Y-m-d'),
+                'description' => $budget->description,
+            ],
+            'categories' => $categories,
+            'currencies' => $currencies,
+        ]);
+    }
+
+    /**
+     * Aggiorna un budget esistente.
+     */
+    public function update(UpdateBudgetRequest $request, Budget $budget): RedirectResponse
+    {
+        $this->authorizeBudget($budget);
+
+        $budget->update($request->validated());
+
+        return redirect()
+            ->route('budgets.index')
+            ->with('success', 'Budget aggiornato con successo.');
+    }
+
+    /**
+     * Elimina un budget.
+     */
+    public function destroy(Budget $budget): RedirectResponse
+    {
+        $this->authorizeBudget($budget);
+
         $budget->delete();
-        return response()->json(null, 204);
+
+        return redirect()
+            ->route('budgets.index')
+            ->with('success', 'Budget eliminato con successo.');
+    }
+
+    /**
+     * Verifica che l'utente possa accedere al budget.
+     */
+    private function authorizeBudget(Budget $budget): void
+    {
+        $user = Auth::user();
+
+        if ($budget->household_id !== $user->active_household_id) {
+            abort(403, 'Non hai accesso a questo budget.');
+        }
     }
 }

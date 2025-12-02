@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Budget;
+use App\Models\DebtCredit;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,6 +102,68 @@ class DashboardController extends Controller
 
         $lastMonthStats = $this->getMonthlyStats($householdId, $user->id, $startOfLastMonth, $endOfLastMonth);
 
+        // Budget attivi (con spesa calcolata)
+        $activeBudgets = Budget::where('household_id', $householdId)
+            ->where('period_start', '<=', now())
+            ->where('period_end', '>=', now())
+            ->with(['category', 'currency'])
+            ->get()
+            ->map(function ($budget) use ($householdId) {
+                $spent = Transaction::where('household_id', $householdId)
+                    ->where('category_id', $budget->category_id)
+                    ->where('type', 'expense')
+                    ->whereBetween('date', [$budget->period_start, $budget->period_end])
+                    ->sum('amount');
+
+                $percentage = $budget->amount > 0 
+                    ? min(100, round(($spent / $budget->amount) * 100, 1)) 
+                    : 0;
+
+                return [
+                    'id' => $budget->id,
+                    'category_name' => $budget->category->name,
+                    'category_icon' => $budget->category->icon,
+                    'amount' => (float) $budget->amount,
+                    'spent' => (float) $spent,
+                    'percentage' => $percentage,
+                    'is_exceeded' => $spent > $budget->amount,
+                    'currency_symbol' => $budget->currency->symbol,
+                ];
+            });
+
+        // Debiti e Crediti aperti
+        $openDebtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->with('currency')
+            ->orderByRaw("FIELD(status, 'overdue', 'open')")
+            ->orderBy('due_date')
+            ->limit(5)
+            ->get()
+            ->map(fn($dc) => [
+                'id' => $dc->id,
+                'counterparty' => $dc->counterparty,
+                'amount' => (float) $dc->amount,
+                'type' => $dc->type,
+                'status' => $dc->status,
+                'due_date' => $dc->due_date?->format('Y-m-d'),
+                'currency_symbol' => $dc->currency->symbol,
+            ]);
+
+        // Totali debiti e crediti
+        $debtsCreditsSummary = [
+            'total_debts' => DebtCredit::where('household_id', $householdId)
+                ->where('type', 'debt')
+                ->whereIn('status', ['open', 'overdue'])
+                ->sum('amount'),
+            'total_credits' => DebtCredit::where('household_id', $householdId)
+                ->where('type', 'credit')
+                ->whereIn('status', ['open', 'overdue'])
+                ->sum('amount'),
+            'overdue_count' => DebtCredit::where('household_id', $householdId)
+                ->where('status', 'overdue')
+                ->count(),
+        ];
+
         return Inertia::render('Dashboard', [
             'accounts' => $accountsWithBalance,
             'totalBalance' => $totalBalance,
@@ -108,6 +172,9 @@ class DashboardController extends Controller
             'lastMonthStats' => $lastMonthStats,
             'currentMonth' => Carbon::now()->translatedFormat('F Y'),
             'lastMonth' => Carbon::now()->subMonth()->translatedFormat('F Y'),
+            'activeBudgets' => $activeBudgets,
+            'openDebtsCredits' => $openDebtsCredits,
+            'debtsCreditsSummary' => $debtsCreditsSummary,
         ]);
     }
 

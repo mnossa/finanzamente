@@ -16,6 +16,12 @@ interface Account {
     currency_code: string;
 }
 
+interface Tag {
+    id: number;
+    name: string;
+    color: string | null;
+}
+
 interface Transaction {
     id: number;
     amount: number;
@@ -28,6 +34,7 @@ interface Transaction {
         id: number;
         name: string;
     };
+    tags: Tag[];
 }
 
 interface PaginatedData<T> {
@@ -80,7 +87,10 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
 
     return (
-        <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 dark:border-gray-700">
+        <Link
+            href={route('transactions.show', transaction.id)}
+            className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 -mx-4 px-4 transition-colors"
+        >
             <div className="flex items-center space-x-3">
                 <div
                     className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
@@ -101,9 +111,27 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                             <span className="ml-2 text-xs text-gray-400">🔒</span>
                         )}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {transaction.account.name} • {formatDate(transaction.date)}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-1">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {transaction.account.name} • {formatDate(transaction.date)}
+                        </p>
+                        {transaction.tags && transaction.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 ml-2">
+                                {transaction.tags.map((tag) => (
+                                    <span
+                                        key={tag.id}
+                                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                                        style={{
+                                            backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
+                                            color: tag.color || '#374151',
+                                        }}
+                                    >
+                                        {tag.name}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -116,7 +144,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     {isIncome ? '+' : ''}
                     {formatCurrency(transaction.amount, transaction.account.currency_code)}
                 </p>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2" onClick={(e) => e.preventDefault()}>
                     <Link
                         href={route('transactions.edit', transaction.id)}
                         className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
@@ -135,7 +163,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }
 

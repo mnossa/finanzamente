@@ -50,4 +50,72 @@ class Investment extends Model
     {
         return $this->belongsTo(InvestmentAsset::class, 'asset_id');
     }
+
+    /**
+     * Calcola il valore totale di acquisto (quantity * buy_price).
+     */
+    public function getTotalBuyValueAttribute(): float
+    {
+        return (float) $this->quantity * (float) $this->buy_price;
+    }
+
+    /**
+     * Calcola il valore totale di vendita (quantity * sell_price), se venduto.
+     */
+    public function getTotalSellValueAttribute(): ?float
+    {
+        if ($this->sell_price === null) {
+            return null;
+        }
+        return (float) $this->quantity * (float) $this->sell_price;
+    }
+
+    /**
+     * Calcola il profitto/perdita lordo (senza fees).
+     */
+    public function getGrossProfitAttribute(): ?float
+    {
+        if ($this->sell_price === null) {
+            return null;
+        }
+        return $this->total_sell_value - $this->total_buy_value;
+    }
+
+    /**
+     * Calcola il profitto/perdita netto (con fees).
+     */
+    public function getNetProfitAttribute(): ?float
+    {
+        if ($this->sell_price === null) {
+            return null;
+        }
+        return $this->gross_profit - ((float) $this->fees ?? 0);
+    }
+
+    /**
+     * Calcola la percentuale di rendimento.
+     */
+    public function getProfitPercentageAttribute(): ?float
+    {
+        if ($this->sell_price === null || $this->total_buy_value == 0) {
+            return null;
+        }
+        return ($this->net_profit / $this->total_buy_value) * 100;
+    }
+
+    /**
+     * Verifica se l'investimento è stato venduto.
+     */
+    public function isSold(): bool
+    {
+        return $this->sell_date !== null;
+    }
+
+    /**
+     * Verifica se l'investimento è ancora aperto/attivo.
+     */
+    public function isOpen(): bool
+    {
+        return !$this->isSold();
+    }
 }

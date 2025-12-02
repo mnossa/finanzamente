@@ -20,13 +20,20 @@ interface Account {
     currency_code: string;
 }
 
+interface Tag {
+    id: number;
+    name: string;
+    color: string | null;
+}
+
 interface CreateProps {
     accounts: Account[];
     categories: Category[];
+    tags: Tag[];
     defaultAccountId?: string;
 }
 
-export default function Create({ accounts, categories, defaultAccountId }: CreateProps) {
+export default function Create({ accounts, categories, tags, defaultAccountId }: CreateProps) {
     const today = new Date().toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors } = useForm({
@@ -36,6 +43,7 @@ export default function Create({ accounts, categories, defaultAccountId }: Creat
         date: today,
         description: '',
         is_private: false,
+        tag_ids: [] as number[],
     });
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
@@ -43,6 +51,15 @@ export default function Create({ accounts, categories, defaultAccountId }: Creat
 
     const incomeCategories = categories.filter((c) => c.type === 'income');
     const expenseCategories = categories.filter((c) => c.type === 'expense');
+
+    const toggleTag = (tagId: number) => {
+        const currentTags = data.tag_ids;
+        if (currentTags.includes(tagId)) {
+            setData('tag_ids', currentTags.filter((id) => id !== tagId));
+        } else {
+            setData('tag_ids', [...currentTags, tagId]);
+        }
+    };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -259,6 +276,39 @@ export default function Create({ accounts, categories, defaultAccountId }: Creat
                                         </p>
                                     </div>
                                 </div>
+
+                                {/* Tag */}
+                                {tags.length > 0 && (
+                                    <div>
+                                        <InputLabel value="Tag (opzionale)" />
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {tags.map((tag) => (
+                                                <button
+                                                    key={tag.id}
+                                                    type="button"
+                                                    onClick={() => toggleTag(tag.id)}
+                                                    className={clsx(
+                                                        'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                                                        data.tag_ids.includes(tag.id)
+                                                            ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800'
+                                                            : 'opacity-60 hover:opacity-100'
+                                                    )}
+                                                    style={{
+                                                        backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
+                                                        color: tag.color || '#374151',
+                                                        borderColor: tag.color || '#d1d5db',
+                                                        ringColor: tag.color || '#6366f1',
+                                                    }}
+                                                >
+                                                    🏷️ {tag.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Clicca sui tag per aggiungerli o rimuoverli.
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Azioni */}
                                 <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">

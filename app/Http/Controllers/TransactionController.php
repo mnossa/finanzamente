@@ -6,6 +6,7 @@ use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\Tag;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class TransactionController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name'])
+        $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color'])
             ->whereHas('account', function ($q) use ($householdId) {
                 $q->where('household_id', $householdId);
             })
@@ -80,6 +81,11 @@ class TransactionController extends Controller
                         'id' => $transaction->user->id,
                         'name' => $transaction->user->name,
                     ],
+                    'tags' => $transaction->tags->map(fn ($tag) => [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                        'color' => $tag->color,
+                    ]),
                 ];
             });
 
@@ -134,9 +140,14 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
+        $tags = Tag::where('household_id', $householdId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'color']);
+
         return Inertia::render('Transactions/Create', [
             'accounts' => $accounts,
             'categories' => $categories,
+            'tags' => $tags,
             'defaultAccountId' => $request->query('account_id'),
         ]);
     }
@@ -168,6 +179,11 @@ class TransactionController extends Controller
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
         ]);
+
+        // Sincronizza i tag
+        if (isset($validated['tag_ids'])) {
+            $transaction->tags()->sync($validated['tag_ids']);
+        }
 
         // Aggiorna il saldo del conto
         $account->current_balance += $amount;
@@ -230,6 +246,12 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
+        $tags = Tag::where('household_id', $householdId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'color']);
+
+        $transaction->load('tags:id,name,color');
+
         return Inertia::render('Transactions/Edit', [
             'transaction' => [
                 'id' => $transaction->id,
@@ -239,9 +261,11 @@ class TransactionController extends Controller
                 'date' => $transaction->date->format('Y-m-d'),
                 'description' => $transaction->description,
                 'is_private' => $transaction->is_private,
+                'tag_ids' => $transaction->tags->pluck('id')->toArray(),
             ],
             'accounts' => $accounts,
             'categories' => $categories,
+            'tags' => $tags,
         ]);
     }
 
@@ -272,6 +296,9 @@ class TransactionController extends Controller
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
         ]);
+
+        // Sincronizza i tag
+        $transaction->tags()->sync($validated['tag_ids'] ?? []);
 
         // Aggiorna i saldi dei conti
         if ($oldAccountId === $validated['account_id']) {

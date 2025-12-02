@@ -42,6 +42,33 @@ interface MonthlyStats {
     transaction_count: number;
 }
 
+interface ActiveBudget {
+    id: number;
+    category_name: string;
+    category_icon: string | null;
+    amount: number;
+    spent: number;
+    percentage: number;
+    is_exceeded: boolean;
+    currency_symbol: string;
+}
+
+interface OpenDebtCredit {
+    id: number;
+    counterparty: string;
+    amount: number;
+    type: string;
+    status: string;
+    due_date: string | null;
+    currency_symbol: string;
+}
+
+interface DebtsCreditsSummary {
+    total_debts: number;
+    total_credits: number;
+    overdue_count: number;
+}
+
 interface DashboardProps {
     accounts: Account[];
     totalBalance: number;
@@ -50,6 +77,9 @@ interface DashboardProps {
     lastMonthStats: MonthlyStats;
     currentMonth: string;
     lastMonth: string;
+    activeBudgets: ActiveBudget[];
+    openDebtsCredits: OpenDebtCredit[];
+    debtsCreditsSummary: DebtsCreditsSummary;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -245,6 +275,92 @@ function EmptyState({ message }: { message: string }) {
     );
 }
 
+function BudgetProgressBar({ percentage, isExceeded }: { percentage: number; isExceeded: boolean }) {
+    return (
+        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+            <div
+                className={clsx(
+                    'h-full rounded-full transition-all',
+                    isExceeded
+                        ? 'bg-red-500'
+                        : percentage >= 80
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
+                )}
+                style={{ width: `${Math.min(100, percentage)}%` }}
+            />
+        </div>
+    );
+}
+
+function BudgetCard({ budget }: { budget: ActiveBudget }) {
+    return (
+        <Link
+            href={route('budgets.show', budget.id)}
+            className="block rounded-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700"
+        >
+            <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                    <span>{budget.category_icon || '📁'}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                        {budget.category_name}
+                    </span>
+                </div>
+                {budget.is_exceeded && (
+                    <span className="text-red-500">⚠️</span>
+                )}
+            </div>
+            <BudgetProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} />
+            <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>{budget.currency_symbol}{budget.spent.toFixed(0)}</span>
+                <span>{budget.percentage}%</span>
+                <span>{budget.currency_symbol}{budget.amount.toFixed(0)}</span>
+            </div>
+        </Link>
+    );
+}
+
+function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
+    const isDebt = item.type === 'debt';
+    const isOverdue = item.status === 'overdue';
+    
+    return (
+        <Link
+            href={route('debts-credits.show', item.id)}
+            className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+        >
+            <div className="flex items-center space-x-2">
+                <span className={clsx(
+                    'flex h-8 w-8 items-center justify-center rounded-full text-sm',
+                    isDebt ? 'bg-red-100 dark:bg-red-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'
+                )}>
+                    {isDebt ? '📤' : '📥'}
+                </span>
+                <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                        {item.counterparty}
+                        {isOverdue && <span className="ml-1 text-red-500">⚠️</span>}
+                    </p>
+                    {item.due_date && (
+                        <p className={clsx(
+                            'text-xs',
+                            isOverdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+                        )}>
+                            Scadenza: {formatDate(item.due_date)}
+                        </p>
+                    )}
+                </div>
+            </div>
+            <span className={clsx(
+                'font-semibold',
+                isDebt ? 'text-red-500' : 'text-emerald-500'
+            )}>
+                {isDebt ? '-' : '+'}{item.currency_symbol}{item.amount.toFixed(2)}
+            </span>
+        </Link>
+    );
+}
+
 export default function Dashboard({
     accounts,
     totalBalance,
@@ -253,6 +369,9 @@ export default function Dashboard({
     lastMonthStats,
     currentMonth,
     lastMonth,
+    activeBudgets,
+    openDebtsCredits,
+    debtsCreditsSummary,
 }: DashboardProps) {
     // Calcola trend rispetto al mese precedente
     const incomeTrend =
@@ -355,10 +474,9 @@ export default function Dashboard({
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     Ultime transazioni
                                 </h3>
-                                {/* Link futuro per transazioni */}
-                                {/* <Link href={route('transactions.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                <Link href={route('transactions.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
                                     Vedi tutte
-                                </Link> */}
+                                </Link>
                             </div>
                             <div className="p-4">
                                 {recentTransactions.length > 0 ? (
@@ -370,6 +488,93 @@ export default function Dashboard({
                                     ))
                                 ) : (
                                     <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Budget e Debiti/Crediti */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        {/* Budget Attivi */}
+                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                            <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    📊 Budget Attivi
+                                </h3>
+                                <Link href={route('budgets.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                    Vedi tutti
+                                </Link>
+                            </div>
+                            <div className="p-4">
+                                {activeBudgets.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {activeBudgets.map((budget) => (
+                                            <BudgetCard key={budget.id} budget={budget} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-8 text-center">
+                                        <p className="mb-3 text-gray-500 dark:text-gray-400">
+                                            Nessun budget attivo
+                                        </p>
+                                        <Link
+                                            href={route('budgets.create')}
+                                            className="text-sm text-indigo-500 hover:text-indigo-600"
+                                        >
+                                            Crea il tuo primo budget →
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Debiti e Crediti */}
+                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                            <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    💸 Debiti e Crediti
+                                </h3>
+                                <Link href={route('debts-credits.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                    Vedi tutti
+                                </Link>
+                            </div>
+                            <div className="p-4">
+                                {/* Riepilogo */}
+                                {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
+                                    <div className="mb-4 grid grid-cols-2 gap-3">
+                                        <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
+                                            <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
+                                            <p className="text-lg font-bold text-red-500">
+                                                {formatCurrency(debtsCreditsSummary.total_debts)}
+                                            </p>
+                                        </div>
+                                        <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
+                                            <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
+                                            <p className="text-lg font-bold text-emerald-500">
+                                                {formatCurrency(debtsCreditsSummary.total_credits)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {openDebtsCredits.length > 0 ? (
+                                    <div>
+                                        {openDebtsCredits.map((item) => (
+                                            <DebtCreditRow key={item.id} item={item} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-8 text-center">
+                                        <p className="mb-3 text-gray-500 dark:text-gray-400">
+                                            Nessun debito o credito aperto
+                                        </p>
+                                        <Link
+                                            href={route('debts-credits.create')}
+                                            className="text-sm text-indigo-500 hover:text-indigo-600"
+                                        >
+                                            Aggiungi il primo →
+                                        </Link>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -388,14 +593,13 @@ export default function Dashboard({
                                 <span className="mb-2 text-2xl">➕</span>
                                 <span className="text-sm font-medium">Nuova Transazione</span>
                             </Link>
-                            <button
-                                type="button"
-                                disabled
-                                className="flex flex-col items-center rounded-lg bg-gray-50 p-4 text-gray-400 dark:bg-gray-700/50"
+                            <Link
+                                href={route('transfers.create')}
+                                className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
                             >
                                 <span className="mb-2 text-2xl">🔄</span>
-                                <span className="text-sm">Trasferimento</span>
-                            </button>
+                                <span className="text-sm font-medium">Trasferimento</span>
+                            </Link>
                             <Link
                                 href={route('accounts.create')}
                                 className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
@@ -403,18 +607,14 @@ export default function Dashboard({
                                 <span className="mb-2 text-2xl">🏦</span>
                                 <span className="text-sm font-medium">Nuovo Conto</span>
                             </Link>
-                            <button
-                                type="button"
-                                disabled
-                                className="flex flex-col items-center rounded-lg bg-gray-50 p-4 text-gray-400 dark:bg-gray-700/50"
+                            <Link
+                                href={route('categories.create')}
+                                className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
                             >
-                                <span className="mb-2 text-2xl">📊</span>
-                                <span className="text-sm">Report</span>
-                            </button>
+                                <span className="mb-2 text-2xl">🏷️</span>
+                                <span className="text-sm font-medium">Nuova Categoria</span>
+                            </Link>
                         </div>
-                        <p className="mt-3 text-center text-xs text-gray-400">
-                            Trasferimenti e report saranno disponibili prossimamente
-                        </p>
                     </div>
                 </div>
             </div>

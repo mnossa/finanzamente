@@ -77,12 +77,12 @@ class TransferService
                 'status' => 'completed',
             ]);
 
-            // Create source transaction (expense)
+            // Create source transaction (expense - negative amount)
             $sourceTx = Transaction::create([
                 'user_id' => $data['initiated_by'] ?? null,
                 'account_id' => $sourceId,
                 'category_id' => $data['source_category_id'],
-                'amount' => round($sourceAmount, 2),
+                'amount' => -abs(round($sourceAmount, 2)),
                 'currency_code' => $data['source_currency'],
                 'date' => $data['date'] ?? now()->toDateString(),
                 'description' => $data['description'] ?? 'Transfer out: '.$transfer->uuid,
@@ -90,12 +90,12 @@ class TransferService
                 'transfer_id' => $transfer->id,
             ]);
 
-            // Create destination transaction (income)
+            // Create destination transaction (income - positive amount)
             $destTx = Transaction::create([
                 'user_id' => $data['initiated_by'] ?? null,
                 'account_id' => $destId,
                 'category_id' => $data['dest_category_id'],
-                'amount' => round($destAmount, 2),
+                'amount' => abs(round($destAmount, 2)),
                 'currency_code' => $data['dest_currency'] ?? $data['source_currency'],
                 'date' => $data['date'] ?? now()->toDateString(),
                 'description' => $data['description'] ?? 'Transfer in: '.$transfer->uuid,

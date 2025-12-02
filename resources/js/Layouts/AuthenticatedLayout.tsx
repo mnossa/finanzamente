@@ -104,6 +104,42 @@ export default function Authenticated({
                                 >
                                     Categorie
                                 </NavLink>
+                                <NavLink
+                                    href={route('transfers.index')}
+                                    active={route().current('transfers.*')}
+                                >
+                                    Trasferimenti
+                                </NavLink>
+                                <NavLink
+                                    href={route('budgets.index')}
+                                    active={route().current('budgets.*')}
+                                >
+                                    Budget
+                                </NavLink>
+                                <NavLink
+                                    href={route('debts-credits.index')}
+                                    active={route().current('debts-credits.*')}
+                                >
+                                    Debiti/Crediti
+                                </NavLink>
+                                <NavLink
+                                    href={route('recurring-transactions.index')}
+                                    active={route().current('recurring-transactions.*')}
+                                >
+                                    Ricorrenti
+                                </NavLink>
+                                <NavLink
+                                    href={route('financial-goals.index')}
+                                    active={route().current('financial-goals.*')}
+                                >
+                                    Obiettivi
+                                </NavLink>
+                                <NavLink
+                                    href={route('investments.index')}
+                                    active={route().current('investments.*') || route().current('investment-assets.*')}
+                                >
+                                    Investimenti
+                                </NavLink>
                             </div>
                         </div>
 
@@ -283,6 +319,42 @@ export default function Authenticated({
                             active={route().current('categories.*')}
                         >
                             Categorie
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('transfers.index')}
+                            active={route().current('transfers.*')}
+                        >
+                            Trasferimenti
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('budgets.index')}
+                            active={route().current('budgets.*')}
+                        >
+                            Budget
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('debts-credits.index')}
+                            active={route().current('debts-credits.*')}
+                        >
+                            Debiti/Crediti
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('recurring-transactions.index')}
+                            active={route().current('recurring-transactions.*')}
+                        >
+                            Ricorrenti
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('financial-goals.index')}
+                            active={route().current('financial-goals.*')}
+                        >
+                            Obiettivi
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('investments.index')}
+                            active={route().current('investments.*') || route().current('investment-assets.*')}
+                        >
+                            Investimenti
                         </ResponsiveNavLink>
                     </div>
 
