@@ -65,6 +65,7 @@ class TransactionController extends Controller
                     'date' => $transaction->date->format('Y-m-d'),
                     'description' => $transaction->description,
                     'is_private' => $transaction->is_private,
+                    'transfer_id' => $transaction->transfer_id,
                     'category' => $transaction->category ? [
                         'id' => $transaction->category->id,
                         'name' => $transaction->category->name,
@@ -215,6 +216,7 @@ class TransactionController extends Controller
                 'account' => $transaction->account,
                 'user' => $transaction->user,
                 'tags' => $transaction->tags,
+                'transfer_id' => $transaction->transfer_id,
             ],
         ]);
     }
@@ -262,6 +264,7 @@ class TransactionController extends Controller
                 'description' => $transaction->description,
                 'is_private' => $transaction->is_private,
                 'tag_ids' => $transaction->tags->pluck('id')->toArray(),
+                'transfer_id' => $transaction->transfer_id,
             ],
             'accounts' => $accounts,
             'categories' => $categories,
@@ -279,6 +282,23 @@ class TransactionController extends Controller
         $validated = $request->validated();
         $oldAmount = (float) $transaction->amount;
         $oldAccountId = $transaction->account_id;
+
+        // Se la transazione è parte di un trasferimento, ci sono restrizioni
+        $isTransfer = $transaction->transfer_id !== null;
+
+        if ($isTransfer) {
+            // Non è possibile cambiare categoria o conto per le transazioni di trasferimento
+            if ((int) $validated['category_id'] !== $transaction->category_id) {
+                return redirect()->back()->withErrors([
+                    'category_id' => 'Non è possibile modificare la categoria di una transazione di trasferimento.',
+                ]);
+            }
+            if ((int) $validated['account_id'] !== $oldAccountId) {
+                return redirect()->back()->withErrors([
+                    'account_id' => 'Non è possibile modificare il conto di una transazione di trasferimento.',
+                ]);
+            }
+        }
 
         // Determina il segno dell'importo
         $category = Category::find($validated['category_id']);
@@ -299,6 +319,34 @@ class TransactionController extends Controller
 
         // Sincronizza i tag
         $transaction->tags()->sync($validated['tag_ids'] ?? []);
+
+        // Se è un trasferimento, aggiorna anche la transazione collegata
+        if ($isTransfer) {
+            $linkedTransaction = Transaction::where('transfer_id', $transaction->transfer_id)
+                ->where('id', '!=', $transaction->id)
+                ->first();
+
+            if ($linkedTransaction) {
+                // Calcola il nuovo importo per la transazione collegata
+                // Se questa è uscita (negativa), l'altra è entrata (positiva) e viceversa
+                $linkedOldAmount = (float) $linkedTransaction->amount;
+                $linkedNewAmount = $oldAmount != 0 
+                    ? ($linkedOldAmount / abs($oldAmount)) * abs($newAmount)
+                    : abs($newAmount);
+
+                // Aggiorna descrizione e privacy, mantieni segno originale dell'importo
+                $linkedTransaction->update([
+                    'amount' => $linkedNewAmount,
+                    'description' => $validated['description'] ?? null,
+                    'is_private' => $validated['is_private'] ?? false,
+                ]);
+
+                // Aggiorna il saldo del conto collegato
+                $linkedAccount = $linkedTransaction->account;
+                $linkedAccount->current_balance += ($linkedNewAmount - $linkedOldAmount);
+                $linkedAccount->save();
+            }
+        }
 
         // Aggiorna i saldi dei conti
         if ($oldAccountId === $validated['account_id']) {

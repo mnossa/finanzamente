@@ -28,6 +28,7 @@ interface Transaction {
     date: string;
     description: string | null;
     is_private: boolean;
+    transfer_id: number | null;
     category: Category | null;
     account: Account;
     user: {
@@ -85,6 +86,7 @@ function formatDate(dateString: string): string {
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
+    const isTransfer = transaction.transfer_id !== null;
 
     return (
         <Link
@@ -95,20 +97,25 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                 <div
                     className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
                     style={{
-                        backgroundColor: transaction.category?.color
-                            ? `${transaction.category.color}20`
-                            : isIncome
-                            ? '#22c55e20'
-                            : '#ef444420',
+                        backgroundColor: isTransfer
+                            ? '#f59e0b20'
+                            : transaction.category?.color
+                              ? `${transaction.category.color}20`
+                              : isIncome
+                                ? '#22c55e20'
+                                : '#ef444420',
                     }}
                 >
-                    {transaction.category?.icon || (isIncome ? '💰' : '💸')}
+                    {isTransfer ? '🔄' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
                 </div>
                 <div>
                     <p className="font-medium text-gray-900 dark:text-white">
                         {transaction.description || transaction.category?.name || 'Transazione'}
                         {transaction.is_private && (
                             <span className="ml-2 text-xs text-gray-400">🔒</span>
+                        )}
+                        {isTransfer && (
+                            <span className="ml-2 text-xs text-amber-500">Trasferimento</span>
                         )}
                     </p>
                     <div className="flex flex-wrap items-center gap-1">

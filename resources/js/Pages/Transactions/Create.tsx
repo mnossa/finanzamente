@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import CategoryPicker from '@/Components/CategoryPicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -48,9 +49,6 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
     const isExpense = selectedCategory?.type === 'expense';
-
-    const incomeCategories = categories.filter((c) => c.type === 'income');
-    const expenseCategories = categories.filter((c) => c.type === 'expense');
 
     const toggleTag = (tagId: number) => {
         const currentTags = data.tag_ids;
@@ -144,58 +142,13 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                 {/* Categoria */}
                                 <div>
                                     <InputLabel htmlFor="category_id" value="Categoria" />
-                                    <div className="mt-2 space-y-4">
-                                        {/* Entrate */}
-                                        <div>
-                                            <p className="mb-2 text-sm font-medium text-green-600 dark:text-green-400">
-                                                💰 Entrate
-                                            </p>
-                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                                {incomeCategories.map((category) => (
-                                                    <button
-                                                        key={category.id}
-                                                        type="button"
-                                                        onClick={() => setData('category_id', String(category.id))}
-                                                        className={clsx(
-                                                            'flex items-center space-x-2 rounded-lg border-2 p-2 text-left text-sm transition-colors',
-                                                            data.category_id === String(category.id)
-                                                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                                                : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
-                                                        )}
-                                                    >
-                                                        <span>{category.icon || '💰'}</span>
-                                                        <span className="truncate">{category.name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Uscite */}
-                                        <div>
-                                            <p className="mb-2 text-sm font-medium text-red-600 dark:text-red-400">
-                                                💸 Uscite
-                                            </p>
-                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                                {expenseCategories.map((category) => (
-                                                    <button
-                                                        key={category.id}
-                                                        type="button"
-                                                        onClick={() => setData('category_id', String(category.id))}
-                                                        className={clsx(
-                                                            'flex items-center space-x-2 rounded-lg border-2 p-2 text-left text-sm transition-colors',
-                                                            data.category_id === String(category.id)
-                                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                                                                : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
-                                                        )}
-                                                    >
-                                                        <span>{category.icon || '💸'}</span>
-                                                        <span className="truncate">{category.name}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <InputError message={errors.category_id} className="mt-2" />
+                                    <CategoryPicker
+                                        categories={categories}
+                                        value={data.category_id}
+                                        onChange={(categoryId) => setData('category_id', categoryId)}
+                                        error={errors.category_id}
+                                        className="mt-2"
+                                    />
                                 </div>
 
                                 {/* Importo e Data */}
@@ -297,8 +250,8 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                                         backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
                                                         color: tag.color || '#374151',
                                                         borderColor: tag.color || '#d1d5db',
-                                                        ringColor: tag.color || '#6366f1',
-                                                    }}
+                                                        '--tw-ring-color': tag.color || '#6366f1',
+                                                    } as React.CSSProperties}
                                                 >
                                                     🏷️ {tag.name}
                                                 </button>

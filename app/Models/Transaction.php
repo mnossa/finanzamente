@@ -54,4 +54,17 @@ class Transaction extends Model
     {
         return $this->belongsTo(RecurringTransaction::class, 'recurring_transaction_id');
     }
+
+    public function transfer()
+    {
+        return $this->belongsTo(Transfer::class);
+    }
+
+    /**
+     * Verifica se la transazione è parte di un trasferimento.
+     */
+    public function isTransfer(): bool
+    {
+        return $this->transfer_id !== null;
+    }
 }

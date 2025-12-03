@@ -36,6 +36,7 @@ interface Transaction {
         name: string;
     };
     tags: Tag[];
+    transfer_id: number | null;
 }
 
 interface ShowProps {
@@ -60,6 +61,7 @@ function formatDate(dateStr: string): string {
 
 export default function Show({ transaction }: ShowProps) {
     const isIncome = transaction.amount > 0;
+    const isTransfer = transaction.transfer_id !== null;
 
     const handleDelete = () => {
         if (confirm('Sei sicuro di voler eliminare questa transazione?')) {
@@ -95,6 +97,21 @@ export default function Show({ transaction }: ShowProps) {
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    {/* Banner trasferimento */}
+                    {isTransfer && (
+                        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                            <span className="text-xl">🔄</span>
+                            <div>
+                                <p className="font-medium text-amber-800 dark:text-amber-200">
+                                    Trasferimento tra conti
+                                </p>
+                                <p className="text-sm text-amber-700 dark:text-amber-300">
+                                    Questa transazione fa parte di un trasferimento.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Card principale */}
                     <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
                         <div className="text-center">
@@ -173,12 +190,14 @@ export default function Show({ transaction }: ShowProps) {
                                 <span
                                     className={clsx(
                                         'inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium',
-                                        isIncome
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                        isTransfer
+                                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                            : isIncome
+                                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                     )}
                                 >
-                                    {isIncome ? '📥 Entrata' : '📤 Uscita'}
+                                    {isTransfer ? '🔄 Trasferimento' : isIncome ? '📥 Entrata' : '📤 Uscita'}
                                 </span>
                             </div>
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
