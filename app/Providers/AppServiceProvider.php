@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Household;
+use App\Observers\HouseholdObserver;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -25,5 +27,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Imposta la lingua italiana per Carbon (date)
         Carbon::setLocale('it');
+
+        // Registra observer per la creazione automatica delle categorie
+        Household::observe(HouseholdObserver::class);
     }
 }
