@@ -335,7 +335,7 @@ export default function Show({ goal, statuses }: ShowProps) {
                             <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/50">
                                 <button
                                     onClick={() => setShowContributeModal(true)}
-                                    className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white transition-colors hover:bg-indigo-700 sm:w-auto"
+                                    className="w-full rounded-lg bg-emerald-500 px-4 py-3 font-medium text-white shadow-accent transition-all hover:bg-emerald-600 active:scale-95 sm:w-auto"
                                 >
                                     💰 Aggiungi Risparmio
                                 </button>

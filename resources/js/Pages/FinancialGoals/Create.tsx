@@ -105,7 +105,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                                                                 className={clsx(
                                                                     'flex h-9 w-9 items-center justify-center rounded-lg text-xl transition-colors',
                                                                     data.icon === icon
-                                                                        ? 'bg-indigo-100 dark:bg-indigo-900'
+                                                                        ? 'bg-emerald-100 dark:bg-emerald-900'
                                                                         : 'hover:bg-gray-100 dark:hover:bg-gray-600'
                                                                 )}
                                                             >
@@ -167,7 +167,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                                     <InputLabel htmlFor="description" value="Descrizione" />
                                     <textarea
                                         id="description"
-                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
                                         placeholder="Descrivi il tuo obiettivo..."
@@ -203,7 +203,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                                         <InputLabel htmlFor="currency_code" value="Valuta" />
                                         <select
                                             id="currency_code"
-                                            className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={data.currency_code}
                                             onChange={(e) => setData('currency_code', e.target.value)}
                                         >

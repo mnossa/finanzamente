@@ -119,7 +119,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                 <select
                                     id="account_id"
                                     className={clsx(
-                                        'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
+                                        'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
                                         isTransfer && 'cursor-not-allowed opacity-60'
                                     )}
                                     value={data.account_id}
@@ -220,7 +220,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                 <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                 <textarea
                                     id="description"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     rows={2}
                                     value={data.description}
                                     onChange={(e) => setData('description', e.target.value)}
@@ -234,7 +234,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                     <input
                                         id="is_private"
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
+                                        className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                         checked={data.is_private}
                                         onChange={(e) => setData('is_private', e.target.checked)}
                                     />

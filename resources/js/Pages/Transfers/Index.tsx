@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 
 interface Account {
     id: number;
@@ -55,7 +57,7 @@ function TransferRow({ transfer }: { transfer: Transfer }) {
     return (
         <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 dark:border-gray-700">
             <div className="flex items-center space-x-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-2xl dark:bg-indigo-900/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl dark:bg-emerald-900/30">
                     🔄
                 </div>
                 <div>
@@ -130,7 +132,7 @@ function Pagination({ data }: { data: PaginatedData<Transfer> }) {
                         className={clsx(
                             'rounded px-3 py-1 text-sm',
                             link.active
-                                ? 'bg-indigo-600 text-white'
+                                ? 'bg-emerald-500 text-white shadow-accent'
                                 : link.url
                                 ? 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
                                 : 'cursor-not-allowed text-gray-300 dark:text-gray-600'
@@ -147,17 +149,18 @@ export default function Index({ transfers }: IndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Trasferimenti
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('transfers.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">🔄</span>
                         Nuovo Trasferimento
-                    </Link>
+                    </LinkButton>
+
+                    
                 </div>
             }
         >
@@ -181,16 +184,15 @@ export default function Index({ transfers }: IndexProps) {
                                 <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                                     Nessun trasferimento
                                 </h3>
-                                <p className="mb-6 text-gray-500 dark:text-gray-400">
+                                <p className="mb-6 text-slate-500">
                                     Trasferisci fondi tra i tuoi conti in modo semplice e veloce.
                                 </p>
-                                <Link
+                                <LinkButton
                                     href={route('transfers.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                                    icon="🔄"
                                 >
-                                    <span className="mr-2">🔄</span>
                                     Nuovo Trasferimento
-                                </Link>
+                                </LinkButton>
                             </div>
                         )}
                     </div>

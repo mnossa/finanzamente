@@ -73,7 +73,7 @@ export default function Show({ transfer }: ShowProps) {
                     {/* Card Principale */}
                     <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
                         <div className="mb-6 flex items-center justify-center">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-3xl dark:bg-indigo-900/30">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl dark:bg-emerald-900/30">
                                 🔄
                             </div>
                         </div>

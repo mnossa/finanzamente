@@ -4,16 +4,24 @@ import { PropsWithChildren } from 'react';
 
 export default function Guest({ children }: PropsWithChildren) {
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0 dark:bg-gray-900">
-            <div>
-                <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
+        <div className="flex min-h-screen flex-col items-center bg-slate-50 pt-6 sm:justify-center sm:pt-0">
+            {/* Logo Section */}
+            <div className="mb-6">
+                <Link href="/" className="flex items-center gap-3">
+                    <ApplicationLogo className="w-12 h-12" />
+                    <span className="text-2xl font-bold text-slate-800">Finanzamente</span>
                 </Link>
             </div>
 
-            <div className="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg dark:bg-gray-800">
+            {/* Card Container */}
+            <div className="w-full overflow-hidden bg-white px-8 py-8 shadow-soft sm:max-w-md sm:rounded-2xl border border-slate-100">
                 {children}
             </div>
+
+            {/* Footer */}
+            <p className="mt-6 text-sm text-slate-500">
+                © {new Date().getFullYear()} Finanzamente. Gestisci le tue finanze con serenità.
+            </p>
         </div>
     );
 }

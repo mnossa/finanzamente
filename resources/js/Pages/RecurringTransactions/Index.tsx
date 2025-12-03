@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -177,17 +179,16 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Transazioni Ricorrenti
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('recurring-transactions.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">➕</span>
                         Nuova Ricorrenza
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >
@@ -242,16 +243,15 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                                 <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                                     Nessuna transazione ricorrente
                                 </h3>
-                                <p className="mb-6 text-gray-500 dark:text-gray-400">
+                                <p className="mb-6 text-slate-500">
                                     Crea una transazione ricorrente per automatizzare le operazioni periodiche.
                                 </p>
-                                <Link
+                                <LinkButton
                                     href={route('recurring-transactions.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                                    icon={<PlusIcon />}
                                 >
-                                    <span className="mr-2">➕</span>
                                     Nuova Ricorrenza
-                                </Link>
+                                </LinkButton>
                             </div>
                         )}
                     </div>

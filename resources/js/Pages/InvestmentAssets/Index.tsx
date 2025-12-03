@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -52,7 +54,7 @@ function TypeBadge({ type, typeLabel, typeIcon }: { type: string; typeLabel: str
         stock: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
         index: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
         commodity: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-        insurance: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+        insurance: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
         other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
     };
 
@@ -73,17 +75,16 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Asset Finanziari
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('investment-assets.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">➕</span>
                         Nuovo Asset
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >
@@ -175,17 +176,16 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                                 <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                                     Nessun asset configurato
                                 </h3>
-                                <p className="mb-6 max-w-md text-gray-500 dark:text-gray-400">
+                                <p className="mb-6 max-w-md text-slate-500">
                                     Crea il tuo primo asset finanziario (azioni, ETF, crypto, ecc.)
                                     per iniziare a tracciare i tuoi investimenti.
                                 </p>
-                                <Link
+                                <LinkButton
                                     href={route('investment-assets.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                                    icon={<PlusIcon />}
                                 >
-                                    <span className="mr-2">➕</span>
                                     Crea il Primo Asset
-                                </Link>
+                                </LinkButton>
                             </div>
                         </div>
                     )}

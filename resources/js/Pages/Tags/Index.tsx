@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -21,16 +23,15 @@ function EmptyState() {
             <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                 Nessun tag trovato
             </h3>
-            <p className="mb-6 text-gray-500 dark:text-gray-400">
+            <p className="mb-6 text-slate-500">
                 Crea il tuo primo tag per organizzare le tue transazioni.
             </p>
-            <Link
+            <LinkButton
                 href={route('tags.create')}
-                className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                icon={<PlusIcon />}
             >
-                <span className="mr-2">➕</span>
                 Crea il tuo primo tag
-            </Link>
+            </LinkButton>
         </div>
     );
 }
@@ -91,17 +92,16 @@ export default function Index({ tags }: IndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Tag
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('tags.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">➕</span>
                         Nuovo Tag
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >

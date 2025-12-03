@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -72,7 +73,7 @@ export default function Show({ transaction }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-4">
                         <Link
                             href={route('transactions.index')}
@@ -84,12 +85,9 @@ export default function Show({ transaction }: ShowProps) {
                             Dettaglio Transazione
                         </h2>
                     </div>
-                    <Link
-                        href={route('transactions.edit', transaction.id)}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                    >
-                        ✏️ Modifica
-                    </Link>
+                    <LinkButton href={route('transactions.edit', transaction.id)} icon="✏️">
+                        Modifica
+                    </LinkButton>
                 </div>
             }
         >
@@ -234,12 +232,9 @@ export default function Show({ transaction }: ShowProps) {
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
-                        <Link
-                            href={route('transactions.edit', transaction.id)}
-                            className="inline-flex items-center rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white hover:bg-indigo-700"
-                        >
-                            ✏️ Modifica
-                        </Link>
+                        <LinkButton href={route('transactions.edit', transaction.id)} size="lg" icon="✏️">
+                            Modifica
+                        </LinkButton>
                         <button
                             onClick={handleDelete}
                             className="inline-flex items-center rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"

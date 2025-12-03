@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -192,17 +194,16 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Obiettivi Finanziari
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('financial-goals.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">➕</span>
                         Nuovo Obiettivo
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >
@@ -240,7 +241,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Progresso Complessivo
                             </p>
-                            <p className="mt-1 text-3xl font-bold text-indigo-600">
+                            <p className="mt-1 text-3xl font-bold text-emerald-600">
                                 {overallProgress}%
                             </p>
                             <div className="mt-2">
@@ -299,17 +300,16 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                                 <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                                     Nessun obiettivo finanziario
                                 </h3>
-                                <p className="mb-6 max-w-md text-gray-500 dark:text-gray-400">
+                                <p className="mb-6 max-w-md text-slate-500">
                                     Crea il tuo primo obiettivo di risparmio per iniziare a monitorare
                                     i tuoi progressi verso i traguardi finanziari.
                                 </p>
-                                <Link
+                                <LinkButton
                                     href={route('financial-goals.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                                    icon={<PlusIcon />}
                                 >
-                                    <span className="mr-2">➕</span>
                                     Crea il Primo Obiettivo
-                                </Link>
+                                </LinkButton>
                             </div>
                         </div>
                     )}

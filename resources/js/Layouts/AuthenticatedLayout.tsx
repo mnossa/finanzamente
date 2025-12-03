@@ -1,10 +1,131 @@
+import clsx from 'clsx';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { ActiveHousehold, PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
+
+// Icone SVG inline per evitare dipendenze esterne
+const Icons = {
+    Menu: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
+        </svg>
+    ),
+    X: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+        </svg>
+    ),
+    Dashboard: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" />
+        </svg>
+    ),
+    Wallet: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+        </svg>
+    ),
+    ArrowLeftRight: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" />
+        </svg>
+    ),
+    Tags: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 5 6.3 6.3a2.4 2.4 0 0 1 0 3.4L17 19" /><path d="M9.586 5.586A2 2 0 0 0 8.172 5H3a1 1 0 0 0-1 1v5.172a2 2 0 0 0 .586 1.414L8 18.414a2 2 0 0 0 2.828 0L17 12.172a2 2 0 0 0 0-2.828L9.586 5.586Z" /><circle cx="6.5" cy="9.5" r="1.5" />
+        </svg>
+    ),
+    Repeat: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" />
+        </svg>
+    ),
+    Transfer: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2v20" /><path d="m17 7-5-5-5 5" /><path d="m17 17-5 5-5-5" />
+        </svg>
+    ),
+    PiggyBank: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z" /><path d="M2 9v1c0 1.1.9 2 2 2h1" /><path d="M16 11h0" />
+        </svg>
+    ),
+    Target: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+        </svg>
+    ),
+    HandCoins: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17" /><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" /><path d="m2 16 6 6" /><circle cx="16" cy="9" r="2.9" /><circle cx="6" cy="5" r="3" />
+        </svg>
+    ),
+    TrendingUp: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+        </svg>
+    ),
+    Home: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+    ),
+    Settings: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" />
+        </svg>
+    ),
+    User: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+        </svg>
+    ),
+    LogOut: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" />
+        </svg>
+    ),
+    ChevronDown: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 9 6 6 6-6" />
+        </svg>
+    ),
+    Bell: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+        </svg>
+    ),
+    Search: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+    ),
+};
+
+// Tipo per gli elementi di navigazione
+interface NavigationItem {
+    name: string;
+    href: string;
+    routeMatch: string;
+    icon: () => JSX.Element;
+    altRouteMatch?: string;
+}
+
+// Definizione menu navigazione
+const navigationItems: NavigationItem[] = [
+    { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard },
+    { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet },
+    { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight },
+    { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags },
+    { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer },
+    { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank },
+    { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },
+    { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat },
+    { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target },
+    { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, altRouteMatch: 'investment-assets.*' },
+];
 
 function FlashMessages() {
     const { flash } = usePage<PageProps>().props;
@@ -33,27 +154,62 @@ function FlashMessages() {
 
     if (!visible || !message) return null;
 
-    const bgColor = {
-        success: 'bg-green-100 border-green-400 text-green-700 dark:bg-green-900 dark:border-green-600 dark:text-green-200',
-        error: 'bg-red-100 border-red-400 text-red-700 dark:bg-red-900 dark:border-red-600 dark:text-red-200',
-        info: 'bg-blue-100 border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-600 dark:text-blue-200',
+    const alertClasses = {
+        success: 'alert-success',
+        error: 'alert-error',
+        info: 'alert-info',
     }[message.type];
 
     return (
-        <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4`}>
-            <div className={`border px-4 py-3 rounded relative ${bgColor}`} role="alert">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
+            <div className={clsx('alert', alertClasses)} role="alert">
                 <span className="block sm:inline">{message.text}</span>
                 <button
-                    className="absolute top-0 bottom-0 right-0 px-4 py-3"
+                    className="absolute top-0 bottom-0 right-0 px-4 py-3 hover:opacity-70 transition-opacity"
                     onClick={() => setVisible(false)}
                 >
-                    <svg className="fill-current h-6 w-6" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <title>Chiudi</title>
-                        <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
-                    </svg>
+                    <Icons.X />
                 </button>
             </div>
         </div>
+    );
+}
+
+// Componente NavItem per la sidebar
+function SidebarNavItem({ 
+    item, 
+    isActive, 
+    onClick 
+}: { 
+    item: NavigationItem; 
+    isActive: boolean;
+    onClick?: () => void;
+}) {
+    const Icon = item.icon;
+    
+    return (
+        <Link
+            href={route(item.href)}
+            onClick={onClick}
+            className={clsx(
+                'flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl',
+                'transition-all duration-200 group',
+                isActive
+                    ? 'bg-emerald-500/10 text-emerald-400'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            )}
+        >
+            <span className={clsx(
+                isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-white',
+                'transition-colors duration-200'
+            )}>
+                <Icon />
+            </span>
+            <span className="ml-3">{item.name}</span>
+            {isActive && (
+                <div className="ml-auto indicator-dot" />
+            )}
+        </Link>
     );
 }
 
@@ -64,363 +220,201 @@ export default function Authenticated({
     const { auth, activeHousehold } = usePage<PageProps>().props;
     const user = auth.user;
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Chiude la sidebar quando si ridimensiona la finestra a desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(false);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isRouteActive = (routeMatch: string, altRouteMatch?: string): boolean => {
+        return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
+    };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav className="border-b border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-800">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
-                        <div className="flex">
-                            <div className="flex shrink-0 items-center">
-                                <Link href="/">
-                                    <ApplicationLogo className="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                                </Link>
-                            </div>
-
-                            <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Dashboard
-                                </NavLink>
-                                <NavLink
-                                    href={route('accounts.index')}
-                                    active={route().current('accounts.*')}
-                                >
-                                    Conti
-                                </NavLink>
-                                <NavLink
-                                    href={route('transactions.index')}
-                                    active={route().current('transactions.*')}
-                                >
-                                    Transazioni
-                                </NavLink>
-                                <NavLink
-                                    href={route('categories.index')}
-                                    active={route().current('categories.*')}
-                                >
-                                    Categorie
-                                </NavLink>
-                                <NavLink
-                                    href={route('transfers.index')}
-                                    active={route().current('transfers.*')}
-                                >
-                                    Trasferimenti
-                                </NavLink>
-                                <NavLink
-                                    href={route('budgets.index')}
-                                    active={route().current('budgets.*')}
-                                >
-                                    Budget
-                                </NavLink>
-                                <NavLink
-                                    href={route('debts-credits.index')}
-                                    active={route().current('debts-credits.*')}
-                                >
-                                    Debiti/Crediti
-                                </NavLink>
-                                <NavLink
-                                    href={route('recurring-transactions.index')}
-                                    active={route().current('recurring-transactions.*')}
-                                >
-                                    Ricorrenti
-                                </NavLink>
-                                <NavLink
-                                    href={route('financial-goals.index')}
-                                    active={route().current('financial-goals.*')}
-                                >
-                                    Obiettivi
-                                </NavLink>
-                                <NavLink
-                                    href={route('investments.index')}
-                                    active={route().current('investments.*') || route().current('investment-assets.*')}
-                                >
-                                    Investimenti
-                                </NavLink>
-                            </div>
-                        </div>
-
-                        <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            {/* Household Selector */}
-                            {activeHousehold && (
-                                <div className="relative me-3">
-                                    <Dropdown>
-                                        <Dropdown.Trigger>
-                                            <span className="inline-flex rounded-md">
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 transition duration-150 ease-in-out hover:bg-gray-50 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-                                                >
-                                                    <svg
-                                                        className="me-2 h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        strokeWidth={1.5}
-                                                        stroke="currentColor"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-                                                        />
-                                                    </svg>
-                                                    {activeHousehold.name}
-                                                    <svg
-                                                        className="-me-0.5 ms-2 h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </span>
-                                        </Dropdown.Trigger>
-
-                                        <Dropdown.Content>
-                                            <Dropdown.Link
-                                                href={route('households.show', activeHousehold.id)}
-                                            >
-                                                Impostazioni Household
-                                            </Dropdown.Link>
-                                            <Dropdown.Link
-                                                href={route('households.select')}
-                                            >
-                                                Cambia Household
-                                            </Dropdown.Link>
-                                        </Dropdown.Content>
-                                    </Dropdown>
-                                </div>
-                            )}
-
-                            {/* User Menu */}
-                            <div className="relative ms-3">
-                                <Dropdown>
-                                    <Dropdown.Trigger>
-                                        <span className="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
-                                            >
-                                                {user.name}
-
-                                                <svg
-                                                    className="-me-0.5 ms-2 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clipRule="evenodd"
-                                                    />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </Dropdown.Trigger>
-
-                                    <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Profilo
-                                        </Dropdown.Link>
-                                        <Dropdown.Link
-                                            href={route('logout')}
-                                            method="post"
-                                            as="button"
-                                        >
-                                            Esci
-                                        </Dropdown.Link>
-                                    </Dropdown.Content>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <div className="-me-2 flex items-center sm:hidden">
-                            <button
-                                onClick={() =>
-                                    setShowingNavigationDropdown(
-                                        (previousState) => !previousState,
-                                    )
-                                }
-                                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none dark:text-gray-500 dark:hover:bg-gray-900 dark:hover:text-gray-400 dark:focus:bg-gray-900 dark:focus:text-gray-400"
-                            >
-                                <svg
-                                    className="h-6 w-6"
-                                    stroke="currentColor"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        className={
-                                            !showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        className={
-                                            showingNavigationDropdown
-                                                ? 'inline-flex'
-                                                : 'hidden'
-                                        }
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+        <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
+            {/* Overlay Mobile */}
+            {sidebarOpen && (
                 <div
-                    className={
-                        (showingNavigationDropdown ? 'block' : 'hidden') +
-                        ' sm:hidden'
-                    }
-                >
-                    <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('accounts.index')}
-                            active={route().current('accounts.*')}
-                        >
-                            Conti
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('transactions.index')}
-                            active={route().current('transactions.*')}
-                        >
-                            Transazioni
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('categories.index')}
-                            active={route().current('categories.*')}
-                        >
-                            Categorie
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('transfers.index')}
-                            active={route().current('transfers.*')}
-                        >
-                            Trasferimenti
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('budgets.index')}
-                            active={route().current('budgets.*')}
-                        >
-                            Budget
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('debts-credits.index')}
-                            active={route().current('debts-credits.*')}
-                        >
-                            Debiti/Crediti
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('recurring-transactions.index')}
-                            active={route().current('recurring-transactions.*')}
-                        >
-                            Ricorrenti
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('financial-goals.index')}
-                            active={route().current('financial-goals.*')}
-                        >
-                            Obiettivi
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('investments.index')}
-                            active={route().current('investments.*') || route().current('investment-assets.*')}
-                        >
-                            Investimenti
-                        </ResponsiveNavLink>
-                    </div>
-
-                    {/* Household info mobile */}
-                    {activeHousehold && (
-                        <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                            <div className="px-4">
-                                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                    Household attiva
-                                </div>
-                                <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                                    {activeHousehold.name}
-                                </div>
-                            </div>
-                            <div className="mt-3 space-y-1">
-                                <ResponsiveNavLink
-                                    href={route('households.show', activeHousehold.id)}
-                                >
-                                    Impostazioni Household
-                                </ResponsiveNavLink>
-                                <ResponsiveNavLink
-                                    href={route('households.select')}
-                                >
-                                    Cambia Household
-                                </ResponsiveNavLink>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="border-t border-gray-200 pb-1 pt-4 dark:border-gray-600">
-                        <div className="px-4">
-                            <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                                {user.name}
-                            </div>
-                            <div className="text-sm font-medium text-gray-500">
-                                {user.email}
-                            </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Profilo
-                            </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                method="post"
-                                href={route('logout')}
-                                as="button"
-                            >
-                                Esci
-                            </ResponsiveNavLink>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            {header && (
-                <header className="bg-white shadow dark:bg-gray-800">
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
-                </header>
+                    className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm animate-fade-in"
+                    onClick={() => setSidebarOpen(false)}
+                />
             )}
 
-            <FlashMessages />
+            {/* Sidebar */}
+            <aside
+                className={clsx(
+                    'fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white',
+                    'transition-transform duration-300 ease-in-out',
+                    'lg:translate-x-0 lg:static lg:block',
+                    'shadow-sidebar lg:shadow-none',
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                )}
+            >
+                {/* Sidebar Header */}
+                <div className="flex items-center justify-between h-20 px-6 border-b border-slate-700 bg-slate-950">
+                    <Link href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
+                        <ApplicationLogo className="w-8 h-8" />
+                        <span className="text-white">Finanzamente</span>
+                    </Link>
+                    <button
+                        onClick={() => setSidebarOpen(false)}
+                        className="lg:hidden text-slate-400 hover:text-white transition-colors p-1"
+                    >
+                        <Icons.X />
+                    </button>
+                </div>
 
-            <main>{children}</main>
+                {/* Navigation */}
+                <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-200px)]">
+                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                        Menu Principale
+                    </p>
+                    
+                    {navigationItems.map((item) => (
+                        <SidebarNavItem
+                            key={item.name}
+                            item={item}
+                            isActive={isRouteActive(item.routeMatch, item.altRouteMatch)}
+                            onClick={() => setSidebarOpen(false)}
+                        />
+                    ))}
+
+                    {/* Household Section */}
+                    {activeHousehold && (
+                        <>
+                            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-3">
+                                Household
+                            </p>
+                            <Link
+                                href={route('households.show', activeHousehold.id)}
+                                onClick={() => setSidebarOpen(false)}
+                                className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-200"
+                            >
+                                <Icons.Home />
+                                <span className="ml-3">{activeHousehold.name}</span>
+                            </Link>
+                            <Link
+                                href={route('households.select')}
+                                onClick={() => setSidebarOpen(false)}
+                                className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-200"
+                            >
+                                <Icons.Settings />
+                                <span className="ml-3">Cambia Household</span>
+                            </Link>
+                        </>
+                    )}
+                </nav>
+
+                {/* User Profile Bottom */}
+                <div className="absolute bottom-0 w-full p-4 bg-slate-950 border-t border-slate-700">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-semibold">
+                            {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Header */}
+                <header className="app-header">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                        >
+                            <Icons.Menu />
+                        </button>
+                        
+                        {header && (
+                            <div className="hidden sm:block">
+                                {header}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {/* Search - Desktop only */}
+                        <div className="relative hidden md:block">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                <Icons.Search />
+                            </span>
+                            <input
+                                type="text"
+                                placeholder="Cerca..."
+                                className="pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-xl text-sm w-56 
+                                         focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
+                                         transition-all outline-none"
+                            />
+                        </div>
+
+                        {/* Notifications */}
+                        <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+                            <Icons.Bell />
+                            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                        </button>
+
+                        {/* User Menu */}
+                        <Dropdown>
+                            <Dropdown.Trigger>
+                                <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
+                                        {user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="hidden sm:block text-sm font-medium text-slate-700">
+                                        {user.name}
+                                    </span>
+                                    <Icons.ChevronDown />
+                                </button>
+                            </Dropdown.Trigger>
+
+                            <Dropdown.Content>
+                                <Dropdown.Link href={route('profile.edit')}>
+                                    <span className="flex items-center gap-2">
+                                        <Icons.User />
+                                        Profilo
+                                    </span>
+                                </Dropdown.Link>
+                                <Dropdown.Link href={route('logout')} method="post" as="button">
+                                    <span className="flex items-center gap-2 text-rose-600">
+                                        <Icons.LogOut />
+                                        Esci
+                                    </span>
+                                </Dropdown.Link>
+                            </Dropdown.Content>
+                        </Dropdown>
+                    </div>
+                </header>
+
+                {/* Mobile Header with title */}
+                {header && (
+                    <div className="sm:hidden px-4 py-3 bg-white border-b border-slate-200">
+                        <div className="text-lg font-bold text-slate-800">{header}</div>
+                    </div>
+                )}
+
+                {/* Flash Messages */}
+                <FlashMessages />
+
+                {/* Scrollable Content */}
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                    <div className="max-w-7xl mx-auto">
+                        {children}
+                    </div>
+                </main>
+            </div>
         </div>
     );
 }

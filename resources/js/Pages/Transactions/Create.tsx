@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import CategoryPicker from '@/Components/CategoryPicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -94,12 +95,9 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                 <p className="mb-4 text-gray-500 dark:text-gray-400">
                                     Crea prima un conto per poter registrare transazioni.
                                 </p>
-                                <Link
-                                    href={route('accounts.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-                                >
+                                <LinkButton href={route('accounts.create')}>
                                     Crea un Conto
-                                </Link>
+                                </LinkButton>
                             </div>
                         ) : categories.length === 0 ? (
                             <div className="py-8 text-center">
@@ -110,12 +108,9 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                 <p className="mb-4 text-gray-500 dark:text-gray-400">
                                     Crea prima delle categorie per classificare le transazioni.
                                 </p>
-                                <Link
-                                    href={route('categories.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-                                >
+                                <LinkButton href={route('categories.create')}>
                                     Crea una Categoria
-                                </Link>
+                                </LinkButton>
                             </div>
                         ) : (
                             <form onSubmit={submit} className="space-y-6">
@@ -124,7 +119,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                     <InputLabel htmlFor="account_id" value="Conto" />
                                     <select
                                         id="account_id"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.account_id}
                                         onChange={(e) => setData('account_id', e.target.value)}
                                         required
@@ -197,7 +192,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         rows={2}
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
@@ -212,7 +207,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                         <input
                                             id="is_private"
                                             type="checkbox"
-                                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
+                                            className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                             checked={data.is_private}
                                             onChange={(e) => setData('is_private', e.target.checked)}
                                         />

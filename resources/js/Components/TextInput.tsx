@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import {
     forwardRef,
     InputHTMLAttributes,
@@ -31,10 +32,15 @@ export default forwardRef(function TextInput(
         <input
             {...props}
             type={type}
-            className={
-                'rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600 ' +
+            className={clsx(
+                'w-full px-4 py-2.5 rounded-xl border border-slate-200',
+                'bg-slate-50 text-slate-800',
+                'placeholder:text-slate-400',
+                'focus:bg-white focus:border-emerald-500',
+                'focus:ring-2 focus:ring-emerald-200',
+                'transition-all duration-200 outline-none',
                 className
-            }
+            )}
             ref={localRef}
         />
     );

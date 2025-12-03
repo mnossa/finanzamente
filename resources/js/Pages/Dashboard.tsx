@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PlusIcon from '@/Components/Icons/PlusIcon';
+import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -401,14 +403,14 @@ export default function Dashboard({
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Saldo Totale */}
-                    <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white shadow-lg">
-                        <h3 className="text-sm font-medium text-indigo-100">
+                    <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+                        <h3 className="text-sm font-medium text-slate-300">
                             Saldo Totale
                         </h3>
                         <p className="mt-2 text-4xl font-bold">
                             {formatCurrency(totalBalance)}
                         </p>
-                        <p className="mt-1 text-sm text-indigo-200">
+                        <p className="mt-1 text-sm text-slate-400">
                             {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                         </p>
                     </div>
@@ -450,7 +452,7 @@ export default function Dashboard({
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     I tuoi conti
                                 </h3>
-                                <Link href={route('accounts.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
                                     Vedi tutti
                                 </Link>
                             </div>
@@ -474,7 +476,7 @@ export default function Dashboard({
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     Ultime transazioni
                                 </h3>
-                                <Link href={route('transactions.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
                                     Vedi tutte
                                 </Link>
                             </div>
@@ -501,7 +503,7 @@ export default function Dashboard({
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     📊 Budget Attivi
                                 </h3>
-                                <Link href={route('budgets.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
                                     Vedi tutti
                                 </Link>
                             </div>
@@ -519,7 +521,7 @@ export default function Dashboard({
                                         </p>
                                         <Link
                                             href={route('budgets.create')}
-                                            className="text-sm text-indigo-500 hover:text-indigo-600"
+                                            className="text-sm text-emerald-500 hover:text-emerald-600"
                                         >
                                             Crea il tuo primo budget →
                                         </Link>
@@ -534,7 +536,7 @@ export default function Dashboard({
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     💸 Debiti e Crediti
                                 </h3>
-                                <Link href={route('debts-credits.index')} className="text-sm text-indigo-500 hover:text-indigo-600">
+                                <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
                                     Vedi tutti
                                 </Link>
                             </div>
@@ -570,7 +572,7 @@ export default function Dashboard({
                                         </p>
                                         <Link
                                             href={route('debts-credits.create')}
-                                            className="text-sm text-indigo-500 hover:text-indigo-600"
+                                            className="text-sm text-emerald-500 hover:text-emerald-600"
                                         >
                                             Aggiungi il primo →
                                         </Link>
@@ -586,34 +588,26 @@ export default function Dashboard({
                             Azioni rapide
                         </h3>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <Link
+                            <QuickActionCard
                                 href={route('transactions.create')}
-                                className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
-                            >
-                                <span className="mb-2 text-2xl">➕</span>
-                                <span className="text-sm font-medium">Nuova Transazione</span>
-                            </Link>
-                            <Link
+                                icon={<PlusIcon size={28} />}
+                                label="Nuova Transazione"
+                            />
+                            <QuickActionCard
                                 href={route('transfers.create')}
-                                className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
-                            >
-                                <span className="mb-2 text-2xl">🔄</span>
-                                <span className="text-sm font-medium">Trasferimento</span>
-                            </Link>
-                            <Link
+                                icon="🔄"
+                                label="Trasferimento"
+                            />
+                            <QuickActionCard
                                 href={route('accounts.create')}
-                                className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
-                            >
-                                <span className="mb-2 text-2xl">🏦</span>
-                                <span className="text-sm font-medium">Nuovo Conto</span>
-                            </Link>
-                            <Link
+                                icon="🏦"
+                                label="Nuovo Conto"
+                            />
+                            <QuickActionCard
                                 href={route('categories.create')}
-                                className="flex flex-col items-center rounded-lg bg-indigo-50 p-4 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
-                            >
-                                <span className="mb-2 text-2xl">🏷️</span>
-                                <span className="text-sm font-medium">Nuova Categoria</span>
-                            </Link>
+                                icon="🏷️"
+                                label="Nuova Categoria"
+                            />
                         </div>
                     </div>
                 </div>

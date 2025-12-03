@@ -85,7 +85,7 @@ export default function Edit({ asset, currencies, types, typeIcons }: EditProps)
                                                 className={clsx(
                                                     'flex flex-col items-center rounded-lg border-2 p-3 transition-colors',
                                                     data.type === value
-                                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                                         : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                                                 )}
                                             >
@@ -137,7 +137,7 @@ export default function Edit({ asset, currencies, types, typeIcons }: EditProps)
                                     <InputLabel htmlFor="currency_code" value="Valuta *" />
                                     <select
                                         id="currency_code"
-                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.currency_code}
                                         onChange={(e) => setData('currency_code', e.target.value)}
                                     >

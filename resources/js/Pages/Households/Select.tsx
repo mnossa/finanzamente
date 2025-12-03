@@ -1,6 +1,5 @@
 import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import GuestLayout from '@/Layouts/GuestLayout';
+import AuthenticatedSimpleLayout from '@/Layouts/AuthenticatedSimpleLayout';
 import { Household, PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 
@@ -14,7 +13,7 @@ export default function Select({ households }: Props) {
     };
 
     return (
-        <GuestLayout>
+        <AuthenticatedSimpleLayout>
             <Head title="Seleziona Household" />
 
             <div className="mb-6 text-center">
@@ -30,7 +29,7 @@ export default function Select({ households }: Props) {
                 {households.map((household) => (
                     <div
                         key={household.id}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-indigo-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-indigo-600"
+                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-emerald-600"
                     >
                         <div className="flex-1">
                             <h3 className="font-semibold text-gray-900 dark:text-gray-100">
@@ -66,24 +65,13 @@ export default function Select({ households }: Props) {
             </div>
 
             <div className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                    <Link
-                        href={route('households.create')}
-                        className="text-sm text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
-                    >
-                        + Crea nuova household
-                    </Link>
-
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                    >
-                        Esci
-                    </Link>
-                </div>
+                <Link
+                    href={route('households.create')}
+                    className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 p-4 text-sm font-medium text-slate-600 transition-colors hover:border-emerald-400 hover:text-emerald-600"
+                >
+                    + Crea nuova household
+                </Link>
             </div>
-        </GuestLayout>
+        </AuthenticatedSimpleLayout>
     );
 }

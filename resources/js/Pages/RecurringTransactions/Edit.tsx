@@ -89,7 +89,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                 <InputLabel htmlFor="account_id" value="Conto" />
                                 <select
                                     id="account_id"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     value={data.account_id}
                                     onChange={(e) => setData('account_id', e.target.value)}
                                     required
@@ -146,7 +146,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                     <InputLabel htmlFor="frequency" value="Frequenza" />
                                     <select
                                         id="frequency"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.frequency}
                                         onChange={(e) => setData('frequency', e.target.value)}
                                         required
@@ -197,7 +197,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                 <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                 <textarea
                                     id="description"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     rows={2}
                                     value={data.description}
                                     onChange={(e) => setData('description', e.target.value)}

@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { Transition } from '@headlessui/react';
 import { InertiaLinkProps, Link } from '@inertiajs/react';
 import {
@@ -53,7 +54,7 @@ const Trigger = ({ children }: PropsWithChildren) => {
 const Content = ({
     align = 'right',
     width = '48',
-    contentClasses = 'py-1 bg-white dark:bg-gray-700',
+    contentClasses = 'py-1 bg-white',
     children,
 }: PropsWithChildren<{
     align?: 'left' | 'right';
@@ -88,14 +89,18 @@ const Content = ({
                 leaveTo="opacity-0 scale-95"
             >
                 <div
-                    className={`absolute z-50 mt-2 rounded-md shadow-lg ${alignmentClasses} ${widthClasses}`}
+                    className={clsx(
+                        'absolute z-50 mt-2 rounded-xl shadow-soft-lg border border-slate-100',
+                        alignmentClasses,
+                        widthClasses
+                    )}
                     onClick={() => setOpen(false)}
                 >
                     <div
-                        className={
-                            `rounded-md ring-1 ring-black ring-opacity-5 ` +
+                        className={clsx(
+                            'rounded-xl ring-1 ring-black/5',
                             contentClasses
-                        }
+                        )}
                     >
                         {children}
                     </div>
@@ -113,10 +118,13 @@ const DropdownLink = ({
     return (
         <Link
             {...props}
-            className={
-                'block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:text-gray-300 dark:hover:bg-gray-800 dark:focus:bg-gray-800 ' +
+            className={clsx(
+                'block w-full px-4 py-2.5 text-start text-sm',
+                'leading-5 text-slate-700',
+                'hover:bg-slate-50 transition-colors duration-200',
+                'focus:outline-none focus:bg-slate-50',
                 className
-            }
+            )}
         >
             {children}
         </Link>

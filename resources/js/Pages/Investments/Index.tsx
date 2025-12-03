@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -196,24 +198,23 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Investimenti
-                    </h2>
+                    </h1>
                     <div className="flex gap-2">
                         <Link
                             href={route('investment-assets.index')}
-                            className="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                            className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                         >
                             💼 Gestisci Asset
                         </Link>
-                        <Link
+                        <LinkButton
                             href={route('investments.create')}
-                            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                            icon={<PlusIcon />}
                         >
-                            <span className="mr-2">➕</span>
                             Nuovo Investimento
-                        </Link>
+                        </LinkButton>
                     </div>
                 </div>
             }
@@ -305,17 +306,16 @@ export default function Index({
                                 <div className="flex gap-3">
                                     <Link
                                         href={route('investment-assets.create')}
-                                        className="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                                        className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-slate-600 hover:bg-slate-50 transition-colors"
                                     >
                                         💼 Crea Asset
                                     </Link>
-                                    <Link
+                                    <LinkButton
                                         href={route('investments.create')}
-                                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                                        icon={<PlusIcon />}
                                     >
-                                        <span className="mr-2">➕</span>
                                         Nuovo Investimento
-                                    </Link>
+                                    </LinkButton>
                                 </div>
                             </div>
                         </div>

@@ -137,7 +137,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                         id="status"
                                         value={data.status}
                                         onChange={(e) => setData('status', e.target.value)}
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         required
                                     >
                                         {Object.entries(statuses).map(([key, label]) => (
@@ -194,7 +194,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                             onChange={(e) =>
                                                 setData('currency_code', e.target.value)
                                             }
-                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             required
                                         >
                                             {currencies.map((curr) => (
@@ -236,7 +236,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                             setData('description', e.target.value)
                                         }
                                         rows={3}
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     />
                                     <InputError
                                         message={errors.description}

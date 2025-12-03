@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -102,19 +103,16 @@ export default function Show({ account, recentTransactions }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
                         <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
                         <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
                             {account.name}
                         </h2>
                     </div>
-                    <Link
-                        href={route('accounts.edit', account.id)}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-                    >
+                    <LinkButton href={route('accounts.edit', account.id)} icon="✏️">
                         Modifica
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >

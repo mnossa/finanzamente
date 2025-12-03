@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -102,12 +103,9 @@ export default function Create({ accounts }: CreateProps) {
                                 <p className="mb-4 text-gray-500 dark:text-gray-400">
                                     Per effettuare un trasferimento devi avere almeno due conti attivi.
                                 </p>
-                                <Link
-                                    href={route('accounts.create')}
-                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
-                                >
+                                <LinkButton href={route('accounts.create')}>
                                     Crea un Conto
-                                </Link>
+                                </LinkButton>
                             </div>
                         ) : (
                             <form onSubmit={submit} className="space-y-6">
@@ -117,7 +115,7 @@ export default function Create({ accounts }: CreateProps) {
                                         <InputLabel htmlFor="source_account_id" value="Da (Conto Origine)" />
                                         <select
                                             id="source_account_id"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={data.source_account_id}
                                             onChange={(e) => setData('source_account_id', e.target.value)}
                                             required
@@ -138,7 +136,7 @@ export default function Create({ accounts }: CreateProps) {
                                         <InputLabel htmlFor="destination_account_id" value="A (Conto Destinazione)" />
                                         <select
                                             id="destination_account_id"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={data.destination_account_id}
                                             onChange={(e) => setData('destination_account_id', e.target.value)}
                                             required
@@ -207,11 +205,11 @@ export default function Create({ accounts }: CreateProps) {
 
                                 {/* Anteprima */}
                                 {estimatedDestAmount !== null && destAccount && (
-                                    <div className="rounded-lg bg-indigo-50 p-4 dark:bg-indigo-900/20">
-                                        <p className="text-sm text-indigo-600 dark:text-indigo-400">
+                                    <div className="rounded-lg bg-emerald-50 p-4 dark:bg-emerald-900/20">
+                                        <p className="text-sm text-emerald-600 dark:text-emerald-400">
                                             Importo che arriverà sul conto di destinazione:
                                         </p>
-                                        <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
+                                        <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                                             {formatCurrency(estimatedDestAmount, destAccount.currency_code)}
                                         </p>
                                     </div>
@@ -252,7 +250,7 @@ export default function Create({ accounts }: CreateProps) {
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         rows={2}
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
@@ -267,7 +265,7 @@ export default function Create({ accounts }: CreateProps) {
                                         <input
                                             id="is_private"
                                             type="checkbox"
-                                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
+                                            className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                             checked={data.is_private}
                                             onChange={(e) => setData('is_private', e.target.checked)}
                                         />

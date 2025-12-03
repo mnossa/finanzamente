@@ -2,8 +2,8 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import AuthenticatedSimpleLayout from '@/Layouts/AuthenticatedSimpleLayout';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export default function Create() {
@@ -17,7 +17,7 @@ export default function Create() {
     };
 
     return (
-        <GuestLayout>
+        <AuthenticatedSimpleLayout>
             <Head title="Crea Household" />
 
             <div className="mb-6 text-center">
@@ -49,21 +49,12 @@ export default function Create() {
                     <InputError message={errors.name} className="mt-2" />
                 </div>
 
-                <div className="mt-6 flex items-center justify-between">
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                    >
-                        Esci
-                    </Link>
-
+                <div className="mt-6 flex justify-end">
                     <PrimaryButton disabled={processing}>
                         Crea Household
                     </PrimaryButton>
                 </div>
             </form>
-        </GuestLayout>
+        </AuthenticatedSimpleLayout>
     );
 }

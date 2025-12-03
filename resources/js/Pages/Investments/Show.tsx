@@ -284,7 +284,7 @@ export default function Show({ investment }: ShowProps) {
                                 <div className="mt-6">
                                     <button
                                         onClick={() => setShowSellModal(true)}
-                                        className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white transition-colors hover:bg-indigo-700 sm:w-auto"
+                                        className="w-full rounded-lg bg-emerald-500 px-4 py-3 font-medium text-white shadow-accent transition-all hover:bg-emerald-600 active:scale-95 sm:w-auto"
                                     >
                                         📤 Registra Vendita
                                     </button>

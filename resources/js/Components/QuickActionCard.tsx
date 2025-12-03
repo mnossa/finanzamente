@@ -1,0 +1,35 @@
+import { Link } from '@inertiajs/react';
+import clsx from 'clsx';
+import { ReactNode } from 'react';
+
+interface QuickActionCardProps {
+    href: string;
+    icon: ReactNode;
+    label: string;
+    className?: string;
+}
+
+export default function QuickActionCard({
+    href,
+    icon,
+    label,
+    className = '',
+}: QuickActionCardProps) {
+    return (
+        <Link
+            href={href}
+            className={clsx(
+                'flex flex-col items-center rounded-xl p-4',
+                'bg-emerald-50 text-emerald-600',
+                'hover:bg-emerald-100',
+                'dark:bg-emerald-900/20 dark:text-emerald-400',
+                'dark:hover:bg-emerald-900/30',
+                'transition-colors duration-200',
+                className
+            )}
+        >
+            <span className="mb-2 text-2xl">{icon}</span>
+            <span className="text-center text-sm font-medium">{label}</span>
+        </Link>
+    );
+}

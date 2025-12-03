@@ -104,7 +104,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                     <InputLabel htmlFor="asset_id" value="Asset *" />
                                     <select
                                         id="asset_id"
-                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.asset_id}
                                         onChange={(e) => setData('asset_id', e.target.value)}
                                         required
@@ -208,7 +208,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                     <InputLabel htmlFor="account_id" value="Conto di Riferimento" />
                                     <select
                                         id="account_id"
-                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.account_id}
                                         onChange={(e) => setData('account_id', e.target.value)}
                                     >
@@ -251,7 +251,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                     <InputLabel htmlFor="notes" value="Note" />
                                     <textarea
                                         id="notes"
-                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.notes}
                                         onChange={(e) => setData('notes', e.target.value)}
                                         placeholder="Aggiungi note sull'investimento..."
@@ -265,7 +265,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                     <label className="flex items-center gap-3">
                                         <input
                                             type="checkbox"
-                                            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
+                                            className="rounded border-gray-300 text-emerald-500 shadow-sm focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                             checked={data.is_private}
                                             onChange={(e) => setData('is_private', e.target.checked)}
                                         />

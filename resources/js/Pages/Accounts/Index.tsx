@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -60,16 +62,15 @@ function EmptyState() {
             <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                 Nessun conto trovato
             </h3>
-            <p className="mb-6 text-gray-500 dark:text-gray-400">
+            <p className="mb-6 text-slate-500">
                 Crea il tuo primo conto per iniziare a monitorare le tue finanze.
             </p>
-            <Link
+            <LinkButton
                 href={route('accounts.create')}
-                className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                icon={<PlusIcon />}
             >
-                <span className="mr-2">➕</span>
                 Crea il tuo primo conto
-            </Link>
+            </LinkButton>
         </div>
     );
 }
@@ -160,17 +161,16 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         I tuoi Conti
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('accounts.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">➕</span>
                         Nuovo Conto
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >
@@ -185,14 +185,14 @@ export default function Index({
                     ) : (
                         <>
                             {/* Saldo Totale */}
-                            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white shadow-lg">
-                                <h3 className="text-sm font-medium text-indigo-100">
+                            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+                                <h3 className="text-sm font-medium text-slate-300">
                                     Patrimonio Totale
                                 </h3>
                                 <p className="mt-2 text-4xl font-bold">
                                     {formatCurrency(totalBalance)}
                                 </p>
-                                <p className="mt-1 text-sm text-indigo-200">
+                                <p className="mt-1 text-sm text-slate-400">
                                     {activeAccounts.length} {activeAccounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                                 </p>
                             </div>

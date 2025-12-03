@@ -29,7 +29,7 @@
     },
     "name": "www",
     "version": "1.0.0",
-    "description": "## Descrizione Generale Finanzamente \u00e8 una webapp di gestione finanziaria personale e familiare, pensata per utenti residenti in Italia tra i 18 e i 45 anni. L\u2019applicazione \u00e8 mobile first, full responsive, in lingua italiana, e offre strumenti avanzati per la gestione di finanze, investimenti, budgeting, household multipli e privacy.",
+    "description": "## Descrizione Generale Finanzamente è una webapp di gestione finanziaria personale e familiare, pensata per utenti residenti in Italia tra i 18 e i 45 anni. L’applicazione è mobile first, full responsive, in lingua italiana, e offre strumenti avanzati per la gestione di finanze, investimenti, budgeting, household multipli e privacy.",
     "main": "vite.config.js",
     "directories": {
         "test": "tests"
@@ -44,6 +44,7 @@
         "caniuse-lite": "^1.0.30001751",
         "chalk": "^4.1.2",
         "cliui": "^8.0.1",
+        "clsx": "^2.1.1",
         "color-convert": "^2.0.1",
         "color-name": "^1.1.4",
         "combined-stream": "^1.0.8",

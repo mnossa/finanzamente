@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { InputHTMLAttributes } from 'react';
 
 export default function Checkbox({
@@ -8,10 +9,12 @@ export default function Checkbox({
         <input
             {...props}
             type="checkbox"
-            className={
-                'rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800 ' +
+            className={clsx(
+                'rounded border-slate-300 text-emerald-500',
+                'shadow-sm focus:ring-emerald-500 focus:ring-offset-0',
+                'transition-colors duration-200',
                 className
-            }
+            )}
         />
     );
 }

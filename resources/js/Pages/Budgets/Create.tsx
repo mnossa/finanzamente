@@ -107,7 +107,7 @@ export default function Create({ categories, currencies }: CreateProps) {
                                         onChange={(e) =>
                                             setData('category_id', e.target.value)
                                         }
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         required
                                     >
                                         <option value="">Seleziona una categoria</option>
@@ -153,7 +153,7 @@ export default function Create({ categories, currencies }: CreateProps) {
                                             onChange={(e) =>
                                                 setData('currency_code', e.target.value)
                                             }
-                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             required
                                         >
                                             {currencies.map((curr) => (
@@ -251,7 +251,7 @@ export default function Create({ categories, currencies }: CreateProps) {
                                             setData('description', e.target.value)
                                         }
                                         rows={3}
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         placeholder="Note opzionali sul budget..."
                                     />
                                     <InputError

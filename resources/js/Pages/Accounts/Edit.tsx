@@ -108,7 +108,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                             className={clsx(
                                                 'flex items-center space-x-2 rounded-lg border-2 p-3 text-left transition-colors',
                                                 data.type === value
-                                                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                                     : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                                             )}
                                         >
@@ -144,7 +144,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                     <InputLabel htmlFor="currency_code" value="Valuta" />
                                     <select
                                         id="currency_code"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.currency_code}
                                         onChange={(e) => setData('currency_code', e.target.value)}
                                         required
@@ -165,7 +165,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                     <input
                                         id="is_private"
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
+                                        className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                         checked={data.is_private}
                                         onChange={(e) => setData('is_private', e.target.checked)}
                                     />
@@ -189,7 +189,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                     <input
                                         id="active"
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900"
+                                        className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                         checked={data.active}
                                         onChange={(e) => setData('active', e.target.checked)}
                                     />

@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import LinkButton from '@/Components/LinkButton';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -191,7 +193,7 @@ function Pagination({ data }: { data: PaginatedData<Transaction> }) {
                         className={clsx(
                             'rounded px-3 py-1 text-sm',
                             link.active
-                                ? 'bg-indigo-600 text-white'
+                                ? 'bg-emerald-500 text-white shadow-accent'
                                 : link.url
                                 ? 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
                                 : 'cursor-not-allowed text-gray-300 dark:text-gray-600'
@@ -227,17 +229,16 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <div className="flex items-center justify-between gap-4">
+                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
                         Transazioni
-                    </h2>
-                    <Link
+                    </h1>
+                    <LinkButton
                         href={route('transactions.create')}
-                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                        icon={<PlusIcon />}
                     >
-                        <span className="mr-2">➕</span>
                         Nuova Transazione
-                    </Link>
+                    </LinkButton>
                 </div>
             }
         >
@@ -250,7 +251,7 @@ export default function Index({
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="flex-1 min-w-[150px]">
                                 <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     value={filters.account_id || ''}
                                     onChange={(e) => handleFilterChange('account_id', e.target.value)}
                                 >
@@ -264,7 +265,7 @@ export default function Index({
                             </div>
                             <div className="flex-1 min-w-[150px]">
                                 <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     value={filters.category_id || ''}
                                     onChange={(e) => handleFilterChange('category_id', e.target.value)}
                                 >
@@ -278,7 +279,7 @@ export default function Index({
                             </div>
                             <div className="flex-1 min-w-[120px]">
                                 <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     value={filters.type || ''}
                                     onChange={(e) => handleFilterChange('type', e.target.value)}
                                 >
@@ -290,7 +291,7 @@ export default function Index({
                             <div className="flex-1 min-w-[130px]">
                                 <input
                                     type="date"
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     value={filters.from || ''}
                                     onChange={(e) => handleFilterChange('from', e.target.value)}
                                     placeholder="Da"
@@ -299,7 +300,7 @@ export default function Index({
                             <div className="flex-1 min-w-[130px]">
                                 <input
                                     type="date"
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     value={filters.to || ''}
                                     onChange={(e) => handleFilterChange('to', e.target.value)}
                                     placeholder="A"
@@ -308,7 +309,7 @@ export default function Index({
                             {hasFilters && (
                                 <button
                                     onClick={clearFilters}
-                                    className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                                    className="text-sm text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
                                 >
                                     Pulisci filtri
                                 </button>
@@ -342,13 +343,12 @@ export default function Index({
                                         : 'Registra la tua prima transazione per iniziare.'}
                                 </p>
                                 {!hasFilters && (
-                                    <Link
+                                    <LinkButton
                                         href={route('transactions.create')}
-                                        className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                                        icon={<PlusIcon />}
                                     >
-                                        <span className="mr-2">➕</span>
                                         Nuova Transazione
-                                    </Link>
+                                    </LinkButton>
                                 )}
                             </div>
                         )}

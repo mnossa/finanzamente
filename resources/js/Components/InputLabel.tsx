@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { LabelHTMLAttributes } from 'react';
 
 export default function InputLabel({
@@ -9,10 +10,10 @@ export default function InputLabel({
     return (
         <label
             {...props}
-            className={
-                `block text-sm font-medium text-gray-700 dark:text-gray-300 ` +
+            className={clsx(
+                'block text-sm font-medium text-slate-700 mb-1.5',
                 className
-            }
+            )}
         >
             {value ? value : children}
         </label>
