@@ -89,6 +89,7 @@ Di seguito la struttura delle principali tabelle del database, con descrizione d
 | created_at/updated_at| TIMESTAMP | Timestamps Laravel                    |
 | deleted_at   | TIMESTAMP    | Soft delete (opzionale)                     |
 | transfer_id  | BIGINT FK    | Collegamento opzionale a `transfers` (se la transazione fa parte di un transfer) |
+| refund_id    | BIGINT FK    | Collegamento opzionale a `refunds` (se la transazione è un rimborso) |
 
 ## transfers
 | Campo               | Tipo           | Descrizione                                                                 |
@@ -107,6 +108,22 @@ Di seguito la struttura delle principali tabelle del database, con descrizione d
 | status              | ENUM           | Stato (completed, cancelled) — per tracking; default completed               |
 | created_at/updated_at| TIMESTAMP     | Timestamps Laravel                                                           |
 | deleted_at          | TIMESTAMP      | Soft delete (opzionale)                                                      |
+
+## refunds
+| Campo                    | Tipo           | Descrizione                                                              |
+|--------------------------|----------------|--------------------------------------------------------------------------|
+| id                       | BIGINT PK      | Identificativo univoco rimborso                                          |
+| uuid                     | VARCHAR UNIQUE | UUID pubblico per riferimento esterno                                    |
+| original_transaction_id  | BIGINT FK      | Transazione originale di spesa che viene rimborsata                      |
+| user_id                  | BIGINT FK      | Utente che ha creato il rimborso (nullable)                              |
+| amount                   | DECIMAL(18,8)  | Importo del rimborso (valore assoluto)                                   |
+| currency_code            | VARCHAR FK     | Codice valuta del rimborso                                               |
+| status                   | ENUM           | Stato (pending, completed, cancelled) — default completed                |
+| description              | TEXT           | Descrizione del rimborso (nullable)                                      |
+| created_at/updated_at    | TIMESTAMP      | Timestamps Laravel                                                       |
+| deleted_at               | TIMESTAMP      | Soft delete (opzionale)                                                  |
+
+> **Nota**: Un rimborso collega una transazione di spesa (original_transaction_id) a una nuova transazione di entrata (refund_id in transactions). Questo permette di tracciare quanto è stato rimborsato per ogni spesa e mantenere un bilancio accurato.
 
 ## recurring_transactions
 | Campo         | Tipo         | Descrizione                                 |

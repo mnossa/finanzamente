@@ -12,6 +12,7 @@ use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringTransactionController;
+use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransferController;
@@ -93,6 +94,14 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
         Route::delete('/transfers/{transfer}', [TransferController::class, 'destroy'])->name('transfers.destroy');
 
+        // Refunds - modifica
+        Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
+        Route::get('/refunds/search-transactions', [RefundController::class, 'searchTransactions'])->name('refunds.search-transactions');
+        Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
+        Route::get('/refunds/{refund}/edit', [RefundController::class, 'edit'])->name('refunds.edit');
+        Route::patch('/refunds/{refund}', [RefundController::class, 'update'])->name('refunds.update');
+        Route::delete('/refunds/{refund}', [RefundController::class, 'destroy'])->name('refunds.destroy');
+
         // Tags - modifica
         Route::get('/tags/create', [TagController::class, 'create'])->name('tags.create');
         Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
@@ -166,6 +175,10 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Transfers - lettura
     Route::get('/transfers', [TransferController::class, 'index'])->name('transfers.index');
     Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
+
+    // Refunds - lettura
+    Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+    Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
 
     // Tags - lettura
     Route::get('/tags', [TagController::class, 'index'])->name('tags.index');

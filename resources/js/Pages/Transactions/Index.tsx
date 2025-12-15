@@ -31,6 +31,8 @@ interface Transaction {
     description: string | null;
     is_private: boolean;
     transfer_id: number | null;
+    refund_id: number | null;
+    has_refunds: boolean;
     category: Category | null;
     account: Account;
     user: {
@@ -89,6 +91,8 @@ function formatDate(dateString: string): string {
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
+    const isRefund = transaction.refund_id !== null;
+    const hasRefunds = transaction.has_refunds;
 
     return (
         <Link
@@ -101,14 +105,16 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     style={{
                         backgroundColor: isTransfer
                             ? '#f59e0b20'
-                            : transaction.category?.color
-                              ? `${transaction.category.color}20`
-                              : isIncome
-                                ? '#22c55e20'
-                                : '#ef444420',
+                            : isRefund
+                              ? '#3b82f620'
+                              : transaction.category?.color
+                                ? `${transaction.category.color}20`
+                                : isIncome
+                                  ? '#22c55e20'
+                                  : '#ef444420',
                     }}
                 >
-                    {isTransfer ? '🔄' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
+                    {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
                 </div>
                 <div>
                     <p className="font-medium text-gray-900 dark:text-white">
@@ -118,6 +124,12 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                         )}
                         {isTransfer && (
                             <span className="ml-2 text-xs text-amber-500">Trasferimento</span>
+                        )}
+                        {isRefund && (
+                            <span className="ml-2 text-xs text-blue-500">Rimborso</span>
+                        )}
+                        {hasRefunds && (
+                            <span className="ml-2 text-xs text-green-500">✓ Rimborsato</span>
                         )}
                     </p>
                     <div className="flex flex-wrap items-center gap-1">

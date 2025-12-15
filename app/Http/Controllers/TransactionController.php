@@ -25,6 +25,7 @@ class TransactionController extends Controller
         $householdId = $user->active_household_id;
 
         $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color'])
+            ->withCount('refunds')
             ->whereHas('account', function ($q) use ($householdId) {
                 $q->where('household_id', $householdId);
             })
@@ -66,6 +67,8 @@ class TransactionController extends Controller
                     'description' => $transaction->description,
                     'is_private' => $transaction->is_private,
                     'transfer_id' => $transaction->transfer_id,
+                    'refund_id' => $transaction->refund_id,
+                    'has_refunds' => $transaction->refunds_count > 0,
                     'category' => $transaction->category ? [
                         'id' => $transaction->category->id,
                         'name' => $transaction->category->name,
@@ -202,7 +205,26 @@ class TransactionController extends Controller
     {
         $this->authorizeTransaction($transaction);
 
-        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags']);
+        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags', 'refunds.refundTransaction']);
+
+        // Calcola informazioni sui rimborsi se è una spesa
+        $refundInfo = null;
+        if ((float) $transaction->amount < 0 && !$transaction->transfer_id && !$transaction->refund_id) {
+            $totalRefunded = $transaction->getTotalRefundedAmount();
+            $originalAmount = abs((float) $transaction->amount);
+            $refundInfo = [
+                'total_refunded' => $totalRefunded,
+                'max_refundable' => $originalAmount - $totalRefunded,
+                'refund_percentage' => $originalAmount > 0 ? round(($totalRefunded / $originalAmount) * 100, 1) : 0,
+                'refunds' => $transaction->refunds->map(fn ($refund) => [
+                    'id' => $refund->id,
+                    'amount' => (float) $refund->amount,
+                    'date' => $refund->refundTransaction?->date->format('Y-m-d'),
+                    'description' => $refund->description,
+                    'status' => $refund->status,
+                ]),
+            ];
+        }
 
         return Inertia::render('Transactions/Show', [
             'transaction' => [
@@ -217,6 +239,8 @@ class TransactionController extends Controller
                 'user' => $transaction->user,
                 'tags' => $transaction->tags,
                 'transfer_id' => $transaction->transfer_id,
+                'refund_id' => $transaction->refund_id,
+                'refund_info' => $refundInfo,
             ],
         ]);
     }

@@ -20,7 +20,7 @@ class Transaction extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'user_id', 'account_id', 'category_id', 'amount', 'currency_code', 'date', 'description', 'recurring', 'recurring_transaction_id', 'is_private', 'transfer_id',
+        'user_id', 'account_id', 'category_id', 'amount', 'currency_code', 'date', 'description', 'recurring', 'recurring_transaction_id', 'is_private', 'transfer_id', 'refund_id',
     ];
 
     protected $casts = [
@@ -61,10 +61,68 @@ class Transaction extends Model
     }
 
     /**
+     * Relazione con il rimborso (se questa transazione è parte di un rimborso).
+     */
+    public function refund()
+    {
+        return $this->belongsTo(Refund::class);
+    }
+
+    /**
+     * Rimborsi collegati a questa transazione (se è una spesa rimborsata).
+     */
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class, 'original_transaction_id');
+    }
+
+    /**
      * Verifica se la transazione è parte di un trasferimento.
      */
     public function isTransfer(): bool
     {
         return $this->transfer_id !== null;
+    }
+
+    /**
+     * Verifica se la transazione è parte di un rimborso.
+     */
+    public function isRefund(): bool
+    {
+        return $this->refund_id !== null;
+    }
+
+    /**
+     * Verifica se la transazione ha ricevuto dei rimborsi.
+     */
+    public function hasRefunds(): bool
+    {
+        return $this->refunds()->exists();
+    }
+
+    /**
+     * Calcola l'importo totale rimborsato per questa transazione.
+     */
+    public function getTotalRefundedAmount(): float
+    {
+        return (float) $this->refunds()
+            ->where('status', 'completed')
+            ->sum('amount');
+    }
+
+    /**
+     * Calcola l'importo netto (importo originale - rimborsi).
+     */
+    public function getNetAmount(): float
+    {
+        $amount = (float) $this->amount;
+        $refunded = $this->getTotalRefundedAmount();
+        
+        // Se è una spesa (negativa), il netto è meno negativo
+        if ($amount < 0) {
+            return $amount + $refunded;
+        }
+        
+        return $amount - $refunded;
     }
 }

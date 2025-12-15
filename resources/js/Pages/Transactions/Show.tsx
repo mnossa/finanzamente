@@ -23,6 +23,21 @@ interface Tag {
     color: string | null;
 }
 
+interface RefundItem {
+    id: number;
+    amount: number;
+    date: string | null;
+    description: string | null;
+    status: string;
+}
+
+interface RefundInfo {
+    total_refunded: number;
+    max_refundable: number;
+    refund_percentage: number;
+    refunds: RefundItem[];
+}
+
 interface Transaction {
     id: number;
     amount: number;
@@ -38,6 +53,8 @@ interface Transaction {
     };
     tags: Tag[];
     transfer_id: number | null;
+    refund_id: number | null;
+    refund_info: RefundInfo | null;
 }
 
 interface ShowProps {
@@ -63,6 +80,9 @@ function formatDate(dateStr: string): string {
 export default function Show({ transaction }: ShowProps) {
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
+    const isRefundTransaction = transaction.refund_id !== null;
+    const canBeRefunded = !isIncome && !isTransfer && !isRefundTransaction && (transaction.refund_info?.max_refundable ?? 0) > 0.01;
+    const hasRefunds = transaction.refund_info && transaction.refund_info.refunds.length > 0;
 
     const handleDelete = () => {
         if (confirm('Sei sicuro di voler eliminare questa transazione?')) {
@@ -107,6 +127,27 @@ export default function Show({ transaction }: ShowProps) {
                                     Questa transazione fa parte di un trasferimento.
                                 </p>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Banner rimborso */}
+                    {isRefundTransaction && (
+                        <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                            <span className="text-xl">💸</span>
+                            <div>
+                                <p className="font-medium text-blue-800 dark:text-blue-200">
+                                    Transazione di rimborso
+                                </p>
+                                <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    Questa transazione è un rimborso collegato a una spesa.
+                                </p>
+                            </div>
+                            <Link
+                                href={route('refunds.show', transaction.refund_id!)}
+                                className="ml-auto text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                                Vedi dettagli →
+                            </Link>
                         </div>
                     )}
 
@@ -229,6 +270,87 @@ export default function Show({ transaction }: ShowProps) {
                             </div>
                         )}
                     </div>
+
+                    {/* Sezione Rimborsi (solo per spese) */}
+                    {(hasRefunds || canBeRefunded) && (
+                        <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                            <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+                                <span className="mr-2">💸</span> Rimborsi
+                            </h3>
+
+                            {/* Barra progresso rimborsi */}
+                            {transaction.refund_info && transaction.refund_info.total_refunded > 0 && (
+                                <div className="mb-4">
+                                    <div className="mb-1 flex justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">Stato rimborso</span>
+                                        <span className="font-medium text-gray-900 dark:text-white">
+                                            {transaction.refund_info.refund_percentage}%
+                                        </span>
+                                    </div>
+                                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                        <div
+                                            className="h-full rounded-full bg-green-500 transition-all"
+                                            style={{ width: `${Math.min(transaction.refund_info.refund_percentage, 100)}%` }}
+                                        />
+                                    </div>
+                                    <div className="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                        <span>
+                                            Rimborsato: {formatCurrency(transaction.refund_info.total_refunded, transaction.account.currency_code)}
+                                        </span>
+                                        <span>
+                                            Costo netto: {formatCurrency(Math.abs(transaction.amount) - transaction.refund_info.total_refunded, transaction.account.currency_code)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Lista rimborsi */}
+                            {hasRefunds && (
+                                <div className="mb-4 space-y-2">
+                                    {transaction.refund_info!.refunds.map((refund) => (
+                                        <Link
+                                            key={refund.id}
+                                            href={route('refunds.show', refund.id)}
+                                            className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+                                        >
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">
+                                                    {refund.description || 'Rimborso'}
+                                                </p>
+                                                {refund.date && (
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {new Date(refund.date).toLocaleDateString('it-IT')}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span className="font-semibold text-green-600 dark:text-green-400">
+                                                +{formatCurrency(refund.amount, transaction.account.currency_code)}
+                                            </span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Pulsante per creare rimborso */}
+                            {canBeRefunded && (
+                                <Link
+                                    href={route('refunds.create', { transaction_id: transaction.id })}
+                                    className="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                                >
+                                    💸 Registra Rimborso ({formatCurrency(transaction.refund_info?.max_refundable ?? Math.abs(transaction.amount), transaction.account.currency_code)} disponibile)
+                                </Link>
+                            )}
+
+                            {/* Messaggio se completamente rimborsato */}
+                            {transaction.refund_info && transaction.refund_info.max_refundable <= 0.01 && (
+                                <div className="rounded-lg bg-green-50 p-3 text-center dark:bg-green-900/20">
+                                    <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                                        ✓ Transazione completamente rimborsata
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
