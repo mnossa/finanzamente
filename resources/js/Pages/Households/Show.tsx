@@ -10,12 +10,22 @@ import { Household, HouseholdMember, PageProps } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 
+interface PendingInvitation {
+    id: number;
+    email: string;
+    role: string;
+    invited_by: string;
+    expires_at: string;
+    created_at: string;
+}
+
 interface Props extends PageProps {
     household: Household;
     members: HouseholdMember[];
+    pendingInvitations: PendingInvitation[];
 }
 
-export default function Show({ household, members }: Props) {
+export default function Show({ household, members, pendingInvitations }: Props) {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -52,6 +62,23 @@ export default function Show({ household, members }: Props) {
                 route('households.remove-member', [household.id, memberId]),
             );
         }
+    };
+
+    const cancelInvitation = (invitationId: number) => {
+        if (confirm('Sei sicuro di voler cancellare questo invito?')) {
+            router.delete(
+                route('households.cancel-invitation', [
+                    household.id,
+                    invitationId,
+                ]),
+            );
+        }
+    };
+
+    const resendInvitation = (invitationId: number) => {
+        router.post(
+            route('households.resend-invitation', [household.id, invitationId]),
+        );
     };
 
     const deleteHousehold = () => {
@@ -191,6 +218,86 @@ export default function Show({ household, members }: Props) {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Inviti Pendenti */}
+                            {household.is_owner &&
+                                pendingInvitations.length > 0 && (
+                                    <div className="mt-8">
+                                        <h3 className="text-md font-medium text-gray-900 dark:text-gray-100">
+                                            Inviti in attesa
+                                        </h3>
+                                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                            Utenti invitati che non si sono
+                                            ancora registrati.
+                                        </p>
+                                        <div className="mt-4 space-y-3">
+                                            {pendingInvitations.map(
+                                                (invitation) => (
+                                                    <div
+                                                        key={invitation.id}
+                                                        className="flex items-center justify-between rounded-lg border border-dashed border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20"
+                                                    >
+                                                        <div>
+                                                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                                                                {
+                                                                    invitation.email
+                                                                }
+                                                            </p>
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                                Invitato da{' '}
+                                                                {
+                                                                    invitation.invited_by
+                                                                }{' '}
+                                                                • Scade il{' '}
+                                                                {
+                                                                    invitation.expires_at
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <span
+                                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                                    invitation.role ===
+                                                                    'guest'
+                                                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                                                }`}
+                                                            >
+                                                                {invitation.role ===
+                                                                'guest'
+                                                                    ? 'Ospite'
+                                                                    : 'Membro'}
+                                                            </span>
+                                                            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                                                In attesa
+                                                            </span>
+                                                            <button
+                                                                onClick={() =>
+                                                                    resendInvitation(
+                                                                        invitation.id,
+                                                                    )
+                                                                }
+                                                                className="text-sm text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
+                                                            >
+                                                                Reinvia
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    cancelInvitation(
+                                                                        invitation.id,
+                                                                    )
+                                                                }
+                                                                className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                                            >
+                                                                Annulla
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                         </section>
                     </div>
 
@@ -236,7 +343,10 @@ export default function Show({ household, members }: Props) {
                     </h2>
 
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        Inserisci l'email dell'utente che vuoi invitare.
+                        Inserisci l'email dell'utente che vuoi invitare. Se
+                        l'utente è già registrato verrà aggiunto direttamente,
+                        altrimenti riceverà un'email con un link per
+                        registrarsi.
                     </p>
 
                     <div className="mt-6">

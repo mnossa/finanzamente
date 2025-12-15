@@ -21,18 +21,23 @@ class TransactionPolicy
     public function create(User $user, $accountId): bool
     {
         $svc = app(\App\Services\HouseholdPermissionService::class);
-        // must be member of the account household
+        // must be member of the account household and not view_only
         $account = \App\Models\Account::find($accountId);
         if (! $account) {
             return false;
         }
 
-        return $svc->isMember($user, $account->household_id);
+        // Guests (view_only) cannot create transactions
+        return $svc->canModify($user, $account->household_id);
     }
 
     public function update(User $user, Transaction $transaction): bool
     {
         $svc = app(\App\Services\HouseholdPermissionService::class);
+        // Guests (view_only) cannot update transactions
+        if ($svc->isViewOnly($user, $transaction->account->household_id)) {
+            return false;
+        }
         return $transaction->user_id === $user->id || $svc->hasPermission($user, $transaction->account->household_id, 'manage');
     }
 

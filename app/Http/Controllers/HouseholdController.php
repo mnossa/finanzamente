@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Events\HouseholdMemberAdded;
 use App\Events\HouseholdMemberRemoved;
 use App\Http\Requests\StoreHouseholdRequest;
+use App\Mail\HouseholdInvitationMail;
 use App\Models\Household;
+use App\Models\HouseholdInvitation;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 class HouseholdController extends Controller
@@ -110,6 +113,20 @@ class HouseholdController extends Controller
             'is_owner' => $u->id === $household->owner_user_id,
         ]);
 
+        // Recupera inviti pendenti
+        $pendingInvitations = HouseholdInvitation::where('household_id', $household->id)
+            ->valid()
+            ->with('invitedBy:id,name')
+            ->get()
+            ->map(fn ($inv) => [
+                'id' => $inv->id,
+                'email' => $inv->email,
+                'role' => $inv->role,
+                'invited_by' => $inv->invitedBy->name,
+                'expires_at' => $inv->expires_at->format('d/m/Y H:i'),
+                'created_at' => $inv->created_at->format('d/m/Y H:i'),
+            ]);
+
         return Inertia::render('Households/Show', [
             'household' => [
                 'id' => $household->id,
@@ -118,6 +135,7 @@ class HouseholdController extends Controller
                 'is_owner' => $household->owner_user_id === $user->id,
             ],
             'members' => $members,
+            'pendingInvitations' => $pendingInvitations,
         ]);
     }
 
@@ -175,6 +193,8 @@ class HouseholdController extends Controller
 
     /**
      * Invita un utente nella household.
+     * Se l'utente esiste, viene aggiunto direttamente.
+     * Se non esiste, viene creato un invito con link di registrazione.
      */
     public function invite(Request $request, Household $household)
     {
@@ -202,26 +222,49 @@ class HouseholdController extends Controller
             'role' => 'sometimes|string|in:member,guest',
         ]);
 
-        $invitedUser = User::where('email', $data['email'])->first();
-        
-        if (!$invitedUser) {
-            return back()->withErrors(['email' => 'Nessun utente trovato con questa email.']);
-        }
+        $email = strtolower($data['email']);
+        $role = $data['role'] ?? 'member';
 
-        if ($household->users()->where('user_id', $invitedUser->id)->exists()) {
+        // Controlla se esiste già un membro con questa email
+        $existingMember = $household->users()->where('users.email', $email)->first();
+        if ($existingMember) {
             return back()->withErrors(['email' => 'Questo utente fa già parte della household.']);
         }
 
-        $role = $data['role'] ?? 'member';
+        $invitedUser = User::where('email', $email)->first();
+        
+        if ($invitedUser) {
+            // L'utente esiste: aggiungilo direttamente alla household
+            $household->users()->attach($invitedUser->id, [
+                'role' => $role,
+                'permissions' => json_encode(['view_only' => $role === 'guest']),
+            ]);
 
-        $household->users()->attach($invitedUser->id, [
+            event(new HouseholdMemberAdded($household, $invitedUser, $user, $role));
+
+            return back()->with('success', "Utente {$invitedUser->name} aggiunto alla household.");
+        }
+
+        // L'utente non esiste: crea un invito e invia email
+        // Invalida eventuali inviti precedenti per la stessa email/household
+        HouseholdInvitation::where('household_id', $household->id)
+            ->where('email', $email)
+            ->whereNull('accepted_at')
+            ->delete();
+
+        $invitation = HouseholdInvitation::create([
+            'household_id' => $household->id,
+            'invited_by_user_id' => $user->id,
+            'email' => $email,
             'role' => $role,
-            'permissions' => json_encode(['view_only' => true]),
+            'token' => HouseholdInvitation::generateToken(),
+            'expires_at' => now()->addDays(7), // Scade dopo 7 giorni
         ]);
 
-        event(new HouseholdMemberAdded($household, $invitedUser, $user, $role));
+        // Invia email di invito
+        Mail::to($email)->send(new HouseholdInvitationMail($invitation, true));
 
-        return back()->with('success', "Utente {$invitedUser->name} aggiunto alla household.");
+        return back()->with('success', "Invito inviato a {$email}. L'utente riceverà un'email con le istruzioni per registrarsi e unirsi alla household.");
     }
 
     /**
@@ -283,5 +326,81 @@ class HouseholdController extends Controller
 
         return redirect()->route('households.create')
             ->with('info', 'Hai lasciato la household. Crea o unisciti a una household per continuare.');
+    }
+
+    /**
+     * Cancella un invito pendente.
+     */
+    public function cancelInvitation(Request $request, Household $household, HouseholdInvitation $invitation)
+    {
+        $user = $request->user();
+
+        // Verifica che l'invito appartenga alla household
+        if ($invitation->household_id !== $household->id) {
+            abort(404, 'Invito non trovato.');
+        }
+
+        // Verifica permessi (owner o chi ha permesso manage)
+        $membership = $user->households()
+            ->where('households.id', $household->id)
+            ->first();
+
+        if (!$membership) {
+            abort(403, 'Non hai accesso a questa household.');
+        }
+
+        $permissions = json_decode($membership->pivot->permissions ?? '{}', true);
+        $canManage = $household->owner_user_id === $user->id 
+            || ($permissions['manage'] ?? false);
+
+        if (!$canManage) {
+            abort(403, 'Non hai i permessi per gestire gli inviti.');
+        }
+
+        $email = $invitation->email;
+        $invitation->delete();
+
+        return back()->with('success', "Invito a {$email} cancellato.");
+    }
+
+    /**
+     * Reinvia un invito pendente.
+     */
+    public function resendInvitation(Request $request, Household $household, HouseholdInvitation $invitation)
+    {
+        $user = $request->user();
+
+        // Verifica che l'invito appartenga alla household
+        if ($invitation->household_id !== $household->id) {
+            abort(404, 'Invito non trovato.');
+        }
+
+        // Verifica permessi
+        $membership = $user->households()
+            ->where('households.id', $household->id)
+            ->first();
+
+        if (!$membership) {
+            abort(403, 'Non hai accesso a questa household.');
+        }
+
+        $permissions = json_decode($membership->pivot->permissions ?? '{}', true);
+        $canManage = $household->owner_user_id === $user->id 
+            || ($permissions['manage'] ?? false);
+
+        if (!$canManage) {
+            abort(403, 'Non hai i permessi per gestire gli inviti.');
+        }
+
+        // Aggiorna la data di scadenza
+        $invitation->update([
+            'expires_at' => now()->addDays(7),
+            'token' => HouseholdInvitation::generateToken(),
+        ]);
+
+        // Reinvia email
+        Mail::to($invitation->email)->send(new HouseholdInvitationMail($invitation, true));
+
+        return back()->with('success', "Invito reinviato a {$invitation->email}.");
     }
 }

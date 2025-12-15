@@ -21,12 +21,17 @@ class AccountPolicy
     public function create(User $user, $householdId): bool
     {
         $svc = app(\App\Services\HouseholdPermissionService::class);
-        return $svc->hasPermission($user, $householdId, 'manage') || $svc->isMember($user, $householdId);
+        // Guests (view_only) cannot create accounts
+        return $svc->canModify($user, $householdId);
     }
 
     public function update(User $user, Account $account): bool
     {
         $svc = app(\App\Services\HouseholdPermissionService::class);
+        // Guests (view_only) cannot update accounts
+        if ($svc->isViewOnly($user, $account->household_id)) {
+            return false;
+        }
         return $account->owner_user_id === $user->id || $svc->hasPermission($user, $account->household_id, 'manage');
     }
 

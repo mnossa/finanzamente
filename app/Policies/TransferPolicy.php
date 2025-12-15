@@ -25,7 +25,8 @@ class TransferPolicy
             return false;
         }
 
-        return $svc->isMember($user, $account->household_id);
+        // Guests (view_only) cannot create transfers
+        return $svc->canModify($user, $account->household_id);
     }
 
     public function delete(User $user, Transfer $transfer): bool
@@ -34,6 +35,12 @@ class TransferPolicy
         $svc = app(\App\Services\HouseholdPermissionService::class);
         $sourceAccount = \App\Models\Account::find($transfer->source_account_id);
         $householdId = $sourceAccount ? $sourceAccount->household_id : 0;
+        
+        // Guests (view_only) cannot delete transfers
+        if ($svc->isViewOnly($user, $householdId)) {
+            return false;
+        }
+        
         return ($transfer->user_id && $transfer->user_id === $user->id)
             || $svc->hasPermission($user, $householdId, 'manage');
     }

@@ -37,6 +37,11 @@ export interface HouseholdMember {
     is_owner: boolean;
 }
 
+export interface Permissions {
+    canModify: boolean;
+    role: 'owner' | 'member' | 'guest' | null;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -44,6 +49,7 @@ export type PageProps<
         user: User;
     };
     activeHousehold?: ActiveHousehold | null;
+    permissions: Permissions;
     flash?: {
         success?: string;
         error?: string;
