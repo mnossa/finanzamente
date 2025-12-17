@@ -33,6 +33,8 @@ interface Transaction {
     transfer_id: number | null;
     refund_id: number | null;
     has_refunds: boolean;
+    total_refunded_amount: number;
+    is_fully_refunded: boolean;
     category: Category | null;
     account: Account;
     user: {
@@ -129,7 +131,12 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                             <span className="ml-2 text-xs text-blue-500">Rimborso</span>
                         )}
                         {hasRefunds && (
-                            <span className="ml-2 text-xs text-green-500">✓ Rimborsato</span>
+                            <span className={clsx(
+                                'ml-2 text-xs',
+                                transaction.is_fully_refunded ? 'text-green-500' : 'text-amber-500'
+                            )}>
+                                {transaction.is_fully_refunded ? '✓ Rimborsato' : '◐ Parzialmente rimborsato'}
+                            </span>
                         )}
                     </p>
                     <div className="flex flex-wrap items-center gap-1">

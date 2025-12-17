@@ -26,6 +26,9 @@ class TransactionController extends Controller
 
         $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color'])
             ->withCount('refunds')
+            ->withSum(['refunds as total_refunded_amount' => function ($q) {
+                $q->where('status', 'completed');
+            }], 'amount')
             ->whereHas('account', function ($q) use ($householdId) {
                 $q->where('household_id', $householdId);
             })
@@ -69,6 +72,8 @@ class TransactionController extends Controller
                     'transfer_id' => $transaction->transfer_id,
                     'refund_id' => $transaction->refund_id,
                     'has_refunds' => $transaction->refunds_count > 0,
+                    'total_refunded_amount' => (float) ($transaction->total_refunded_amount ?? 0),
+                    'is_fully_refunded' => $transaction->refunds_count > 0 && abs((float) $transaction->amount) <= (float) ($transaction->total_refunded_amount ?? 0),
                     'category' => $transaction->category ? [
                         'id' => $transaction->category->id,
                         'name' => $transaction->category->name,
