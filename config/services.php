@@ -35,4 +35,30 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Financial Data Services
+    |--------------------------------------------------------------------------
+    |
+    | API keys for financial data providers used to fetch asset prices,
+    | historical data, and ISIN/ticker mappings.
+    |
+    | Providers disponibili:
+    | - yahoo_finance: Yahoo Finance via RapidAPI (consigliato, ~500 req/mese gratis)
+    | - alpha_vantage: Alpha Vantage (25 req/giorno gratis - molto limitato)
+    |
+    */
+
+    'asset_price' => [
+        'provider' => env('ASSET_PRICE_PROVIDER', 'yahoo_finance'),
+    ],
+
+    'yahoo_finance' => [
+        'key' => env('YAHOO_FINANCE_API_KEY'),
+    ],
+
+    'alpha_vantage' => [
+        'key' => env('ALPHA_VANTAGE_API_KEY'),
+    ],
+
 ];

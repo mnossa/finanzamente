@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import AssetSearch from '@/Components/AssetSearch';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler } from 'react';
@@ -31,6 +32,8 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
     const { data, setData, post, processing, errors } = useForm({
         type: 'stock',
         symbol: '',
+        isin: '',
+        exchange: '',
         name: '',
         currency_code: 'EUR',
     });
@@ -38,6 +41,17 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post(route('investment-assets.store'));
+    };
+
+    const handleAssetSelect = (asset: { symbol: string; name: string; type: string; currency: string; region?: string }) => {
+        setData({
+            ...data,
+            symbol: asset.symbol || '',
+            name: asset.name || '',
+            type: asset.type || 'stock',
+            currency_code: asset.currency || 'EUR',
+            exchange: asset.region || '',
+        });
     };
 
     return (
@@ -63,6 +77,26 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
                     <form onSubmit={submit}>
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                             <div className="p-6">
+                                {/* Ricerca Asset Online */}
+                                <div className="mb-6">
+                                    <InputLabel value="🔍 Cerca Asset Online" />
+                                    <AssetSearch 
+                                        onSelect={handleAssetSelect}
+                                        className="mt-2"
+                                    />
+                                </div>
+
+                                <div className="relative mb-6">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                                    </div>
+                                    <div className="relative flex justify-center">
+                                        <span className="bg-white px-3 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                            oppure inserisci manualmente
+                                        </span>
+                                    </div>
+                                </div>
+
                                 {/* Tipo Asset */}
                                 <div className="mb-6">
                                     <InputLabel value="Tipo di Asset *" />
@@ -120,6 +154,43 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
                                         Opzionale: il codice identificativo dell'asset
                                     </p>
                                     <InputError message={errors.symbol} className="mt-2" />
+                                </div>
+
+                                {/* ISIN e Exchange */}
+                                <div className="mb-6 grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel htmlFor="isin" value="Codice ISIN" />
+                                        <TextInput
+                                            id="isin"
+                                            type="text"
+                                            className="mt-2 w-full font-mono"
+                                            value={data.isin}
+                                            onChange={(e) => setData('isin', e.target.value.toUpperCase())}
+                                            placeholder="Es. US0378331005"
+                                            maxLength={12}
+                                        />
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Identificativo internazionale (12 caratteri)
+                                        </p>
+                                        <InputError message={errors.isin} className="mt-2" />
+                                    </div>
+
+                                    <div>
+                                        <InputLabel htmlFor="exchange" value="Borsa" />
+                                        <TextInput
+                                            id="exchange"
+                                            type="text"
+                                            className="mt-2 w-full"
+                                            value={data.exchange}
+                                            onChange={(e) => setData('exchange', e.target.value)}
+                                            placeholder="Es. United States, Germany, Italy..."
+                                            maxLength={50}
+                                        />
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Mercato di riferimento
+                                        </p>
+                                        <InputError message={errors.exchange} className="mt-2" />
+                                    </div>
                                 </div>
 
                                 {/* Valuta */}

@@ -5,7 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
-import { FormEventHandler, useMemo } from 'react';
+import { FormEventHandler, useMemo, useState, useEffect, useCallback } from 'react';
 
 interface Currency {
     code: string;
@@ -50,6 +50,14 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
         is_private: false,
     });
 
+    const [isLoadingPrice, setIsLoadingPrice] = useState(false);
+    const [priceError, setPriceError] = useState<string | null>(null);
+    const [priceInfo, setPriceInfo] = useState<{
+        price: number;
+        date: string;
+        requested_date: string;
+    } | null>(null);
+
     const selectedAsset = useMemo(() => {
         return assets.find(a => a.id === Number(data.asset_id));
     }, [data.asset_id, assets]);
@@ -59,6 +67,55 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
         const price = parseFloat(data.buy_price) || 0;
         return qty * price;
     }, [data.quantity, data.buy_price]);
+
+    // Funzione per recuperare il prezzo storico
+    const fetchHistoricalPrice = useCallback(async (symbol: string, date: string) => {
+        if (!symbol || !date) return;
+        
+        setIsLoadingPrice(true);
+        setPriceError(null);
+        setPriceInfo(null);
+
+        try {
+            const response = await fetch(`/api/assets/price/${encodeURIComponent(symbol)}/history?date=${date}`);
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                setPriceInfo({
+                    price: result.data.price,
+                    date: result.data.date,
+                    requested_date: result.data.requested_date,
+                });
+            } else {
+                setPriceError(result.error || 'Prezzo non disponibile');
+            }
+        } catch {
+            setPriceError('Errore nel recupero del prezzo');
+        } finally {
+            setIsLoadingPrice(false);
+        }
+    }, []);
+
+    // Effetto per recuperare il prezzo quando cambia asset o data
+    useEffect(() => {
+        if (selectedAsset?.symbol && data.buy_date) {
+            // Debounce per evitare troppe chiamate
+            const timer = setTimeout(() => {
+                fetchHistoricalPrice(selectedAsset.symbol!, data.buy_date);
+            }, 500);
+            return () => clearTimeout(timer);
+        } else {
+            setPriceInfo(null);
+            setPriceError(null);
+        }
+    }, [selectedAsset?.symbol, data.buy_date, fetchHistoricalPrice]);
+
+    // Funzione per applicare il prezzo suggerito
+    const applyPrice = () => {
+        if (priceInfo?.price) {
+            setData('buy_price', priceInfo.price.toString());
+        }
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -170,6 +227,51 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                                 {selectedAsset?.currency.symbol || '€'}
                                             </span>
                                         </div>
+                                        
+                                        {/* Suggerimento prezzo da API */}
+                                        {selectedAsset?.symbol && (
+                                            <div className="mt-2">
+                                                {isLoadingPrice && (
+                                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                                                        <span>Recupero prezzo per {data.buy_date}...</span>
+                                                    </div>
+                                                )}
+                                                {priceInfo && !isLoadingPrice && (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                                                            💡 Prezzo al {priceInfo.date}:
+                                                        </span>
+                                                        <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                                            {new Intl.NumberFormat('it-IT', {
+                                                                style: 'currency',
+                                                                currency: selectedAsset?.currency.code || 'EUR',
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 8,
+                                                            }).format(priceInfo.price)}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={applyPrice}
+                                                            className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                                                        >
+                                                            Usa questo prezzo
+                                                        </button>
+                                                        {priceInfo.date !== priceInfo.requested_date && (
+                                                            <span className="text-xs text-amber-600 dark:text-amber-400">
+                                                                ⚠️ Data più vicina disponibile
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {priceError && !isLoadingPrice && (
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {priceError}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                        
                                         <InputError message={errors.buy_price} className="mt-2" />
                                     </div>
                                 </div>

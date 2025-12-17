@@ -17,6 +17,8 @@ interface InvestmentAsset {
     id: number;
     type: string;
     symbol: string | null;
+    isin: string | null;
+    exchange: string | null;
     name: string;
     currency_code: string;
     extra_data: object | null;
@@ -41,6 +43,8 @@ export default function Edit({ asset, currencies, types, typeIcons }: EditProps)
     const { data, setData, put, processing, errors } = useForm({
         type: asset.type,
         symbol: asset.symbol || '',
+        isin: asset.isin || '',
+        exchange: asset.exchange || '',
         name: asset.name,
         currency_code: asset.currency_code,
     });
@@ -130,6 +134,43 @@ export default function Edit({ asset, currencies, types, typeIcons }: EditProps)
                                         Opzionale: il codice identificativo dell'asset
                                     </p>
                                     <InputError message={errors.symbol} className="mt-2" />
+                                </div>
+
+                                {/* ISIN e Exchange */}
+                                <div className="mb-6 grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel htmlFor="isin" value="Codice ISIN" />
+                                        <TextInput
+                                            id="isin"
+                                            type="text"
+                                            className="mt-2 w-full font-mono"
+                                            value={data.isin}
+                                            onChange={(e) => setData('isin', e.target.value.toUpperCase())}
+                                            placeholder="Es. US0378331005"
+                                            maxLength={12}
+                                        />
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Identificativo internazionale (12 caratteri)
+                                        </p>
+                                        <InputError message={errors.isin} className="mt-2" />
+                                    </div>
+
+                                    <div>
+                                        <InputLabel htmlFor="exchange" value="Borsa" />
+                                        <TextInput
+                                            id="exchange"
+                                            type="text"
+                                            className="mt-2 w-full"
+                                            value={data.exchange}
+                                            onChange={(e) => setData('exchange', e.target.value)}
+                                            placeholder="Es. United States, Germany, Italy..."
+                                            maxLength={50}
+                                        />
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Mercato di riferimento
+                                        </p>
+                                        <InputError message={errors.exchange} className="mt-2" />
+                                    </div>
                                 </div>
 
                                 {/* Valuta */}

@@ -16,6 +16,7 @@ use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransferController;
+use App\Http\Controllers\Api\AssetPriceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -205,6 +206,16 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Investments - lettura
     Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
     Route::get('/investments/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
+
+    // ===== API INTERNE (per AJAX/fetch dal frontend) =====
+    Route::prefix('api/assets')->name('api.assets.')->group(function () {
+        Route::get('/status', [AssetPriceController::class, 'status'])->name('status');
+        Route::get('/search', [AssetPriceController::class, 'search'])->name('search');
+        Route::get('/price/{symbol}', [AssetPriceController::class, 'currentPrice'])->name('price');
+        Route::get('/price/{symbol}/history', [AssetPriceController::class, 'historicalPrice'])->name('price.history');
+        Route::get('/ticker-to-isin/{ticker}', [AssetPriceController::class, 'tickerToIsin'])->name('ticker-to-isin');
+        Route::get('/isin-to-ticker/{isin}', [AssetPriceController::class, 'isinToTicker'])->name('isin-to-ticker');
+    });
 });
 
 require __DIR__.'/auth.php';

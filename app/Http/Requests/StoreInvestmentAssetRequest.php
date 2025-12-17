@@ -25,6 +25,8 @@ class StoreInvestmentAssetRequest extends FormRequest
         return [
             'type' => ['required', Rule::in(['crypto', 'etf', 'stock', 'index', 'commodity', 'insurance', 'other'])],
             'symbol' => ['nullable', 'string', 'max:20'],
+            'isin' => ['nullable', 'string', 'max:12', 'regex:/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/'],
+            'exchange' => ['nullable', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:255'],
             'currency_code' => ['required', 'string', 'exists:currencies,code'],
             'extra_data' => ['nullable', 'array'],
@@ -41,6 +43,10 @@ class StoreInvestmentAssetRequest extends FormRequest
         return [
             'type.required' => 'Il tipo di asset è obbligatorio.',
             'type.in' => 'Il tipo di asset non è valido.',
+            'symbol.max' => 'Il simbolo non può superare 20 caratteri.',
+            'isin.max' => 'Il codice ISIN non può superare 12 caratteri.',
+            'isin.regex' => 'Il formato ISIN non è valido (es. US0378331005).',
+            'exchange.max' => 'La borsa non può superare 50 caratteri.',
             'name.required' => 'Il nome dell\'asset è obbligatorio.',
             'name.max' => 'Il nome non può superare 255 caratteri.',
             'currency_code.required' => 'La valuta è obbligatoria.',

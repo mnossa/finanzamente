@@ -86,6 +86,8 @@ class InvestmentAssetController extends Controller
         InvestmentAsset::create([
             'type' => $validated['type'],
             'symbol' => $validated['symbol'] ?? null,
+            'isin' => $validated['isin'] ?? null,
+            'exchange' => $validated['exchange'] ?? null,
             'name' => $validated['name'],
             'currency_code' => $validated['currency_code'],
             'extra_data' => $validated['extra_data'] ?? null,
@@ -108,6 +110,8 @@ class InvestmentAssetController extends Controller
                 'id' => $investmentAsset->id,
                 'type' => $investmentAsset->type,
                 'symbol' => $investmentAsset->symbol,
+                'isin' => $investmentAsset->isin,
+                'exchange' => $investmentAsset->exchange,
                 'name' => $investmentAsset->name,
                 'currency_code' => $investmentAsset->currency_code,
                 'extra_data' => $investmentAsset->extra_data,
@@ -128,6 +132,8 @@ class InvestmentAssetController extends Controller
         $investmentAsset->update([
             'type' => $validated['type'],
             'symbol' => $validated['symbol'] ?? null,
+            'isin' => $validated['isin'] ?? null,
+            'exchange' => $validated['exchange'] ?? null,
             'name' => $validated['name'],
             'currency_code' => $validated['currency_code'],
             'extra_data' => $validated['extra_data'] ?? $investmentAsset->extra_data,
