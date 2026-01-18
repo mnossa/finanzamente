@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -59,26 +60,6 @@ function formatDate(dateStr: string | null): string {
         month: 'short',
         year: 'numeric',
     });
-}
-
-function EmptyState() {
-    return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 text-6xl">💸</div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                Nessun debito o credito trovato
-            </h3>
-            <p className="mb-6 text-slate-500">
-                Tieni traccia dei soldi che devi o che ti devono.
-            </p>
-            <LinkButton
-                href={route('debts-credits.create')}
-                icon={<PlusIcon />}
-            >
-                Aggiungi il primo
-            </LinkButton>
-        </div>
-    );
 }
 
 function StatusBadge({ status, statusLabel }: { status: string; statusLabel: string }) {
@@ -228,7 +209,13 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {debtsCredits.length === 0 ? (
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <EmptyState />
+                            <EmptyState
+                                icon="💸"
+                                title="Nessun debito o credito trovato"
+                                description="Tieni traccia dei soldi che devi o che ti devono."
+                                createUrl={route('debts-credits.create')}
+                                createLabel="Aggiungi il primo"
+                            />
                         </div>
                     ) : (
                         <>

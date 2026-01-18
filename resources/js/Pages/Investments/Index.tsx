@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -294,15 +295,11 @@ export default function Index({
                     {/* Empty State */}
                     {investments.length === 0 && (
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="mb-4 text-6xl">📊</div>
-                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                                    Nessun investimento registrato
-                                </h3>
-                                <p className="mb-6 max-w-md text-gray-500 dark:text-gray-400">
-                                    Inizia a tracciare i tuoi investimenti in azioni, ETF, crypto e altro.
-                                    Prima crea gli asset, poi registra gli acquisti.
-                                </p>
+                            <EmptyState
+                                icon="📊"
+                                title="Nessun investimento registrato"
+                                description="Inizia a tracciare i tuoi investimenti in azioni, ETF, crypto e altro. Prima crea gli asset, poi registra gli acquisti."
+                            >
                                 <div className="flex gap-3">
                                     <Link
                                         href={route('investment-assets.create')}
@@ -317,7 +314,7 @@ export default function Index({
                                         Nuovo Investimento
                                     </LinkButton>
                                 </div>
-                            </div>
+                            </EmptyState>
                         </div>
                     )}
                 </div>

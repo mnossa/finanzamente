@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -351,25 +352,18 @@ export default function Index({
                                 <Pagination data={transactions} />
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="mb-4 text-6xl">💸</div>
-                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                                    Nessuna transazione trovata
-                                </h3>
-                                <p className="mb-6 text-gray-500 dark:text-gray-400">
-                                    {hasFilters
+                            <EmptyState
+                                icon="💸"
+                                title="Nessuna transazione trovata"
+                                description={
+                                    hasFilters
                                         ? 'Prova a modificare i filtri di ricerca.'
-                                        : 'Registra la tua prima transazione per iniziare.'}
-                                </p>
-                                {!hasFilters && (
-                                    <LinkButton
-                                        href={route('transactions.create')}
-                                        icon={<PlusIcon />}
-                                    >
-                                        Nuova Transazione
-                                    </LinkButton>
-                                )}
-                            </div>
+                                        : 'Registra la tua prima transazione per iniziare.'
+                                }
+                                createUrl={!hasFilters ? route('transactions.create') : undefined}
+                                createLabel="Nuova Transazione"
+                                showCreateButton={!hasFilters}
+                            />
                         )}
                     </div>
                 </div>

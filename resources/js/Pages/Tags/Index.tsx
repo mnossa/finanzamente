@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -14,26 +15,6 @@ interface Tag {
 
 interface IndexProps {
     tags: Tag[];
-}
-
-function EmptyState() {
-    return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 text-6xl">🏷️</div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                Nessun tag trovato
-            </h3>
-            <p className="mb-6 text-slate-500">
-                Crea il tuo primo tag per organizzare le tue transazioni.
-            </p>
-            <LinkButton
-                href={route('tags.create')}
-                icon={<PlusIcon />}
-            >
-                Crea il tuo primo tag
-            </LinkButton>
-        </div>
-    );
 }
 
 function TagCard({ tag }: { tag: Tag }) {
@@ -111,7 +92,13 @@ export default function Index({ tags }: IndexProps) {
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {tags.length === 0 ? (
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <EmptyState />
+                            <EmptyState
+                                icon="🏷️"
+                                title="Nessun tag trovato"
+                                description="Crea il tuo primo tag per organizzare le tue transazioni."
+                                createUrl={route('tags.create')}
+                                createLabel="Crea il tuo primo tag"
+                            />
                         </div>
                     ) : (
                         <>

@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -179,21 +180,13 @@ export default function Index({ transfers }: IndexProps) {
                                 <Pagination data={transfers} />
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="mb-4 text-6xl">🔄</div>
-                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                                    Nessun trasferimento
-                                </h3>
-                                <p className="mb-6 text-slate-500">
-                                    Trasferisci fondi tra i tuoi conti in modo semplice e veloce.
-                                </p>
-                                <LinkButton
-                                    href={route('transfers.create')}
-                                    icon="🔄"
-                                >
-                                    Nuovo Trasferimento
-                                </LinkButton>
-                            </div>
+                            <EmptyState
+                                icon="🔄"
+                                title="Nessun trasferimento"
+                                description="Trasferisci fondi tra i tuoi conti in modo semplice e veloce."
+                                createUrl={route('transfers.create')}
+                                createLabel="Nuovo Trasferimento"
+                            />
                         )}
                     </div>
                 </div>

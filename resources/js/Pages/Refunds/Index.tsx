@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -241,21 +242,13 @@ export default function Index({ refunds }: IndexProps) {
                                 <Pagination data={refunds} />
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-16 text-center">
-                                <div className="mb-4 text-6xl">💸</div>
-                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                                    Nessun rimborso registrato
-                                </h3>
-                                <p className="mb-6 text-slate-500">
-                                    Registra un rimborso quando ricevi indietro soldi per una spesa.
-                                </p>
-                                <LinkButton
-                                    href={route('refunds.create')}
-                                    icon={<PlusIcon />}
-                                >
-                                    Nuovo Rimborso
-                                </LinkButton>
-                            </div>
+                            <EmptyState
+                                icon="💸"
+                                title="Nessun rimborso registrato"
+                                description="Registra un rimborso quando ricevi indietro soldi per una spesa."
+                                createUrl={route('refunds.create')}
+                                createLabel="Nuovo Rimborso"
+                            />
                         )}
                     </div>
                 </div>

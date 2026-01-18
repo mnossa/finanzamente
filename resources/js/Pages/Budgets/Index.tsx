@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -47,26 +48,6 @@ function formatDate(dateStr: string): string {
         month: 'short',
         year: 'numeric',
     });
-}
-
-function EmptyState() {
-    return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 text-6xl">📊</div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                Nessun budget trovato
-            </h3>
-            <p className="mb-6 text-slate-500">
-                Crea il tuo primo budget per monitorare le tue spese.
-            </p>
-            <LinkButton
-                href={route('budgets.create')}
-                icon={<PlusIcon />}
-            >
-                Crea il tuo primo budget
-            </LinkButton>
-        </div>
-    );
 }
 
 function ProgressBar({ percentage, isExceeded }: { percentage: number; isExceeded: boolean }) {
@@ -208,7 +189,13 @@ export default function Index({ budgets }: IndexProps) {
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {budgets.length === 0 ? (
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <EmptyState />
+                            <EmptyState
+                                icon="📊"
+                                title="Nessun budget trovato"
+                                description="Crea il tuo primo budget per monitorare le tue spese."
+                                createUrl={route('budgets.create')}
+                                createLabel="Crea il tuo primo budget"
+                            />
                         </div>
                     ) : (
                         <>

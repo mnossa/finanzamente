@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -53,26 +54,6 @@ function getAccountTypeIcon(type: string): string {
         other: '💰',
     };
     return icons[type] || '💰';
-}
-
-function EmptyState() {
-    return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 text-6xl">🏦</div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                Nessun conto trovato
-            </h3>
-            <p className="mb-6 text-slate-500">
-                Crea il tuo primo conto per iniziare a monitorare le tue finanze.
-            </p>
-            <LinkButton
-                href={route('accounts.create')}
-                icon={<PlusIcon />}
-            >
-                Crea il tuo primo conto
-            </LinkButton>
-        </div>
-    );
 }
 
 function AccountCard({ account }: { account: Account }) {
@@ -180,7 +161,13 @@ export default function Index({
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {accounts.length === 0 ? (
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <EmptyState />
+                            <EmptyState
+                                icon="🏦"
+                                title="Nessun conto trovato"
+                                description="Crea il tuo primo conto per iniziare a monitorare le tue finanze."
+                                createUrl={route('accounts.create')}
+                                createLabel="Crea il tuo primo conto"
+                            />
                         </div>
                     ) : (
                         <>

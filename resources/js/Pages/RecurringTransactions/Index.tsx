@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -238,21 +239,13 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center">
-                                <div className="mb-4 text-5xl">🔄</div>
-                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
-                                    Nessuna transazione ricorrente
-                                </h3>
-                                <p className="mb-6 text-slate-500">
-                                    Crea una transazione ricorrente per automatizzare le operazioni periodiche.
-                                </p>
-                                <LinkButton
-                                    href={route('recurring-transactions.create')}
-                                    icon={<PlusIcon />}
-                                >
-                                    Nuova Ricorrenza
-                                </LinkButton>
-                            </div>
+                            <EmptyState
+                                icon="🔄"
+                                title="Nessuna transazione ricorrente"
+                                description="Crea una transazione ricorrente per automatizzare le operazioni periodiche."
+                                createUrl={route('recurring-transactions.create')}
+                                createLabel="Nuova Ricorrenza"
+                            />
                         )}
                     </div>
 
