@@ -19,13 +19,14 @@ class RecurringTransaction extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'user_id', 'category_id', 'account_id', 'amount', 'currency_code', 'frequency', 'start_date', 'end_date', 'description',
+        'user_id', 'category_id', 'account_id', 'amount', 'currency_code', 'frequency', 'start_date', 'end_date', 'description', 'last_generated_date',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'start_date' => 'date',
         'end_date' => 'date',
+        'last_generated_date' => 'date',
     ];
 
     public function user()

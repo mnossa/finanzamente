@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\Category;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
+use App\Services\RecurringTransactionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,16 @@ class RecurringTransactionController extends Controller
         'monthly' => 'Mensile',
         'yearly' => 'Annuale',
     ];
+
+    /**
+     * Service per la gestione delle transazioni ricorrenti.
+     */
+    protected RecurringTransactionService $recurringService;
+
+    public function __construct(RecurringTransactionService $recurringService)
+    {
+        $this->recurringService = $recurringService;
+    }
 
     /**
      * Mostra l'elenco delle transazioni ricorrenti della household attiva.
@@ -45,8 +56,8 @@ class RecurringTransactionController extends Controller
             ->orderBy('start_date', 'desc')
             ->get()
             ->map(function ($rt) {
-                $nextDue = $this->calculateNextDueDate($rt);
-                $isActive = $this->isActive($rt);
+                $nextDue = $this->recurringService->calculateNextDueDate($rt);
+                $isActive = $this->recurringService->isActive($rt);
                 
                 return [
                     'id' => $rt->id,
@@ -132,7 +143,7 @@ class RecurringTransactionController extends Controller
 
         $account = Account::find($validated['account_id']);
 
-        RecurringTransaction::create([
+        $recurringTransaction = RecurringTransaction::create([
             'user_id' => $user->id,
             'account_id' => $validated['account_id'],
             'category_id' => $validated['category_id'],
@@ -144,9 +155,16 @@ class RecurringTransactionController extends Controller
             'description' => $validated['description'] ?? null,
         ]);
 
+        // Genera automaticamente tutte le transazioni fino a oggi
+        $count = $this->recurringService->generateTransactionsUntil($recurringTransaction);
+
+        $message = $count > 0 
+            ? "Transazione ricorrente creata con successo. Generate {$count} transazioni."
+            : 'Transazione ricorrente creata con successo.';
+
         return redirect()
             ->route('recurring-transactions.index')
-            ->with('success', 'Transazione ricorrente creata con successo.');
+            ->with('success', $message);
     }
 
     /**
@@ -162,8 +180,8 @@ class RecurringTransactionController extends Controller
             'user:id,name'
         ]);
 
-        $nextDue = $this->calculateNextDueDate($recurringTransaction);
-        $isActive = $this->isActive($recurringTransaction);
+        $nextDue = $this->recurringService->calculateNextDueDate($recurringTransaction);
+        $isActive = $this->recurringService->isActive($recurringTransaction);
 
         // Conta le transazioni generate da questa ricorrente
         $generatedCount = Transaction::where('recurring_transaction_id', $recurringTransaction->id)->count();
@@ -286,38 +304,19 @@ class RecurringTransactionController extends Controller
     {
         $this->authorizeRecurringTransaction($recurringTransaction);
 
-        if (!$this->isActive($recurringTransaction)) {
+        if (!$this->recurringService->isActive($recurringTransaction)) {
             return redirect()
                 ->route('recurring-transactions.show', $recurringTransaction)
                 ->with('error', 'Questa transazione ricorrente non è più attiva.');
         }
 
-        $nextDue = $this->calculateNextDueDate($recurringTransaction);
+        $transaction = $this->recurringService->generateNextTransaction($recurringTransaction);
         
-        if (!$nextDue) {
+        if (!$transaction) {
             return redirect()
                 ->route('recurring-transactions.show', $recurringTransaction)
-                ->with('error', 'Nessuna data disponibile per generare la transazione.');
+                ->with('error', 'Nessuna transazione disponibile da generare o già esistente.');
         }
-
-        // Crea la transazione
-        Transaction::create([
-            'user_id' => $recurringTransaction->user_id,
-            'account_id' => $recurringTransaction->account_id,
-            'category_id' => $recurringTransaction->category_id,
-            'amount' => $recurringTransaction->amount,
-            'currency_code' => $recurringTransaction->currency_code,
-            'date' => $nextDue,
-            'description' => $recurringTransaction->description,
-            'recurring' => true,
-            'recurring_transaction_id' => $recurringTransaction->id,
-            'is_private' => false,
-        ]);
-
-        // Aggiorna il saldo del conto
-        $account = $recurringTransaction->account;
-        $account->current_balance += (float) $recurringTransaction->amount;
-        $account->save();
 
         return redirect()
             ->route('recurring-transactions.show', $recurringTransaction)
@@ -336,72 +335,5 @@ class RecurringTransactionController extends Controller
         if ($account->household_id !== $user->active_household_id) {
             abort(403, 'Non hai accesso a questa transazione ricorrente.');
         }
-    }
-
-    /**
-     * Calcola la prossima data di scadenza.
-     */
-    private function calculateNextDueDate(RecurringTransaction $rt): ?Carbon
-    {
-        $today = Carbon::today();
-        $startDate = $rt->start_date->copy();
-        $endDate = $rt->end_date;
-
-        // Se la data di fine è passata, non c'è prossima scadenza
-        if ($endDate && $endDate->lt($today)) {
-            return null;
-        }
-
-        // Se la data di inizio è nel futuro, quella è la prossima
-        if ($startDate->gt($today)) {
-            return $startDate;
-        }
-
-        // Calcola la prossima occorrenza basandosi sulla frequenza
-        $next = $startDate->copy();
-        
-        while ($next->lte($today)) {
-            switch ($rt->frequency) {
-                case 'daily':
-                    $next->addDay();
-                    break;
-                case 'weekly':
-                    $next->addWeek();
-                    break;
-                case 'monthly':
-                    $next->addMonth();
-                    break;
-                case 'yearly':
-                    $next->addYear();
-                    break;
-            }
-        }
-
-        // Se supera la data di fine, non c'è prossima scadenza
-        if ($endDate && $next->gt($endDate)) {
-            return null;
-        }
-
-        return $next;
-    }
-
-    /**
-     * Verifica se la transazione ricorrente è ancora attiva.
-     */
-    private function isActive(RecurringTransaction $rt): bool
-    {
-        $today = Carbon::today();
-        
-        // Non ancora iniziata
-        if ($rt->start_date->gt($today)) {
-            return true; // Considerata attiva ma non ancora partita
-        }
-
-        // Ha una data di fine ed è passata
-        if ($rt->end_date && $rt->end_date->lt($today)) {
-            return false;
-        }
-
-        return true;
     }
 }

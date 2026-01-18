@@ -48,3 +48,16 @@ fix-perms:
 # Esempio: make exec cmd="php artisan tinker"
 exec:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app $(cmd)
+
+
+#
+exec-recurring:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan recurring:generate
+
+# Controlla duplicati senza eliminare
+check-duplicates:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan recurring:clean-duplicates --dry-run
+
+# Elimina duplicati (richiede conferma)
+clean-duplicates:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan recurring:clean-duplicates
