@@ -8,6 +8,7 @@ use App\Http\Controllers\DebtCreditController;
 use App\Http\Controllers\FinancialGoalController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\HouseholdInvitationController;
+use App\Http\Controllers\InterHouseholdTransferController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\ProfileController;
@@ -95,6 +96,11 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
         Route::delete('/transfers/{transfer}', [TransferController::class, 'destroy'])->name('transfers.destroy');
 
+        // Inter-Household Transfers - modifica
+        Route::get('/inter-household-transfers/create', [InterHouseholdTransferController::class, 'create'])->name('inter-household-transfers.create');
+        Route::post('/inter-household-transfers', [InterHouseholdTransferController::class, 'store'])->name('inter-household-transfers.store');
+        Route::delete('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'destroy'])->name('inter-household-transfers.destroy');
+
         // Refunds - modifica
         Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
         Route::get('/refunds/search-transactions', [RefundController::class, 'searchTransactions'])->name('refunds.search-transactions');
@@ -176,6 +182,11 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Transfers - lettura
     Route::get('/transfers', [TransferController::class, 'index'])->name('transfers.index');
     Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
+
+    // Inter-Household Transfers - lettura
+    Route::get('/inter-household-transfers', [InterHouseholdTransferController::class, 'index'])->name('inter-household-transfers.index');
+    Route::get('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'show'])->name('inter-household-transfers.show');
+    Route::get('/households/{household}/accounts', [InterHouseholdTransferController::class, 'getHouseholdAccounts'])->name('households.accounts');
 
     // Refunds - lettura
     Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');

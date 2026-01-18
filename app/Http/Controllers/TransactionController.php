@@ -283,6 +283,12 @@ class TransactionController extends Controller
 
         $transaction->load('tags:id,name,color');
 
+        // Verifica se è parte di un trasferimento inter-household
+        $isInterHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+            $q->where('source_transaction_id', $transaction->id)
+              ->orWhere('dest_transaction_id', $transaction->id);
+        })->exists();
+
         return Inertia::render('Transactions/Edit', [
             'transaction' => [
                 'id' => $transaction->id,
@@ -294,6 +300,7 @@ class TransactionController extends Controller
                 'is_private' => $transaction->is_private,
                 'tag_ids' => $transaction->tags->pluck('id')->toArray(),
                 'transfer_id' => $transaction->transfer_id,
+                'is_inter_household_transfer' => $isInterHouseholdTransfer,
             ],
             'accounts' => $accounts,
             'categories' => $categories,
@@ -307,6 +314,18 @@ class TransactionController extends Controller
     public function update(UpdateTransactionRequest $request, Transaction $transaction): RedirectResponse
     {
         $this->authorizeTransaction($transaction);
+
+        // Verifica se è parte di un trasferimento inter-household
+        $isInterHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+            $q->where('source_transaction_id', $transaction->id)
+              ->orWhere('dest_transaction_id', $transaction->id);
+        })->exists();
+
+        if ($isInterHouseholdTransfer) {
+            return redirect()->back()->withErrors([
+                'error' => 'Non è possibile modificare una transazione che fa parte di un trasferimento inter-household. Elimina il trasferimento e ricrealo se necessario.',
+            ]);
+        }
 
         $validated = $request->validated();
         $oldAmount = (float) $transaction->amount;
@@ -405,6 +424,21 @@ class TransactionController extends Controller
     public function destroy(Transaction $transaction): RedirectResponse
     {
         $this->authorizeTransaction($transaction);
+
+        // Verifica se è parte di un trasferimento inter-household
+        $interHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+            $q->where('source_transaction_id', $transaction->id)
+              ->orWhere('dest_transaction_id', $transaction->id);
+        })->first();
+
+        if ($interHouseholdTransfer) {
+            // Elimina il trasferimento inter-household (che eliminerà automaticamente entrambe le transazioni)
+            $interHouseholdTransfer->delete();
+            
+            return redirect()
+                ->route('transactions.index')
+                ->with('success', 'Transazione e trasferimento inter-household eliminati con successo.');
+        }
 
         // Aggiorna il saldo del conto
         $account = $transaction->account;

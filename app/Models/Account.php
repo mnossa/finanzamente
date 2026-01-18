@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Relazioni principali:
  * - household(): belongsTo(Household)
  * - owner(): belongsTo(User)
+ * - currency(): belongsTo(Currency)
  * - transactions(): hasMany(Transaction)
  */
 class Account extends Model
@@ -64,6 +65,11 @@ class Account extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_code', 'code');
     }
 
     /**

@@ -37,6 +37,7 @@ interface Transaction {
     is_private: boolean;
     tag_ids: number[];
     transfer_id: number | null;
+    is_inter_household_transfer?: boolean;
 }
 
 interface EditProps {
@@ -60,6 +61,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
     const isExpense = selectedCategory?.type === 'expense';
     const isTransfer = transaction.transfer_id !== null;
+    const isInterHouseholdTransfer = transaction.is_inter_household_transfer || false;
 
     const toggleTag = (tagId: number) => {
         const currentTags = data.tag_ids;
@@ -96,8 +98,24 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
                     <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
-                        {/* Avviso trasferimento */}
-                        {isTransfer && (
+                        {/* Avviso trasferimento inter-household */}
+                        {isInterHouseholdTransfer && (
+                            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+                                <span className="text-xl">🚫</span>
+                                <div>
+                                    <p className="font-medium text-red-800 dark:text-red-200">
+                                        Transazione di trasferimento tra Household
+                                    </p>
+                                    <p className="mt-1 text-sm text-red-700 dark:text-red-300">
+                                        Questa transazione fa parte di un trasferimento tra Households diverse. 
+                                        Non è possibile modificarla. Per eliminarla, vai alla lista dei trasferimenti inter-household.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Avviso trasferimento normale */}
+                        {isTransfer && !isInterHouseholdTransfer && (
                             <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
                                 <span className="text-xl">🔄</span>
                                 <div>
@@ -120,12 +138,12 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                     id="account_id"
                                     className={clsx(
                                         'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
-                                        isTransfer && 'cursor-not-allowed opacity-60'
+                                        (isTransfer || isInterHouseholdTransfer) && 'cursor-not-allowed opacity-60'
                                     )}
                                     value={data.account_id}
                                     onChange={(e) => setData('account_id', e.target.value)}
                                     required
-                                    disabled={isTransfer}
+                                    disabled={isTransfer || isInterHouseholdTransfer}
                                 >
                                     {accounts.map((account) => (
                                         <option key={account.id} value={account.id}>
@@ -137,6 +155,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                             </div>
 
                             {/* Categoria */}
+                            {!isInterHouseholdTransfer && (
                             <div>
                                 <InputLabel htmlFor="category_id" value="Categoria" />
                                 {isTransfer ? (
@@ -173,6 +192,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                     />
                                 )}
                             </div>
+                            )}
 
                             {/* Importo e Data */}
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -196,6 +216,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                             value={data.amount}
                                             onChange={(e) => setData('amount', e.target.value)}
                                             required
+                                            disabled={isInterHouseholdTransfer}
                                         />
                                     </div>
                                     <InputError message={errors.amount} className="mt-2" />
@@ -210,6 +231,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                         value={data.date}
                                         onChange={(e) => setData('date', e.target.value)}
                                         required
+                                        disabled={isInterHouseholdTransfer}
                                     />
                                     <InputError message={errors.date} className="mt-2" />
                                 </div>
@@ -224,6 +246,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                     rows={2}
                                     value={data.description}
                                     onChange={(e) => setData('description', e.target.value)}
+                                    disabled={isInterHouseholdTransfer}
                                 />
                                 <InputError message={errors.description} className="mt-2" />
                             </div>
@@ -237,6 +260,7 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                         className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
                                         checked={data.is_private}
                                         onChange={(e) => setData('is_private', e.target.checked)}
+                                        disabled={isInterHouseholdTransfer}
                                     />
                                 </div>
                                 <div className="ml-3">
@@ -291,11 +315,13 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                     href={route('transactions.index')}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
-                                    Annulla
+                                    {isInterHouseholdTransfer ? 'Torna Indietro' : 'Annulla'}
                                 </Link>
-                                <PrimaryButton disabled={processing}>
-                                    {processing ? 'Salvataggio...' : 'Salva Modifiche'}
-                                </PrimaryButton>
+                                {!isInterHouseholdTransfer && (
+                                    <PrimaryButton disabled={processing}>
+                                        {processing ? 'Salvataggio...' : 'Salva Modifiche'}
+                                    </PrimaryButton>
+                                )}
                             </div>
                         </form>
                     </div>

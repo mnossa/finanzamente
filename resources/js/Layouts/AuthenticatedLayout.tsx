@@ -125,6 +125,7 @@ const navigationItems: NavigationItem[] = [
     { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight },
     { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags },
     { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer },
+    { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight },
     { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo },
     { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank },
     { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },

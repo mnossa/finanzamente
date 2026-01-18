@@ -6,10 +6,12 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use Illuminate\Support\Facades\Gate;
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\InterHouseholdTransfer;
 use App\Models\Transaction;
 use App\Models\Transfer;
 use App\Policies\AccountPolicy;
 use App\Policies\CategoryPolicy;
+use App\Policies\InterHouseholdTransferPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TransferPolicy;
 
@@ -23,6 +25,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Account::class => AccountPolicy::class,
         Category::class => CategoryPolicy::class,
+        InterHouseholdTransfer::class => InterHouseholdTransferPolicy::class,
         Transaction::class => TransactionPolicy::class,
         Transfer::class => TransferPolicy::class,
     ];

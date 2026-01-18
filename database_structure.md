@@ -125,6 +125,39 @@ Di seguito la struttura delle principali tabelle del database, con descrizione d
 
 > **Nota**: Un rimborso collega una transazione di spesa (original_transaction_id) a una nuova transazione di entrata (refund_id in transactions). Questo permette di tracciare quanto è stato rimborsato per ogni spesa e mantenere un bilancio accurato.
 
+## inter_household_transfers
+| Campo                    | Tipo           | Descrizione                                                              |
+|--------------------------|----------------|--------------------------------------------------------------------------|
+| id                       | BIGINT PK      | Identificativo univoco trasferimento inter-household                     |
+| uuid                     | VARCHAR UNIQUE | UUID pubblico per riferimento esterno                                    |
+| source_household_id      | BIGINT FK      | Household sorgente (chi invia)                                           |
+| source_account_id        | BIGINT FK      | Account sorgente del trasferimento                                       |
+| source_user_id           | BIGINT FK      | Utente che ha creato il trasferimento                                    |
+| dest_household_id        | BIGINT FK      | Household destinataria (chi riceve)                                      |
+| dest_account_id          | BIGINT FK      | Account destinazione del trasferimento                                   |
+| dest_user_id             | BIGINT FK      | Utente destinatario (nullable)                                           |
+| source_amount            | DECIMAL(18,8)  | Importo in valuta sorgente                                               |
+| source_currency          | VARCHAR        | Codice valuta sorgente                                                   |
+| dest_amount              | DECIMAL(18,8)  | Importo in valuta destinazione                                           |
+| dest_currency            | VARCHAR        | Codice valuta destinazione                                               |
+| exchange_rate            | DECIMAL(28,12) | Tasso di cambio usato (nullable)                                         |
+| fee                      | DECIMAL(18,8)  | Commissione applicata (nullable)                                         |
+| description              | TEXT           | Descrizione del trasferimento (nullable)                                 |
+| notes                    | TEXT           | Note aggiuntive (nullable)                                               |
+| transfer_date            | DATE           | Data del trasferimento                                                   |
+| status                   | ENUM           | Stato (pending, approved, rejected, cancelled, completed)                |
+| source_transaction_id    | BIGINT FK      | Transazione di uscita creata (nullable, solo se approved)                |
+| dest_transaction_id      | BIGINT FK      | Transazione di entrata creata (nullable, solo se approved)               |
+| approved_at              | TIMESTAMP      | Data/ora approvazione (nullable)                                         |
+| approved_by              | BIGINT FK      | Utente che ha approvato (nullable)                                       |
+| rejected_at              | TIMESTAMP      | Data/ora rifiuto (nullable)                                              |
+| rejected_by              | BIGINT FK      | Utente che ha rifiutato (nullable)                                       |
+| rejection_reason         | TEXT           | Motivo del rifiuto (nullable)                                            |
+| created_at/updated_at    | TIMESTAMP      | Timestamps Laravel                                                       |
+| deleted_at               | TIMESTAMP      | Soft delete (opzionale)                                                  |
+
+> **Nota**: I trasferimenti inter-household consentono di trasferire fondi tra account appartenenti a households diverse. Richiedono approvazione dalla household destinataria. Solo quando approvati vengono create le transazioni collegate (source_transaction_id e dest_transaction_id). Lo stato 'pending' indica che è in attesa di approvazione, 'approved'/'completed' che è stato approvato e le transazioni sono state create, 'rejected' che è stato rifiutato, 'cancelled' che è stato annullato dalla household sorgente.
+
 ## recurring_transactions
 | Campo         | Tipo         | Descrizione                                 |
 |--------------|--------------|---------------------------------------------|
