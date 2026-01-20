@@ -5,6 +5,7 @@ import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
+import PageHeader from '@/Components/PageHeader';
 
 interface Account {
     id: number;
@@ -365,11 +366,7 @@ export default function Dashboard({
 
     return (
         <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Dashboard
-                </h2>
-            }
+            header={<PageHeader title="Dashboard" />}
         >
             <Head title="Dashboard" />
 

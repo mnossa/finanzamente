@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
@@ -9,6 +10,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -81,7 +84,7 @@ interface IndexProps {
 }
 
 
-function TransactionRow({ transaction }: { transaction: Transaction }) {
+function TransactionRow({ transaction, onDeleteClick }: { transaction: Transaction; onDeleteClick: (id: number, description: string) => void }) {
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
     const isRefund = transaction.refund_id !== null;
@@ -176,11 +179,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                         <PencilIcon size={18} />
                     </Link>
                     <button
-                        onClick={() => {
-                            if (confirm('Sei sicuro di voler eliminare questa transazione?')) {
-                                router.delete(route('transactions.destroy', transaction.id));
-                            }
-                        }}
+                        onClick={() => onDeleteClick(transaction.id, transaction.description || transaction.category?.name || 'questa transazione')}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                         title="Elimina"
                     >
@@ -199,6 +198,27 @@ export default function Index({
     categories,
     filters,
 }: IndexProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
+
+    const openDeleteDialog = (id: number, description: string) => {
+        setDeleteTarget({ id, description });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('transactions.destroy', deleteTarget.id));
+        }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
     const handleFilterChange = (key: string, value: string) => {
         router.get(
             route('transactions.index'),
@@ -216,20 +236,30 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Transazioni
-                    </h1>
-                    <LinkButton
-                        href={route('transactions.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuova Transazione
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Transazioni"
+                    actions={
+                        <LinkButton
+                            href={route('transactions.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuova Transazione
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Transazioni" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare ${deleteTarget.description}?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -313,6 +343,7 @@ export default function Index({
                                         <TransactionRow
                                             key={transaction.id}
                                             transaction={transaction}
+                                            onDeleteClick={openDeleteDialog}
                                         />
                                     ))}
                                 </div>

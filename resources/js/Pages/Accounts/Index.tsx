@@ -1,7 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
+import ArchiveIcon from '@/Components/Icons/ArchiveIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -113,9 +115,10 @@ function AccountCard({ account }: { account: Account }) {
                         e.preventDefault();
                         router.post(route('accounts.toggle-active', account.id));
                     }}
-                    className="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                    title={account.active ? 'Archivia' : 'Riattiva'}
                 >
-                    {account.active ? 'Archivia' : 'Riattiva'}
+                    <ArchiveIcon size={18} />
                 </button>
             </div>
         </div>
@@ -134,17 +137,17 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        I tuoi Conti
-                    </h1>
-                    <LinkButton
-                        href={route('accounts.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Conto
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="I tuoi Conti"
+                    actions={
+                        <LinkButton
+                            href={route('accounts.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Conto
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Conti" />

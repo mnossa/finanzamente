@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
@@ -8,6 +9,8 @@ import { Pagination } from '@/Components/Pagination';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Account {
     id: number;
@@ -50,7 +53,7 @@ interface IndexProps {
 }
 
 
-function TransferRow({ transfer }: { transfer: Transfer }) {
+function TransferRow({ transfer, onDeleteClick }: { transfer: Transfer; onDeleteClick: (id: number, description: string) => void }) {
     const isSameCurrency = transfer.source_currency === transfer.dest_currency;
 
     return (
@@ -100,11 +103,7 @@ function TransferRow({ transfer }: { transfer: Transfer }) {
                         <EyeIcon size={18} />
                     </Link>
                     <button
-                        onClick={() => {
-                            if (confirm('Sei sicuro di voler annullare questo trasferimento?')) {
-                                router.delete(route('transfers.destroy', transfer.id));
-                            }
-                        }}
+                        onClick={() => onDeleteClick(transfer.id, `il trasferimento da ${transfer.source_account?.name || 'conto'} a ${transfer.destination_account?.name || 'conto'}`)}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                         title="Elimina"
                     >
@@ -118,25 +117,55 @@ function TransferRow({ transfer }: { transfer: Transfer }) {
 
 
 export default function Index({ transfers }: IndexProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
+
+    const openDeleteDialog = (id: number, description: string) => {
+        setDeleteTarget({ id, description });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('transfers.destroy', deleteTarget.id));
+        }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Trasferimenti
-                    </h1>
-                    <LinkButton
-                        href={route('transfers.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Trasferimento
-                    </LinkButton>
-
-                    
-                </div>
+                <PageHeader
+                    title="Trasferimenti"
+                    actions={
+                        <LinkButton
+                            href={route('transfers.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Trasferimento
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Trasferimenti" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma annullamento"
+                description={deleteTarget ? `Sei sicuro di voler annullare ${deleteTarget.description}?` : undefined}
+                confirmLabel="Annulla Trasferimento"
+                cancelLabel="Chiudi"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                variant="warning"
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -145,7 +174,7 @@ export default function Index({ transfers }: IndexProps) {
                             <>
                                 <div className="p-4">
                                     {transfers.data.map((transfer) => (
-                                        <TransferRow key={transfer.id} transfer={transfer} />
+                                        <TransferRow key={transfer.id} transfer={transfer} onDeleteClick={openDeleteDialog} />
                                     ))}
                                 </div>
                                 <Pagination data={transfers} />

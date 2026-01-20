@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -207,17 +208,19 @@ export default function Show({ goal, statuses }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center gap-4">
-                    <Link
-                        href={route('financial-goals.index')}
-                        className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                    >
-                        ←
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        {goal.icon} {goal.name}
-                    </h2>
-                </div>
+                <PageHeader
+                    title={
+                        <>
+                            <Link
+                                href={route('financial-goals.index')}
+                                className="mr-4 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                            >
+                                ←
+                            </Link>
+                            {goal.icon} {goal.name}
+                        </>
+                    }
+                />
             }
         >
             <Head title={goal.name} />

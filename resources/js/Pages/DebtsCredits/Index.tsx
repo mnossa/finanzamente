@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -177,17 +178,17 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Debiti e Crediti
-                    </h1>
-                    <LinkButton
-                        href={route('debts-credits.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Debiti e Crediti"
+                    actions={
+                        <LinkButton
+                            href={route('debts-credits.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Debiti e Crediti" />

@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
@@ -186,25 +187,25 @@ export default function Index({
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Investimenti
-                    </h1>
-                    <div className="flex gap-2">
-                        <Link
-                            href={route('investment-assets.index')}
-                            className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                        >
-                            💼 Gestisci Asset
-                        </Link>
-                        <LinkButton
-                            href={route('investments.create')}
-                            icon={<PlusIcon />}
-                        >
-                            Nuovo Investimento
-                        </LinkButton>
-                    </div>
-                </div>
+                <PageHeader
+                    title="Investimenti"
+                    actions={
+                        <>
+                            <Link
+                                href={route('investment-assets.index')}
+                                className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                            >
+                                💼 Gestisci Asset
+                            </Link>
+                            <LinkButton
+                                href={route('investments.create')}
+                                icon={<PlusIcon />}
+                            >
+                                Nuovo Investimento
+                            </LinkButton>
+                        </>
+                    }
+                />
             }
         >
             <Head title="Investimenti" />

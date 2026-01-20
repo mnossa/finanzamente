@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
+import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
     code: string;
@@ -138,17 +139,17 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Obiettivi Finanziari
-                    </h1>
-                    <LinkButton
-                        href={route('financial-goals.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Obiettivo
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Obiettivi Finanziari"
+                    actions={
+                        <LinkButton
+                            href={route('financial-goals.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Obiettivo
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Obiettivi Finanziari" />

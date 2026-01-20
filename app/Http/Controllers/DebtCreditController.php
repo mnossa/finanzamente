@@ -76,8 +76,7 @@ class DebtCreditController extends Controller
      */
     public function create(): Response
     {
-        $currencies = Currency::where('is_active', true)
-            ->orderBy('code')
+        $currencies = Currency::orderBy('code')
             ->get()
             ->map(fn($c) => [
                 'code' => $c->code,
@@ -160,8 +159,7 @@ class DebtCreditController extends Controller
     {
         $this->authorizeDebtCredit($debts_credit);
 
-        $currencies = Currency::where('is_active', true)
-            ->orderBy('code')
+        $currencies = Currency::orderBy('code')
             ->get()
             ->map(fn($c) => [
                 'code' => $c->code,

@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
@@ -93,17 +94,19 @@ export default function Show({ account, recentTransactions }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                            {account.name}
-                        </h2>
-                    </div>
-                    <LinkButton href={route('accounts.edit', account.id)} icon={<PencilIcon />}>
-                        Modifica
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title={
+                        <div className="flex items-center space-x-3">
+                            <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
+                            <span>{account.name}</span>
+                        </div>
+                    }
+                    actions={
+                        <LinkButton href={route('accounts.edit', account.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title={account.name} />

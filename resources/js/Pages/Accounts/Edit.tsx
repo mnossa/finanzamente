@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -53,17 +54,19 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center space-x-4">
-                    <Link
-                        href={route('accounts.index')}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        ← Indietro
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Modifica Conto
-                    </h2>
-                </div>
+                <PageHeader
+                    title={
+                        <>
+                            <Link
+                                href={route('accounts.index')}
+                                className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                ← Indietro
+                            </Link>
+                            Modifica Conto
+                        </>
+                    }
+                />
             }
         >
             <Head title="Modifica Conto" />

@@ -224,22 +224,24 @@ export default function Show({ investment }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center gap-4">
-                    <Link
-                        href={route('investments.index')}
-                        className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                    >
-                        ←
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        {investment.asset.type_icon} {investment.asset.name}
-                        {investment.asset.symbol && (
-                            <span className="ml-2 text-base text-gray-500 dark:text-gray-400">
-                                ({investment.asset.symbol})
-                            </span>
-                        )}
-                    </h2>
-                </div>
+                <PageHeader
+                    title={
+                        <>
+                            <Link
+                                href={route('investments.index')}
+                                className="mr-4 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+                            >
+                                ←
+                            </Link>
+                            {investment.asset.type_icon} {investment.asset.name}
+                            {investment.asset.symbol && (
+                                <span className="ml-2 text-base text-gray-500 dark:text-gray-400">
+                                    ({investment.asset.symbol})
+                                </span>
+                            )}
+                        </>
+                    }
+                />
             }
         >
             <Head title={`${investment.asset.name} - Investimento`} />

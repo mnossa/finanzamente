@@ -30,9 +30,13 @@ class BudgetController extends Controller
             ->get()
             ->map(function ($budget) use ($householdId) {
                 // Calcola la spesa effettiva per questo budget
-                $spent = Transaction::where('household_id', $householdId)
+                $spent = Transaction::whereHas('account', function ($query) use ($householdId) {
+                        $query->where('household_id', $householdId);
+                    })
                     ->where('category_id', $budget->category_id)
-                    ->where('type', 'expense')
+                    ->whereHas('category', function ($query) {
+                        $query->where('type', 'expense');
+                    })
                     ->whereBetween('date', [$budget->period_start, $budget->period_end])
                     ->sum('amount');
 
@@ -87,8 +91,7 @@ class BudgetController extends Controller
                 'icon' => $cat->icon,
             ]);
 
-        $currencies = Currency::where('is_active', true)
-            ->orderBy('code')
+        $currencies = Currency::orderBy('code')
             ->get()
             ->map(fn($c) => [
                 'code' => $c->code,
@@ -135,9 +138,13 @@ class BudgetController extends Controller
         $householdId = Auth::user()->active_household_id;
 
         // Transazioni associate a questo budget
-        $transactions = Transaction::where('household_id', $householdId)
+        $transactions = Transaction::whereHas('account', function ($query) use ($householdId) {
+                $query->where('household_id', $householdId);
+            })
             ->where('category_id', $budget->category_id)
-            ->where('type', 'expense')
+            ->whereHas('category', function ($query) {
+                $query->where('type', 'expense');
+            })
             ->whereBetween('date', [$budget->period_start, $budget->period_end])
             ->with(['account'])
             ->orderBy('date', 'desc')
@@ -200,8 +207,7 @@ class BudgetController extends Controller
                 'icon' => $cat->icon,
             ]);
 
-        $currencies = Currency::where('is_active', true)
-            ->orderBy('code')
+        $currencies = Currency::orderBy('code')
             ->get()
             ->map(fn($c) => [
                 'code' => $c->code,

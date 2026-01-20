@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
@@ -7,6 +8,8 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -93,7 +96,7 @@ function FrequencyBadge({ frequency, frequencyLabel }: { frequency: string; freq
     );
 }
 
-function RecurringTransactionRow({ rt }: { rt: RecurringTransaction }) {
+function RecurringTransactionRow({ rt, onDeleteClick }: { rt: RecurringTransaction; onDeleteClick: (id: number, description: string) => void }) {
     const isIncome = rt.amount > 0;
 
     return (
@@ -166,11 +169,7 @@ function RecurringTransactionRow({ rt }: { rt: RecurringTransaction }) {
                         <PencilIcon size={18} />
                     </Link>
                     <button
-                        onClick={() => {
-                            if (confirm('Sei sicuro di voler eliminare questa transazione ricorrente?')) {
-                                router.delete(route('recurring-transactions.destroy', rt.id));
-                            }
-                        }}
+                        onClick={() => onDeleteClick(rt.id, rt.description || rt.category?.name || 'questa ricorrenza')}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                         title="Elimina"
                     >
@@ -183,26 +182,57 @@ function RecurringTransactionRow({ rt }: { rt: RecurringTransaction }) {
 }
 
 export default function Index({ recurringTransactions, frequencies }: IndexProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
+
+    const openDeleteDialog = (id: number, description: string) => {
+        setDeleteTarget({ id, description });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('recurring-transactions.destroy', deleteTarget.id));
+        }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
     const activeTransactions = recurringTransactions.filter((rt) => rt.is_active);
     const inactiveTransactions = recurringTransactions.filter((rt) => !rt.is_active);
 
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Transazioni Ricorrenti
-                    </h1>
-                    <LinkButton
-                        href={route('recurring-transactions.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuova Ricorrenza
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Transazioni Ricorrenti"
+                    actions={
+                        <LinkButton
+                            href={route('recurring-transactions.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuova Ricorrenza
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Transazioni Ricorrenti" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare ${deleteTarget.description}?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -244,7 +274,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                         {activeTransactions.length > 0 ? (
                             <div className="p-4">
                                 {activeTransactions.map((rt) => (
-                                    <RecurringTransactionRow key={rt.id} rt={rt} />
+                                    <RecurringTransactionRow key={rt.id} rt={rt} onDeleteClick={openDeleteDialog} />
                                 ))}
                             </div>
                         ) : (
@@ -268,7 +298,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                             </div>
                             <div className="p-4">
                                 {inactiveTransactions.map((rt) => (
-                                    <RecurringTransactionRow key={rt.id} rt={rt} />
+                                    <RecurringTransactionRow key={rt.id} rt={rt} onDeleteClick={openDeleteDialog} />
                                 ))}
                             </div>
                         </div>

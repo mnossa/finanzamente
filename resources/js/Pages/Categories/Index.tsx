@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -7,6 +8,7 @@ import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -78,7 +80,7 @@ function CategoryCard({
                     <PencilIcon size={18} />
                 </Link>
                 <button
-                    onClick={() => onDelete(category.id)}
+                    onClick={(e) => { e.preventDefault(); onDelete(category.id); }}
                     className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                     title="Elimina"
                 >
@@ -91,36 +93,63 @@ function CategoryCard({
 
 export default function Index({ categories, byType, categoryTypes }: IndexProps) {
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
-    const handleDelete = (id: number) => {
-        if (confirm('Sei sicuro di voler eliminare questa categoria?')) {
-            setDeletingId(id);
-            router.delete(route('categories.destroy', id), {
+    const openDeleteDialog = (id: number) => {
+        const category = categories.find(c => c.id === id);
+        if (category) {
+            setDeleteTarget({ id, name: category.name });
+            setDeleteDialogOpen(true);
+        }
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            setDeletingId(deleteTarget.id);
+            router.delete(route('categories.destroy', deleteTarget.id), {
                 onFinish: () => setDeletingId(null),
             });
         }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
     };
 
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Categorie
-                    </h1>
-                    <LinkButton
-                        href={route('categories.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuova Categoria
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Categorie"
+                    actions={
+                        <LinkButton
+                            href={route('categories.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuova Categoria
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Categorie" />
 
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare la categoria "${deleteTarget.name}"?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
+
             <div className="py-6">
-                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {categories.length === 0 ? (
                         <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                             <EmptyState
@@ -181,7 +210,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                                             <CategoryCard
                                                 key={category.id}
                                                 category={category}
-                                                onDelete={handleDelete}
+                                                onDelete={openDeleteDialog}
                                             />
                                         ))}
                                     </div>
@@ -200,7 +229,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                                             <CategoryCard
                                                 key={category.id}
                                                 category={category}
-                                                onDelete={handleDelete}
+                                                onDelete={openDeleteDialog}
                                             />
                                         ))}
                                     </div>

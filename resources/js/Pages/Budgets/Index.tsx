@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -8,6 +9,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -42,13 +45,7 @@ interface IndexProps {
 
 
 
-function BudgetCard({ budget }: { budget: Budget }) {
-    const handleDelete = () => {
-        if (confirm('Sei sicuro di voler eliminare questo budget?')) {
-            router.delete(route('budgets.destroy', budget.id));
-        }
-    };
-
+function BudgetCard({ budget, onDeleteClick }: { budget: Budget; onDeleteClick: (id: number, name: string) => void }) {
     return (
         <div
             className={clsx(
@@ -123,7 +120,7 @@ function BudgetCard({ budget }: { budget: Budget }) {
                     <PencilIcon size={18} />
                 </Link>
                 <button
-                    onClick={handleDelete}
+                    onClick={(e) => { e.preventDefault(); onDeleteClick(budget.id, budget.category.name); }}
                     className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                     title="Elimina"
                 >
@@ -135,6 +132,27 @@ function BudgetCard({ budget }: { budget: Budget }) {
 }
 
 export default function Index({ budgets }: IndexProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; name: string } | null>(null);
+
+    const openDeleteDialog = (id: number, name: string) => {
+        setDeleteTarget({ id, name });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('budgets.destroy', deleteTarget.id));
+        }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
     const activeBudgets = budgets.filter((b) => b.is_active);
     const pastBudgets = budgets.filter((b) => !b.is_active);
 
@@ -146,20 +164,30 @@ export default function Index({ budgets }: IndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Budget
-                    </h1>
-                    <LinkButton
-                        href={route('budgets.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Budget
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Budget"
+                    actions={
+                        <LinkButton
+                            href={route('budgets.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Budget
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Budget" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare il budget per "${deleteTarget.name}"?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -230,7 +258,7 @@ export default function Index({ budgets }: IndexProps) {
                                     </h3>
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                         {activeBudgets.map((budget) => (
-                                            <BudgetCard key={budget.id} budget={budget} />
+                                            <BudgetCard key={budget.id} budget={budget} onDeleteClick={openDeleteDialog} />
                                         ))}
                                     </div>
                                 </div>
@@ -244,7 +272,7 @@ export default function Index({ budgets }: IndexProps) {
                                     </h3>
                                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                         {pastBudgets.map((budget) => (
-                                            <BudgetCard key={budget.id} budget={budget} />
+                                            <BudgetCard key={budget.id} budget={budget} onDeleteClick={openDeleteDialog} />
                                         ))}
                                     </div>
                                 </div>

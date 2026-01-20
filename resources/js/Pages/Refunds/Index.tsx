@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
@@ -9,6 +10,8 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -72,7 +75,7 @@ interface IndexProps {
 }
 
 
-function RefundRow({ refund }: { refund: Refund }) {
+function RefundRow({ refund, onDeleteClick }: { refund: Refund; onDeleteClick: (id: number, description: string) => void }) {
     const originalTx = refund.original_transaction;
 
     return (
@@ -139,11 +142,7 @@ function RefundRow({ refund }: { refund: Refund }) {
                         <PencilIcon size={18} />
                     </Link>
                     <button
-                        onClick={() => {
-                            if (confirm('Sei sicuro di voler eliminare questo rimborso?')) {
-                                router.delete(route('refunds.destroy', refund.id));
-                            }
-                        }}
+                        onClick={() => onDeleteClick(refund.id, refund.description || 'questo rimborso')}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                         title="Elimina"
                     >
@@ -157,23 +156,54 @@ function RefundRow({ refund }: { refund: Refund }) {
 
 
 export default function Index({ refunds }: IndexProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
+
+    const openDeleteDialog = (id: number, description: string) => {
+        setDeleteTarget({ id, description });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('refunds.destroy', deleteTarget.id));
+        }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Rimborsi
-                    </h1>
-                    <LinkButton
-                        href={route('refunds.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Rimborso
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Rimborsi"
+                    actions={
+                        <LinkButton
+                            href={route('refunds.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Rimborso
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Rimborsi" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare ${deleteTarget.description}?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -200,7 +230,7 @@ export default function Index({ refunds }: IndexProps) {
                             <>
                                 <div className="p-4">
                                     {refunds.data.map((refund) => (
-                                        <RefundRow key={refund.id} refund={refund} />
+                                        <RefundRow key={refund.id} refund={refund} onDeleteClick={openDeleteDialog} />
                                     ))}
                                 </div>
                                 <Pagination data={refunds} />

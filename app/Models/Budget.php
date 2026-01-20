@@ -37,4 +37,9 @@ class Budget extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_code', 'code');
+    }
 }

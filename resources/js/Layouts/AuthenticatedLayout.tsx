@@ -279,7 +279,8 @@ export default function Authenticated({
                 </div>
 
                 {/* Navigation */}
-                <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-200px)]">
+                {/* <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-200px)]"> */}
+                <nav className="p-4 space-y-1 overflow-y-auto h-100">
                     <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
                         Menu Principale
                     </p>

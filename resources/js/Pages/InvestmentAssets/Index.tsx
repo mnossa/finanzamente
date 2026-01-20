@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -6,6 +7,8 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Currency {
     code: string;
@@ -69,29 +72,54 @@ function TypeBadge({ type, typeLabel, typeIcon }: { type: string; typeLabel: str
 }
 
 export default function Index({ assets, groupedAssets, stats, types, typeIcons }: IndexProps) {
-    const handleDelete = (id: number, name: string) => {
-        if (confirm(`Sei sicuro di voler eliminare l'asset "${name}"?`)) {
-            router.delete(route('investment-assets.destroy', id));
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; name: string } | null>(null);
+
+    const openDeleteDialog = (id: number, name: string) => {
+        setDeleteTarget({ id, name });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('investment-assets.destroy', deleteTarget.id));
         }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
     };
 
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Asset Finanziari
-                    </h1>
-                    <LinkButton
-                        href={route('investment-assets.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Asset
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Asset Finanziari"
+                    actions={
+                        <LinkButton
+                            href={route('investment-assets.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Asset
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Asset Finanziari" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare l'asset "${deleteTarget.name}"?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -159,7 +187,7 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                                             </Link>
                                             {asset.investments_count === 0 && (
                                                 <button
-                                                    onClick={() => handleDelete(asset.id, asset.name)}
+                                                    onClick={() => openDeleteDialog(asset.id, asset.name)}
                                                     className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                                                     title="Elimina"
                                                 >

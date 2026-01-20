@@ -109,9 +109,13 @@ class DashboardController extends Controller
             ->with(['category', 'currency'])
             ->get()
             ->map(function ($budget) use ($householdId) {
-                $spent = Transaction::where('household_id', $householdId)
+                $spent = Transaction::whereHas('account', function ($query) use ($householdId) {
+                        $query->where('household_id', $householdId);
+                    })
                     ->where('category_id', $budget->category_id)
-                    ->where('type', 'expense')
+                    ->whereHas('category', function ($query) {
+                        $query->where('type', 'expense');
+                    })
                     ->whereBetween('date', [$budget->period_start, $budget->period_end])
                     ->sum('amount');
 

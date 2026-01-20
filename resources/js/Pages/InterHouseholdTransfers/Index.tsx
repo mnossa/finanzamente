@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
+import PageHeader from '@/Components/PageHeader';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -192,15 +193,15 @@ export default function Index({ transfers, filters }: IndexProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Trasferimenti tra Households
-                    </h2>
-                    <LinkButton href={route('inter-household-transfers.create')}>
-                        <PlusIcon className="mr-2 h-4 w-4" />
-                        Nuovo Trasferimento
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Trasferimenti tra Households"
+                    actions={
+                        <LinkButton href={route('inter-household-transfers.create')}>
+                            <PlusIcon className="mr-2 h-4 w-4" />
+                            Nuovo Trasferimento
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Trasferimenti tra Households" />

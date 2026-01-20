@@ -4,6 +4,8 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -82,13 +84,13 @@ function formatDate(dateStr: string): string {
 }
 
 export default function Show({ refund }: ShowProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const originalTx = refund.original_transaction;
     const refundTx = refund.refund_transaction;
 
     const handleDelete = () => {
-        if (confirm('Sei sicuro di voler eliminare questo rimborso? Il saldo del conto verrà ripristinato.')) {
-            router.delete(route('refunds.destroy', refund.id));
-        }
+        router.delete(route('refunds.destroy', refund.id));
+        setDeleteDialogOpen(false);
     };
 
     return (
@@ -113,6 +115,16 @@ export default function Show({ refund }: ShowProps) {
             }
         >
             <Head title="Dettaglio Rimborso" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description="Sei sicuro di voler eliminare questo rimborso? Il saldo del conto verrà ripristinato."
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteDialogOpen(false)}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -291,7 +303,7 @@ export default function Show({ refund }: ShowProps) {
                             Modifica
                         </LinkButton>
                         <button
-                            onClick={handleDelete}
+                            onClick={() => setDeleteDialogOpen(true)}
                             className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
                             <TrashIcon size={18} /> Elimina

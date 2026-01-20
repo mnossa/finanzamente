@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import { Head, Link } from '@inertiajs/react';
 
 interface Account {
@@ -53,17 +54,19 @@ export default function Show({ transfer }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center space-x-4">
-                    <Link
-                        href={route('transfers.index')}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        ← Indietro
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Dettagli Trasferimento
-                    </h2>
-                </div>
+                <PageHeader
+                    title={
+                        <>
+                            <Link
+                                href={route('transfers.index')}
+                                className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                ← Indietro
+                            </Link>
+                            Dettagli Trasferimento
+                        </>
+                    }
+                />
             }
         >
             <Head title="Dettagli Trasferimento" />

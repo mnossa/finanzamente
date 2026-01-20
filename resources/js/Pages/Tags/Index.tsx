@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -6,6 +7,8 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Tag {
     id: number;
@@ -19,13 +22,7 @@ interface IndexProps {
     tags: Tag[];
 }
 
-function TagCard({ tag }: { tag: Tag }) {
-    const handleDelete = () => {
-        if (confirm('Sei sicuro di voler eliminare questo tag?')) {
-            router.delete(route('tags.destroy', tag.id));
-        }
-    };
-
+function TagCard({ tag, onDeleteClick }: { tag: Tag; onDeleteClick: (id: number, name: string) => void }) {
     return (
         <div className="rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800">
             <div className="flex items-start justify-between">
@@ -62,7 +59,7 @@ function TagCard({ tag }: { tag: Tag }) {
                     <PencilIcon size={18} />
                 </Link>
                 <button
-                    onClick={handleDelete}
+                    onClick={() => onDeleteClick(tag.id, tag.name)}
                     className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                     title="Elimina"
                 >
@@ -74,23 +71,54 @@ function TagCard({ tag }: { tag: Tag }) {
 }
 
 export default function Index({ tags }: IndexProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; name: string } | null>(null);
+
+    const openDeleteDialog = (id: number, name: string) => {
+        setDeleteTarget({ id, name });
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget) {
+            router.delete(route('tags.destroy', deleteTarget.id));
+        }
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteDialogOpen(false);
+        setDeleteTarget(null);
+    };
+
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-xl font-semibold leading-tight text-slate-800">
-                        Tag
-                    </h1>
-                    <LinkButton
-                        href={route('tags.create')}
-                        icon={<PlusIcon />}
-                    >
-                        Nuovo Tag
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Tag"
+                    actions={
+                        <LinkButton
+                            href={route('tags.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Tag
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Tag" />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description={deleteTarget ? `Sei sicuro di voler eliminare il tag "${deleteTarget.name}"?` : undefined}
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -121,7 +149,7 @@ export default function Index({ tags }: IndexProps) {
                             {/* Lista Tag */}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {tags.map((tag) => (
-                                    <TagCard key={tag.id} tag={tag} />
+                                    <TagCard key={tag.id} tag={tag} onDeleteClick={openDeleteDialog} />
                                 ))}
                             </div>
                         </>

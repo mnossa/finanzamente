@@ -1,9 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import React from 'react';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
     id: number;
@@ -94,42 +97,64 @@ function FrequencyBadge({ frequency, frequencyLabel }: { frequency: string; freq
 }
 
 export default function Show({ recurringTransaction: rt, frequencies }: ShowProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+    const [generateDialogOpen, setGenerateDialogOpen] = React.useState(false);
     const isIncome = rt.amount > 0;
 
     const handleGenerate = () => {
-        if (confirm('Vuoi generare la prossima transazione adesso?')) {
-            router.post(route('recurring-transactions.generate', rt.id));
-        }
+        router.post(route('recurring-transactions.generate', rt.id));
+        setGenerateDialogOpen(false);
     };
 
     const handleDelete = () => {
-        if (confirm('Sei sicuro di voler eliminare questa transazione ricorrente?')) {
-            router.delete(route('recurring-transactions.destroy', rt.id));
-        }
+        router.delete(route('recurring-transactions.destroy', rt.id));
+        setDeleteDialogOpen(false);
     };
 
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            href={route('recurring-transactions.index')}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                        >
-                            ←
-                        </Link>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <PageHeader
+                    title={
+                        <>
+                            <Link
+                                href={route('recurring-transactions.index')}
+                                className="mr-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            >
+                                ←
+                            </Link>
                             Dettaglio Ricorrenza
-                        </h2>
-                    </div>
-                    <LinkButton href={route('recurring-transactions.edit', rt.id)} icon={<PencilIcon />}>
-                        Modifica
-                    </LinkButton>
-                </div>
+                        </>
+                    }
+                    actions={
+                        <LinkButton href={route('recurring-transactions.edit', rt.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title={`Ricorrenza - ${rt.description || rt.category?.name || 'Dettaglio'}`} />
+
+            <ConfirmDeleteDialog
+                open={deleteDialogOpen}
+                title="Conferma eliminazione"
+                description="Sei sicuro di voler eliminare questa transazione ricorrente?"
+                confirmLabel="Elimina"
+                cancelLabel="Annulla"
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteDialogOpen(false)}
+            />
+
+            <ConfirmDeleteDialog
+                open={generateDialogOpen}
+                title="Genera transazione"
+                description="Vuoi generare la prossima transazione adesso?"
+                confirmLabel="Genera"
+                cancelLabel="Annulla"
+                onConfirm={handleGenerate}
+                onCancel={() => setGenerateDialogOpen(false)}
+            />
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -263,7 +288,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                     <div className="flex flex-wrap justify-center gap-3">
                         {rt.is_active && rt.next_due_date && (
                             <button
-                                onClick={handleGenerate}
+                                onClick={() => setGenerateDialogOpen(true)}
                                 className="inline-flex items-center rounded-lg bg-emerald-600 px-6 py-3 text-sm font-medium text-white hover:bg-emerald-700"
                             >
                                 ⚡ Genera Ora
@@ -273,7 +298,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                             Modifica
                         </LinkButton>
                         <button
-                            onClick={handleDelete}
+                            onClick={() => setDeleteDialogOpen(true)}
                             className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
                             <TrashIcon size={18} /> Elimina

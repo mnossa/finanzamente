@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
@@ -51,22 +52,24 @@ export default function Show({ budget, transactions }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            href={route('budgets.index')}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                        >
-                            ←
-                        </Link>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+                <PageHeader
+                    title={
+                        <>
+                            <Link
+                                href={route('budgets.index')}
+                                className="mr-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                            >
+                                ←
+                            </Link>
                             {budget.category.icon || '📁'} {budget.category.name}
-                        </h2>
-                    </div>
-                    <LinkButton href={route('budgets.edit', budget.id)} icon={<PencilIcon />}>
-                        Modifica
-                    </LinkButton>
-                </div>
+                        </>
+                    }
+                    actions={
+                        <LinkButton href={route('budgets.edit', budget.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title={`Budget - ${budget.category.name}`} />
