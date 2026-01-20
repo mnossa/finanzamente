@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
+import PencilIcon from '@/Components/Icons/PencilIcon';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -105,7 +107,7 @@ export default function Show({ transaction }: ShowProps) {
                             Dettaglio Transazione
                         </h2>
                     </div>
-                    <LinkButton href={route('transactions.edit', transaction.id)} icon="✏️">
+                    <LinkButton href={route('transactions.edit', transaction.id)} icon={<PencilIcon />}>
                         Modifica
                     </LinkButton>
                 </div>
@@ -354,14 +356,14 @@ export default function Show({ transaction }: ShowProps) {
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
-                        <LinkButton href={route('transactions.edit', transaction.id)} size="lg" icon="✏️">
+                        <LinkButton href={route('transactions.edit', transaction.id)} size="lg" icon={<PencilIcon />}>
                             Modifica
                         </LinkButton>
                         <button
                             onClick={handleDelete}
-                            className="inline-flex items-center rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
-                            🗑️ Elimina
+                            <TrashIcon size={18} /> Elimina
                         </button>
                     </div>
                 </div>

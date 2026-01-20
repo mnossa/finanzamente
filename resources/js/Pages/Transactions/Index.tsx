@@ -1,9 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EyeIcon from '@/Components/Icons/EyeIcon';
+import PencilIcon from '@/Components/Icons/PencilIcon';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import { formatCurrency, formatDate } from '@/utils/format';
+import { Pagination } from '@/Components/Pagination';
 
 interface Category {
     id: number;
@@ -75,21 +80,6 @@ interface IndexProps {
     filters: Filters;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
-
-function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('it-IT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    }).format(date);
-}
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
@@ -98,10 +88,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     const hasRefunds = transaction.has_refunds;
 
     return (
-        <Link
-            href={route('transactions.show', transaction.id)}
-            className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 -mx-4 px-4 transition-colors"
-        >
+        <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 -mx-4 px-4 transition-colors">
             <div className="flex items-center space-x-3">
                 <div
                     className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
@@ -173,12 +160,20 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     {isIncome ? '+' : ''}
                     {formatCurrency(transaction.amount, transaction.account.currency_code)}
                 </p>
-                <div className="flex space-x-2" onClick={(e) => e.preventDefault()}>
+                <div className="flex space-x-2">
+                    <Link
+                        href={route('transactions.show', transaction.id)}
+                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
+                        title="Visualizza"
+                    >
+                        <EyeIcon size={18} />
+                    </Link>
                     <Link
                         href={route('transactions.edit', transaction.id)}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                        title="Modifica"
                     >
-                        ✏️
+                        <PencilIcon size={18} />
                     </Link>
                     <button
                         onClick={() => {
@@ -186,45 +181,17 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                                 router.delete(route('transactions.destroy', transaction.id));
                             }
                         }}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-500 dark:hover:bg-gray-700"
+                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                        title="Elimina"
                     >
-                        🗑️
+                        <TrashIcon size={18} />
                     </button>
                 </div>
-            </div>
-        </Link>
-    );
-}
-
-function Pagination({ data }: { data: PaginatedData<Transaction> }) {
-    if (data.last_page <= 1) return null;
-
-    return (
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-                {data.from}-{data.to} di {data.total} transazioni
-            </div>
-            <div className="flex space-x-1">
-                {data.links.map((link, index) => (
-                    <button
-                        key={index}
-                        onClick={() => link.url && router.get(link.url)}
-                        disabled={!link.url}
-                        className={clsx(
-                            'rounded px-3 py-1 text-sm',
-                            link.active
-                                ? 'bg-emerald-500 text-white shadow-accent'
-                                : link.url
-                                ? 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                                : 'cursor-not-allowed text-gray-300 dark:text-gray-600'
-                        )}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ))}
             </div>
         </div>
     );
 }
+
 
 export default function Index({
     transactions,

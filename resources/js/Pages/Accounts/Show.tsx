@@ -1,7 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
+import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Category {
     id: number;
@@ -47,21 +49,9 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
     }).format(amount);
 }
 
-function getAccountTypeIcon(type: string): string {
-    const icons: Record<string, string> = {
-        bank: '🏦',
-        cash: '💵',
-        card: '💳',
-        broker: '📈',
-        crypto: '₿',
-        other: '💰',
-    };
-    return icons[type] || '💰';
-}
 
 function TransactionRow({ transaction, currency }: { transaction: Transaction; currency: string }) {
     const isIncome = transaction.amount > 0;
-
     return (
         <div className="flex items-center justify-between border-b border-gray-100 py-3 last:border-0 dark:border-gray-700">
             <div className="flex items-center space-x-3">
@@ -71,8 +61,8 @@ function TransactionRow({ transaction, currency }: { transaction: Transaction; c
                         backgroundColor: transaction.category?.color
                             ? `${transaction.category.color}20`
                             : isIncome
-                            ? '#22c55e20'
-                            : '#ef444420',
+                                ? '#22c55e20'
+                                : '#ef444420',
                     }}
                 >
                     {transaction.category?.icon || (isIncome ? '💰' : '💸')}
@@ -110,7 +100,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                             {account.name}
                         </h2>
                     </div>
-                    <LinkButton href={route('accounts.edit', account.id)} icon="✏️">
+                    <LinkButton href={route('accounts.edit', account.id)} icon={<PencilIcon />}>
                         Modifica
                     </LinkButton>
                 </div>

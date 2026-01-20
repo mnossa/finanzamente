@@ -4,6 +4,8 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import { formatCurrency, formatDate } from '@/utils/format';
+import { ProgressBar } from '@/Components/ProgressBar';
 
 interface Currency {
     code: string;
@@ -49,70 +51,11 @@ interface IndexProps {
     statuses: Statuses;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
 
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return 'Nessuna scadenza';
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    });
-}
 
-function ProgressBar({ percentage, color }: { percentage: number; color: string | null }) {
-    const bgColor = color || '#6366f1';
-    
-    return (
-        <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                    width: `${percentage}%`,
-                    backgroundColor: bgColor,
-                }}
-            />
-        </div>
-    );
-}
+// Removed the local ProgressBar function definition as it is now imported from '@/Components/ProgressBar'
 
-function StatusBadge({ status, statusLabel, isOverdue }: { status: string; statusLabel: string; isOverdue: boolean }) {
-    if (isOverdue) {
-        return (
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                ⚠️ Scaduto
-            </span>
-        );
-    }
-
-    const classes: Record<string, string> = {
-        in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-        reached: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-        cancelled: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
-    };
-
-    const icons: Record<string, string> = {
-        in_progress: '🎯',
-        reached: '✅',
-        cancelled: '❌',
-    };
-
-    return (
-        <span
-            className={clsx(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                classes[status] || classes.in_progress
-            )}
-        >
-            {icons[status]} {statusLabel}
-        </span>
-    );
-}
+import { StatusBadge } from '@/Components/StatusBadge';
 
 function GoalCard({ goal }: { goal: FinancialGoal }) {
     return (

@@ -4,6 +4,7 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 
 interface Currency {
     code: string;
@@ -83,20 +84,6 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
     }).format(amount);
 }
 
-function formatNumber(value: number, decimals: number = 8): string {
-    return new Intl.NumberFormat('it-IT', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: decimals,
-    }).format(value);
-}
-
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    });
-}
 
 function ProfitBadge({ profit, percentage }: { profit: number | null; percentage: number | null }) {
     if (profit === null) return null;

@@ -3,8 +3,10 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { FormEventHandler, useState } from 'react';
 
 interface Currency {
@@ -44,21 +46,7 @@ interface ShowProps {
     statuses: Statuses;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
 
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return 'Nessuna scadenza';
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-    });
-}
 
 function ProgressRing({ percentage, color, size = 160 }: { percentage: number; color: string; size?: number }) {
     const strokeWidth = 12;
@@ -104,38 +92,7 @@ function ProgressRing({ percentage, color, size = 160 }: { percentage: number; c
     );
 }
 
-function StatusBadge({ status, statusLabel, isOverdue }: { status: string; statusLabel: string; isOverdue: boolean }) {
-    if (isOverdue) {
-        return (
-            <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                ⚠️ Scaduto
-            </span>
-        );
-    }
-
-    const classes: Record<string, string> = {
-        in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-        reached: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-        cancelled: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
-    };
-
-    const icons: Record<string, string> = {
-        in_progress: '🎯',
-        reached: '✅',
-        cancelled: '❌',
-    };
-
-    return (
-        <span
-            className={clsx(
-                'inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium',
-                classes[status] || classes.in_progress
-            )}
-        >
-            {icons[status]} {statusLabel}
-        </span>
-    );
-}
+import { StatusBadge } from '@/Components/StatusBadge';
 
 function ContributeModal({
     goal,
@@ -480,9 +437,9 @@ export default function Show({ goal, statuses }: ShowProps) {
                                 ) : (
                                     <button
                                         onClick={() => setShowDeleteConfirm(true)}
-                                        className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+                                        className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
                                     >
-                                        🗑️ Elimina
+                                        <TrashIcon size={18} /> Elimina
                                     </button>
                                 )}
                             </div>

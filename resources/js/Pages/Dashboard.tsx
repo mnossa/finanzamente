@@ -3,6 +3,8 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import { ProgressBar } from '@/Components/ProgressBar';
+import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Account {
     id: number;
@@ -112,18 +114,6 @@ function getAccountTypeLabel(type: string): string {
     return types[type] || type;
 }
 
-function getAccountTypeIcon(type: string): string {
-    const icons: Record<string, string> = {
-        bank: '🏦',
-        cash: '💵',
-        credit_card: '💳',
-        debit_card: '💳',
-        investment: '📈',
-        crypto: '₿',
-        other: '💰',
-    };
-    return icons[type] || '💰';
-}
 
 function StatCard({
     title,
@@ -277,23 +267,6 @@ function EmptyState({ message }: { message: string }) {
     );
 }
 
-function BudgetProgressBar({ percentage, isExceeded }: { percentage: number; isExceeded: boolean }) {
-    return (
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
-            <div
-                className={clsx(
-                    'h-full rounded-full transition-all',
-                    isExceeded
-                        ? 'bg-red-500'
-                        : percentage >= 80
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
-                )}
-                style={{ width: `${Math.min(100, percentage)}%` }}
-            />
-        </div>
-    );
-}
 
 function BudgetCard({ budget }: { budget: ActiveBudget }) {
     return (
@@ -312,7 +285,7 @@ function BudgetCard({ budget }: { budget: ActiveBudget }) {
                     <span className="text-red-500">⚠️</span>
                 )}
             </div>
-            <BudgetProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} />
+            <ProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} height="0.5rem" />
             <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>{budget.currency_symbol}{budget.spent.toFixed(0)}</span>
                 <span>{budget.percentage}%</span>

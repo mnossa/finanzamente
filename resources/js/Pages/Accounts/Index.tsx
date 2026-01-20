@@ -1,9 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import PencilIcon from '@/Components/Icons/PencilIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Account {
     id: number;
@@ -44,17 +46,6 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
     }).format(amount);
 }
 
-function getAccountTypeIcon(type: string): string {
-    const icons: Record<string, string> = {
-        bank: '🏦',
-        cash: '💵',
-        card: '💳',
-        broker: '📈',
-        crypto: '₿',
-        other: '💰',
-    };
-    return icons[type] || '💰';
-}
 
 function AccountCard({ account }: { account: Account }) {
     return (
@@ -112,9 +103,10 @@ function AccountCard({ account }: { account: Account }) {
             <div className="mt-3 flex justify-end space-x-2 border-t border-gray-100 pt-3 dark:border-gray-700">
                 <Link
                     href={route('accounts.edit', account.id)}
-                    className="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                    title="Modifica"
                 >
-                    Modifica
+                    <PencilIcon size={18} />
                 </Link>
                 <button
                     onClick={(e) => {

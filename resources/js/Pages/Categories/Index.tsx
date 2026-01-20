@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import PencilIcon from '@/Components/Icons/PencilIcon';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -70,15 +72,17 @@ function CategoryCard({
             <div className="flex items-center space-x-2">
                 <Link
                     href={route('categories.edit', category.id)}
-                    className="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                    title="Modifica"
                 >
-                    Modifica
+                    <PencilIcon size={18} />
                 </Link>
                 <button
                     onClick={() => onDelete(category.id)}
-                    className="rounded px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                    title="Elimina"
                 >
-                    Elimina
+                    <TrashIcon size={18} />
                 </button>
             </div>
         </div>

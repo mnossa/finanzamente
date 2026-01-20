@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
+import PencilIcon from '@/Components/Icons/PencilIcon';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 
@@ -54,24 +56,7 @@ function formatDate(dateStr: string | null): string {
     });
 }
 
-function StatusBadge({ status, statusLabel }: { status: string; statusLabel: string }) {
-    const classes = {
-        open: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-        closed: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
-        overdue: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    };
-
-    return (
-        <span
-            className={clsx(
-                'rounded-full px-3 py-1 text-sm font-medium',
-                classes[status as keyof typeof classes] || classes.open
-            )}
-        >
-            {statusLabel}
-        </span>
-    );
-}
+import { StatusBadge } from '@/Components/StatusBadge';
 
 export default function Show({ debtCredit, types, statuses }: ShowProps) {
     const isDebt = debtCredit.type === 'debt';
@@ -107,7 +92,7 @@ export default function Show({ debtCredit, types, statuses }: ShowProps) {
                             {debtCredit.type_label}
                         </h2>
                     </div>
-                    <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon="✏️">
+                    <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
                         Modifica
                     </LinkButton>
                 </div>
@@ -134,7 +119,7 @@ export default function Show({ debtCredit, types, statuses }: ShowProps) {
                                 {debtCredit.counterparty}
                             </h3>
                             <div className="mt-2">
-                                <StatusBadge
+                                    <StatusBadge
                                     status={debtCredit.status}
                                     statusLabel={debtCredit.status_label}
                                 />
@@ -242,9 +227,9 @@ export default function Show({ debtCredit, types, statuses }: ShowProps) {
                         )}
                         <button
                             onClick={handleDelete}
-                            className="inline-flex items-center rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
-                            🗑️ Elimina
+                            <TrashIcon size={18} /> Elimina
                         </button>
                     </div>
                 </div>

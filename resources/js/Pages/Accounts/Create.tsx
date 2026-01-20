@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
 
 interface Currency {
@@ -20,18 +21,6 @@ interface CreateProps {
     accountTypes: AccountTypes;
     currencies: Currency[];
     defaultCurrency: string;
-}
-
-function getAccountTypeIcon(type: string): string {
-    const icons: Record<string, string> = {
-        bank: '🏦',
-        cash: '💵',
-        card: '💳',
-        broker: '📈',
-        crypto: '₿',
-        other: '💰',
-    };
-    return icons[type] || '💰';
 }
 
 export default function Create({ accountTypes, currencies, defaultCurrency }: CreateProps) {

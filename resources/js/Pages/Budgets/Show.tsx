@@ -1,7 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
+import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import { formatCurrency, formatDate } from '@/utils/format';
+import { ProgressBar } from '@/Components/ProgressBar';
 
 interface Category {
     id: number;
@@ -41,38 +44,8 @@ interface ShowProps {
     transactions: Transaction[];
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
 
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-    });
-}
 
-function ProgressBar({ percentage, isExceeded }: { percentage: number; isExceeded: boolean }) {
-    return (
-        <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div
-                className={clsx(
-                    'h-full rounded-full transition-all',
-                    isExceeded
-                        ? 'bg-red-500'
-                        : percentage >= 80
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
-                )}
-                style={{ width: `${Math.min(100, percentage)}%` }}
-            />
-        </div>
-    );
-}
 
 export default function Show({ budget, transactions }: ShowProps) {
     return (
@@ -90,7 +63,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                             {budget.category.icon || '📁'} {budget.category.name}
                         </h2>
                     </div>
-                    <LinkButton href={route('budgets.edit', budget.id)} icon="✏️">
+                    <LinkButton href={route('budgets.edit', budget.id)} icon={<PencilIcon />}>
                         Modifica
                     </LinkButton>
                 </div>

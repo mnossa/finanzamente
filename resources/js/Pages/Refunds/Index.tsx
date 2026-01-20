@@ -3,7 +3,12 @@ import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import { formatCurrency, formatDate } from '@/utils/format';
+import { Pagination } from '@/Components/Pagination';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import EyeIcon from '@/Components/Icons/EyeIcon';
+import PencilIcon from '@/Components/Icons/PencilIcon';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 
 interface Category {
     id: number;
@@ -66,21 +71,6 @@ interface IndexProps {
     refunds: PaginatedData<Refund>;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
-
-function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('it-IT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    }).format(date);
-}
 
 function RefundRow({ refund }: { refund: Refund }) {
     const originalTx = refund.original_transaction;
@@ -136,15 +126,17 @@ function RefundRow({ refund }: { refund: Refund }) {
                 <div className="flex space-x-2">
                     <Link
                         href={route('refunds.show', refund.id)}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
+                        title="Visualizza"
                     >
-                        👁️
+                        <EyeIcon size={18} />
                     </Link>
                     <Link
                         href={route('refunds.edit', refund.id)}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                        title="Modifica"
                     >
-                        ✏️
+                        <PencilIcon size={18} />
                     </Link>
                     <button
                         onClick={() => {
@@ -152,9 +144,10 @@ function RefundRow({ refund }: { refund: Refund }) {
                                 router.delete(route('refunds.destroy', refund.id));
                             }
                         }}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-500 dark:hover:bg-gray-700"
+                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                        title="Elimina"
                     >
-                        🗑️
+                        <TrashIcon size={18} />
                     </button>
                 </div>
             </div>
@@ -162,35 +155,6 @@ function RefundRow({ refund }: { refund: Refund }) {
     );
 }
 
-function Pagination({ data }: { data: PaginatedData<Refund> }) {
-    if (data.last_page <= 1) return null;
-
-    return (
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 dark:border-gray-700">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-                {data.from}-{data.to} di {data.total} rimborsi
-            </div>
-            <div className="flex space-x-1">
-                {data.links.map((link, index) => (
-                    <button
-                        key={index}
-                        onClick={() => link.url && router.get(link.url)}
-                        disabled={!link.url}
-                        className={clsx(
-                            'rounded px-3 py-1 text-sm',
-                            link.active
-                                ? 'bg-emerald-500 text-white shadow-accent'
-                                : link.url
-                                ? 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                                : 'cursor-not-allowed text-gray-300 dark:text-gray-600'
-                        )}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
 
 export default function Index({ refunds }: IndexProps) {
     return (

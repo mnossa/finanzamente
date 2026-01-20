@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import PencilIcon from '@/Components/Icons/PencilIcon';
+import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -150,16 +152,18 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                                         <div className="flex items-center gap-2">
                                             <Link
                                                 href={route('investment-assets.edit', asset.id)}
-                                                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                                                title="Modifica"
                                             >
-                                                ✏️
+                                                <PencilIcon size={18} />
                                             </Link>
                                             {asset.investments_count === 0 && (
                                                 <button
                                                     onClick={() => handleDelete(asset.id, asset.name)}
-                                                    className="rounded-lg p-2 text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+                                                    className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                                                    title="Elimina"
                                                 >
-                                                    🗑️
+                                                    <TrashIcon size={18} />
                                                 </button>
                                             )}
                                         </div>

@@ -24,6 +24,8 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 - **Responsività**: Utilizzare framework CSS (es. Tailwind, Bootstrap) o soluzioni custom per garantire responsività.
 - **Componenti**: Sviluppare componenti riutilizzabili per UI comuni (bottoni, card, modali, ecc.).
 - **Animazioni**: Implementare animazioni leggere e non invasive.
+- **Accessibilità**: Seguire le linee guida WCAG 2.1 per garantire accessibilità a tutti gli utenti.
+- **DOM validation**: Assicurarsi che il codice HTML generato sia valido e conforme agli standard W3C.
 
 ## Backend
 - L’intero backend sarà sviluppato in Laravel, adottando le best practice e gli helpers forniti dal framework.
