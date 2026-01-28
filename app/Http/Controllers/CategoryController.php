@@ -41,6 +41,7 @@ class CategoryController extends Controller
                     'type_label' => self::TYPES[$category->type] ?? $category->type,
                     'color' => $category->color,
                     'icon' => $category->icon,
+                    'is_fixed_expense' => $category->is_fixed_expense ?? false,
                     'created_at' => $category->created_at->format('Y-m-d'),
                 ];
             });
@@ -99,6 +100,7 @@ class CategoryController extends Controller
                 'type' => $category->type,
                 'color' => $category->color,
                 'icon' => $category->icon,
+                'is_fixed_expense' => $category->is_fixed_expense ?? false,
             ],
             'categoryTypes' => self::TYPES,
         ]);

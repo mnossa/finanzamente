@@ -18,7 +18,11 @@ class Category extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'household_id', 'name', 'type', 'color', 'icon',
+        'household_id', 'name', 'type', 'color', 'icon', 'is_fixed_expense',
+    ];
+
+    protected $casts = [
+        'is_fixed_expense' => 'boolean',
     ];
 
     public function household()
@@ -29,5 +33,29 @@ class Category extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Verifica se la categoria rappresenta una spesa fissa.
+     */
+    public function isFixedExpense(): bool
+    {
+        return $this->is_fixed_expense;
+    }
+
+    /**
+     * Scope per ottenere solo le categorie di spese fisse.
+     */
+    public function scopeFixedExpenses($query)
+    {
+        return $query->where('is_fixed_expense', true);
+    }
+
+    /**
+     * Scope per ottenere le categorie di una household specifica.
+     */
+    public function scopeForHousehold($query, $householdId)
+    {
+        return $query->where('household_id', $householdId);
     }
 }

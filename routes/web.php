@@ -6,6 +6,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DebtCreditController;
 use App\Http\Controllers\FinancialGoalController;
+use App\Http\Controllers\FixedExpenseController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\HouseholdInvitationController;
 use App\Http\Controllers\InterHouseholdTransferController;
@@ -217,6 +218,17 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Investments - lettura
     Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
     Route::get('/investments/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
+
+    // Fixed Expenses - lettura (disponibile per tutte le household con bilanciamento debiti)
+    Route::get('/households/{household}/fixed-expenses', [FixedExpenseController::class, 'dashboard'])->name('fixed-expenses.dashboard');
+    Route::get('/households/{household}/fixed-expenses/contributions', [FixedExpenseController::class, 'getContributions'])->name('fixed-expenses.contributions');
+    Route::get('/households/{household}/categories/{category}/suggest-turn', [FixedExpenseController::class, 'suggestTurn'])->name('fixed-expenses.suggest-turn');
+    
+    // Fixed Expenses - modifica (solo owner può modificare impostazioni turni)
+    Route::middleware(['can-modify'])->group(function () {
+        Route::post('/households/{household}/categories/{category}/complete-turn', [FixedExpenseController::class, 'completeTurn'])->name('fixed-expenses.complete-turn');
+        Route::patch('/households/{household}/turn-settings', [FixedExpenseController::class, 'updateTurnSettings'])->name('fixed-expenses.update-turn-settings');
+    });
 
     // ===== API INTERNE (per AJAX/fetch dal frontend) =====
     Route::prefix('api/assets')->name('api.assets.')->group(function () {

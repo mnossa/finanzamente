@@ -7,6 +7,7 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
+import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
     code: string;

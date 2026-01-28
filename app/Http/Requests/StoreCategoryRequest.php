@@ -28,6 +28,7 @@ class StoreCategoryRequest extends FormRequest
             'type' => ['required', Rule::in(['income', 'expense'])],
             'color' => ['nullable', 'string', 'max:20'],
             'icon' => ['nullable', 'string', 'max:10'],
+            'is_fixed_expense' => ['sometimes', 'boolean'],
         ];
     }
 

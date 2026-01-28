@@ -7,8 +7,9 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Household, HouseholdMember, PageProps } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
+import { ChartBarIcon, TagIcon } from '@heroicons/react/24/outline';
 
 interface PendingInvitation {
     id: number;
@@ -34,7 +35,9 @@ export default function Show({ household, members, pendingInvitations }: Props) 
     const editForm = useForm({
         name: household.name,
         financial_management_type: household.financial_management_type || 'shared_wallet',
-        balance_percentages: household.balance_percentages || {},
+        balance_percentages: household.balance_percentages || {} as Record<string, number>,
+        enable_turn_suggestions: household.enable_turn_suggestions || false,
+        turn_suggestion_settings: household.turn_suggestion_settings || {} as Record<string, any>,
     });
 
     // Form per invito
@@ -95,15 +98,15 @@ export default function Show({ household, members, pendingInvitations }: Props) 
     const calculateEqualPercentages = () => {
         const memberCount = members.length;
         if (memberCount === 0) return {};
-        
+
         const equalPercentage = Math.floor(100 / memberCount);
         const remainder = 100 - (equalPercentage * memberCount);
-        
+
         const percentages: Record<string, number> = {};
         members.forEach((member, index) => {
             percentages[member.id] = index === 0 ? equalPercentage + remainder : equalPercentage;
         });
-        
+
         return percentages;
     };
 
@@ -183,11 +186,11 @@ export default function Show({ household, members, pendingInvitations }: Props) 
 
                                 {/* Modalità di Gestione Finanziaria */}
                                 <div>
-                                    <InputLabel 
-                                        value="Modalità di gestione finanziaria" 
+                                    <InputLabel
+                                        value="Modalità di gestione finanziaria"
                                         className="mb-3"
                                     />
-                                    
+
                                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
                                         <div className="flex items-center gap-3">
                                             <div className="flex-shrink-0">
@@ -210,7 +213,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                                     {household.financial_management_type_label}
                                                 </h3>
                                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {editForm.data.financial_management_type === 'shared_wallet' 
+                                                    {editForm.data.financial_management_type === 'shared_wallet'
                                                         ? 'Tutti i membri condividono conti e spese completamente.'
                                                         : 'Ogni membro mantiene i propri conti. L\'app calcola i debiti per le spese condivise.'}
                                                 </p>
@@ -220,12 +223,11 @@ export default function Show({ household, members, pendingInvitations }: Props) 
 
                                     {household.is_owner && (
                                         <div className="mt-4 space-y-3">
-                                            <div 
-                                                className={`relative rounded-lg border-2 p-3 cursor-pointer transition-colors ${
-                                                    editForm.data.financial_management_type === 'shared_wallet'
-                                                        ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
-                                                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
-                                                }`}
+                                            <div
+                                                className={`relative rounded-lg border-2 p-3 cursor-pointer transition-colors ${editForm.data.financial_management_type === 'shared_wallet'
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                                    }`}
                                                 onClick={() => editForm.setData('financial_management_type', 'shared_wallet')}
                                             >
                                                 <div className="flex items-start gap-3">
@@ -248,12 +250,11 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                                 </div>
                                             </div>
 
-                                            <div 
-                                                className={`relative rounded-lg border-2 p-3 cursor-pointer transition-colors ${
-                                                    editForm.data.financial_management_type === 'debt_balancing'
-                                                        ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
-                                                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
-                                                }`}
+                                            <div
+                                                className={`relative rounded-lg border-2 p-3 cursor-pointer transition-colors ${editForm.data.financial_management_type === 'debt_balancing'
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                                    : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                                    }`}
                                                 onClick={() => editForm.setData('financial_management_type', 'debt_balancing')}
                                             >
                                                 <div className="flex items-start gap-3">
@@ -293,7 +294,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                                     Dividi equamente
                                                 </button>
                                             </div>
-                                            
+
                                             <div className="space-y-3">
                                                 {members.map((member) => (
                                                     <div key={member.id} className="flex items-center gap-3 rounded-lg border border-orange-300 bg-white p-3 dark:border-orange-600 dark:bg-gray-800">
@@ -322,15 +323,14 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                             </div>
 
                                             <div className="mt-4 flex items-center justify-between">
-                                                <div className={`text-sm ${
-                                                    arePercentagesValid() 
-                                                        ? 'text-green-600 dark:text-green-400' 
-                                                        : 'text-red-600 dark:text-red-400'
-                                                }`}>
+                                                <div className={`text-sm ${arePercentagesValid()
+                                                    ? 'text-green-600 dark:text-green-400'
+                                                    : 'text-red-600 dark:text-red-400'
+                                                    }`}>
                                                     Totale: {getTotalPercentage().toFixed(1)}%
                                                     {arePercentagesValid() ? ' ✓' : ' (deve essere 100%)'}
                                                 </div>
-                                                
+
                                                 {!arePercentagesValid() && (
                                                     <p className="text-xs text-red-600 dark:text-red-400">
                                                         Le percentuali devono sommare esattamente al 100%
@@ -366,6 +366,116 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                             </form>
                         </section>
                     </div>
+
+                    {/* Gestione Spese Fisse (solo per bilanciamento debiti) */}
+                    {household.financial_management_type === 'debt_balancing' && (
+                        <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
+                            <section>
+                                <header>
+                                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                                        Spese Fisse
+                                    </h2>
+                                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                        Gestisci le categorie di spese fisse e il suggeritore di turni per facilitare l'alternanza dei pagamenti.
+                                    </p>
+                                </header>
+
+                                <div className="mt-6 space-y-6">
+                                    {/* Suggeritore di Turni */}
+                                    {/* {console.log(editForm.data)} */}
+                                    {household.is_owner && (
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="enable_turn_suggestions"
+                                                        checked={editForm.data.enable_turn_suggestions || false}
+                                                        onChange={(e) => {
+
+                                                            const newValue = e.target.checked;
+
+                                                            // 1. Aggiorna lo stato per la UI (reazione visiva)
+                                                            editForm.setData('enable_turn_suggestions', newValue);
+
+                                                            // 2. Trasforma i dati "on-the-fly" per la richiesta
+                                                            editForm.transform((data) => ({
+                                                                ...data,
+                                                                enable_turn_suggestions: newValue,
+                                                            }));
+
+                                                            // 3. Invia (TypeScript sarà felice perché non passi 'data' nelle opzioni)
+                                                            editForm.patch(route('households.update', household.id), {
+                                                                preserveScroll: true,
+                                                                only: ['enable_turn_suggestions', 'turn_suggestion_settings'],
+                                                            });
+
+                                                            // editForm.setData('enable_turn_suggestions', e.target.checked);
+                                                            // // Salvataggio automatico
+                                                            // editForm.patch(route('households.update', household.id), {
+                                                            //     preserveScroll: true,
+                                                            //     only: ['enable_turn_suggestions', 'turn_suggestion_settings'],
+
+                                                            // });
+                                                        }}
+                                                        disabled={editForm.processing}
+                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                                                    />
+                                                    <label
+                                                        htmlFor="enable_turn_suggestions"
+                                                        className="ml-2 block text-sm font-medium text-blue-900 dark:text-blue-100"
+                                                    >
+                                                        Abilita Suggeritore di Turni
+                                                        {editForm.processing && (
+                                                            <span className="ml-2 text-xs text-blue-600">
+                                                                (salvando...)
+                                                            </span>
+                                                        )}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <p className="mt-2 text-xs text-blue-700 dark:text-blue-200">
+                                                Il sistema suggerirà automaticamente chi dovrebbe pagare la prossima spesa per ogni categoria fissa,
+                                                alternando tra i membri della household.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Link alla Dashboard Spese Fisse */}
+                                    <div className="flex flex-col gap-4 sm:flex-row">
+                                        <Link
+                                            href={route('fixed-expenses.dashboard', household.id)}
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-900 transition duration-150 ease-in-out"
+                                        >
+                                            <ChartBarIcon className="h-4 w-4" />
+                                            Visualizza Contributi Spese Fisse
+                                        </Link>
+
+                                        <Link
+                                            href={'/categories'}
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 transition duration-150 ease-in-out"
+                                        >
+                                            <TagIcon className="h-4 w-4" />
+                                            Gestisci Categorie
+                                        </Link>
+                                    </div>
+
+                                    {/* Info sui contributi */}
+                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+                                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            Come funzionano le Spese Fisse
+                                        </h3>
+                                        <ul className="mt-2 space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                                            <li>• Marca le categorie come "spese fisse" (affitto, bollette, etc.)</li>
+                                            <li>• Il sistema traccia automaticamente i contributi di ogni membro</li>
+                                            <li>• Visualizza chi deve a chi senza dover pareggiare ogni singolo pagamento</li>
+                                            <li>• Il suggeritore di turni aiuta ad alternare i pagamenti tra i membri</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    )}
 
                     {/* Membri */}
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
@@ -404,20 +514,19 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span
-                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                    member.is_owner
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                        : member.role ===
-                                                            'guest'
-                                                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                                }`}
+                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${member.is_owner
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                    : member.role ===
+                                                        'guest'
+                                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                                    }`}
                                             >
                                                 {member.is_owner
                                                     ? 'Proprietario'
                                                     : member.role === 'guest'
-                                                      ? 'Ospite'
-                                                      : 'Membro'}
+                                                        ? 'Ospite'
+                                                        : 'Membro'}
                                             </span>
                                             {household.is_owner &&
                                                 !member.is_owner && (
@@ -474,15 +583,14 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <span
-                                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                                                    invitation.role ===
+                                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${invitation.role ===
                                                                     'guest'
-                                                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                                                }`}
+                                                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                                                    }`}
                                                             >
                                                                 {invitation.role ===
-                                                                'guest'
+                                                                    'guest'
                                                                     ? 'Ospite'
                                                                     : 'Membro'}
                                                             </span>

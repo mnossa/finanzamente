@@ -12,6 +12,7 @@ interface Category {
     type: string;
     color: string | null;
     icon: string | null;
+    is_fixed_expense: boolean;
 }
 
 interface CategoryTypes {
@@ -37,6 +38,7 @@ export default function Edit({ category, categoryTypes }: EditProps) {
         type: category.type,
         color: category.color || '#6366f1',
         icon: category.icon || '💸',
+        is_fixed_expense: category.is_fixed_expense || false,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -112,6 +114,32 @@ export default function Edit({ category, categoryTypes }: EditProps) {
                                 <InputError message={errors.type} className="mt-2" />
                             </div>
 
+                            {/* Spesa Fissa (solo per categorie di spesa) */}
+                            {data.type === 'expense' && (
+                                <div>
+                                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                                        <label className="flex items-start space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={data.is_fixed_expense}
+                                                onChange={(e) => setData('is_fixed_expense', e.target.checked)}
+                                                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                                    📌 Spesa Fissa
+                                                </span>
+                                                <p className="mt-1 text-xs text-blue-700 dark:text-blue-200">
+                                                    Marca come spesa fissa per tracciare i contributi nelle household con bilanciamento debiti 
+                                                    (es. affitto, bollette, abbonamenti ricorrenti)
+                                                </p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <InputError message={errors.is_fixed_expense} className="mt-2" />
+                                </div>
+                            )}
+
                             {/* Icona e Colore */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
@@ -177,6 +205,11 @@ export default function Edit({ category, categoryTypes }: EditProps) {
                                     >
                                         {categoryTypes[data.type]}
                                     </span>
+                                    {data.is_fixed_expense && (
+                                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                            📋 Spesa Fissa
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 

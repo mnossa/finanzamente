@@ -22,6 +22,9 @@ export interface Household {
     financial_management_type?: 'debt_balancing' | 'shared_wallet';
     financial_management_type_label?: string;
     balance_percentages?: Record<string, number>;
+    enable_turn_suggestions?: boolean;
+    turn_suggestion_settings?: Record<string, unknown>;
+    last_turn_assignments?: Record<string, number>;
     created_at?: string;
     updated_at?: string;
 }

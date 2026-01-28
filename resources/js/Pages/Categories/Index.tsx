@@ -17,6 +17,7 @@ interface Category {
     type_label: string;
     color: string | null;
     icon: string | null;
+    is_fixed_expense: boolean;
     created_at: string;
 }
 
@@ -59,16 +60,23 @@ function CategoryCard({
                     <h4 className="font-medium text-gray-900 dark:text-white">
                         {category.name}
                     </h4>
-                    <span
-                        className={clsx(
-                            'text-xs',
-                            category.type === 'income'
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
+                    <div className="flex items-center gap-2">
+                        <span
+                            className={clsx(
+                                'text-xs',
+                                category.type === 'income'
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-red-600 dark:text-red-400'
+                            )}
+                        >
+                            {category.type_label}
+                        </span>
+                        {category.is_fixed_expense && (
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                📌 Spesa Fissa
+                            </span>
                         )}
-                    >
-                        {category.type_label}
-                    </span>
+                    </div>
                 </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -163,7 +171,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div className="rounded-xl bg-green-50 p-4 dark:bg-green-900/20">
                                     <div className="flex items-center space-x-2">
                                         <span className="text-2xl">📈</span>
@@ -194,6 +202,20 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                                         {byType.expense.length === 1
                                             ? 'categoria'
                                             : 'categorie'}
+                                    </p>
+                                </div>
+                                <div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-2xl">📌</span>
+                                        <span className="font-medium text-blue-700 dark:text-blue-400">
+                                            Spese Fisse
+                                        </span>
+                                    </div>
+                                    <p className="mt-2 text-2xl font-bold text-blue-900 dark:text-blue-100">
+                                        {categories.filter(c => c.is_fixed_expense).length}
+                                    </p>
+                                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                                        affitto, bollette, etc.
                                     </p>
                                 </div>
                             </div>

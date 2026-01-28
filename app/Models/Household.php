@@ -30,11 +30,17 @@ class Household extends Model
         'owner_user_id',
         'financial_management_type',
         'balance_percentages',
+        'enable_turn_suggestions',
+        'turn_suggestion_settings',
+        'last_turn_assignments',
     ];
 
     protected $casts = [
         'financial_management_type' => 'string',
         'balance_percentages' => 'array',
+        'enable_turn_suggestions' => 'boolean',
+        'turn_suggestion_settings' => 'array',
+        'last_turn_assignments' => 'array',
     ];
 
     // Costanti per i tipi di gestione finanziaria
@@ -189,5 +195,144 @@ class Household extends Model
     public function budgets()
     {
         return $this->hasMany(Budget::class);
+    }
+
+    /**
+     * Verifica se il suggeritore di turni è abilitato.
+     */
+    public function isTurnSuggestionsEnabled(): bool
+    {
+        return $this->enable_turn_suggestions && $this->isDebtBalancingMode();
+    }
+
+    /**
+     * Ottiene le impostazioni del suggeritore di turni.
+     */
+    public function getTurnSuggestionsSettings(): array
+    {
+        return $this->turn_suggestion_settings ?? [];
+    }
+
+    /**
+     * Aggiorna le impostazioni del suggeritore di turni.
+     */
+    public function setTurnSuggestionsSettings(array $settings): void
+    {
+        $this->turn_suggestion_settings = $settings;
+        $this->save();
+    }
+
+    /**
+     * Ottiene l'ultimo turno assegnato per una categoria.
+     */
+    public function getLastTurnAssignment(int $categoryId): ?int
+    {
+        $assignments = $this->last_turn_assignments ?? [];
+        return $assignments[$categoryId] ?? null;
+    }
+
+    /**
+     * Aggiorna l'ultimo turno assegnato per una categoria.
+     */
+    public function setLastTurnAssignment(int $categoryId, int $userId): void
+    {
+        $assignments = $this->last_turn_assignments ?? [];
+        $assignments[$categoryId] = $userId;
+        $this->last_turn_assignments = $assignments;
+        $this->save();
+    }
+
+    /**
+     * Suggerisce il prossimo utente per una categoria di spesa fissa.
+     */
+    public function suggestNextTurn(int $categoryId): ?int
+    {
+        if (!$this->isTurnSuggestionsEnabled()) {
+            return null;
+        }
+
+        $members = $this->users()->pluck('id')->toArray();
+        if (empty($members)) {
+            return null;
+        }
+
+        $lastUserId = $this->getLastTurnAssignment($categoryId);
+        
+        // Se non c'è una assegnazione precedente, sceglie il primo membro
+        if ($lastUserId === null) {
+            return $members[0];
+        }
+
+        // Trova l'indice dell'ultimo utente e suggerisce il prossimo
+        $currentIndex = array_search($lastUserId, $members);
+        if ($currentIndex === false) {
+            // L'ultimo utente non è più nella household, ricomincia dal primo
+            return $members[0];
+        }
+
+        // Passa al prossimo utente, ciclando se necessario
+        $nextIndex = ($currentIndex + 1) % count($members);
+        return $members[$nextIndex];
+    }
+
+    /**
+     * Calcola i contributi alle spese fisse per ogni membro della household.
+     */
+    public function getFixedExpenseContributions(): array
+    {
+        if (!$this->isDebtBalancingMode()) {
+            return [];
+        }
+
+        $contributions = [];
+        $members = $this->users()->pluck('name', 'id')->toArray();
+
+        // Per ogni membro, inizializza i contributi
+        foreach ($members as $userId => $userName) {
+            $contributions[$userId] = [
+                'user_name' => $userName,
+                'total_contributed' => 0,
+                'categories' => []
+            ];
+        }
+
+        // Ottiene le transazioni per le categorie di spese fisse
+        $fixedExpenseCategories = Category::where('household_id', $this->id)
+            ->where('is_fixed_expense', true)
+            ->pluck('name', 'id')->toArray();
+
+        foreach ($fixedExpenseCategories as $categoryId => $categoryName) {
+            // Calcola il totale delle spese per questa categoria
+            $totalExpenses = Transaction::whereIn('account_id', 
+                    $this->accounts()->pluck('id')
+                )
+                ->where('category_id', $categoryId)
+                ->where('amount', '<', 0) // Solo spese (negative)
+                ->sum('amount');
+
+            $totalExpenses = abs($totalExpenses);
+
+            // Ogni membro contribuisce in base alle sue transazioni
+            foreach ($members as $userId => $userName) {
+                $userContribution = Transaction::whereIn('account_id',
+                        $this->accounts()->where('owner_user_id', $userId)->pluck('id')
+                    )
+                    ->where('category_id', $categoryId)
+                    ->where('amount', '<', 0) // Solo spese (negative)
+                    ->sum('amount');
+
+                $userContribution = abs($userContribution);
+
+                $contributions[$userId]['categories'][$categoryName] = [
+                    'contributed' => $userContribution,
+                    'total_category' => $totalExpenses,
+                    'percentage' => $totalExpenses > 0 ? ($userContribution / $totalExpenses) * 100 : 0
+                ];
+
+                $contributions[$userId]['total_contributed'] += $userContribution;
+            }
+        }
+
+        return $contributions;
     }
 }

@@ -1,26 +1,32 @@
 import { ReactNode } from 'react';
 import clsx from 'clsx';
+import { Link } from '@inertiajs/react';
 
 interface PageHeaderProps {
     /**
      * Titolo principale della pagina (può essere una stringa o un elemento React)
      */
     title: string | ReactNode;
-    
+
     /**
      * Elemento o elementi da mostrare come azioni (es. bottoni)
      */
     actions?: ReactNode;
-    
+
     /**
      * Sottotitolo o descrizione opzionale
      */
     subtitle?: string;
-    
+
     /**
      * Classi CSS aggiuntive per personalizzazione
      */
     className?: string;
+
+    /**
+     * Link per tornare indietro (opzionale)
+     */
+    backLink?: string;
 }
 
 /**
@@ -40,10 +46,18 @@ interface PageHeaderProps {
  * />
  * ```
  */
-export default function PageHeader({ title, actions, subtitle, className }: PageHeaderProps) {
+export default function PageHeader({ title, actions, subtitle, className, backLink }: PageHeaderProps) {
     return (
         <div className={clsx('flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between', className)}>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+                {backLink && (
+                    <Link
+                        href={backLink}
+                        className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                    >
+                        ←
+                    </Link>
+                )}
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
                     {title}
                 </h2>

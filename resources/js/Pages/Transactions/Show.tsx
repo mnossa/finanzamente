@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import PageHeader from '@/Components/PageHeader';
 
 interface Category {
     id: number;
@@ -97,22 +98,14 @@ export default function Show({ transaction }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            href={route('transactions.index')}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                        >
-                            ←
-                        </Link>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                            Dettaglio Transazione
-                        </h2>
-                    </div>
-                    <LinkButton href={route('transactions.edit', transaction.id)} icon={<PencilIcon />}>
+                <PageHeader
+                    title={`Dettaglio Transazione`}
+                    backLink={route('transactions.index')}
+                    actions={<LinkButton href={route('transactions.edit', transaction.id)} icon={<PencilIcon />}>
                         Modifica
-                    </LinkButton>
-                </div>
+                    </LinkButton>}
+                />
+
             }
         >
             <Head title="Dettaglio Transazione" />
@@ -174,8 +167,8 @@ export default function Show({ transaction }: ShowProps) {
                                     backgroundColor: transaction.category?.color
                                         ? `${transaction.category.color}20`
                                         : isIncome
-                                        ? '#22c55e20'
-                                        : '#ef444420',
+                                            ? '#22c55e20'
+                                            : '#ef444420',
                                 }}
                             >
                                 {transaction.category?.icon || (isIncome ? '💰' : '💸')}
@@ -246,8 +239,8 @@ export default function Show({ transaction }: ShowProps) {
                                         isTransfer
                                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                             : isIncome
-                                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                     )}
                                 >
                                     {isTransfer ? '🔄 Trasferimento' : isIncome ? '📥 Entrata' : '📤 Uscita'}

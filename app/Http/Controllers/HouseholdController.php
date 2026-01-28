@@ -140,6 +140,8 @@ class HouseholdController extends Controller
                 'financial_management_type' => $household->financial_management_type,
                 'financial_management_type_label' => $household->getFinancialManagementTypeLabel(),
                 'balance_percentages' => $household->balance_percentages ?: $household->calculateEqualPercentages(),
+                'enable_turn_suggestions' => $household->enable_turn_suggestions,
+                'turn_suggestion_settings' => $household->turn_suggestion_settings,
             ],
             'members' => $members,
             'pendingInvitations' => $pendingInvitations,
@@ -163,13 +165,25 @@ class HouseholdController extends Controller
             'financial_management_type' => 'sometimes|string|in:debt_balancing,shared_wallet',
             'balance_percentages' => 'sometimes|array',
             'balance_percentages.*' => 'numeric|min:0|max:100',
+            'enable_turn_suggestions' => 'sometimes|boolean',
+            'turn_suggestion_settings' => 'sometimes|array',
         ]);
+
+        // dd($data);
 
         // Valida le percentuali se è debt_balancing
         if (isset($data['financial_management_type']) && $data['financial_management_type'] === 'debt_balancing' && isset($data['balance_percentages'])) {
             $total = array_sum($data['balance_percentages']);
             if (abs($total - 100) > 0.01) {
                 return back()->withErrors(['balance_percentages' => 'Le percentuali devono sommare esattamente al 100%.']);
+            }
+        }
+
+        // Se il suggeritore di turni è abilitato, deve essere una household con bilanciamento debiti
+        if (isset($data['enable_turn_suggestions']) && $data['enable_turn_suggestions']) {
+            $managementType = $data['financial_management_type'] ?? $household->financial_management_type;
+            if ($managementType !== 'debt_balancing') {
+                return back()->withErrors(['enable_turn_suggestions' => 'Il suggeritore di turni è disponibile solo per household con bilanciamento debiti.']);
             }
         }
 

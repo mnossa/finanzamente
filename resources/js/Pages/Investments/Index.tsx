@@ -78,12 +78,12 @@ interface IndexProps {
     assetTypeIcons: AssetTypeIcons;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
+// function formatCurrency(amount: number, currency: string = 'EUR'): string {
+//     return new Intl.NumberFormat('it-IT', {
+//         style: 'currency',
+//         currency: currency,
+//     }).format(amount);
+// }
 
 
 function ProfitBadge({ profit, percentage }: { profit: number | null; percentage: number | null }) {
