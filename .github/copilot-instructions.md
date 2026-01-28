@@ -111,3 +111,23 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 - **Date e numeri**: Formattare date, orari e numeri secondo le convenzioni italiane (es. `dd/mm/yyyy`, separatore decimale `,`, separatore migliaia `.`).
 - **Valuta**: Usare Euro (€) come valuta predefinita, con possibilità di supporto multi-currency in futuro.
 - **Nessun sistema i18n complesso**: Non è previsto supporto multilingua. L'app sarà esclusivamente in italiano.
+
+## Convenzioni di Nomenclatura
+- **Variabili e Funzioni**: Utilizzare `camelCase` per nomi di variabili e funzioni (es. `userName`, `getTransactionList`).
+- **Classi e Componenti**: Utilizzare `PascalCase` per nomi di classi e componenti (es. `UserProfile`, `TransactionTable`).
+- **Tabelle e Colonne**: Utilizzare `snake_case` in minuscolo per nomi di tabelle e colonne nel database (es. `user_profiles`, `transaction_date`).
+- **Rotte**: Utilizzare `kebab-case` per nomi di rotte web e API (es. `/user-profile`, `/transaction-list`).
+- **File e Cartelle**: Utilizzare `kebab-case` per nomi di file e cartelle (es. `user-profile.js`, `transaction-list.css`).
+- **Prefissi e Suffissi**: Usare prefissi/suffissi chiari per indicare il tipo o lo scopo (es. `is` per booleani: `isActive`, `get` per funzioni che restituiscono valori: `getUserData`).
+- **Acronimi**: Scrivere gli acronimi in maiuscolo (es. `APIClient`, `HTMLParser`).
+- **Esempi**:
+  - Variabile: `totalAmount`
+  - Funzione: `calculateMonthlyBudget()`
+  - Classe: `FinancialReport`
+  - Tabella: `financial_reports`
+  - Colonna: `report_date`
+  - Rotta: `/financial-report`
+  - File: `financial-report.component.tsx`
+
+  ## Funzionalità Future da Considerare
+- Usa i metodi isDebtBalancingMode() e isSharedWalletMode() nelle future funzionalità di calcolo del saldo, per gestire modalità specifiche come il bilanciamento debiti e portafogli condivisi.

@@ -33,6 +33,8 @@ export default function Show({ household, members, pendingInvitations }: Props) 
     // Form per modifica nome
     const editForm = useForm({
         name: household.name,
+        financial_management_type: household.financial_management_type || 'shared_wallet',
+        balance_percentages: household.balance_percentages || {},
     });
 
     // Form per invito
@@ -89,6 +91,47 @@ export default function Show({ household, members, pendingInvitations }: Props) 
         router.post(route('households.leave', household.id));
     };
 
+    // Calcola percentuali eque per tutti i membri
+    const calculateEqualPercentages = () => {
+        const memberCount = members.length;
+        if (memberCount === 0) return {};
+        
+        const equalPercentage = Math.floor(100 / memberCount);
+        const remainder = 100 - (equalPercentage * memberCount);
+        
+        const percentages: Record<string, number> = {};
+        members.forEach((member, index) => {
+            percentages[member.id] = index === 0 ? equalPercentage + remainder : equalPercentage;
+        });
+        
+        return percentages;
+    };
+
+    // Imposta percentuali eque
+    const setEqualPercentages = () => {
+        editForm.setData('balance_percentages', calculateEqualPercentages());
+    };
+
+    // Aggiorna percentuale individuale
+    const updateMemberPercentage = (memberId: number, percentage: string) => {
+        const numPercentage = parseFloat(percentage) || 0;
+        editForm.setData('balance_percentages', {
+            ...editForm.data.balance_percentages,
+            [memberId]: numPercentage
+        });
+    };
+
+    // Calcola totale percentuali
+    const getTotalPercentage = () => {
+        return Object.values(editForm.data.balance_percentages).reduce((sum, perc) => sum + (perc || 0), 0);
+    };
+
+    // Verifica se percentuali sono valide
+    const arePercentagesValid = () => {
+        const total = getTotalPercentage();
+        return Math.abs(total - 100) < 0.01;
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -109,7 +152,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                     Informazioni Household
                                 </h2>
                                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                    Modifica il nome della tua household.
+                                    Modifica il nome e le impostazioni principali della tua household.
                                 </p>
                             </header>
 
@@ -136,6 +179,181 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                         message={editForm.errors.name}
                                         className="mt-2"
                                     />
+                                </div>
+
+                                {/* Modalità di Gestione Finanziaria */}
+                                <div>
+                                    <InputLabel 
+                                        value="Modalità di gestione finanziaria" 
+                                        className="mb-3"
+                                    />
+                                    
+                                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex-shrink-0">
+                                                {editForm.data.financial_management_type === 'shared_wallet' ? (
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                                                        <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+                                                        </svg>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900">
+                                                        <svg className="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                                    {household.financial_management_type_label}
+                                                </h3>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {editForm.data.financial_management_type === 'shared_wallet' 
+                                                        ? 'Tutti i membri condividono conti e spese completamente.'
+                                                        : 'Ogni membro mantiene i propri conti. L\'app calcola i debiti per le spese condivise.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {household.is_owner && (
+                                        <div className="mt-4 space-y-3">
+                                            <div 
+                                                className={`relative rounded-lg border-2 p-3 cursor-pointer transition-colors ${
+                                                    editForm.data.financial_management_type === 'shared_wallet'
+                                                        ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                                }`}
+                                                onClick={() => editForm.setData('financial_management_type', 'shared_wallet')}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <input
+                                                        type="radio"
+                                                        name="financial_management_type"
+                                                        value="shared_wallet"
+                                                        checked={editForm.data.financial_management_type === 'shared_wallet'}
+                                                        onChange={() => editForm.setData('financial_management_type', 'shared_wallet')}
+                                                        className="mt-0.5 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                                                            Portafoglio Comune
+                                                        </h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Visione aggregata, budget condivisi, nessun calcolo di debiti interni.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div 
+                                                className={`relative rounded-lg border-2 p-3 cursor-pointer transition-colors ${
+                                                    editForm.data.financial_management_type === 'debt_balancing'
+                                                        ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                                        : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                                }`}
+                                                onClick={() => editForm.setData('financial_management_type', 'debt_balancing')}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <input
+                                                        type="radio"
+                                                        name="financial_management_type"
+                                                        value="debt_balancing"
+                                                        checked={editForm.data.financial_management_type === 'debt_balancing'}
+                                                        onChange={() => editForm.setData('financial_management_type', 'debt_balancing')}
+                                                        className="mt-0.5 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                                                            Bilanciamento Debiti
+                                                        </h4>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                            Conti individuali separati, calcolo automatico dei debiti.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Gestione Percentuali per Bilanciamento Debiti */}
+                                    {household.is_owner && editForm.data.financial_management_type === 'debt_balancing' && (
+                                        <div className="mt-6 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                                                    Percentuali di bilanciamento
+                                                </h4>
+                                                <button
+                                                    type="button"
+                                                    onClick={setEqualPercentages}
+                                                    className="text-xs px-2 py-1 rounded bg-orange-200 text-orange-800 hover:bg-orange-300 dark:bg-orange-800 dark:text-orange-200 dark:hover:bg-orange-700"
+                                                >
+                                                    Dividi equamente
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                                {members.map((member) => (
+                                                    <div key={member.id} className="flex items-center gap-3 rounded-lg border border-orange-300 bg-white p-3 dark:border-orange-600 dark:bg-gray-800">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                                                                {member.name}
+                                                            </p>
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                                {member.email}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="100"
+                                                                step="0.01"
+                                                                value={editForm.data.balance_percentages[member.id] || 0}
+                                                                onChange={(e) => updateMemberPercentage(member.id, e.target.value)}
+                                                                className="w-20 rounded border-gray-300 text-sm text-center dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                                            />
+                                                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">%</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <div className={`text-sm ${
+                                                    arePercentagesValid() 
+                                                        ? 'text-green-600 dark:text-green-400' 
+                                                        : 'text-red-600 dark:text-red-400'
+                                                }`}>
+                                                    Totale: {getTotalPercentage().toFixed(1)}%
+                                                    {arePercentagesValid() ? ' ✓' : ' (deve essere 100%)'}
+                                                </div>
+                                                
+                                                {!arePercentagesValid() && (
+                                                    <p className="text-xs text-red-600 dark:text-red-400">
+                                                        Le percentuali devono sommare esattamente al 100%
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <p className="mt-3 text-xs text-orange-600 dark:text-orange-400">
+                                                💡 Queste percentuali determinano come vengono suddivise le spese condivise tra i membri.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <InputError
+                                        message={editForm.errors.financial_management_type}
+                                        className="mt-2"
+                                    />
+
+                                    {household.is_owner && (
+                                        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                                            ⚠️ Cambiare questa impostazione può influire sui calcoli e sui report esistenti.
+                                        </p>
+                                    )}
                                 </div>
 
                                 {household.is_owner && (

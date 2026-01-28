@@ -19,6 +19,9 @@ export interface Household {
     is_owner?: boolean;
     role?: 'owner' | 'member' | 'guest';
     members_count?: number;
+    financial_management_type?: 'debt_balancing' | 'shared_wallet';
+    financial_management_type_label?: string;
+    balance_percentages?: Record<string, number>;
     created_at?: string;
     updated_at?: string;
 }

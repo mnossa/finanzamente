@@ -58,7 +58,11 @@ class HouseholdController extends Controller
         $household = Household::create([
             'name' => $request->name,
             'owner_user_id' => $user->id,
+            'financial_management_type' => $request->financial_management_type,
         ]);
+
+        // Se è debt_balancing e balance_type è custom, avremo percentuali in futuro
+        // Per ora salviamo solo il tipo, le percentuali saranno configurate dopo
 
         // Aggiungi l'utente come owner nella tabella pivot
         $household->users()->attach($user->id, [
@@ -133,6 +137,9 @@ class HouseholdController extends Controller
                 'name' => $household->name,
                 'owner' => $household->owner,
                 'is_owner' => $household->owner_user_id === $user->id,
+                'financial_management_type' => $household->financial_management_type,
+                'financial_management_type_label' => $household->getFinancialManagementTypeLabel(),
+                'balance_percentages' => $household->balance_percentages ?: $household->calculateEqualPercentages(),
             ],
             'members' => $members,
             'pendingInvitations' => $pendingInvitations,
@@ -153,7 +160,18 @@ class HouseholdController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'financial_management_type' => 'sometimes|string|in:debt_balancing,shared_wallet',
+            'balance_percentages' => 'sometimes|array',
+            'balance_percentages.*' => 'numeric|min:0|max:100',
         ]);
+
+        // Valida le percentuali se è debt_balancing
+        if (isset($data['financial_management_type']) && $data['financial_management_type'] === 'debt_balancing' && isset($data['balance_percentages'])) {
+            $total = array_sum($data['balance_percentages']);
+            if (abs($total - 100) > 0.01) {
+                return back()->withErrors(['balance_percentages' => 'Le percentuali devono sommare esattamente al 100%.']);
+            }
+        }
 
         $household->update($data);
 

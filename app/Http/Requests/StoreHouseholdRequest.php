@@ -23,6 +23,8 @@ class StoreHouseholdRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'financial_management_type' => ['required', 'string', 'in:debt_balancing,shared_wallet'],
+            'balance_type' => ['sometimes', 'string', 'in:equal,custom'],
         ];
     }
 
@@ -36,6 +38,8 @@ class StoreHouseholdRequest extends FormRequest
         return [
             'name.required' => 'Il nome della household è obbligatorio.',
             'name.max' => 'Il nome della household non può superare i 255 caratteri.',
+            'financial_management_type.required' => 'Devi selezionare una modalità di gestione finanziaria.',
+            'financial_management_type.in' => 'La modalità di gestione finanziaria selezionata non è valida.',
         ];
     }
 }
