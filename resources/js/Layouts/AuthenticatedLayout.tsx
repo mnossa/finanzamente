@@ -97,6 +97,11 @@ const Icons = {
             <path d="m6 9 6 6 6-6" />
         </svg>
     ),
+    ChevronRight: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m9 18 6-6-6-6" />
+        </svg>
+    ),
     Bell: () => (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
@@ -121,23 +126,61 @@ interface NavigationItem {
     routeMatch: string;
     icon: () => JSX.Element;
     altRouteMatch?: string;
+    hrefParams?: any;
 }
 
-// Definizione menu navigazione
-const navigationItems: NavigationItem[] = [
-    { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard },
-    { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet },
-    { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight },
-    { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags },
-    { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer },
-    { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight },
-    { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo },
-    { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank },
-    { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },
-    { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat },
-    { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target },
-    { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp },
-    { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase },
+// Tipo per le sezioni di navigazione
+interface NavigationSection {
+    title: string;
+    items: NavigationItem[];
+    defaultExpanded?: boolean;
+}
+
+// Definizione sezioni menu navigazione
+const navigationSections: NavigationSection[] = [
+    {
+        title: 'Dashboard',
+        defaultExpanded: true,
+        items: [
+            { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard },
+        ]
+    },
+    {
+        title: 'Gestione Base',
+        defaultExpanded: true,
+        items: [
+            { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet },
+            { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight },
+            { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags },
+            { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer },
+        ]
+    },
+    {
+        title: 'Transazioni Speciali',
+        defaultExpanded: false,
+        items: [
+            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight },
+            { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo },
+            { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat },
+        ]
+    },
+    {
+        title: 'Pianificazione',
+        defaultExpanded: false,
+        items: [
+            { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank },
+            { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },
+            { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target },
+        ]
+    },
+    {
+        title: 'Investimenti',
+        defaultExpanded: false,
+        items: [
+            { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp },
+            { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase },
+        ]
+    }
 ];
 
 function FlashMessages() {
@@ -202,7 +245,7 @@ function SidebarNavItem({
     
     return (
         <Link
-            href={route(item.href)}
+            href={item.hrefParams ? route(item.href, item.hrefParams) : route(item.href)}
             onClick={onClick}
             className={clsx(
                 'flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl',
@@ -223,6 +266,64 @@ function SidebarNavItem({
                 <div className="ml-auto indicator-dot" />
             )}
         </Link>
+    );
+}
+
+// Componente per sezioni espandibili
+function CollapsibleNavSection({
+    section,
+    isRouteActive,
+    onClick
+}: {
+    section: NavigationSection;
+    isRouteActive: (routeMatch: string, altRouteMatch?: string) => boolean;
+    onClick?: () => void;
+}) {
+    const [isExpanded, setIsExpanded] = useState(section.defaultExpanded ?? false);
+    
+    // Controlla se qualche elemento della sezione è attivo
+    const hasActiveItem = section.items.some(item => 
+        isRouteActive(item.routeMatch, item.altRouteMatch)
+    );
+
+    // Espande automaticamente se c'è un elemento attivo nella sezione
+    useEffect(() => {
+        if (hasActiveItem && !isExpanded) {
+            setIsExpanded(true);
+        }
+    }, [hasActiveItem, isExpanded]);
+
+    return (
+        <div className="mb-2">
+            {/* Header della sezione */}
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center justify-between w-full px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-300 transition-colors uppercase tracking-wider"
+            >
+                <span>{section.title}</span>
+                <span className={clsx(
+                    'transition-transform duration-200',
+                    isExpanded ? 'rotate-90' : ''
+                )}>
+                    <Icons.ChevronRight />
+                </span>
+            </button>
+
+            {/* Elementi della sezione */}
+            <div className={clsx(
+                'overflow-hidden transition-all duration-300 ease-in-out space-y-1',
+                isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+            )}>
+                {section.items.map((item) => (
+                    <SidebarNavItem
+                        key={item.name}
+                        item={item}
+                        isActive={isRouteActive(item.routeMatch, item.altRouteMatch)}
+                        onClick={onClick}
+                    />
+                ))}
+            </div>
+        </div>
     );
 }
 
@@ -249,6 +350,30 @@ export default function Authenticated({
     const isRouteActive = (routeMatch: string, altRouteMatch?: string): boolean => {
         return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
     };
+
+    // Crea le sezioni dinamicamente includendo Household se presente
+    const allNavigationSections = [
+        ...navigationSections,
+        ...(activeHousehold ? [{
+            title: 'Household',
+            defaultExpanded: false,
+            items: [
+                { 
+                    name: activeHousehold.name, 
+                    href: 'households.show', 
+                    routeMatch: 'households.show', 
+                    icon: Icons.Home,
+                    hrefParams: { household: activeHousehold.id }
+                },
+                { 
+                    name: 'Cambia Household', 
+                    href: 'households.select', 
+                    routeMatch: 'households.select', 
+                    icon: Icons.Settings 
+                },
+            ]
+        }] : [])
+    ];
 
     return (
         <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
@@ -285,45 +410,15 @@ export default function Authenticated({
                 </div>
 
                 {/* Navigation */}
-                <nav className="mt-1 p-4 space-y-1 overflow-y-auto h-[calc(100vh-162px)]">
-                {/* <nav className="p-4 space-y-1 overflow-y-auto h-100"> */}
-                    <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                        Menu Principale
-                    </p>
-                    
-                    {navigationItems.map((item) => (
-                        <SidebarNavItem
-                            key={item.name}
-                            item={item}
-                            isActive={isRouteActive(item.routeMatch, item.altRouteMatch)}
+                <nav className="mt-1 p-4 pb-8 space-y-1 overflow-y-auto h-[calc(100vh-162px)]">
+                    {allNavigationSections.map((section) => (
+                        <CollapsibleNavSection
+                            key={section.title}
+                            section={section}
+                            isRouteActive={isRouteActive}
                             onClick={() => setSidebarOpen(false)}
                         />
                     ))}
-
-                    {/* Household Section */}
-                    {activeHousehold && (
-                        <>
-                            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-8 mb-3">
-                                Household
-                            </p>
-                            <Link
-                                href={route('households.show', activeHousehold.id)}
-                                onClick={() => setSidebarOpen(false)}
-                                className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-200"
-                            >
-                                <Icons.Home />
-                                <span className="ml-3">{activeHousehold.name}</span>
-                            </Link>
-                            <Link
-                                href={route('households.select')}
-                                onClick={() => setSidebarOpen(false)}
-                                className="flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all duration-200"
-                            >
-                                <Icons.Settings />
-                                <span className="ml-3">Cambia Household</span>
-                            </Link>
-                        </>
-                    )}
                 </nav>
 
                 {/* User Profile Bottom */}
