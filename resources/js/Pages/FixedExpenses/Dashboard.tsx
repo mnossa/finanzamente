@@ -152,13 +152,8 @@ export default function Dashboard({
             <AuthenticatedLayout
                 header={
                     <PageHeader
-                        title={
-                            <>
-                                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                                    Contributi Spese Fisse - {household.name}
-                                </h2>
-                            </>
-                        }
+                        title={`Contributi Spese Fisse - ${household.name}`}
+                        backLink={route('households.show', household.id)}
                     />
                 }
             >

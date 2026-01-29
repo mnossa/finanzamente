@@ -95,12 +95,8 @@ export default function Show({ account, recentTransactions }: ShowProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <div className="flex items-center space-x-3">
-                            <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
-                            <span>{account.name}</span>
-                        </div>
-                    }
+                    title={`Conto: ${account.name}`}
+                    backLink={route('accounts.index')}
                     actions={
                         <LinkButton href={route('accounts.edit', account.id)} icon={<PencilIcon />}>
                             Modifica

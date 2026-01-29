@@ -209,17 +209,8 @@ export default function Show({ goal, statuses }: ShowProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <>
-                            <Link
-                                href={route('financial-goals.index')}
-                                className="mr-4 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                            >
-                                ←
-                            </Link>
-                            {goal.icon} {goal.name}
-                        </>
-                    }
+                    title={`Obiettivo: ${goal.name}`}
+                    backLink={route('financial-goals.index')}
                 />
             }
         >

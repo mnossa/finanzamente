@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
+import PageHeader from '@/Components/PageHeader';
 
 export default function Edit({
     mustVerifyEmail,
@@ -11,11 +12,7 @@ export default function Edit({
 }: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
     return (
         <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Profilo
-                </h2>
-            }
+            header={<PageHeader title="Profilo" />}
         >
             <Head title="Profilo" />
 

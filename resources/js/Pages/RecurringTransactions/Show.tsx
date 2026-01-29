@@ -115,17 +115,8 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <>
-                            <Link
-                                href={route('recurring-transactions.index')}
-                                className="mr-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                            >
-                                ←
-                            </Link>
-                            Dettaglio Ricorrenza
-                        </>
-                    }
+                    title={`Ricorrenza: ${rt.description || rt.category?.name || 'Dettaglio'}`}
+                    backLink={route('recurring-transactions.index')}
                     actions={
                         <LinkButton href={route('recurring-transactions.edit', rt.id)} icon={<PencilIcon />}>
                             Modifica
@@ -170,8 +161,8 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                                     backgroundColor: rt.category?.color
                                         ? `${rt.category.color}20`
                                         : isIncome
-                                        ? '#22c55e20'
-                                        : '#ef444420',
+                                            ? '#22c55e20'
+                                            : '#ef444420',
                                 }}
                             >
                                 {rt.category?.icon || (isIncome ? '💰' : '💸')}

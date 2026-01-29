@@ -6,6 +6,7 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
+import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
     code: string;
@@ -58,17 +59,10 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center space-x-4">
-                    <Link
-                        href={route('debts-credits.index')}
-                        className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                    >
-                        ←
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Modifica {types[debtCredit.type]}
-                    </h2>
-                </div>
+                <PageHeader
+                    title={`Modifica ${types[debtCredit.type]}`}
+                    backLink={route('debts-credits.index')}
+                />
             }
         >
             <Head title={`Modifica ${types[debtCredit.type]}`} />

@@ -1,3 +1,4 @@
+import PageHeader from '@/Components/PageHeader';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -114,27 +115,10 @@ export default function Show({ transfer }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            href={route('inter-household-transfers.index')}
-                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                        >
-                            ← Indietro
-                        </Link>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                            Dettagli Trasferimento
-                        </h2>
-                    </div>
-                    <span
-                        className={clsx(
-                            'inline-flex rounded-full px-3 py-1 text-sm font-medium',
-                            STATUS_COLORS[transfer.status]
-                        )}
-                    >
-                        {STATUS_LABELS[transfer.status]}
-                    </span>
-                </div>
+                <PageHeader
+                    title="Dettagli Trasferimento"
+                    backLink={route('inter-household-transfers.index')}
+                />
             }
         >
             <Head title="Dettagli Trasferimento" />

@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import PageHeader from '@/Components/PageHeader';
 
 interface Category {
     id: number;
@@ -96,22 +97,15 @@ export default function Show({ refund }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            href={route('refunds.index')}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                        >
-                            ←
-                        </Link>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                            Dettaglio Rimborso
-                        </h2>
-                    </div>
-                    <LinkButton href={route('refunds.edit', refund.id)} icon={<PencilIcon />}>
-                        Modifica
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title="Dettaglio Rimborso"
+                    backLink={route('refunds.index')}
+                    actions={
+                        <LinkButton href={route('refunds.edit', refund.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title="Dettaglio Rimborso" />

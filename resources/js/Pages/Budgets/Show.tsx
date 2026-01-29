@@ -53,17 +53,8 @@ export default function Show({ budget, transactions }: ShowProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <>
-                            <Link
-                                href={route('budgets.index')}
-                                className="mr-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                            >
-                                ←
-                            </Link>
-                            {budget.category.icon || '📁'} {budget.category.name}
-                        </>
-                    }
+                    title={`Budget: ${budget.category.name}`}
+                    backLink={route('budgets.index')}
                     actions={
                         <LinkButton href={route('budgets.edit', budget.id)} icon={<PencilIcon />}>
                             Modifica

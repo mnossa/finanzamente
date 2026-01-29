@@ -10,6 +10,7 @@ import { Household, HouseholdMember, PageProps } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import { ChartBarIcon, TagIcon } from '@heroicons/react/24/outline';
+import PageHeader from '@/Components/PageHeader';
 
 interface PendingInvitation {
     id: number;
@@ -138,9 +139,9 @@ export default function Show({ household, members, pendingInvitations }: Props) 
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Impostazioni Household
-                </h2>
+                <PageHeader
+                    title={`Household: ${household.name}`}
+                />
             }
         >
             <Head title={`Household: ${household.name}`} />

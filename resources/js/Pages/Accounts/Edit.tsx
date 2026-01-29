@@ -55,18 +55,10 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <>
-                            <Link
-                                href={route('accounts.index')}
-                                className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                            >
-                                ← Indietro
-                            </Link>
-                            Modifica Conto
-                        </>
-                    }
+                    title="Modifica Conto"
+                    backLink={route('accounts.index')}
                 />
+
             }
         >
             <Head title="Modifica Conto" />

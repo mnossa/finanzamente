@@ -226,22 +226,8 @@ export default function Show({ investment }: ShowProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <>
-                            <Link
-                                href={route('investments.index')}
-                                className="mr-4 rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                            >
-                                ←
-                            </Link>
-                            {investment.asset.type_icon} {investment.asset.name}
-                            {investment.asset.symbol && (
-                                <span className="ml-2 text-base text-gray-500 dark:text-gray-400">
-                                    ({investment.asset.symbol})
-                                </span>
-                            )}
-                        </>
-                    }
+                    title={`${investment.asset.name} - Investimento`}
+                    backLink={route('investments.index')}
                 />
             }
         >

@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import PageHeader from '@/Components/PageHeader';
 
 interface Category {
     id: number;
@@ -75,17 +76,10 @@ export default function Edit({ refund }: EditProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center space-x-4">
-                    <Link
-                        href={route('refunds.show', refund.id)}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        ← Indietro
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Modifica Rimborso
-                    </h2>
-                </div>
+                <PageHeader
+                    title="Modifica Rimborso"
+                    backLink={route('refunds.index')}
+                />
             }
         >
             <Head title="Modifica Rimborso" />

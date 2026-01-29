@@ -176,13 +176,13 @@ function InvestmentCard({ investment }: { investment: Investment }) {
     );
 }
 
-export default function Index({ 
-    investments, 
-    openInvestments, 
-    closedInvestments, 
-    stats, 
-    assetTypes, 
-    assetTypeIcons 
+export default function Index({
+    investments,
+    openInvestments,
+    closedInvestments,
+    stats,
+    assetTypes,
+    assetTypeIcons
 }: IndexProps) {
     return (
         <AuthenticatedLayout
@@ -190,20 +190,13 @@ export default function Index({
                 <PageHeader
                     title="Investimenti"
                     actions={
-                        <>
-                            <Link
-                                href={route('investment-assets.index')}
-                                className="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-                            >
-                                💼 Gestisci Asset
-                            </Link>
-                            <LinkButton
-                                href={route('investments.create')}
-                                icon={<PlusIcon />}
-                            >
-                                Nuovo Investimento
-                            </LinkButton>
-                        </>
+
+                        <LinkButton
+                            href={route('investments.create')}
+                            icon={<PlusIcon />}
+                        >
+                            Nuovo Investimento
+                        </LinkButton>
                     }
                 />
             }
@@ -212,6 +205,7 @@ export default function Index({
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">

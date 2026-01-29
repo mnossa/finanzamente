@@ -57,6 +57,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 import { StatusBadge } from '@/Components/StatusBadge';
+import PageHeader from '@/Components/PageHeader';
 
 export default function Show({ debtCredit, types, statuses }: ShowProps) {
     const isDebt = debtCredit.type === 'debt';
@@ -80,22 +81,15 @@ export default function Show({ debtCredit, types, statuses }: ShowProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            href={route('debts-credits.index')}
-                            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                        >
-                            ←
-                        </Link>
-                        <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                            {debtCredit.type_label}
-                        </h2>
-                    </div>
-                    <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
-                        Modifica
-                    </LinkButton>
-                </div>
+                <PageHeader
+                    title={`${debtCredit.type_label} - ${debtCredit.counterparty}`}
+                    backLink={route('debts-credits.index')}
+                    actions={
+                        <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    }
+                />
             }
         >
             <Head title={`${debtCredit.type_label} - ${debtCredit.counterparty}`} />

@@ -107,6 +107,11 @@ const Icons = {
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
         </svg>
     ),
+    Briefcase: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="20" height="14" x="2" y="7" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+    ),
 };
 
 // Tipo per gli elementi di navigazione
@@ -131,7 +136,8 @@ const navigationItems: NavigationItem[] = [
     { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },
     { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat },
     { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target },
-    { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, altRouteMatch: 'investment-assets.*' },
+    { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp },
+    { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase },
 ];
 
 function FlashMessages() {

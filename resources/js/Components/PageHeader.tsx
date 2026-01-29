@@ -60,12 +60,13 @@ export default function PageHeader({ title, actions, subtitle, className, backLi
                 )}
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
                     {title}
-                </h2>
-                {subtitle && (
+                    {subtitle && (
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                         {subtitle}
                     </p>
                 )}
+                </h2>
+                
             </div>
             {actions && (
                 <div className="flex flex-shrink-0 items-center gap-2">

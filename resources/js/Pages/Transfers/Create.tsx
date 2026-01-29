@@ -7,6 +7,7 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useMemo } from 'react';
+import PageHeader from '@/Components/PageHeader';
 
 interface Account {
     id: number;
@@ -76,17 +77,10 @@ export default function Create({ accounts }: CreateProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center space-x-4">
-                    <Link
-                        href={route('transfers.index')}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        ← Indietro
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Nuovo Trasferimento
-                    </h2>
-                </div>
+                <PageHeader
+                    title="Nuovo Trasferimento"
+                    backLink={route('transfers.index')}
+                />
             }
         >
             <Head title="Nuovo Trasferimento" />

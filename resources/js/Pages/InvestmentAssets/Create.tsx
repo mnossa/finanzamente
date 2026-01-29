@@ -7,6 +7,7 @@ import AssetSearch from '@/Components/AssetSearch';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler } from 'react';
+import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
     code: string;
@@ -57,17 +58,10 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center gap-4">
-                    <Link
-                        href={route('investment-assets.index')}
-                        className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-                    >
-                        ←
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Nuovo Asset Finanziario
-                    </h2>
-                </div>
+                <PageHeader
+                    title="Nuovo Asset"
+                    backLink={route('investment-assets.index')}
+                />
             }
         >
             <Head title="Nuovo Asset" />

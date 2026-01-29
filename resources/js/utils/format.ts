@@ -11,6 +11,7 @@ export function formatCurrency(amount: number, currency: string = 'EUR'): string
 export function formatDate(dateStr: string | null, opts?: Intl.DateTimeFormatOptions): string {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-'; // Controlla se la data è invalida
     return new Intl.DateTimeFormat('it-IT', opts || {
         day: '2-digit',
         month: 'short',
@@ -21,6 +22,7 @@ export function formatDate(dateStr: string | null, opts?: Intl.DateTimeFormatOpt
 export function formatDateTime(dateStr: string | null): string {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-'; // Controlla se la data è invalida
     return new Intl.DateTimeFormat('it-IT', {
         day: '2-digit',
         month: '2-digit',

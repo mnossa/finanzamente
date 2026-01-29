@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import PageHeader from '@/Components/PageHeader';
 
 interface Category {
     id: number;
@@ -68,17 +69,10 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
     return (
         <AuthenticatedLayout
             header={
-                <div className="flex items-center space-x-4">
-                    <Link
-                        href={route('transactions.index')}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        ← Indietro
-                    </Link>
-                    <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                        Nuova Transazione
-                    </h2>
-                </div>
+                <PageHeader
+                    title="Nuova Transazione"
+                    backLink={route('transactions.index')}
+                />
             }
         >
             <Head title="Nuova Transazione" />

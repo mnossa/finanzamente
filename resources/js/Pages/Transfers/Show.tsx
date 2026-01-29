@@ -55,17 +55,8 @@ export default function Show({ transfer }: ShowProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={
-                        <>
-                            <Link
-                                href={route('transfers.index')}
-                                className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                            >
-                                ← Indietro
-                            </Link>
-                            Dettagli Trasferimento
-                        </>
-                    }
+                    title={"Dettagli Trasferimento"}
+                    backLink={route('transfers.index')}
                 />
             }
         >
