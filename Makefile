@@ -5,7 +5,7 @@ LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed
+.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -44,6 +44,24 @@ seed:
 
 fix-perms:
 	bash ./fix-permissions.sh
+
+mysql-root:
+	docker compose exec db mysql -uroot -proot
+
+# Reset password root MySQL (procedura guidata)
+reset-mysql-root-password-step:
+	@echo "[STEP 1] Stoppa il container MySQL principale:"
+	docker compose stop db
+	@echo "[STEP 2] Avvia un container temporaneo in shell:"
+	echo 'Esegui: docker compose run --rm --name temp-mysql-reset db sh'
+	@echo "[STEP 3] All'interno del container, esegui:"
+	echo 'mysqld --skip-networking --skip-grant-tables'
+	@echo "[STEP 4] In un altro terminale, esegui:"
+	echo 'docker compose exec temp-mysql-reset mysql -e \"UPDATE mysql.user SET authentication_string=PASSWORD(\'root\') WHERE User=\'root\'; FLUSH PRIVILEGES;\"'
+	@echo "[STEP 5] Termina e rimuovi il container temporaneo, poi riavvia db:"
+	echo 'exit'
+	docker compose rm -f temp-mysql-reset
+	docker compose start db
 
 # Esempio: make exec cmd="php artisan tinker"
 exec:
