@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail
+    
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -99,5 +100,13 @@ class User extends Authenticatable implements MustVerifyEmail
             'birth_date' => 'date',
             'preferences' => 'array',
         ];
+    }
+
+    /**
+     * Invia la notifica di verifica email in italiano.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmail);
     }
 }

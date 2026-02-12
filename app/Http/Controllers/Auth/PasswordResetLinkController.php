@@ -41,11 +41,11 @@ class PasswordResetLinkController extends Controller
         );
 
         if ($status == Password::RESET_LINK_SENT) {
-            return back()->with('status', __($status));
+            return back()->with('status', 'Abbiamo inviato il link per reimpostare la password alla tua email.');
         }
 
         throw ValidationException::withMessages([
-            'email' => [trans($status)],
+            'email' => ['Non è stato possibile inviare il link di reset. Verifica la mail inserita e riprova.'],
         ]);
     }
 }
