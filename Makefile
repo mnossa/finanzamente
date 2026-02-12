@@ -5,7 +5,7 @@ LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root
+.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -79,3 +79,6 @@ check-duplicates:
 # Elimina duplicati (richiede conferma)
 clean-duplicates:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan recurring:clean-duplicates
+
+test:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan test

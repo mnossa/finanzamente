@@ -4,14 +4,23 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\Household;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class HouseholdCreationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
+
+    #[Test]
     public function authenticated_user_can_create_household_with_shared_wallet_mode()
     {
         $user = User::factory()->create();
@@ -29,7 +38,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertEquals($user->id, $household->owner_user_id);
     }
 
-    /** @test */
+    #[Test]
     public function authenticated_user_can_create_household_with_debt_balancing_mode()
     {
         $user = User::factory()->create();
@@ -46,7 +55,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertEquals('debt_balancing', $household->financial_management_type);
     }
 
-    /** @test */
+    #[Test]
     public function creating_household_requires_valid_financial_management_type()
     {
         $user = User::factory()->create();
@@ -61,7 +70,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertEquals(0, Household::count());
     }
 
-    /** @test */
+    #[Test]
     public function creating_household_requires_financial_management_type()
     {
         $user = User::factory()->create();
@@ -76,7 +85,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertEquals(0, Household::count());
     }
 
-    /** @test */
+    #[Test]
     public function owner_can_update_household_financial_management_type()
     {
         $user = User::factory()->create();
@@ -91,6 +100,8 @@ class HouseholdCreationTest extends TestCase
             'permissions' => json_encode(['manage' => true, 'supervise' => true]),
         ]);
 
+        $user->update(['active_household_id' => $household->id]);
+
         $response = $this->actingAs($user)->patch(route('households.update', $household->id), [
             'name' => $household->name,
             'financial_management_type' => 'debt_balancing',
@@ -102,7 +113,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertEquals('debt_balancing', $household->financial_management_type);
     }
 
-    /** @test */
+    #[Test]
     public function non_owner_cannot_update_household_financial_management_type()
     {
         $owner = User::factory()->create();
@@ -119,6 +130,8 @@ class HouseholdCreationTest extends TestCase
             'permissions' => json_encode([]),
         ]);
 
+        $member->update(['active_household_id' => $household->id]);
+
         $response = $this->actingAs($member)->patch(route('households.update', $household->id), [
             'name' => $household->name,
             'financial_management_type' => 'debt_balancing',
@@ -130,7 +143,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertEquals('shared_wallet', $household->financial_management_type); // Non cambiato
     }
 
-    /** @test */
+    #[Test]
     public function owner_can_update_balance_percentages()
     {
         $owner = User::factory()->create();
@@ -146,6 +159,8 @@ class HouseholdCreationTest extends TestCase
             $owner->id => ['role' => 'owner', 'permissions' => json_encode(['manage' => true])],
             $member->id => ['role' => 'member', 'permissions' => json_encode([])],
         ]);
+
+        $owner->update(['active_household_id' => $household->id]);
 
         $response = $this->actingAs($owner)->patch(route('households.update', $household->id), [
             'name' => $household->name,
@@ -165,7 +180,7 @@ class HouseholdCreationTest extends TestCase
         ], $household->balance_percentages);
     }
 
-    /** @test */
+    #[Test]
     public function updating_balance_percentages_requires_100_percent_total()
     {
         $owner = User::factory()->create();
@@ -180,6 +195,8 @@ class HouseholdCreationTest extends TestCase
             $owner->id => ['role' => 'owner', 'permissions' => json_encode(['manage' => true])],
             $member->id => ['role' => 'member', 'permissions' => json_encode([])],
         ]);
+
+        $owner->update(['active_household_id' => $household->id]);
 
         // Percentuali che non sommano a 100
         $response = $this->actingAs($owner)->patch(route('households.update', $household->id), [
@@ -197,7 +214,7 @@ class HouseholdCreationTest extends TestCase
         $this->assertNull($household->balance_percentages);
     }
 
-    /** @test */
+    #[Test]
     public function can_create_household_with_debt_balancing_and_balance_type()
     {
         $user = User::factory()->create();

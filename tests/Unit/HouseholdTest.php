@@ -4,15 +4,15 @@ namespace Tests\Unit;
 
 use App\Models\Household;
 use App\Models\User;
-use PHPUnit\Framework\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase as BaseTestCase;
 
 class HouseholdTest extends BaseTestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_household_with_financial_management_type()
     {
         $user = User::factory()->create();
@@ -27,7 +27,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertEquals('Portafoglio Comune', $household->getFinancialManagementTypeLabel());
     }
 
-    /** @test */
+    #[Test]
     public function it_defaults_to_shared_wallet_mode()
     {
         $user = User::factory()->create();
@@ -38,11 +38,13 @@ class HouseholdTest extends BaseTestCase
             // Non specifico il financial_management_type per testare il default
         ]);
 
+        $household->refresh();
+
         // Il default dovrebbe essere impostato dalla migration
         $this->assertNotNull($household->financial_management_type);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_check_if_household_is_debt_balancing_mode()
     {
         $user = User::factory()->create();
@@ -57,7 +59,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertFalse($household->isSharedWalletMode());
     }
 
-    /** @test */
+    #[Test]
     public function it_can_check_if_household_is_shared_wallet_mode()
     {
         $user = User::factory()->create();
@@ -72,7 +74,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertFalse($household->isDebtBalancingMode());
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_correct_financial_management_type_labels()
     {
         $user = User::factory()->create();
@@ -93,7 +95,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertEquals('Bilanciamento Debiti', $debtBalancingHousehold->getFinancialManagementTypeLabel());
     }
 
-    /** @test */
+    #[Test]
     public function it_has_correct_financial_management_types_constants()
     {
         $this->assertEquals('shared_wallet', Household::FINANCIAL_MANAGEMENT_SHARED_WALLET);
@@ -107,7 +109,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertEquals($expectedTypes, Household::FINANCIAL_MANAGEMENT_TYPES);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_set_and_get_balance_percentages()
     {
         $user1 = User::factory()->create();
@@ -135,7 +137,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertTrue($household->hasCustomBalancePercentages());
     }
 
-    /** @test */
+    #[Test]
     public function it_calculates_equal_percentages_when_none_set()
     {
         $user1 = User::factory()->create();
@@ -164,7 +166,7 @@ class HouseholdTest extends BaseTestCase
         $this->assertFalse($household->hasCustomBalancePercentages());
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_balance_percentages_sum_to_100()
     {
         $user1 = User::factory()->create();
@@ -189,7 +191,7 @@ class HouseholdTest extends BaseTestCase
         $household->setBalancePercentages($invalidPercentages);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_users_belong_to_household_for_percentages()
     {
         $user1 = User::factory()->create();
@@ -215,7 +217,7 @@ class HouseholdTest extends BaseTestCase
         $household->setBalancePercentages($invalidPercentages);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_balance_percentages_correctly()
     {
         $user1 = User::factory()->create();
