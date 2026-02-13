@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FinanzaMente - Gestisci le tue finanze con intelligenza</title>
     <meta name="description" content="FinanzaMente è l'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.">
+    <meta name="keywords" content="gestione finanze, budget personale, risparmio, spese, finanza personale, Italia">
+    <meta name="author" content="FinanzaMente">
+    <meta name="theme-color" content="#4f4ce5">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url('/') }}">
+    <meta property="og:title" content="FinanzaMente - Gestisci le tue finanze con intelligenza">
+    <meta property="og:description" content="FinanzaMente è l'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.">
     
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -14,9 +23,14 @@
     @vite(['resources/css/app.css'])
 </head>
 <body class="antialiased bg-surface-50 text-surface-900">
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
+        Vai al contenuto principale
+    </a>
+    
     <!-- Header / Navigation -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-surface-200 transition-all duration-300">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-surface-200 transition-all duration-300" role="banner">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Menu principale">
             <div class="flex justify-between items-center h-16 sm:h-20">
                 <!-- Logo -->
                 <div class="flex items-center space-x-2">
@@ -51,8 +65,10 @@
         </nav>
     </header>
 
+    <!-- Main content -->
+    <main id="main-content">
     <!-- Hero Section -->
-    <section class="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden">
+    <section class="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden" aria-labelledby="hero-title">
         <!-- Background decoration -->
         <div class="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 opacity-60" aria-hidden="true"></div>
         <div class="absolute top-0 right-0 -translate-y-12 translate-x-12 w-72 h-72 bg-primary-200 rounded-full blur-3xl opacity-20" aria-hidden="true"></div>
@@ -61,7 +77,7 @@
         <div class="relative container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-4xl mx-auto text-center">
                 <!-- Main headline -->
-                <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 leading-tight mb-4 sm:mb-6">
+                <h1 id="hero-title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 leading-tight mb-4 sm:mb-6">
                     Gestisci le tue finanze con
                     <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">intelligenza</span>
                 </h1>
@@ -115,10 +131,10 @@
     </section>
 
     <!-- Features Section -->
-    <section class="py-12 sm:py-20 bg-white">
+    <section class="py-12 sm:py-20 bg-white" aria-labelledby="features-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
+                <h2 id="features-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
                     Tutto quello che ti serve per gestire il tuo denaro
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
@@ -209,10 +225,10 @@
     </section>
 
     <!-- How it works Section -->
-    <section id="come-funziona" class="py-12 sm:py-20 bg-gradient-to-br from-primary-50 to-accent-50">
+    <section id="come-funziona" class="py-12 sm:py-20 bg-gradient-to-br from-primary-50 to-accent-50" aria-labelledby="how-it-works-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
+                <h2 id="how-it-works-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
                     Come funziona
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
@@ -272,13 +288,13 @@
     </section>
 
     <!-- Benefits Section -->
-    <section class="py-12 sm:py-20 bg-white">
+    <section class="py-12 sm:py-20 bg-white" aria-labelledby="benefits-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-6xl mx-auto">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
                     <!-- Text content -->
                     <div class="order-2 lg:order-1">
-                        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-4 sm:mb-6">
+                        <h2 id="benefits-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-4 sm:mb-6">
                             Perché scegliere FinanzaMente?
                         </h2>
                         <div class="space-y-4 sm:space-y-6">
@@ -377,9 +393,10 @@
             </div>
         </div>
     </section>
+    </main>
 
     <!-- Footer -->
-    <footer class="bg-surface-900 text-surface-300 py-8 sm:py-12">
+    <footer class="bg-surface-900 text-surface-300 py-8 sm:py-12" role="contentinfo">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-6xl mx-auto">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
