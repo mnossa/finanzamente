@@ -1,44 +1,55 @@
-## Piano di implementazione homepage finanzamente.it ✅
+## Piano di implementazione homepage finanzamente.it
 
 - [x] Analizzare le linee guida del progetto e lo stato attuale
-- [x] Creare layout Blade per la homepage
-- [x] Implementare sezione hero con CTA principale
-- [x] Aggiungere sezione features (punti di forza)
-- [x] Creare sezione benefici/valore
-- [x] Implementare sezione come funziona
-- [x] Aggiungere sezione CTA finale
-- [x] Implementare footer con informazioni e link
-- [x] Ottimizzare per mobile-first e responsività
-- [x] Aggiornare route per usare Blade invece di Inertia
-- [x] Verificare accessibilità WCAG 2.1
-  - [x] Aggiungere ARIA labels e landmark roles
-  - [x] Implementare skip-to-content link
-  - [x] Strutturare con semantic HTML
-  - [x] Meta tags SEO e Open Graph
-- [x] Documentazione completa implementazione
-- [x] Code review (✅ passed)
-- [x] Security check (✅ passed)
+- [x] Comprendere le richieste dell'utente per la homepage
+- [x] Riscrivere completamente Welcome.tsx con nuovo design
+- [x] Implementare sezione hero con storytelling su privacy e consapevolezza
+- [x] Creare sezione "Perché scegliere Finanzamente" con 3 feature principali
+- [x] Aggiungere sezione comparazione Piano Free vs Premium (mobile-first)
+- [x] Implementare sezione "Come funziona" in 3 step
+- [x] Aggiungere sezione CTA finale per registrazione
+- [x] Implementare footer con link e informazioni
+- [x] Ottimizzare per mobile-first e responsività completa
+- [ ] Testare build e rendering della pagina
+- [ ] Verificare accessibilità WCAG 2.1
+- [ ] Code review finale
+- [ ] Security check finale
 
 ## Storytelling, funzionalità e privacy
 
-La homepage racconta che Finanzamente permette di gestire le finanze personali per single, per famiglie, per partite IVA e offre una gestione multi-households, cioè la possibilità di gestire con un solo account più nuclei familiari o progetti diversi.
+La homepage è stata completamente riscritta in React/TypeScript con Inertia.js secondo le nuove specifiche:
 
-Non gestendo la sincronizzazione bancaria automatica, viene posta grande attenzione su due aspetti:
-- la privacy (nessun collegamento diretto con i conti bancari, i dati restano sotto il controllo diretto dell’utente)
-- la consapevolezza (ogni transazione viene inserita manualmente, rendendo l’utente più consapevole delle proprie spese e abitudini).
+**Storytelling principale:**
+- Focus su **privacy totale**: nessuna sincronizzazione automatica, i dati restano sotto il controllo dell'utente
+- Enfasi sulla **consapevolezza**: gestione manuale delle transazioni per sviluppare abitudini finanziarie migliori
+- **Controllo diretto**: nessun collegamento ai conti bancari, tutto gestito manualmente
+- **Flessibilità**: adatto a single, famiglie e partite IVA con supporto multi-households
 
-Il focus è su privacy, consapevolezza, flessibilità e adattabilità a più utenti/tipologie familiari.
+**Piano Free:**
+- 1 solo conto per gestione personale
+- Tutte le funzionalità base (transazioni, categorie, budget)
+- Promemoria per scadenze e spese ricorrenti
+- Privacy totale (nessuna sincronizzazione)
 
-Non sono presenti testimonianze social o recensioni, in quanto il progetto è nuovo.
+**Piano Premium (€9,99/mese):**
+- Conti illimitati
+- Gestione multi-households (più nuclei familiari/progetti)
+- Strumenti avanzati per partite IVA
+- Reportistica evoluta
+- Export dati (CSV, Excel, PDF)
 
-## Caratteristiche Principali:
+**Non sono presenti:**
+- Menzioni di assistenza prioritaria o accesso anticipato
+- Testimonianze o social proof
+- Termini come "collega" o "sincronizza" riferiti a conti/carte
+
+## Caratteristiche Implementate:
 - ✅ Mobile-first, completamente responsive
-- ✅ Accessibilità WCAG 2.1 Level AA
-- ✅ SEO ottimizzato con meta tags e Open Graph
 - ✅ 100% in lingua italiana
-- ✅ Design system FinanzaMente (primary, accent, surface colors)
-- ✅ 6 sezioni principali (Hero, Features, How it works, Benefits, CTA, Footer)
-- ✅ Performance ottimizzate (minimal JS, CSS gradients, Vite, lazy loading)
-- ✅ Nessun errore di code review o security
-
-Consultare `HOMEPAGE_IMPLEMENTATION.md` per i dettagli.
+- ✅ Design moderno con TailwindCSS
+- ✅ 6 sezioni principali (Header, Hero, Features, Pricing, How it works, CTA, Footer)
+- ✅ Sezione pricing con comparazione chiara Free vs Premium
+- ✅ Storytelling centrato su privacy e consapevolezza
+- ✅ Nessun riferimento a sincronizzazione bancaria
+- ⏳ Accessibilità WCAG 2.1 (da verificare)
+- ⏳ SEO e meta tags (da implementare se necessario)
