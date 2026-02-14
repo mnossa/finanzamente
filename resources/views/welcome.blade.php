@@ -84,7 +84,7 @@
                 
                 <!-- Subheadline -->
                 <p class="text-base sm:text-lg md:text-xl text-surface-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
-                    FinanzaMente ti aiuta a prendere il controllo delle tue spese, risparmiare di più e raggiungere i tuoi obiettivi finanziari. Semplice, intuitivo, pensato per te.
+                    Prendi il controllo totale delle tue finanze. Gestisci manualmente ogni transazione, pianifica il tuo budget e raggiungi i tuoi obiettivi con consapevolezza e privacy totale.
                 </p>
                 
                 <!-- CTA Buttons -->
@@ -178,7 +178,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Gestione conti multipli</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Collega tutti i tuoi conti correnti, carte e portafogli. Visualizza il saldo totale in un colpo d'occhio.
+                        Inserisci manualmente tutti i tuoi conti correnti, carte e portafogli. Visualizza il saldo totale in un colpo d'occhio.
                     </p>
                 </div>
 
@@ -305,8 +305,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">100% Gratuito</h3>
-                                    <p class="text-sm sm:text-base text-surface-600">Tutte le funzionalità sono gratis, sempre. Nessun piano premium, nessun costo nascosto.</p>
+                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Controllo manuale totale</h3>
+                                    <p class="text-sm sm:text-base text-surface-600">Inserisci manualmente ogni transazione e mantieni piena consapevolezza delle tue finanze.</p>
                                 </div>
                             </div>
 
@@ -317,8 +317,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Privato e sicuro</h3>
-                                    <p class="text-sm sm:text-base text-surface-600">I tuoi dati sono criptati e protetti. Non vendiamo informazioni a terzi, mai.</p>
+                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Privacy totale garantita</h3>
+                                    <p class="text-sm sm:text-base text-surface-600">I tuoi dati rimangono solo tuoi. Nessuna sincronizzazione esterna, protezione massima della tua privacy.</p>
                                 </div>
                             </div>
 
@@ -359,6 +359,145 @@
                                 <p class="text-sm sm:text-base text-primary-600 mt-2">I tuoi dati sono protetti</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Comparison Section -->
+    <section class="py-12 sm:py-20 bg-gradient-to-br from-surface-50 to-surface-100" aria-labelledby="pricing-title">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
+                <h2 id="pricing-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
+                    Scegli il piano adatto a te
+                </h2>
+                <p class="text-base sm:text-lg text-surface-600">
+                    Inizia gratis e passa al Premium quando sei pronto per crescere
+                </p>
+            </div>
+
+            <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <!-- Piano Free -->
+                <div class="bg-white rounded-2xl p-6 sm:p-8 border-2 border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
+                    <div class="mb-6">
+                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-surface-100 text-surface-700 text-sm font-medium mb-4">
+                            Piano Base
+                        </div>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-surface-900 mb-2">Free</h3>
+                        <p class="text-base sm:text-lg text-surface-600">
+                            Perfetto per iniziare a gestire le tue finanze personali
+                        </p>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700">Gestione personale delle finanze</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700">1 solo conto alla volta</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700">Promemoria e notifiche</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700">Privacy totale - nessuna sincronizzazione esterna</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700">Tutte le funzionalità base</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-surface-200">
+                        <div class="text-3xl sm:text-4xl font-bold text-surface-900 mb-4">
+                            Gratis
+                            <span class="text-base sm:text-lg font-normal text-surface-600">per sempre</span>
+                        </div>
+                        @if (Route::has('register'))
+                            <a href="{{ route('register') }}" class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200">
+                                Inizia gratis
+                            </a>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Piano Premium -->
+                <div class="bg-white rounded-2xl p-6 sm:p-8 border-2 border-primary-500 hover:border-primary-600 shadow-soft-lg hover:shadow-soft-xl transition-all duration-300 relative">
+                    <!-- Badge "Più popolare" o "Consigliato" -->
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span class="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold shadow-md">
+                            Consigliato
+                        </span>
+                    </div>
+
+                    <div class="mb-6 mt-2">
+                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-4">
+                            Piano Avanzato
+                        </div>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-surface-900 mb-2">Premium</h3>
+                        <p class="text-base sm:text-lg text-surface-600">
+                            Per chi vuole gestire finanze più complesse
+                        </p>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700"><strong>Nessun limite</strong> di conti correnti e carte</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700"><strong>Gestione multi-households</strong> (famiglie, gruppi)</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700"><strong>Strumenti per partite IVA</strong> e professionisti</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700"><strong>Reportistica avanzata</strong> e analisi dettagliate</span>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm sm:text-base text-surface-700"><strong>Export dati</strong> in CSV ed Excel</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-surface-200">
+                        <div class="text-3xl sm:text-4xl font-bold text-surface-900 mb-1">
+                            Prossimamente
+                        </div>
+                        <p class="text-sm sm:text-base text-surface-600 mb-4">
+                            Il piano Premium sarà disponibile a breve
+                        </p>
+                        <button disabled class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-surface-400 rounded-xl cursor-not-allowed">
+                            Disponibile presto
+                        </button>
                     </div>
                 </div>
             </div>
