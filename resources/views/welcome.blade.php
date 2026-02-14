@@ -401,7 +401,7 @@
                             <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                             </svg>
-                            <span class="text-sm sm:text-base text-surface-700">Un solo conto alla volta</span>
+                            <span class="text-sm sm:text-base text-surface-700">Gestione di un singolo conto</span>
                         </div>
                         <div class="flex items-start gap-3">
                             <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -438,9 +438,9 @@
 
                 <!-- Piano Premium -->
                 <div class="bg-white rounded-2xl p-6 sm:p-8 border-2 border-primary-500 hover:border-primary-600 shadow-soft-lg hover:shadow-soft-xl transition-all duration-300 relative">
-                    <!-- Badge "Più popolare" o "Consigliato" -->
+                    <!-- Badge consigliato -->
                     <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <span class="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold shadow-md" aria-label="Piano consigliato per la maggior parte degli utenti">
+                        <span class="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold shadow-md">
                             Consigliato
                         </span>
                     </div>
