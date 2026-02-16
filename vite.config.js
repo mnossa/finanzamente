@@ -16,7 +16,10 @@ export default defineConfig(({ mode }) => {
         },
         plugins: [
             laravel({
-                input: 'resources/js/app.tsx',
+                input: [
+                    'resources/js/app.tsx',
+                    'resources/js/app-blade.js',
+                ],
                 refresh: true,
             }),
             react(),
