@@ -5,6 +5,27 @@ Implementazione completa della homepage pubblica del progetto finanzamente.it se
 
 ## File Modificati/Creati
 
+### Vite Configuration Fix (IMPORTANTE)
+
+Per permettere alle pagine Blade standalone (non-Inertia) di usare Vite correttamente, è stato necessario creare un entry point separato:
+
+#### `resources/js/app-blade.js` (NUOVO)
+Entry point dedicato per template Blade che importa solo il CSS, senza dipendenze React/Inertia:
+```javascript
+// Entry point for Blade templates (non-Inertia pages)
+// This file imports only the CSS without React/Inertia dependencies
+import '../css/app.css';
+```
+
+#### `vite.config.js` (MODIFICATO)
+Configurato Vite per supportare entrambi gli entry point:
+- `resources/js/app.tsx` - Per pagine Inertia/React (dashboard autenticata)
+- `resources/js/app-blade.js` - Per pagine Blade standalone (homepage pubblica)
+
+**Uso corretto:**
+- Pagine Blade pubbliche: `@vite('resources/js/app-blade.js')`
+- Pagine Inertia (app.blade.php): `@vite('resources/js/app.tsx')`
+
 ### 1. `resources/views/welcome.blade.php` (NUOVO)
 Template Blade per la homepage pubblica. Caratteristiche:
 
