@@ -5,7 +5,7 @@ LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit
+.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit clear-cache
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -32,6 +32,9 @@ bash: app
 
 dev:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec node npm run dev -- --host --port 5174
+
+clear-cache:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan optimize:clear
 
 migrate:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan migrate
