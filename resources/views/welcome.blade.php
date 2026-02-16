@@ -1,72 +1,14 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FinanzaMente - Gestisci le tue finanze con intelligenza</title>
-    <meta name="description" content="FinanzaMente è l'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.">
-    <meta name="keywords" content="gestione finanze, budget personale, risparmio, spese, finanza personale, Italia">
-    <meta name="author" content="FinanzaMente">
-    <meta name="theme-color" content="#4f4ce5">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url('/') }}">
-    <meta property="og:title" content="FinanzaMente - Gestisci le tue finanze con intelligenza">
-    <meta property="og:description" content="FinanzaMente è l'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.">
-    
-    <!-- Preconnect for performance -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet">
-    
-    <!-- Vite for CSS -->
-    @vite('resources/js/app-blade.js')
-</head>
-<body class="antialiased bg-surface-50 text-surface-900">
-    <!-- Skip to main content link for accessibility -->
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
-        Vai al contenuto principale
-    </a>
-    
-    <!-- Header / Navigation -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-surface-200 transition-all duration-300" role="banner">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Menu principale">
-            <div class="flex justify-between items-center h-16 sm:h-20">
-                <!-- Logo -->
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-primary-600 to-primary-800 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <span class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary-700 to-primary-900 bg-clip-text text-transparent">FinanzaMente</span>
-                </div>
-                
-                <!-- Navigation Links -->
-                <div class="flex items-center space-x-2 sm:space-x-4">
-                    @if (Route::has('login'))
-                        @auth
-                            <a href="{{ route('dashboard') }}" class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-primary-700 hover:text-primary-900 transition-colors">
-                                Dashboard
-                            </a>
-                        @else
-                            <a href="{{ route('login') }}" class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-surface-700 hover:text-primary-700 transition-colors">
-                                Accedi
-                            </a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="inline-flex items-center px-4 sm:px-6 py-2 sm:py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                                    Registrati gratis
-                                </a>
-                            @endif
-                        @endauth
-                    @endif
-                </div>
-            </div>
-        </nav>
-    </header>
+@extends('layouts.guest')
 
-    <!-- Main content -->
-    <main id="main-content">
+@section('meta-tags')
+    <x-meta-tags 
+        title="FinanzaMente - Gestisci le tue finanze con intelligenza"
+        description="FinanzaMente è l'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità."
+        keywords="gestione finanze, budget personale, risparmio, spese, finanza personale, Italia"
+    />
+@endsection
+
+@section('content')
     <!-- Hero Section -->
     <section class="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden" aria-labelledby="hero-title">
         <!-- Background decoration -->
@@ -84,13 +26,13 @@
                 
                 <!-- Subheadline -->
                 <p class="text-base sm:text-lg md:text-xl text-surface-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Prendi il controllo totale delle tue finanze. Gestisci manualmente ogni transazione, pianifica il tuo budget e raggiungi i tuoi obiettivi con consapevolezza e privacy totale.
+                    Prendi il controllo totale delle tue finanze. Gestisci ogni transazione, pianifica il tuo budget e raggiungi i tuoi obiettivi con consapevolezza e privacy totale.
                 </p>
                 
                 <!-- CTA Buttons -->
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12">
                     @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-accent hover:shadow-accent-lg transition-all duration-200 transform hover:-translate-y-0.5">
+                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-accent hover:shadow-accent-lg transition-all duration-200 transform ">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
@@ -99,9 +41,6 @@
                     @endif
                     <a href="#come-funziona" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium text-primary-700 bg-white hover:bg-surface-50 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200">
                         Scopri come funziona
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
                     </a>
                 </div>
                 
@@ -516,7 +455,7 @@
                 </p>
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
                     @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-700 bg-white hover:bg-surface-50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-700 bg-white hover:bg-surface-50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform ">
                             Registrati gratis
                             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -532,75 +471,9 @@
             </div>
         </div>
     </section>
-    </main>
+@endsection
 
-    <!-- Footer -->
-    <footer class="bg-surface-900 text-surface-300 py-8 sm:py-12" role="contentinfo">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-6xl mx-auto">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-                    <!-- Brand -->
-                    <div>
-                        <div class="flex items-center space-x-2 mb-4">
-                            <div class="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-800 rounded-lg flex items-center justify-center">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <span class="text-lg font-bold text-white">FinanzaMente</span>
-                        </div>
-                        <p class="text-sm text-surface-400">
-                            Gestisci le tue finanze con intelligenza. Gratuito, sicuro, italiano.
-                        </p>
-                    </div>
-
-                    <!-- Links - Prodotto -->
-                    <div>
-                        <h3 class="text-white font-semibold mb-3 sm:mb-4">Prodotto</h3>
-                        <ul class="space-y-2 text-sm">
-                            <li><a href="#" class="hover:text-white transition-colors">Funzionalità</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Come funziona</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Sicurezza</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Links - Supporto -->
-                    <div>
-                        <h3 class="text-white font-semibold mb-3 sm:mb-4">Supporto</h3>
-                        <ul class="space-y-2 text-sm">
-                            <li><a href="#" class="hover:text-white transition-colors">Centro assistenza</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Contattaci</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Guide</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Links - Legale -->
-                    <div>
-                        <h3 class="text-white font-semibold mb-3 sm:mb-4">Legale</h3>
-                        <ul class="space-y-2 text-sm">
-                            <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Termini di servizio</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
-                            <li><a href="#" class="hover:text-white transition-colors">GDPR</a></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Bottom footer -->
-                <div class="border-t border-surface-800 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <p class="text-sm text-surface-400 text-center sm:text-left">
-                        &copy; {{ date('Y') }} FinanzaMente. Tutti i diritti riservati.
-                    </p>
-                    <div class="flex items-center gap-4">
-                        <span class="text-sm text-surface-400">Fatto con ❤️ in Italia</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
+@push('scripts')
     <!-- Smooth scroll script -->
     <script>
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -620,5 +493,5 @@
             });
         });
     </script>
-</body>
-</html>
+@endpush
+
