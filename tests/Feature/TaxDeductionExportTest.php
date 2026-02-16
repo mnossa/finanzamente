@@ -166,8 +166,8 @@ class TaxDeductionExportTest extends TestCase
         $response->assertInertia(fn($page) => $page
             ->has('summary')
             ->where('summary.total_transactions', 2)
-            ->where('summary.total_amount', 1500.00)
-            ->where('summary.total_deductible', 285.00) // 1500 * 19%
+            ->where('summary.total_amount', fn($value) => $value == 1500.00)
+            ->where('summary.total_deductible', fn($value) => $value == 285.00) // 1500 * 19%
         );
     }
 

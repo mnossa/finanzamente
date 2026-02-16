@@ -89,7 +89,7 @@ class AttachmentControllerTest extends TestCase
     #[Test]
     public function user_can_upload_image_attachment()
     {
-        if (!extension_loaded('gd')) {
+        if (!extension_loaded('gd') || !function_exists('imagejpeg')) {
             $this->markTestSkipped('L\'estensione GD non è disponibile');
         }
 
