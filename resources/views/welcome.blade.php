@@ -20,7 +20,7 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet">
     
     <!-- Vite for CSS -->
-    @vite(['resources/css/app.css'])
+    @vite('resources/js/app-blade.js')
 </head>
 <body class="antialiased bg-surface-50 text-surface-900">
     <!-- Skip to main content link for accessibility -->
