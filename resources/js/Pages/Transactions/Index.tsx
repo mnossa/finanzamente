@@ -39,6 +39,9 @@ interface Transaction {
     date: string;
     description: string | null;
     is_private: boolean;
+    is_tax_deductible: boolean;
+    tax_deduction_type: string | null;
+    attachments_count: number;
     transfer_id: number | null;
     refund_id: number | null;
     has_refunds: boolean;
@@ -113,7 +116,14 @@ function TransactionRow({ transaction, onDeleteClick }: { transaction: Transacti
                     <p className="font-medium text-gray-900 dark:text-white">
                         {transaction.description || transaction.category?.name || 'Transazione'}
                         {transaction.is_private && (
-                            <span className="ml-2 text-xs text-gray-400">🔒</span>
+                            <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
+                                🔒 Privata
+                            </span>
+                        )}
+                        {transaction.is_tax_deductible && (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                📋 Detraibile
+                            </span>
                         )}
                         {isTransfer && (
                             <span className="ml-2 text-xs text-amber-500">Trasferimento</span>

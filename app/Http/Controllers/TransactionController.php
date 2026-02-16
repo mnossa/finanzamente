@@ -25,7 +25,7 @@ class TransactionController extends Controller
         $householdId = $user->active_household_id;
 
         $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color'])
-            ->withCount('refunds')
+            ->withCount(['refunds', 'attachments'])
             ->withSum(['refunds as total_refunded_amount' => function ($q) {
                 $q->where('status', 'completed');
             }], 'amount')
@@ -57,6 +57,9 @@ class TransactionController extends Controller
         if ($request->filled('to')) {
             $query->where('date', '<=', $request->to);
         }
+        if ($request->filled('is_tax_deductible')) {
+            $query->where('is_tax_deductible', $request->is_tax_deductible === 'true');
+        }
 
         $transactions = $query
             ->orderBy('date', 'desc')
@@ -69,11 +72,14 @@ class TransactionController extends Controller
                     'date' => $transaction->date->format('Y-m-d'),
                     'description' => $transaction->description,
                     'is_private' => $transaction->is_private,
+                    'is_tax_deductible' => $transaction->is_tax_deductible,
+                    'tax_deduction_type' => $transaction->tax_deduction_type,
                     'transfer_id' => $transaction->transfer_id,
                     'refund_id' => $transaction->refund_id,
                     'has_refunds' => $transaction->refunds_count > 0,
                     'total_refunded_amount' => (float) ($transaction->total_refunded_amount ?? 0),
                     'is_fully_refunded' => $transaction->refunds_count > 0 && abs((float) $transaction->amount) <= (float) ($transaction->total_refunded_amount ?? 0),
+                    'attachments_count' => $transaction->attachments_count ?? 0,
                     'category' => $transaction->category ? [
                         'id' => $transaction->category->id,
                         'name' => $transaction->category->name,
@@ -120,7 +126,7 @@ class TransactionController extends Controller
             'transactions' => $transactions,
             'accounts' => $accounts,
             'categories' => $categories,
-            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to']),
+            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible']),
         ]);
     }
 
@@ -187,6 +193,10 @@ class TransactionController extends Controller
             'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
+            'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
+            'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
+            'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
+            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? \Carbon\Carbon::parse($validated['date'])->year : null),
         ]);
 
         // Sincronizza i tag
@@ -210,7 +220,7 @@ class TransactionController extends Controller
     {
         $this->authorizeTransaction($transaction);
 
-        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags', 'refunds.refundTransaction']);
+        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags', 'refunds.refundTransaction', 'attachments.uploader:id,name']);
 
         // Calcola informazioni sui rimborsi se è una spesa
         $refundInfo = null;
@@ -238,6 +248,10 @@ class TransactionController extends Controller
                 'date' => $transaction->date->format('Y-m-d'),
                 'description' => $transaction->description,
                 'is_private' => $transaction->is_private,
+                'is_tax_deductible' => $transaction->is_tax_deductible,
+                'tax_deduction_rate' => $transaction->tax_deduction_rate ? (float) $transaction->tax_deduction_rate : null,
+                'tax_deduction_type' => $transaction->tax_deduction_type,
+                'tax_year' => $transaction->tax_year,
                 'created_at' => $transaction->created_at->format('d/m/Y H:i'),
                 'category' => $transaction->category,
                 'account' => $transaction->account,
@@ -246,6 +260,17 @@ class TransactionController extends Controller
                 'transfer_id' => $transaction->transfer_id,
                 'refund_id' => $transaction->refund_id,
                 'refund_info' => $refundInfo,
+                'attachments' => $transaction->attachments->map(fn ($attachment) => [
+                    'id' => $attachment->id,
+                    'filename' => $attachment->filename,
+                    'mime_type' => $attachment->mime_type,
+                    'file_size' => $attachment->file_size,
+                    'uploaded_at' => $attachment->uploaded_at->format('d/m/Y H:i'),
+                    'uploader' => $attachment->uploader ? [
+                        'id' => $attachment->uploader->id,
+                        'name' => $attachment->uploader->name,
+                    ] : null,
+                ]),
             ],
         ]);
     }
@@ -298,6 +323,10 @@ class TransactionController extends Controller
                 'date' => $transaction->date->format('Y-m-d'),
                 'description' => $transaction->description,
                 'is_private' => $transaction->is_private,
+                'is_tax_deductible' => $transaction->is_tax_deductible,
+                'tax_deduction_rate' => $transaction->tax_deduction_rate ? (float) $transaction->tax_deduction_rate : null,
+                'tax_deduction_type' => $transaction->tax_deduction_type,
+                'tax_year' => $transaction->tax_year,
                 'tag_ids' => $transaction->tags->pluck('id')->toArray(),
                 'transfer_id' => $transaction->transfer_id,
                 'is_inter_household_transfer' => $isInterHouseholdTransfer,
@@ -363,6 +392,10 @@ class TransactionController extends Controller
             'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
+            'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
+            'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
+            'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
+            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? \Carbon\Carbon::parse($validated['date'])->year : null),
         ]);
 
         // Sincronizza i tag

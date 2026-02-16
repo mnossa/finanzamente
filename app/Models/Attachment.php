@@ -19,10 +19,15 @@ class Attachment extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'file_path', 'uploaded_at', 'uploaded_by',
+        'file_path', 'filename', 'mime_type', 'file_size', 'uploaded_at', 'uploaded_by',
     ];
 
     protected $dates = ['uploaded_at'];
+
+    public function attachable()
+    {
+        return $this->morphTo();
+    }
 
     public function uploader()
     {

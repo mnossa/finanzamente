@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import PageHeader from '@/Components/PageHeader';
+import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 
 interface Category {
     id: number;
@@ -49,6 +50,10 @@ interface Transaction {
     date: string;
     description: string | null;
     is_private: boolean;
+    is_tax_deductible: boolean;
+    tax_deduction_rate: number | null;
+    tax_deduction_type: string | null;
+    tax_year: number | null;
     created_at: string;
     category: Category | null;
     account: Account;
@@ -89,6 +94,9 @@ export default function Show({ transaction }: ShowProps) {
     const isRefundTransaction = transaction.refund_id !== null;
     const canBeRefunded = !isIncome && !isTransfer && !isRefundTransaction && (transaction.refund_info?.max_refundable ?? 0) > 0.01;
     const hasRefunds = transaction.refund_info && transaction.refund_info.refunds.length > 0;
+    const taxTypeLabel = transaction.tax_deduction_type
+        ? TAX_DEDUCTION_TYPES.find(t => t.value === transaction.tax_deduction_type)?.label
+        : null;
 
     const handleDelete = () => {
         router.delete(route('transactions.destroy', transaction.id));
@@ -175,9 +183,6 @@ export default function Show({ transaction }: ShowProps) {
                             </div>
                             <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
                                 {transaction.description || transaction.category?.name || 'Transazione'}
-                                {transaction.is_private && (
-                                    <span className="ml-2 text-sm text-gray-400">🔒 Privata</span>
-                                )}
                             </h3>
                             <p
                                 className={clsx(
@@ -219,6 +224,7 @@ export default function Show({ transaction }: ShowProps) {
                                     {transaction.account.name}
                                 </span>
                             </div>
+                            
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
                                 <span className="text-gray-500 dark:text-gray-400">Categoria</span>
                                 <span className="font-medium text-gray-900 dark:text-white">
@@ -253,6 +259,17 @@ export default function Show({ transaction }: ShowProps) {
                                 </span>
                             </div>
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
+                                <span className="text-gray-500 dark:text-gray-400">Privacy</span>
+                                <span className={clsx(
+                                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-sm font-medium',
+                                    transaction.is_private
+                                        ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                )}>
+                                    {transaction.is_private ? '🔒 Privata' : '👥 Condivisa'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
                                 <span className="text-gray-500 dark:text-gray-400">Creata da</span>
                                 <span className="font-medium text-gray-900 dark:text-white">
                                     {transaction.user.name}
@@ -277,6 +294,54 @@ export default function Show({ transaction }: ShowProps) {
                             </div>
                         )}
                     </div>
+
+                    {/* Sezione Detrazione Fiscale */}
+                    {transaction.is_tax_deductible && (
+                        <div className="overflow-hidden rounded-xl border-2 border-emerald-200 bg-white p-6 shadow-sm dark:border-emerald-700 dark:bg-gray-800">
+                            <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
+                                <span className="mr-2">📋</span> Detrazione Fiscale (730)
+                            </h3>
+
+                            <div className="space-y-4">
+                                <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
+                                    <span className="text-gray-500 dark:text-gray-400">Tipo</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                        {taxTypeLabel || transaction.tax_deduction_type}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
+                                    <span className="text-gray-500 dark:text-gray-400">Percentuale</span>
+                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                        {transaction.tax_deduction_rate}%
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
+                                    <span className="text-gray-500 dark:text-gray-400">Anno fiscale</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">
+                                        {transaction.tax_year}
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between pb-3">
+                                    <span className="text-gray-500 dark:text-gray-400">Importo detraibile</span>
+                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                        {formatCurrency(
+                                            (Math.abs(transaction.amount) * (transaction.tax_deduction_rate || 0)) / 100,
+                                            transaction.account.currency_code
+                                        )}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+                                <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                                    💡 Ricorda di allegare i documenti necessari (scontrini, fatture) per la dichiarazione dei redditi.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Sezione Rimborsi (solo per spese) */}
                     {(hasRefunds || canBeRefunded) && (

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DebtCreditController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\TaxDeductionExportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\Api\AssetPriceController;
@@ -65,6 +67,10 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
 
     // ===== ROTTE DI MODIFICA (richiedono permessi can-modify, bloccate per ospiti) =====
     Route::middleware(['can-modify'])->group(function () {
+        // Attachments - gestione upload (modifica)
+        Route::post('/attachments', [AttachmentController::class, 'store'])->name('attachments.store');
+        Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
+
         // Accounts - modifica
         Route::get('/accounts/create', [AccountController::class, 'create'])->name('accounts.create');
         Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
@@ -164,6 +170,14 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // ===== ROTTE DI SOLA LETTURA (accessibili anche agli ospiti) =====
     // NOTA: Queste devono venire DOPO le rotte con /create per evitare conflitti
     
+    // Attachments - download (lettura)
+    Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
+
+    // Tax Deductions - gestione detrazioni fiscali
+    Route::get('/tax-deductions', [TaxDeductionExportController::class, 'index'])->name('tax-deductions.index');
+    Route::get('/tax-deductions/export-pdf', [TaxDeductionExportController::class, 'exportPdf'])->name('tax-deductions.export-pdf');
+    Route::get('/tax-deductions/export-attachments', [TaxDeductionExportController::class, 'exportAttachments'])->name('tax-deductions.export-attachments');
+
     // Accounts - lettura
     Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
     Route::get('/accounts/{account}', [AccountController::class, 'show'])->name('accounts.show');

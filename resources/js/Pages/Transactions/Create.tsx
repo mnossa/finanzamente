@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
+import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 
 interface Category {
     id: number;
@@ -46,6 +47,10 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
         date: today,
         description: '',
         is_private: false,
+        is_tax_deductible: false,
+        tax_deduction_rate: '19',
+        tax_deduction_type: '',
+        tax_year: new Date().getFullYear(),
         tag_ids: [] as number[],
     });
 
@@ -218,6 +223,100 @@ export default function Create({ accounts, categories, tags, defaultAccountId }:
                                         </p>
                                     </div>
                                 </div>
+
+                                {/* Detrazione Fiscale (solo per spese) */}
+                                {isExpense && (
+                                    <div className="space-y-4 rounded-lg border-2 border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-700 dark:bg-emerald-900/20">
+                                        <div className="flex items-start">
+                                            <div className="flex h-6 items-center">
+                                                <input
+                                                    id="is_tax_deductible"
+                                                    type="checkbox"
+                                                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                                    checked={data.is_tax_deductible}
+                                                    onChange={(e) => setData('is_tax_deductible', e.target.checked)}
+                                                />
+                                            </div>
+                                            <div className="ml-3">
+                                                <label
+                                                    htmlFor="is_tax_deductible"
+                                                    className="text-sm font-medium text-gray-900 dark:text-white"
+                                                >
+                                                    📋 Spesa detraibile/deducibile (730)
+                                                </label>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    Segna questa spesa per la dichiarazione dei redditi.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {data.is_tax_deductible && (
+                                            <div className="ml-7 space-y-4 border-l-2 border-emerald-300 pl-4 dark:border-emerald-600">
+                                                {/* Tipo di detrazione */}
+                                                <div>
+                                                    <InputLabel htmlFor="tax_deduction_type" value="Tipo di detrazione" />
+                                                    <select
+                                                        id="tax_deduction_type"
+                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                        value={data.tax_deduction_type}
+                                                        onChange={(e) => setData('tax_deduction_type', e.target.value)}
+                                                        required={data.is_tax_deductible}
+                                                    >
+                                                        <option value="">Seleziona tipo</option>
+                                                        <option value="mediche">🏥 Spese Mediche (19%)</option>
+                                                        <option value="veterinarie">🐾 Spese Veterinarie (19%)</option>
+                                                        <option value="istruzione">🎓 Istruzione (19%)</option>
+                                                        <option value="mutuo">🏠 Mutuo Prima Casa (19%)</option>
+                                                        <option value="ristrutturazione">🔨 Ristrutturazione (50%)</option>
+                                                        <option value="assicurazioni">🛡️ Assicurazioni (19%)</option>
+                                                        <option value="previdenza">💼 Previdenza Complementare</option>
+                                                        <option value="donazioni">❤️ Donazioni (19%-26%)</option>
+                                                        <option value="altro">📌 Altro</option>
+                                                    </select>
+                                                    <InputError message={errors.tax_deduction_type} className="mt-2" />
+                                                </div>
+
+                                                {/* Percentuale e Anno */}
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <div>
+                                                        <InputLabel htmlFor="tax_deduction_rate" value="Percentuale detrazione (%)" />
+                                                        <TextInput
+                                                            id="tax_deduction_rate"
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0.01"
+                                                            max="100"
+                                                            className="mt-1 block w-full"
+                                                            value={data.tax_deduction_rate}
+                                                            onChange={(e) => setData('tax_deduction_rate', e.target.value)}
+                                                            placeholder="es. 19"
+                                                            required={data.is_tax_deductible}
+                                                        />
+                                                        <InputError message={errors.tax_deduction_rate} className="mt-2" />
+                                                    </div>
+
+                                                    <div>
+                                                        <InputLabel htmlFor="tax_year" value="Anno fiscale" />
+                                                        <TextInput
+                                                            id="tax_year"
+                                                            type="number"
+                                                            min="2000"
+                                                            max="2100"
+                                                            className="mt-1 block w-full"
+                                                            value={data.tax_year}
+                                                            onChange={(e) => setData('tax_year', Number(e.target.value))}
+                                                        />
+                                                        <InputError message={errors.tax_year} className="mt-2" />
+                                                    </div>
+                                                </div>
+
+                                                <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                                                    💡 Potrai allegare documenti (scontrini, fatture) dopo aver salvato la transazione.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Tag */}
                                 {tags.length > 0 && (

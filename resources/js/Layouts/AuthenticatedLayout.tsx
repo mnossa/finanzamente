@@ -171,6 +171,7 @@ const navigationSections: NavigationSection[] = [
             { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank },
             { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },
             { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target },
+            { name: 'Detrazioni Fiscali', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase },
         ]
     },
     {
@@ -187,12 +188,6 @@ function FlashMessages() {
     const { flash } = usePage<PageProps>().props;
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
-
-
-//     useEffect(() => {       
-// setMessage({ type: 'success', text: 'ciao' });
-//             setVisible(true);
-//     })
 
     useEffect(() => {
         if (flash?.success) {

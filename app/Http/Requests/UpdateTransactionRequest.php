@@ -44,6 +44,10 @@ class UpdateTransactionRequest extends FormRequest
             'date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'is_private' => ['boolean'],
+            'is_tax_deductible' => ['boolean'],
+            'tax_deduction_rate' => ['nullable', 'required_if:is_tax_deductible,true', 'numeric', 'min:0.01', 'max:100'],
+            'tax_deduction_type' => ['nullable', 'required_if:is_tax_deductible,true', 'string', 'max:50', Rule::in(['mediche', 'veterinarie', 'istruzione', 'mutuo', 'ristrutturazione', 'assicurazioni', 'previdenza', 'donazioni', 'altro'])],
+            'tax_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
         ];
@@ -68,6 +72,13 @@ class UpdateTransactionRequest extends FormRequest
             'date.required' => 'La data è obbligatoria.',
             'date.date' => 'La data non è valida.',
             'description.max' => 'La descrizione non può superare 1000 caratteri.',
+            'tax_deduction_rate.required_if' => 'La percentuale di detrazione è obbligatoria per le spese detraibili.',
+            'tax_deduction_rate.min' => 'La percentuale di detrazione deve essere almeno 0,01%.',
+            'tax_deduction_rate.max' => 'La percentuale di detrazione non può superare il 100%.',
+            'tax_deduction_type.required_if' => 'Il tipo di detrazione è obbligatorio per le spese detraibili.',
+            'tax_deduction_type.in' => 'Il tipo di detrazione selezionato non è valido.',
+            'tax_year.min' => "L'anno fiscale non è valido.",
+            'tax_year.max' => "L'anno fiscale non è valido.",
         ];
     }
 }

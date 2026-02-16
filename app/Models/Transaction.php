@@ -20,7 +20,7 @@ class Transaction extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'user_id', 'account_id', 'category_id', 'amount', 'currency_code', 'date', 'description', 'recurring', 'recurring_transaction_id', 'is_private', 'transfer_id', 'refund_id',
+        'user_id', 'account_id', 'category_id', 'amount', 'currency_code', 'date', 'description', 'recurring', 'recurring_transaction_id', 'is_private', 'transfer_id', 'refund_id', 'is_tax_deductible', 'tax_deduction_rate', 'tax_deduction_type', 'tax_year',
     ];
 
     protected $casts = [
@@ -28,6 +28,8 @@ class Transaction extends Model
         'date' => 'date',
         'recurring' => 'boolean',
         'is_private' => 'boolean',
+        'is_tax_deductible' => 'boolean',
+        'tax_deduction_rate' => 'decimal:2',
     ];
 
     public function user()
@@ -48,6 +50,11 @@ class Transaction extends Model
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'transaction_tag');
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
     public function recurringTransaction()
@@ -124,5 +131,26 @@ class Transaction extends Model
         }
         
         return $amount - $refunded;
+    }
+
+    /**
+     * Calcola l'importo detraibile in base alla percentuale.
+     */
+    public function getTaxDeductibleAmount(): float
+    {
+        if (!$this->is_tax_deductible || !$this->tax_deduction_rate) {
+            return 0.0;
+        }
+
+        $baseAmount = abs((float) $this->amount);
+        return $baseAmount * ((float) $this->tax_deduction_rate / 100);
+    }
+
+    /**
+     * Verifica se la transazione è detraibile per l'anno fiscale specificato.
+     */
+    public function isDeductibleForYear(int $year): bool
+    {
+        return $this->is_tax_deductible && $this->tax_year === $year;
     }
 }
