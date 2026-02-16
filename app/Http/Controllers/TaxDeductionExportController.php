@@ -74,8 +74,8 @@ class TaxDeductionExportController extends Controller
         // Calcola il summary nel formato atteso dal frontend
         $summary = [
             'total_transactions' => $mappedTransactions->count(),
-            'total_amount' => $mappedTransactions->sum(fn($t) => abs($t['amount'])),
-            'total_deductible' => $mappedTransactions->sum(fn($t) => abs($t['amount']) * $t['tax_deduction_rate'] / 100),
+            'total_amount' => (float) $mappedTransactions->sum(fn($t) => abs($t['amount'])),
+            'total_deductible' => (float) $mappedTransactions->sum(fn($t) => abs($t['amount']) * $t['tax_deduction_rate'] / 100),
             'years' => $this->getAvailableYears($householdId),
             'grouped_by_type' => $groupedByType,
         ];
@@ -83,7 +83,7 @@ class TaxDeductionExportController extends Controller
         return Inertia::render('TaxDeductions/Index', [
             'transactions' => $mappedTransactions->values()->all(),
             'summary' => $summary,
-            'year' => $year,
+            'year' => (int) $year,
         ]);
     }
 

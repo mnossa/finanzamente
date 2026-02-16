@@ -24,12 +24,6 @@ class FixedExpenseServiceTest extends TestCase
         parent::setUp();
 
         $this->service = app(FixedExpenseService::class);
-
-        Currency::create([
-            'code' => 'EUR',
-            'name' => 'Euro',
-            'symbol' => '€',
-        ]);
     }
 
     #[Test]

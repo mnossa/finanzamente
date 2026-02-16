@@ -39,6 +39,40 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 - **Testing**: Implementare test automatici per le funzionalità principali.
 - **CI/CD**: Integrare pipeline di build, test e deploy.
 
+## Comandi di Sviluppo
+Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sviluppo Docker. I comandi principali sono:
+
+### Container Management
+- `make up` - Avvia lo stack Docker
+- `make down` - Ferma lo stack Docker
+- `make restart` - Riavvia lo stack Docker
+- `make logs` - Visualizza i log dei container
+- `make ps` - Mostra lo stato dei container
+
+### Accesso ai Container
+- `make app` o `make bash` - Accesso shell al container PHP/Laravel
+- `make node` - Accesso shell al container Node.js
+- `make mysql-root` - Accesso MySQL come root
+
+### Database
+- `make migrate` - Esegue le migrazioni del database
+- `make fresh` - Reset database (migrate:fresh)
+- `make seed` - Popola il database con i seeder
+
+### Testing
+- **`make test`** - **Esegue l'intera suite di test** (comando da usare sempre per i test)
+- I test vengono eseguiti nel container Docker con SQLite in-memory per velocità e isolamento
+
+### Sviluppo Frontend
+- `make dev` - Avvia il dev server Vite per hot-reload
+- `make clear-cache` - Pulisce tutte le cache Laravel (config, route, view)
+
+### Utilità
+- `make fix-perms` - Corregge i permessi dei file del progetto
+- `make exec cmd="comando"` - Esegue un comando personalizzato nel container app
+
+**Nota importante**: Usare sempre i comandi `make` per garantire che i container Docker utilizzino l'UID/GID corretto evitando problemi di permessi sui file.
+
 ## Estendibilità
 - Progettare il sistema per facilitare l'aggiunta di nuove funzionalità (es. reportistica avanzata, notifiche, integrazione con servizi esterni, gestione di household multipli, supporto multi-currency, budgeting, gestione debiti/crediti, obiettivi finanziari, tagging, allegati multipli, ecc.).
 - Ogni utente deve poter selezionare quale household sia attiva in ogni momento.

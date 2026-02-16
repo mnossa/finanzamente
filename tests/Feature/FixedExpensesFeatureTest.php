@@ -22,12 +22,6 @@ class FixedExpensesFeatureTest extends TestCase
         parent::setUp();
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
-
-        Currency::create([
-            'code' => 'EUR',
-            'name' => 'Euro',
-            'symbol' => '€',
-        ]);
     }
 
     #[Test]

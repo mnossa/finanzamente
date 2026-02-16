@@ -19,7 +19,7 @@ class Attachment extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'file_path', 'filename', 'mime_type', 'file_size', 'uploaded_at', 'uploaded_by',
+        'attachable_type', 'attachable_id', 'file_path', 'filename', 'mime_type', 'file_size', 'uploaded_at', 'uploaded_by',
     ];
 
     protected $dates = ['uploaded_at'];
