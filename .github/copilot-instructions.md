@@ -129,5 +129,5 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
   - Rotta: `/financial-report`
   - File: `financial-report.component.tsx`
 
-  ## Funzionalità Future da Considerare
+## Funzionalità Future da Considerare
 - Usa i metodi isDebtBalancingMode() e isSharedWalletMode() nelle future funzionalità di calcolo del saldo, per gestire modalità specifiche come il bilanciamento debiti e portafogli condivisi.
