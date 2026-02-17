@@ -10,6 +10,7 @@ export interface User {
     status?: 'active' | 'suspended' | 'deleted';
     preferences?: Record<string, unknown>;
     profile_completed?: boolean;
+    user_type?: 'persona' | 'partita_iva';
     profile_settings?: {
         has_vat: boolean;
         family_status: 'single' | 'couple' | 'family';
