@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\HouseholdPermissionService;
+use App\Services\ModuleAccessService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -32,6 +33,7 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $permissionService = app(HouseholdPermissionService::class);
+        $moduleService = app(ModuleAccessService::class);
         
         // Determina se l'utente può modificare i dati nella household attiva
         $canModify = false;
@@ -42,6 +44,9 @@ class HandleInertiaRequests extends Middleware
             $membership = $permissionService->getMembership($user, $user->active_household_id);
             $userRole = $membership?->role ?? 'member';
         }
+        
+        // Moduli disponibili per l'utente
+        $availableModules = $user ? $moduleService->getAllModulesWithAccess($user) : [];
         
         return [
             ...parent::share($request),
@@ -57,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                 'canModify' => $canModify,
                 'role' => $userRole,
             ],
+            'modules' => $availableModules,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

@@ -56,6 +56,20 @@ export interface Permissions {
     role: 'owner' | 'member' | 'guest' | null;
 }
 
+export interface Module {
+    id: string;
+    name: string;
+    category: 'base' | 'special' | 'planning' | 'fiscal' | 'investments';
+    routes: string[];
+    requires: string[];
+    enabled: boolean;
+    locked: boolean;
+    missing_requirements: string[];
+    unlock_hint: string | null;
+}
+
+export type ModulesMap = Record<string, Module>;
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
@@ -64,6 +78,7 @@ export type PageProps<
     };
     activeHousehold?: ActiveHousehold | null;
     permissions: Permissions;
+    modules: ModulesMap;
     flash?: {
         success?: string;
         error?: string;

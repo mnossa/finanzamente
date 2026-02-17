@@ -6,6 +6,8 @@ import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import PageHeader from '@/Components/PageHeader';
+import { ModuleAccessInfo, LockedModuleCard } from '@/Components/ModuleAccess';
+import { useModules } from '@/hooks/useModules';
 
 interface Account {
     id: number;
@@ -349,6 +351,8 @@ export default function Dashboard({
     openDebtsCredits,
     debtsCreditsSummary,
 }: DashboardProps) {
+    const { isModuleEnabled } = useModules();
+    
     // Calcola trend rispetto al mese precedente
     const incomeTrend =
         lastMonthStats.income > 0
@@ -372,6 +376,9 @@ export default function Dashboard({
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+                    {/* Info sui moduli bloccati */}
+                    <ModuleAccessInfo />
+
                     {/* Saldo Totale */}
                     <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                         <h3 className="text-sm font-medium text-slate-300">
@@ -468,69 +475,74 @@ export default function Dashboard({
                     {/* Budget e Debiti/Crediti */}
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* Budget Attivi */}
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">
-                                    📊 Budget Attivi
-                                </h3>
-                                <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                    Vedi tutti
-                                </Link>
+                        {isModuleEnabled('budgets') ? (
+                            <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                                <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                                        📊 Budget Attivi
+                                    </h3>
+                                    <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                        Vedi tutti
+                                    </Link>
+                                </div>
+                                <div className="p-4">
+                                    {activeBudgets.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {activeBudgets.map((budget) => (
+                                                <BudgetCard key={budget.id} budget={budget} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="py-8 text-center">
+                                            <p className="mb-3 text-gray-500 dark:text-gray-400">
+                                                Nessun budget attivo
+                                            </p>
+                                            <Link
+                                                href={route('budgets.create')}
+                                                className="text-sm text-emerald-500 hover:text-emerald-600"
+                                            >
+                                                Crea il tuo primo budget →
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="p-4">
-                                {activeBudgets.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {activeBudgets.map((budget) => (
-                                            <BudgetCard key={budget.id} budget={budget} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-8 text-center">
-                                        <p className="mb-3 text-gray-500 dark:text-gray-400">
-                                            Nessun budget attivo
-                                        </p>
-                                        <Link
-                                            href={route('budgets.create')}
-                                            className="text-sm text-emerald-500 hover:text-emerald-600"
-                                        >
-                                            Crea il tuo primo budget →
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        ) : (
+                            <LockedModuleCard moduleId="budgets" />
+                        )}
 
                         {/* Debiti e Crediti */}
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">
-                                    💸 Debiti e Crediti
-                                </h3>
-                                <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                    Vedi tutti
-                                </Link>
-                            </div>
-                            <div className="p-4">
-                                {/* Riepilogo */}
-                                {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
-                                    <div className="mb-4 grid grid-cols-2 gap-3">
-                                        <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
-                                            <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
-                                            <p className="text-lg font-bold text-red-500">
-                                                {formatCurrency(debtsCreditsSummary.total_debts)}
-                                            </p>
+                        {isModuleEnabled('debts_credits') ? (
+                            <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                                <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                                        💸 Debiti e Crediti
+                                    </h3>
+                                    <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                        Vedi tutti
+                                    </Link>
+                                </div>
+                                <div className="p-4">
+                                    {/* Riepilogo */}
+                                    {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
+                                        <div className="mb-4 grid grid-cols-2 gap-3">
+                                            <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
+                                                <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
+                                                <p className="text-lg font-bold text-red-500">
+                                                    {formatCurrency(debtsCreditsSummary.total_debts)}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
+                                                <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
+                                                <p className="text-lg font-bold text-emerald-500">
+                                                    {formatCurrency(debtsCreditsSummary.total_credits)}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
-                                            <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
-                                            <p className="text-lg font-bold text-emerald-500">
-                                                {formatCurrency(debtsCreditsSummary.total_credits)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {openDebtsCredits.length > 0 ? (
-                                    <div>
+                                    )}
+                                    
+                                    {openDebtsCredits.length > 0 ? (
+                                        <div>
                                         {openDebtsCredits.map((item) => (
                                             <DebtCreditRow key={item.id} item={item} />
                                         ))}
@@ -550,7 +562,27 @@ export default function Dashboard({
                                 )}
                             </div>
                         </div>
+                        ) : (
+                            <LockedModuleCard moduleId="debts_credits" />
+                        )}
                     </div>
+
+                    {/* Moduli Suggeriti (se bloccati) */}
+                    {(!isModuleEnabled('investments') || !isModuleEnabled('vat_management')) && (
+                        <div>
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                                ✨ Sblocca Nuove Funzionalità
+                            </h3>
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                {!isModuleEnabled('investments') && (
+                                    <LockedModuleCard moduleId="investments" />
+                                )}
+                                {!isModuleEnabled('vat_management') && (
+                                    <LockedModuleCard moduleId="vat_management" />
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Quick Actions */}
                     <div className="overflow-hidden rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">

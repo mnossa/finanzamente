@@ -4,6 +4,7 @@ import Dropdown from '@/Components/Dropdown';
 import { ActiveHousehold, PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
+import { useModules } from '@/hooks/useModules';
 
 // Icone SVG inline per evitare dipendenze esterne
 const Icons = {
@@ -127,6 +128,7 @@ interface NavigationItem {
     icon: () => JSX.Element;
     altRouteMatch?: string;
     hrefParams?: any;
+    moduleId?: string; // ID del modulo associato per controllo accesso
 }
 
 // Tipo per le sezioni di navigazione
@@ -142,44 +144,51 @@ const navigationSections: NavigationSection[] = [
         title: 'Dashboard',
         defaultExpanded: true,
         items: [
-            { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard },
+            { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard, moduleId: 'dashboard' },
         ]
     },
     {
         title: 'Gestione Base',
         defaultExpanded: true,
         items: [
-            { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet },
-            { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight },
-            { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags },
-            { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer },
+            { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet, moduleId: 'accounts' },
+            { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
+            { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
+            { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer, moduleId: 'transfers' },
         ]
     },
     {
         title: 'Transazioni Speciali',
         defaultExpanded: false,
         items: [
-            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight },
-            { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo },
-            { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat },
+            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight, moduleId: 'inter_household_transfers' },
+            { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo, moduleId: 'refunds' },
+            { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat, moduleId: 'recurring_transactions' },
         ]
     },
     {
         title: 'Pianificazione',
         defaultExpanded: false,
         items: [
-            { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank },
-            { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins },
-            { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target },
-            { name: 'Detrazioni Fiscali', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase },
+            { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank, moduleId: 'budgets' },
+            { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits' },
+            { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals' },
+        ]
+    },
+    {
+        title: 'Fiscale',
+        defaultExpanded: false,
+        items: [
+            { name: 'Rimborso 730', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730' },
+            // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management' }, // Implementazione futura
         ]
     },
     {
         title: 'Investimenti',
         defaultExpanded: false,
         items: [
-            { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp },
-            { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase },
+            { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments' },
+            { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets' },
         ]
     }
 ];
@@ -334,6 +343,7 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const { auth, activeHousehold } = usePage<PageProps>().props;
     const user = auth.user;
+    const { isModuleEnabled } = useModules();
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -352,9 +362,23 @@ export default function Authenticated({
         return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
     };
 
+    // Filtra le sezioni in base ai moduli disponibili
+    const filterSectionsByModules = (sections: NavigationSection[]): NavigationSection[] => {
+        return sections
+            .map(section => ({
+                ...section,
+                items: section.items.filter(item => 
+                    !item.moduleId || isModuleEnabled(item.moduleId)
+                ),
+            }))
+            .filter(section => section.items.length > 0); // Rimuovi sezioni vuote
+    };
+
     // Crea le sezioni dinamicamente includendo Household se presente
+    const baseNavigationSections = filterSectionsByModules(navigationSections);
+    
     const allNavigationSections = [
-        ...navigationSections,
+        ...baseNavigationSections,
         ...(activeHousehold ? [{
             title: 'Household',
             defaultExpanded: false,
