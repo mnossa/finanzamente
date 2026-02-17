@@ -1,0 +1,335 @@
+import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
+import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEventHandler } from 'react';
+
+interface ProfileSettings {
+    has_vat: boolean;
+    family_status: 'single' | 'couple' | 'family';
+    tracks_investments: boolean;
+}
+
+interface Props {
+    currentSettings?: ProfileSettings;
+}
+
+export default function Edit({ currentSettings }: Props) {
+    const { data, setData, patch, processing, errors } = useForm({
+        has_vat: currentSettings?.has_vat ?? false,
+        family_status: currentSettings?.family_status ?? ('single' as 'single' | 'couple' | 'family'),
+        tracks_investments: currentSettings?.tracks_investments ?? false,
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        patch(route('profile.quiz-settings.update'));
+    };
+
+    return (
+        <AuthenticatedLayout>
+            <Head title="Modifica Impostazioni Profilo" />
+
+            <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+                <div className="mb-6">
+                    <Link
+                        href={route('profile.edit')}
+                        className="inline-flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                    >
+                        <svg
+                            className="mr-2 h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 19l-7-7 7-7"
+                            />
+                        </svg>
+                        Torna al profilo
+                    </Link>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200 dark:bg-gray-800 dark:ring-gray-700">
+                    <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                            Modifica Impostazioni di Profilazione
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            Aggiorna le tue preferenze per personalizzare l'interfaccia
+                            e i moduli disponibili.
+                        </p>
+                    </div>
+
+                    <form onSubmit={submit} className="p-6 space-y-6">
+                        {/* Domanda 1: Hai una Partita IVA? */}
+                        <div>
+                            <InputLabel
+                                value="1. Hai una Partita IVA?"
+                                className="mb-3 text-base font-semibold"
+                            />
+
+                            <div className="space-y-3">
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.has_vat === false
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('has_vat', false)}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="has_vat"
+                                            value="false"
+                                            checked={data.has_vat === false}
+                                            onChange={() => setData('has_vat', false)}
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                No, sono un privato
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Gestisco solo finanze personali o familiari
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.has_vat === true
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('has_vat', true)}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="has_vat"
+                                            value="true"
+                                            checked={data.has_vat === true}
+                                            onChange={() => setData('has_vat', true)}
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                Sì, ho una Partita IVA
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Verranno abilitati moduli per gestione IVA e
+                                                detrazioni fiscali
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <InputError message={errors.has_vat} className="mt-2" />
+                        </div>
+
+                        {/* Domanda 2: Situazione familiare */}
+                        <div>
+                            <InputLabel
+                                value="2. Qual è la tua situazione familiare?"
+                                className="mb-3 text-base font-semibold"
+                            />
+
+                            <div className="space-y-3">
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.family_status === 'single'
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('family_status', 'single')}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="family_status"
+                                            value="single"
+                                            checked={data.family_status === 'single'}
+                                            onChange={() =>
+                                                setData('family_status', 'single')
+                                            }
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                Single / Vivo da solo
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Gestisco solo le mie finanze personali
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.family_status === 'couple'
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('family_status', 'couple')}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="family_status"
+                                            value="couple"
+                                            checked={data.family_status === 'couple'}
+                                            onChange={() =>
+                                                setData('family_status', 'couple')
+                                            }
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                In coppia / Convivente
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Gestisco le finanze insieme al partner
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.family_status === 'family'
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('family_status', 'family')}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="family_status"
+                                            value="family"
+                                            checked={data.family_status === 'family'}
+                                            onChange={() =>
+                                                setData('family_status', 'family')
+                                            }
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                Famiglia con figli
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Gestisco le finanze familiari con uno o più figli
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <InputError
+                                message={errors.family_status}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        {/* Domanda 3: Investimenti */}
+                        <div>
+                            <InputLabel
+                                value="3. Gestisci investimenti?"
+                                className="mb-3 text-base font-semibold"
+                            />
+
+                            <div className="space-y-3">
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.tracks_investments === false
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('tracks_investments', false)}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="tracks_investments"
+                                            value="false"
+                                            checked={data.tracks_investments === false}
+                                            onChange={() =>
+                                                setData('tracks_investments', false)
+                                            }
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                No, non gestisco investimenti
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Mi concentro solo su entrate, uscite e risparmi
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
+                                        data.tracks_investments === true
+                                            ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-900/20'
+                                            : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'
+                                    }`}
+                                    onClick={() => setData('tracks_investments', true)}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <input
+                                            type="radio"
+                                            name="tracks_investments"
+                                            value="true"
+                                            checked={data.tracks_investments === true}
+                                            onChange={() =>
+                                                setData('tracks_investments', true)
+                                            }
+                                            className="mt-1 h-4 w-4 border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700"
+                                        />
+                                        <div className="flex-1">
+                                            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                                                Sì, gestisco investimenti
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                                Verranno abilitati moduli per tracking azioni,
+                                                ETF, crypto, ecc.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <InputError
+                                message={errors.tracks_investments}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-4 pt-4">
+                            <Link href={route('profile.edit')}>
+                                <SecondaryButton type="button">
+                                    Annulla
+                                </SecondaryButton>
+                            </Link>
+                            <PrimaryButton disabled={processing}>
+                                Salva Modifiche
+                            </PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}

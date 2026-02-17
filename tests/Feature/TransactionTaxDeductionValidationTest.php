@@ -36,7 +36,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
             'owner_user_id' => $this->user->id,
         ]);
 
-        $this->category = Category::factory()->create([
+        $this->category = Category::factory()->expense()->create([
             'household_id' => $this->household->id,
         ]);
     }
@@ -55,7 +55,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
         $response->assertStatus(302); // Redirect after success
         $this->assertDatabaseHas('transactions', [
             'amount' => -100.00,
-            'is_tax_deductible' => false,
+            'is_tax_deductible' => 0,
         ]);
     }
 

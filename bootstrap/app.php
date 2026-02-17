@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'household' => \App\Http\Middleware\EnsureHasActiveHousehold::class,
             'can-modify' => \App\Http\Middleware\EnsureCanModify::class,
+            'profile-completed' => \App\Http\Middleware\EnsureProfileCompleted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

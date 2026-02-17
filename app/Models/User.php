@@ -78,6 +78,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'user_type',
         'fiscal_code',
         'vat_number',
+        'profile_completed',
+        'profile_settings',
     ];
 
     /**
@@ -102,6 +104,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'birth_date' => 'date',
             'preferences' => 'array',
+            'profile_completed' => 'boolean',
+            'profile_settings' => 'array',
         ];
     }
 

@@ -23,6 +23,13 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'profile_completed' => true, // Utente esistente, già configurato
+            'profile_settings' => [
+                'has_vat' => false,
+                'family_status' => 'single',
+                'tracks_investments' => false,
+                'completed_at' => now()->toISOString(),
+            ],
         ]);
     }
 }

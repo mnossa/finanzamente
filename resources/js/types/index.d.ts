@@ -9,6 +9,14 @@ export interface User {
     birth_date?: string;
     status?: 'active' | 'suspended' | 'deleted';
     preferences?: Record<string, unknown>;
+    profile_completed?: boolean;
+    profile_settings?: {
+        has_vat: boolean;
+        family_status: 'single' | 'couple' | 'family';
+        tracks_investments: boolean;
+        completed_at?: string;
+        updated_at?: string;
+    };
 }
 
 export interface Household {

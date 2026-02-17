@@ -14,6 +14,7 @@ use App\Http\Controllers\InterHouseholdTransferController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileQuizController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
@@ -39,11 +40,17 @@ Route::get('/invitations/{token}/accept', [HouseholdInvitationController::class,
 
 // Rotte che richiedono autenticazione ma NON household attiva
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Gestione Household (selezione/creazione)
-    Route::get('/households/select', [HouseholdController::class, 'select'])->name('households.select');
-    Route::get('/households/create', [HouseholdController::class, 'create'])->name('households.create');
-    Route::post('/households', [HouseholdController::class, 'store'])->name('households.store');
-    Route::post('/households/{household}/set-active', [HouseholdController::class, 'setActive'])->name('households.set-active');
+    // Quiz di profilazione (deve essere completato prima di accedere alle household)
+    Route::get('/profile-quiz', [ProfileQuizController::class, 'show'])->name('profile-quiz.show');
+    Route::post('/profile-quiz', [ProfileQuizController::class, 'store'])->name('profile-quiz.store');
+    
+    // Gestione Household (selezione/creazione) - richiedono il quiz completato
+    Route::middleware(['profile-completed'])->group(function () {
+        Route::get('/households/select', [HouseholdController::class, 'select'])->name('households.select');
+        Route::get('/households/create', [HouseholdController::class, 'create'])->name('households.create');
+        Route::post('/households', [HouseholdController::class, 'store'])->name('households.store');
+        Route::post('/households/{household}/set-active', [HouseholdController::class, 'setActive'])->name('households.set-active');
+    });
 });
 
 // Rotte che richiedono autenticazione E household attiva
@@ -54,6 +61,10 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Modifica impostazioni quiz di profilazione dal profilo
+    Route::get('/profile/quiz-settings', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
+    Route::patch('/profile/quiz-settings', [ProfileQuizController::class, 'update'])->name('profile.quiz-settings.update');
 
     // Gestione Household (dettagli, modifica, membri) - gestisce permessi internamente
     Route::get('/households/{household}', [HouseholdController::class, 'show'])->name('households.show');

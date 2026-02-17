@@ -29,6 +29,13 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'profile_completed' => true, // Di default completato per i test
+            'profile_settings' => [
+                'has_vat' => false,
+                'family_status' => 'single',
+                'tracks_investments' => false,
+                'completed_at' => now()->toISOString(),
+            ],
         ];
     }
 
@@ -39,6 +46,17 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has not completed the profile quiz.
+     */
+    public function withoutProfileCompleted(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'profile_completed' => false,
+            'profile_settings' => null,
         ]);
     }
 }
