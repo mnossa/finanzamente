@@ -25,6 +25,9 @@ export default function RegisterWithInvitation({ invitation }: Props) {
         email: invitation.email,
         password: '',
         password_confirmation: '',
+        user_type: 'persona' as 'persona' | 'partita_iva',
+        fiscal_code: '',
+        vat_number: '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -76,7 +79,7 @@ export default function RegisterWithInvitation({ invitation }: Props) {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="name" value="Nome" />
+                    <InputLabel htmlFor="name" value="Nome *" />
 
                     <TextInput
                         id="name"
@@ -93,7 +96,7 @@ export default function RegisterWithInvitation({ invitation }: Props) {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="email" value="Email *" />
 
                     <TextInput
                         id="email"
@@ -116,7 +119,82 @@ export default function RegisterWithInvitation({ invitation }: Props) {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                    <InputLabel htmlFor="user_type" value="Tipo Utente *" />
+
+                    <select
+                        id="user_type"
+                        name="user_type"
+                        value={data.user_type}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-emerald-600 dark:focus:ring-emerald-600"
+                        onChange={(e) =>
+                            setData(
+                                'user_type',
+                                e.target.value as 'persona' | 'partita_iva',
+                            )
+                        }
+                        required
+                    >
+                        <option value="persona">Persona Fisica</option>
+                        <option value="partita_iva">Partita IVA</option>
+                    </select>
+
+                    <InputError message={errors.user_type} className="mt-2" />
+                </div>
+
+                {data.user_type === 'persona' && (
+                    <div className="mt-4">
+                        <InputLabel
+                            htmlFor="fiscal_code"
+                            value="Codice Fiscale"
+                        />
+
+                        <TextInput
+                            id="fiscal_code"
+                            name="fiscal_code"
+                            value={data.fiscal_code}
+                            className="mt-1 block w-full uppercase"
+                            placeholder="RSSMRA80A01H501U"
+                            maxLength={16}
+                            onChange={(e) =>
+                                setData(
+                                    'fiscal_code',
+                                    e.target.value.toUpperCase(),
+                                )
+                            }
+                        />
+
+                        <InputError
+                            message={errors.fiscal_code}
+                            className="mt-2"
+                        />
+                    </div>
+                )}
+
+                {data.user_type === 'partita_iva' && (
+                    <div className="mt-4">
+                        <InputLabel htmlFor="vat_number" value="Partita IVA" />
+
+                        <TextInput
+                            id="vat_number"
+                            name="vat_number"
+                            value={data.vat_number}
+                            className="mt-1 block w-full"
+                            placeholder="12345678901"
+                            maxLength={11}
+                            onChange={(e) =>
+                                setData('vat_number', e.target.value)
+                            }
+                        />
+
+                        <InputError
+                            message={errors.vat_number}
+                            className="mt-2"
+                        />
+                    </div>
+                )}
+
+                <div className="mt-4">
+                    <InputLabel htmlFor="password" value="Password *" />
 
                     <TextInput
                         id="password"
@@ -135,7 +213,7 @@ export default function RegisterWithInvitation({ invitation }: Props) {
                 <div className="mt-4">
                     <InputLabel
                         htmlFor="password_confirmation"
-                        value="Conferma Password"
+                        value="Conferma Password *"
                     />
 
                     <TextInput

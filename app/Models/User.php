@@ -75,6 +75,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'status',
         'preferences',
         'active_household_id',
+        'user_type',
+        'fiscal_code',
+        'vat_number',
     ];
 
     /**

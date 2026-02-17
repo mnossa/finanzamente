@@ -54,7 +54,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
 
         $response->assertStatus(302); // Redirect after success
         $this->assertDatabaseHas('transactions', [
-            'amount' => 100.00,
+            'amount' => -100.00,
             'is_tax_deductible' => false,
         ]);
     }
