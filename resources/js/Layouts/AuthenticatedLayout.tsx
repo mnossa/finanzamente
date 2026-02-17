@@ -422,10 +422,10 @@ export default function Authenticated({
             >
                 {/* Sidebar Header */}
                 <div className="flex items-center justify-between h-20 px-6 border-b border-slate-700 bg-slate-950">
-                    <Link href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
+                    <a href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
                         <ApplicationLogo className="w-8 h-8" />
                         <span className="text-white">Finanzamente</span>
-                    </Link>
+                    </a>
                     <button
                         onClick={() => setSidebarOpen(false)}
                         className="lg:hidden text-slate-400 hover:text-white transition-colors p-1"
