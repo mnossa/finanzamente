@@ -65,6 +65,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Modifica impostazioni quiz di profilazione dal profilo
     Route::get('/profile/quiz-settings', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
     Route::patch('/profile/quiz-settings', [ProfileQuizController::class, 'update'])->name('profile.quiz-settings.update');
+    Route::post('/profile/revenue-tracking/toggle', [ProfileQuizController::class, 'toggleRevenueTracking'])->name('profile.revenue-tracking.toggle');
 
     // Gestione Household (dettagli, modifica, membri) - gestisce permessi internamente
     Route::get('/households/{household}', [HouseholdController::class, 'show'])->name('households.show');

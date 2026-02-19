@@ -8,6 +8,7 @@ import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import PageHeader from '@/Components/PageHeader';
 import { ModuleAccessInfo, LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
+import RevenueProgressCard from '@/Components/RevenueProgressCard';
 
 interface Account {
     id: number;
@@ -76,6 +77,14 @@ interface DebtsCreditsSummary {
     overdue_count: number;
 }
 
+interface AnnualRevenueData {
+    has_vat: boolean;
+    revenue_tracking_enabled: boolean;
+    annual_revenue: number;
+    revenue_threshold: number;
+    revenue_percentage: number;
+}
+
 interface DashboardProps {
     accounts: Account[];
     totalBalance: number;
@@ -87,6 +96,7 @@ interface DashboardProps {
     activeBudgets: ActiveBudget[];
     openDebtsCredits: OpenDebtCredit[];
     debtsCreditsSummary: DebtsCreditsSummary;
+    annualRevenueData: AnnualRevenueData;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -350,6 +360,7 @@ export default function Dashboard({
     activeBudgets,
     openDebtsCredits,
     debtsCreditsSummary,
+    annualRevenueData,
 }: DashboardProps) {
     const { isModuleEnabled } = useModules();
     
@@ -420,6 +431,16 @@ export default function Dashboard({
                             subtitle={currentMonth}
                         />
                     </div>
+
+                    {/* Widget Fatturato Annuo (solo per utenti P.IVA con monitoraggio abilitato) */}
+                    {annualRevenueData.has_vat && annualRevenueData.revenue_tracking_enabled && (
+                        <RevenueProgressCard
+                            currentRevenue={annualRevenueData.annual_revenue}
+                            threshold={annualRevenueData.revenue_threshold}
+                            percentage={annualRevenueData.revenue_percentage}
+                            year={new Date().getFullYear()}
+                        />
+                    )}
 
                     {/* Griglia principale */}
                     <div className="grid gap-6 lg:grid-cols-2">

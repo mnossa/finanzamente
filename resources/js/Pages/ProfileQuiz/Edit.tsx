@@ -5,28 +5,41 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import clsx from 'clsx';
 
 interface ProfileSettings {
     has_vat: boolean;
     family_status: 'single' | 'couple' | 'family';
     tracks_investments: boolean;
+    revenue_threshold?: number;
+    revenue_tracking_enabled?: boolean;
 }
 
 interface Props {
     currentSettings?: ProfileSettings;
 }
 
+const REVENUE_PRESETS = [
+    { label: '€85.000 (Forfettario)', value: 85000 },
+    { label: '€100.000', value: 100000 },
+    { label: '€400.000', value: 400000 },
+];
+
 export default function Edit({ currentSettings }: Props) {
     const { data, setData, patch, processing, errors } = useForm({
         has_vat: currentSettings?.has_vat ?? false,
         family_status: currentSettings?.family_status ?? ('single' as 'single' | 'couple' | 'family'),
         tracks_investments: currentSettings?.tracks_investments ?? false,
+        revenue_threshold: currentSettings?.revenue_threshold ?? 85000,
+        revenue_tracking_enabled: currentSettings?.revenue_tracking_enabled ?? true,
     });
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         patch(route('profile.quiz-settings.update'));
     };
+
+    const isPreset = REVENUE_PRESETS.some((p) => p.value === data.revenue_threshold);
 
     return (
         <AuthenticatedLayout>
@@ -135,6 +148,91 @@ export default function Edit({ currentSettings }: Props) {
 
                             <InputError message={errors.has_vat} className="mt-2" />
                         </div>
+
+                        {/* Monitoraggio Fatturato (visibile solo se has_vat === true) */}
+                        {data.has_vat && (
+                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/20">
+                                <InputLabel
+                                    value="Monitoraggio Fatturato Annuo"
+                                    className="mb-3 text-base font-semibold text-emerald-800 dark:text-emerald-300"
+                                />
+                                <p className="mb-4 text-sm text-emerald-700 dark:text-emerald-400">
+                                    Configura il monitoraggio del fatturato per tenere sotto controllo la soglia del regime forfettario.
+                                </p>
+
+                                {/* Toggle abilitazione */}
+                                <div className="mb-4 flex items-center justify-between">
+                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        Abilita monitoraggio fatturato
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('revenue_tracking_enabled', !data.revenue_tracking_enabled)}
+                                        className={clsx(
+                                            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
+                                            data.revenue_tracking_enabled
+                                                ? 'bg-emerald-500'
+                                                : 'bg-gray-300 dark:bg-gray-600'
+                                        )}
+                                    >
+                                        <span
+                                            className={clsx(
+                                                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                                                data.revenue_tracking_enabled ? 'translate-x-6' : 'translate-x-1'
+                                            )}
+                                        />
+                                    </button>
+                                </div>
+
+                                {/* Soglia predefinita */}
+                                <div>
+                                    <InputLabel value="Soglia di fatturato annuo" className="mb-2 text-sm" />
+                                    <div className="mb-2 flex flex-wrap gap-2">
+                                        {REVENUE_PRESETS.map((preset) => (
+                                            <button
+                                                key={preset.value}
+                                                type="button"
+                                                onClick={() => setData('revenue_threshold', preset.value)}
+                                                className={clsx(
+                                                    'rounded-md border px-3 py-1.5 text-sm transition-colors',
+                                                    data.revenue_threshold === preset.value
+                                                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                        : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                                                )}
+                                            >
+                                                {preset.label}
+                                            </button>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (isPreset) setData('revenue_threshold', 0);
+                                            }}
+                                            className={clsx(
+                                                'rounded-md border px-3 py-1.5 text-sm transition-colors',
+                                                !isPreset
+                                                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                    : 'border-gray-300 bg-white text-gray-700 hover:border-emerald-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                                            )}
+                                        >
+                                            Personalizzato
+                                        </button>
+                                    </div>
+                                    {!isPreset && (
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={10000000}
+                                            value={data.revenue_threshold || ''}
+                                            onChange={(e) => setData('revenue_threshold', Number(e.target.value))}
+                                            placeholder="Inserisci soglia personalizzata (€)"
+                                            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        />
+                                    )}
+                                    <InputError message={errors.revenue_threshold} className="mt-1" />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Domanda 2: Situazione familiare */}
                         <div>
