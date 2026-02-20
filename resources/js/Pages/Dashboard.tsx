@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
@@ -9,6 +9,8 @@ import PageHeader from '@/Components/PageHeader';
 import { ModuleAccessInfo, LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
 import RevenueProgressCard from '@/Components/RevenueProgressCard';
+import TaxThermometer from '@/Components/TaxThermometer';
+import { PageProps } from '@/types';
 
 interface Account {
     id: number;
@@ -363,6 +365,10 @@ export default function Dashboard({
     annualRevenueData,
 }: DashboardProps) {
     const { isModuleEnabled } = useModules();
+    const { auth } = usePage<PageProps>().props;
+    
+    // Verifica se l'utente ha Partita IVA
+    const hasVat = auth.user.profile_settings?.has_vat === true || auth.user.user_type === 'partita_iva';
     
     // Calcola trend rispetto al mese precedente
     const incomeTrend =
@@ -440,6 +446,11 @@ export default function Dashboard({
                             percentage={annualRevenueData.revenue_percentage}
                             year={new Date().getFullYear()}
                         />
+                    )}
+
+                    {/* Termometro Tasse - Visibile solo per Partita IVA */}
+                    {hasVat && (
+                        <TaxThermometer />
                     )}
 
                     {/* Griglia principale */}
