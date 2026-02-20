@@ -92,7 +92,7 @@ class FixedExpenseServiceTest extends TestCase
 
         $this->assertNull($result['error']);
         $this->assertEquals(100, $result['total_household_expenses']);
-        $this->assertEquals(1, $result['fixed_categories_count']);
+        $this->assertEquals(11, $result['fixed_categories_count']);
         $this->assertEquals(100, $result['contributions'][$owner->id]['total_contributed']);
         $this->assertEquals(70, $result['contributions'][$owner->id]['expected_contribution']);
         $this->assertEquals(30, $result['contributions'][$owner->id]['balance']);
@@ -159,12 +159,11 @@ class FixedExpenseServiceTest extends TestCase
             ],
         ]);
 
-        $fixedCategory = Category::create([
+        // Usa una delle categorie fisse create automaticamente dall'Observer
+        $fixedCategory = Category::where([
             'household_id' => $household->id,
             'name' => 'Affitto',
-            'type' => 'expense',
-            'is_fixed_expense' => true,
-        ]);
+        ])->first();
 
         return [$household, $owner, $member, $fixedCategory];
     }

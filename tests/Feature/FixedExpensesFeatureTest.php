@@ -57,12 +57,11 @@ class FixedExpensesFeatureTest extends TestCase
 
         $owner->update(['active_household_id' => $household->id]);
 
-        $fixedCategory = Category::create([
+        // Usa una delle categorie fisse create automaticamente dall'Observer
+        $fixedCategory = Category::where([
             'household_id' => $household->id,
             'name' => 'Affitto',
-            'type' => 'expense',
-            'is_fixed_expense' => true,
-        ]);
+        ])->first();
 
         $ownerAccount = Account::create([
             'household_id' => $household->id,
@@ -121,7 +120,7 @@ class FixedExpensesFeatureTest extends TestCase
             ->assertOk()
             ->assertJsonPath('error', null)
             ->assertJsonPath('total_household_expenses', 100)
-            ->assertJsonPath('fixed_categories_count', 1)
+            ->assertJsonPath('fixed_categories_count', 11)
             ->assertJsonPath("contributions.{$owner->id}.total_contributed", 70)
             ->assertJsonPath("contributions.{$member->id}.total_contributed", 30)
             ->assertJsonPath("contributions.{$owner->id}.expected_contribution", 50)
@@ -137,12 +136,11 @@ class FixedExpensesFeatureTest extends TestCase
 
         $owner->update(['active_household_id' => $household->id]);
 
-        $fixedCategory = Category::create([
+        // Usa una delle categorie fisse create automaticamente dall'Observer
+        $fixedCategory = Category::where([
             'household_id' => $household->id,
             'name' => 'Bollette',
-            'type' => 'expense',
-            'is_fixed_expense' => true,
-        ]);
+        ])->first();
 
         $response = $this->actingAs($owner)->post(
             route('fixed-expenses.complete-turn', ['household' => $household, 'category' => $fixedCategory]),
@@ -169,12 +167,11 @@ class FixedExpensesFeatureTest extends TestCase
         ]);
         $guest->update(['active_household_id' => $household->id]);
 
-        $fixedCategory = Category::create([
+        // Usa una delle categorie fisse create automaticamente dall'Observer
+        $fixedCategory = Category::where([
             'household_id' => $household->id,
-            'name' => 'Internet',
-            'type' => 'expense',
-            'is_fixed_expense' => true,
-        ]);
+            'name' => 'Bollette',
+        ])->first();
 
         $response = $this->actingAs($guest)->post(
             route('fixed-expenses.complete-turn', ['household' => $household, 'category' => $fixedCategory]),
