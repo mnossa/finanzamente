@@ -3,7 +3,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import { ActiveHousehold, PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState, useEffect } from 'react';
+import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent } from 'react';
 import { useModules } from '@/hooks/useModules';
 
 // Icone SVG inline per evitare dipendenze esterne
@@ -347,6 +347,21 @@ export default function Authenticated({
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+    const handleLogout = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const form = e.currentTarget as HTMLFormElement;
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        }).then(() => {
+            window.location.href = '/';
+        });
+    };
+
     // Chiude la sidebar quando si ridimensiona la finestra a desktop
     useEffect(() => {
         const handleResize = () => {
@@ -521,12 +536,17 @@ export default function Authenticated({
                                         Profilo
                                     </span>
                                 </Dropdown.Link>
-                                <Dropdown.Link href={route('logout')} method="post" as="button">
-                                    <span className="flex items-center gap-2 text-rose-600">
-                                        <Icons.LogOut />
-                                        Esci
-                                    </span>
-                                </Dropdown.Link>
+                                <form onSubmit={handleLogout} action={route('logout')} method="POST">
+                                    <button
+                                        type="submit"
+                                        className="block w-full px-4 py-2.5 text-start text-sm leading-5 text-slate-700 hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:bg-slate-50"
+                                    >
+                                        <span className="flex items-center gap-2 text-rose-600">
+                                            <Icons.LogOut />
+                                            Esci
+                                        </span>
+                                    </button>
+                                </form>
                             </Dropdown.Content>
                         </Dropdown>
                     </div>

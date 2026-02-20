@@ -1,6 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export default function VerifyEmail({ status }: { status?: string }) {
@@ -10,6 +10,21 @@ export default function VerifyEmail({ status }: { status?: string }) {
         e.preventDefault();
 
         post(route('verification.send'));
+    };
+
+    const handleLogout: FormEventHandler = (e) => {
+        e.preventDefault();
+        const form = e.currentTarget as HTMLFormElement;
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin',
+        }).then(() => {
+            window.location.href = '/';
+        });
     };
 
     return (
@@ -35,14 +50,14 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         Invia nuova email di verifica
                     </PrimaryButton>
 
-                    <Link
-                        href={route('logout')}
-                        method="post"
-                        as="button"
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                    >
-                        Esci
-                    </Link>
+                    <form onSubmit={handleLogout} action={route('logout')} method="POST" className="inline">
+                        <button
+                            type="submit"
+                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                        >
+                            Esci
+                        </button>
+                    </form>
                 </div>
             </form>
         </GuestLayout>
