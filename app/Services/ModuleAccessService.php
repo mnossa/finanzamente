@@ -185,6 +185,11 @@ class ModuleAccessService
             $canAccess = $this->canAccessModule($user, $module, $profileSettings);
             $missingRequirements = $this->getMissingRequirements($module, $profileSettings);
 
+            // Non mostrare moduli con requisiti non configurabili (come has_vat per utenti persona)
+            if (in_array('has_vat', $module['requires']) && $user->user_type !== 'partita_iva') {
+                continue; // Salta questo modulo, non è rilevante per l'utente
+            }
+
             $modules[$moduleId] = [
                 ...$module,
                 'enabled' => $canAccess,
@@ -269,6 +274,14 @@ class ModuleAccessService
     {
         // Verifica requisiti dal profilo
         foreach ($module['requires'] as $requirement) {
+            // Gestione speciale per has_vat: controlla user_type invece di profile_settings
+            if ($requirement === 'has_vat') {
+                if ($user->user_type !== 'partita_iva') {
+                    return false;
+                }
+                continue;
+            }
+            
             if (!($profileSettings[$requirement] ?? false)) {
                 return false;
             }
@@ -287,9 +300,15 @@ class ModuleAccessService
      */
     private function getMissingRequirements(array $module, array $profileSettings): array
     {
+        // Non restituire mai 'has_vat' come requisito mancante
+        // perché non è attivabile dalle impostazioni del profilo
         $missing = [];
 
         foreach ($module['requires'] as $requirement) {
+            if ($requirement === 'has_vat') {
+                continue; // Skip, non è configurabile dall'utente
+            }
+            
             if (!($profileSettings[$requirement] ?? false)) {
                 $missing[] = $requirement;
             }
@@ -308,12 +327,11 @@ class ModuleAccessService
         }
 
         $hints = [
-            'has_vat' => 'Attiva "Partita IVA" nelle impostazioni del profilo per sbloccare la gestione IVA e le funzionalità fiscali avanzate.',
             'tracks_investments' => 'Attiva "Gestione Investimenti" nelle impostazioni del profilo per sbloccare questo modulo.',
         ];
 
         $requirement = $missingRequirements[0];
-        return $hints[$requirement] ?? 'Requisiti non soddisfatti.';
+        return $hints[$requirement] ?? null;
     }
 
     /**

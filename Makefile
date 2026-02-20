@@ -5,7 +5,7 @@ LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit clear-cache
+.PHONY: up down restart logs ps dev bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -85,3 +85,20 @@ clean-duplicates:
 
 test:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan test
+
+# Genera dati demo: 2 utenti, 4 household, 16000 transazioni totali, debiti e ricorrenze
+demo-data:
+	@echo "[+] Generazione dati demo (può richiedere alcuni minuti)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=DemoDataSeeder
+
+# Reset completo database con dati demo
+demo-reset:
+	@echo "[+] Reset completo database e generazione dati demo..."
+	@echo "[!] ATTENZIONE: tutti i dati esistenti saranno eliminati!"
+	@read -p "Continuare? [y/N] " confirm; \
+	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
+		LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan migrate:fresh --seed && \
+		LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=DemoDataSeeder; \
+	else \
+		echo "Operazione annullata."; \
+	fi

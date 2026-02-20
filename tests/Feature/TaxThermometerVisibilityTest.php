@@ -39,9 +39,10 @@ class TaxThermometerVisibilityTest extends TestCase
         // Verifica che la dashboard sia accessibile
         $response->assertStatus(200);
 
-        // Verifica che i dati del TaxThermometer siano presenti nelle props
+        // Verifica che i dati del TaxThermometer siano visibili con visible=true
         $response->assertInertia(fn ($page) => 
             $page->has('taxThermometerData')
+                ->where('taxThermometerData.visible', true)
                 ->where('taxThermometerData.has_vat', true)
                 ->where('taxThermometerData.tax_rate', 15)
                 ->where('taxThermometerData.inps_rate', 26.23)
@@ -74,19 +75,22 @@ class TaxThermometerVisibilityTest extends TestCase
         // Verifica che la dashboard sia accessibile
         $response->assertStatus(200);
 
-        // Verifica che i dati del TaxThermometer indichino has_vat = false
+        // Verifica che i dati del TaxThermometer indichino visible=false
         $response->assertInertia(fn ($page) => 
             $page->has('taxThermometerData')
+                ->where('taxThermometerData.visible', false)
                 ->where('taxThermometerData.has_vat', false)
         );
     }
 
     /**
-     * Test che un utente con has_vat=true nelle impostazioni vede il widget.
+     * Test che un utente residenziale con has_vat=true nelle settings non vede il widget.
+     * Il termometro tasse è visibile solo per user_type='partita_iva'.
      */
     public function test_user_with_has_vat_setting_sees_tax_thermometer(): void
     {
-        // Crea un utente con has_vat impostato a true
+        // Crea un utente persona con has_vat nelle settings
+        // MA user_type='persona' quindi NON dovrebbe vedere il termometro
         $user = User::factory()->create([
             'user_type' => 'persona',
             'profile_settings' => [
@@ -109,12 +113,12 @@ class TaxThermometerVisibilityTest extends TestCase
         // Verifica che la dashboard sia accessibile
         $response->assertStatus(200);
 
-        // Verifica che i dati del TaxThermometer siano presenti con le aliquote personalizzate
+        // Verifica che i dati del TaxThermometer indichino visible=false
+        // anche se has_vat=true nelle settings, perché user_type='persona'
         $response->assertInertia(fn ($page) => 
             $page->has('taxThermometerData')
-                ->where('taxThermometerData.has_vat', true)
-                ->where('taxThermometerData.tax_rate', 5)
-                ->where('taxThermometerData.inps_rate', 26.23)
+                ->where('taxThermometerData.visible', false)
+                ->where('taxThermometerData.has_vat', false)
         );
     }
 }

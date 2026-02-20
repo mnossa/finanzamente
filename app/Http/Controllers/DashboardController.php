@@ -190,17 +190,18 @@ class DashboardController extends Controller
      */
     private function getTaxThermometerData(\App\Models\User $user): array
     {
-        $settings = $user->profile_settings ?? [];
-        $hasVat = $settings['has_vat'] ?? false;
-
-        if (!$hasVat) {
+        // Il termometro tasse è visibile solo agli utenti con Partita IVA
+        if ($user->user_type !== 'partita_iva') {
             return [
+                'visible' => false,
                 'has_vat' => false,
                 'gross_income' => 0,
                 'tax_rate' => 15,
                 'inps_rate' => 26.23,
             ];
         }
+
+        $settings = $user->profile_settings ?? [];
 
         // Calcola le entrate lorde dell'anno corrente
         $year = Carbon::now()->year;
@@ -217,6 +218,7 @@ class DashboardController extends Controller
             ->sum('amount');
 
         return [
+            'visible' => true,
             'has_vat' => true,
             'gross_income' => $grossIncome,
             'tax_rate' => (float) ($settings['tax_rate'] ?? 15),
@@ -229,15 +231,27 @@ class DashboardController extends Controller
      */
     private function getAnnualRevenueData(\App\Models\User $user): array
     {
+        // Il widget fatturato è visibile solo agli utenti con Partita IVA
+        if ($user->user_type !== 'partita_iva') {
+            return [
+                'visible' => false,
+                'has_vat' => false,
+                'revenue_tracking_enabled' => false,
+                'annual_revenue' => 0,
+                'revenue_threshold' => 85000,
+                'revenue_percentage' => 0,
+            ];
+        }
+
         $settings = $user->profile_settings ?? [];
-        $hasVat = $settings['has_vat'] ?? false;
         $trackingEnabled = $settings['revenue_tracking_enabled'] ?? true;
         $threshold = (float) ($settings['revenue_threshold'] ?? 85000);
 
-        if (!$hasVat || !$trackingEnabled) {
+        if (!$trackingEnabled) {
             return [
-                'has_vat' => $hasVat,
-                'revenue_tracking_enabled' => $trackingEnabled,
+                'visible' => true,
+                'has_vat' => true,
+                'revenue_tracking_enabled' => false,
                 'annual_revenue' => 0,
                 'revenue_threshold' => $threshold,
                 'revenue_percentage' => 0,
@@ -265,6 +279,7 @@ class DashboardController extends Controller
         (new RevenueNotificationService())->checkAndNotify($user, $annualRevenue, $threshold);
 
         return [
+            'visible' => true,
             'has_vat' => true,
             'revenue_tracking_enabled' => true,
             'annual_revenue' => $annualRevenue,

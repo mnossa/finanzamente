@@ -80,6 +80,7 @@ interface DebtsCreditsSummary {
 }
 
 interface AnnualRevenueData {
+    visible: boolean;
     has_vat: boolean;
     revenue_tracking_enabled: boolean;
     annual_revenue: number;
@@ -88,6 +89,7 @@ interface AnnualRevenueData {
 }
 
 interface TaxThermometerData {
+    visible: boolean;
     has_vat: boolean;
     gross_income: number;
     tax_rate: number;
@@ -376,8 +378,8 @@ export default function Dashboard({
     const { isModuleEnabled } = useModules();
     const { auth } = usePage<PageProps>().props;
     
-    // Verifica se l'utente ha Partita IVA
-    const hasVat = auth.user.profile_settings?.has_vat === true || auth.user.user_type === 'partita_iva';
+    // Il termometro tasse è visibile solo per utenti con Partita IVA (user_type = 'partita_iva')
+    const hasVat = auth.user.user_type === 'partita_iva';
     
     // Calcola trend rispetto al mese precedente
     const incomeTrend =
@@ -448,7 +450,7 @@ export default function Dashboard({
                     </div>
 
                     {/* Widget Fatturato Annuo (solo per utenti P.IVA con monitoraggio abilitato) */}
-                    {annualRevenueData.has_vat && annualRevenueData.revenue_tracking_enabled && (
+                    {annualRevenueData.visible && (
                         <RevenueProgressCard
                             currentRevenue={annualRevenueData.annual_revenue}
                             threshold={annualRevenueData.revenue_threshold}
@@ -458,7 +460,7 @@ export default function Dashboard({
                     )}
 
                     {/* Termometro Tasse - Visibile solo per Partita IVA */}
-                    {hasVat && (
+                    {taxThermometerData.visible && (
                         <TaxThermometer 
                             grossIncome={taxThermometerData.gross_income}
                             taxRate={taxThermometerData.tax_rate}

@@ -72,6 +72,68 @@ Finanzamente è una webapp di gestione finanziaria personale e familiare, pensat
 - Gestione privacy, consensi, GDPR, backup e disaster recovery
 - Logging, monitoraggio, analytics privacy-friendly
 
+## Comandi di Sviluppo
+
+Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sviluppo Docker.
+
+### Container Management
+```bash
+make up          # Avvia lo stack Docker
+make down        # Ferma lo stack Docker
+make restart     # Riavvia lo stack Docker
+make logs        # Visualizza i log dei container
+make ps          # Mostra lo stato dei container
+```
+
+### Accesso ai Container
+```bash
+make app         # Accesso shell al container PHP/Laravel
+make node        # Accesso shell al container Node.js
+make mysql-root  # Accesso MySQL come root
+```
+
+### Database
+```bash
+make migrate     # Esegue le migrazioni del database
+make fresh       # Reset database (migrate:fresh)
+make seed        # Popola il database con i seeder base
+```
+
+### Dati Demo
+```bash
+make demo-data   # Genera dati demo: 2 utenti, 4 household, 16000 transazioni totali
+make demo-reset  # Reset completo DB + seeder base + dati demo (richiede conferma)
+```
+
+Il comando `make demo-data` genera:
+- **2 utenti**: uno con P.IVA (`mario.rossi@example.com`) e uno residenziale (`laura.bianchi@example.com`)
+- **4 household**: 2 per ogni utente
+- **16.000 transazioni**: 4000 per household, distribuite dal 2022 ad oggi
+- **12 debiti/crediti**: 3 per ogni household (uno già pagato)
+- **20 transazioni ricorrenti**: 5 per household (affitto, stipendio, bollette, ecc.)
+- **16 conti**: 4 per household (banca, contante, carta, risparmio)
+
+Password per tutti gli utenti: `password`
+
+### Testing
+```bash
+make test        # Esegue l'intera suite di test (usa SQLite in-memory)
+```
+
+### Sviluppo Frontend
+```bash
+make dev         # Avvia il dev server Vite per hot-reload
+make clear-cache # Pulisce tutte le cache Laravel (config, route, view)
+```
+
+### Utilità
+```bash
+make fix-perms              # Corregge i permessi dei file del progetto
+make exec cmd="comando"     # Esegue un comando personalizzato nel container app
+```
+
+**Nota importante**: Usare sempre i comandi `make` per garantire che i container Docker utilizzino l'UID/GID corretto evitando problemi di permessi sui file.
+
 ## Testing
 
 ### Database di Test
