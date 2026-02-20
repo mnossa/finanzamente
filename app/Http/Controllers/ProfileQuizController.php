@@ -117,6 +117,8 @@ class ProfileQuizController extends Controller
             'tracks_investments' => 'required|boolean',
             'revenue_threshold' => 'nullable|numeric|min:1|max:10000000',
             'revenue_tracking_enabled' => 'nullable|boolean',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'inps_rate' => 'nullable|numeric|min:0|max:100',
         ]);
         
         $user = $request->user();
@@ -131,6 +133,8 @@ class ProfileQuizController extends Controller
                 'tracks_investments' => $validated['tracks_investments'],
                 'revenue_threshold' => $validated['revenue_threshold'] ?? ($currentSettings['revenue_threshold'] ?? 85000),
                 'revenue_tracking_enabled' => $validated['revenue_tracking_enabled'] ?? ($currentSettings['revenue_tracking_enabled'] ?? true),
+                'tax_rate' => $validated['tax_rate'] ?? ($currentSettings['tax_rate'] ?? 15),
+                'inps_rate' => $validated['inps_rate'] ?? ($currentSettings['inps_rate'] ?? 26.23),
                 'revenue_notified_levels' => $currentSettings['revenue_notified_levels'] ?? [],
                 'completed_at' => $currentSettings['completed_at'] ?? now()->toISOString(),
                 'updated_at' => now()->toISOString(),

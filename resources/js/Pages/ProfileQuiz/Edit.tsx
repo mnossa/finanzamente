@@ -13,6 +13,8 @@ interface ProfileSettings {
     tracks_investments: boolean;
     revenue_threshold?: number;
     revenue_tracking_enabled?: boolean;
+    tax_rate?: number;
+    inps_rate?: number;
 }
 
 interface Props {
@@ -32,6 +34,8 @@ export default function Edit({ currentSettings }: Props) {
         tracks_investments: currentSettings?.tracks_investments ?? false,
         revenue_threshold: currentSettings?.revenue_threshold ?? 85000,
         revenue_tracking_enabled: currentSettings?.revenue_tracking_enabled ?? true,
+        tax_rate: currentSettings?.tax_rate ?? 15,
+        inps_rate: currentSettings?.inps_rate ?? 26.23,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -230,6 +234,55 @@ export default function Edit({ currentSettings }: Props) {
                                         />
                                     )}
                                     <InputError message={errors.revenue_threshold} className="mt-1" />
+                                </div>
+
+                                {/* Aliquote fiscali */}
+                                <div className="mt-4 space-y-3 border-t border-emerald-200 pt-4 dark:border-emerald-700">
+                                    <InputLabel
+                                        value="Aliquote Fiscali per Termometro Tasse"
+                                        className="mb-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300"
+                                    />
+                                    <p className="mb-3 text-xs text-emerald-700 dark:text-emerald-400">
+                                        Imposta le tue aliquote per il calcolo automatico dell'accantonamento fiscale
+                                    </p>
+
+                                    {/* Imposta Sostitutiva */}
+                                    <div>
+                                        <InputLabel value="Aliquota Imposta Sostitutiva (%)" className="mb-1 text-sm" />
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            step={0.1}
+                                            value={data.tax_rate || ''}
+                                            onChange={(e) => setData('tax_rate', Number(e.target.value))}
+                                            placeholder="15"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                            Default: 15% (regime forfettario) o 5% (startup)
+                                        </p>
+                                        <InputError message={errors.tax_rate} className="mt-1" />
+                                    </div>
+
+                                    {/* Contributi INPS */}
+                                    <div>
+                                        <InputLabel value="Aliquota Contributi INPS (%)" className="mb-1 text-sm" />
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            step={0.01}
+                                            value={data.inps_rate || ''}
+                                            onChange={(e) => setData('inps_rate', Number(e.target.value))}
+                                            placeholder="26.23"
+                                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                            Default: 26.23% (gestione separata INPS)
+                                        </p>
+                                        <InputError message={errors.inps_rate} className="mt-1" />
+                                    </div>
                                 </div>
                             </div>
                         )}

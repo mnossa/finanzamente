@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 
 /**
  * Hook per il calcolo delle tasse e contributi per Partita IVA.
  * 
  * Gestisce:
- * - Entrate lorde
- * - Aliquota imposta sostitutiva (%)
- * - Percentuale contributi INPS (%)
+ * - Entrate lorde (calcolate automaticamente dalle transazioni)
+ * - Aliquota imposta sostitutiva (%) (dalla configurazione utente)
+ * - Percentuale contributi INPS (%) (dalla configurazione utente)
  * - Calcoli automatici di imposta, contributi e margine netto
  */
 export interface TaxCalculation {
@@ -21,14 +21,10 @@ export interface TaxCalculation {
 }
 
 export function useTaxCalculator(
-    initialGrossIncome: number = 0,
-    initialTaxRate: number = 15,
-    initialInpsRate: number = 26.23
+    grossIncome: number,
+    taxRate: number,
+    inpsRate: number
 ) {
-    const [grossIncome, setGrossIncome] = useState<number>(initialGrossIncome);
-    const [taxRate, setTaxRate] = useState<number>(initialTaxRate);
-    const [inpsRate, setInpsRate] = useState<number>(initialInpsRate);
-
     const calculation = useMemo((): TaxCalculation => {
         const taxAmount = (grossIncome * taxRate) / 100;
         const inpsAmount = (grossIncome * inpsRate) / 100;
@@ -49,12 +45,6 @@ export function useTaxCalculator(
     }, [grossIncome, taxRate, inpsRate]);
 
     return {
-        grossIncome,
-        setGrossIncome,
-        taxRate,
-        setTaxRate,
-        inpsRate,
-        setInpsRate,
         calculation,
     };
 }

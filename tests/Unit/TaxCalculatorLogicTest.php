@@ -124,6 +124,6 @@ class TaxCalculatorLogicTest extends TestCase
         
         $this->assertEquals(6900, $taxAmount);
         $this->assertEquals(7869, $inpsAmount);
-        $this->assertEquals(49.23, $setAsidePercentage);
+        $this->assertEqualsWithDelta(49.23, $setAsidePercentage, 0.01);
     }
 }

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -58,7 +57,9 @@ class RegisteredUserController extends Controller
             'vat_number' => $request->user_type === 'partita_iva' && $request->filled('vat_number') ? $request->vat_number : null,
         ]);
 
-        event(new Registered($user));
+        // Invia l'email di verifica manualmente invece di usare l'evento Registered
+        // per evitare invii duplicati
+        $user->sendEmailVerificationNotification();
 
         Auth::login($user);
 

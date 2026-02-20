@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Events\HouseholdMemberAdded;
 use App\Models\HouseholdInvitation;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -112,7 +111,9 @@ class HouseholdInvitationController extends Controller
             'vat_number' => $request->user_type === 'partita_iva' && $request->filled('vat_number') ? $request->vat_number : null,
         ]);
 
-        event(new Registered($user));
+        // Invia l'email di verifica manualmente invece di usare l'evento Registered
+        // per evitare invii duplicati
+        $user->sendEmailVerificationNotification();
 
         // Aggiungi l'utente alla household
         $invitation->household->users()->attach($user->id, [

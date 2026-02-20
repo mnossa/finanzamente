@@ -2,6 +2,9 @@ import { useTaxCalculator } from '@/hooks/useTaxCalculator';
 import clsx from 'clsx';
 
 interface TaxThermometerProps {
+    grossIncome: number;
+    taxRate: number;
+    inpsRate: number;
     className?: string;
 }
 
@@ -11,10 +14,8 @@ interface TaxThermometerProps {
  * Visualizza un indicatore circolare (gauge) che rappresenta la percentuale
  * di accantonamento fiscale (imposta + INPS) rispetto alle entrate lorde.
  * 
- * Permette all'utente di:
- * - Inserire le entrate lorde
- * - Configurare l'aliquota dell'imposta sostitutiva (%)
- * - Configurare la percentuale dei contributi INPS (%)
+ * Le entrate lorde sono calcolate automaticamente dalle transazioni dell'anno corrente.
+ * Le aliquote di imposta sostitutiva e contributi INPS sono configurate nel profilo utente.
  * 
  * Calcola e mostra:
  * - Importo imposta sostitutiva
@@ -22,16 +23,10 @@ interface TaxThermometerProps {
  * - Margine netto disponibile
  * - Percentuale totale di accantonamento
  */
-export default function TaxThermometer({ className }: TaxThermometerProps) {
+export default function TaxThermometer({ grossIncome, taxRate, inpsRate, className }: TaxThermometerProps) {
     const {
-        grossIncome,
-        setGrossIncome,
-        taxRate,
-        setTaxRate,
-        inpsRate,
-        setInpsRate,
         calculation,
-    } = useTaxCalculator(0, 15, 26.23);
+    } = useTaxCalculator(grossIncome, taxRate, inpsRate);
 
     const formatCurrency = (amount: number): string => {
         return new Intl.NumberFormat('it-IT', {
@@ -116,71 +111,25 @@ export default function TaxThermometer({ className }: TaxThermometerProps) {
                     </div>
                 </div>
 
-                {/* Form Input */}
-                <div className="space-y-4">
-                    {/* Entrate Lorde */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Entrate Lorde
-                        </label>
-                        <div className="relative mt-1">
-                            <input
-                                type="number"
-                                value={grossIncome || ''}
-                                onChange={(e) => setGrossIncome(Number(e.target.value) || 0)}
-                                placeholder="0"
-                                min="0"
-                                step="100"
-                                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400">
-                                €
-                            </div>
-                        </div>
+                {/* Informazioni di input (sola lettura) */}
+                <div className="space-y-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Entrate Lorde Annue:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {formatCurrency(grossIncome)}
+                        </span>
                     </div>
-
-                    {/* Aliquota Imposta Sostitutiva */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Imposta Sostitutiva
-                        </label>
-                        <div className="relative mt-1">
-                            <input
-                                type="number"
-                                value={taxRate || ''}
-                                onChange={(e) => setTaxRate(Number(e.target.value) || 0)}
-                                placeholder="15"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400">
-                                %
-                            </div>
-                        </div>
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Aliquota Imposta:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {taxRate.toFixed(1)}%
+                        </span>
                     </div>
-
-                    {/* Contributi INPS */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Contributi INPS
-                        </label>
-                        <div className="relative mt-1">
-                            <input
-                                type="number"
-                                value={inpsRate || ''}
-                                onChange={(e) => setInpsRate(Number(e.target.value) || 0)}
-                                placeholder="26.23"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400">
-                                %
-                            </div>
-                        </div>
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Aliquota INPS:</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                            {inpsRate.toFixed(2)}%
+                        </span>
                     </div>
                 </div>
 
@@ -215,8 +164,8 @@ export default function TaxThermometer({ className }: TaxThermometerProps) {
                 {/* Help text */}
                 <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
                     <p>
-                        💡 Inserisci le tue entrate lorde e configura le aliquote per calcolare
-                        l'accantonamento fiscale necessario.
+                        💡 Le entrate lorde sono calcolate automaticamente dalle transazioni dell'anno corrente.
+                        Puoi modificare le aliquote fiscali dal tuo profilo utente.
                     </p>
                 </div>
             </div>

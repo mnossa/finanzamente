@@ -87,6 +87,13 @@ interface AnnualRevenueData {
     revenue_percentage: number;
 }
 
+interface TaxThermometerData {
+    has_vat: boolean;
+    gross_income: number;
+    tax_rate: number;
+    inps_rate: number;
+}
+
 interface DashboardProps {
     accounts: Account[];
     totalBalance: number;
@@ -99,6 +106,7 @@ interface DashboardProps {
     openDebtsCredits: OpenDebtCredit[];
     debtsCreditsSummary: DebtsCreditsSummary;
     annualRevenueData: AnnualRevenueData;
+    taxThermometerData: TaxThermometerData;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -363,6 +371,7 @@ export default function Dashboard({
     openDebtsCredits,
     debtsCreditsSummary,
     annualRevenueData,
+    taxThermometerData,
 }: DashboardProps) {
     const { isModuleEnabled } = useModules();
     const { auth } = usePage<PageProps>().props;
@@ -450,7 +459,11 @@ export default function Dashboard({
 
                     {/* Termometro Tasse - Visibile solo per Partita IVA */}
                     {hasVat && (
-                        <TaxThermometer />
+                        <TaxThermometer 
+                            grossIncome={taxThermometerData.gross_income}
+                            taxRate={taxThermometerData.tax_rate}
+                            inpsRate={taxThermometerData.inps_rate}
+                        />
                     )}
 
                     {/* Griglia principale */}

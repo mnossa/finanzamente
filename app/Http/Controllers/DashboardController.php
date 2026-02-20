@@ -181,7 +181,47 @@ class DashboardController extends Controller
             'openDebtsCredits' => $openDebtsCredits,
             'debtsCreditsSummary' => $debtsCreditsSummary,
             'annualRevenueData' => $this->getAnnualRevenueData($user),
+            'taxThermometerData' => $this->getTaxThermometerData($user),
         ]);
+    }
+
+    /**
+     * Recupera i dati per il widget Termometro Tasse.
+     */
+    private function getTaxThermometerData(\App\Models\User $user): array
+    {
+        $settings = $user->profile_settings ?? [];
+        $hasVat = $settings['has_vat'] ?? false;
+
+        if (!$hasVat) {
+            return [
+                'has_vat' => false,
+                'gross_income' => 0,
+                'tax_rate' => 15,
+                'inps_rate' => 26.23,
+            ];
+        }
+
+        // Calcola le entrate lorde dell'anno corrente
+        $year = Carbon::now()->year;
+        $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfDay();
+        $endOfYear = Carbon::createFromDate($year, 12, 31)->endOfDay();
+        $householdId = $user->active_household_id;
+
+        $grossIncome = (float) Transaction::whereHas('account', function ($q) use ($householdId) {
+                $q->where('household_id', $householdId);
+            })
+            ->where('user_id', $user->id)
+            ->where('amount', '>', 0)
+            ->whereBetween('date', [$startOfYear, $endOfYear])
+            ->sum('amount');
+
+        return [
+            'has_vat' => true,
+            'gross_income' => $grossIncome,
+            'tax_rate' => (float) ($settings['tax_rate'] ?? 15),
+            'inps_rate' => (float) ($settings['inps_rate'] ?? 26.23),
+        ];
     }
 
     /**

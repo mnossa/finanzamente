@@ -23,6 +23,8 @@ class TaxThermometerVisibilityTest extends TestCase
                 'has_vat' => true,
                 'family_status' => 'single',
                 'tracks_investments' => false,
+                'tax_rate' => 15,
+                'inps_rate' => 26.23,
             ],
         ]);
 
@@ -37,8 +39,13 @@ class TaxThermometerVisibilityTest extends TestCase
         // Verifica che la dashboard sia accessibile
         $response->assertStatus(200);
 
-        // Verifica che il componente TaxThermometer sia presente nell'HTML generato
-        $response->assertSee('Termometro Tasse');
+        // Verifica che i dati del TaxThermometer siano presenti nelle props
+        $response->assertInertia(fn ($page) => 
+            $page->has('taxThermometerData')
+                ->where('taxThermometerData.has_vat', true)
+                ->where('taxThermometerData.tax_rate', 15)
+                ->where('taxThermometerData.inps_rate', 26.23)
+        );
     }
 
     /**
@@ -67,8 +74,11 @@ class TaxThermometerVisibilityTest extends TestCase
         // Verifica che la dashboard sia accessibile
         $response->assertStatus(200);
 
-        // Verifica che il componente TaxThermometer NON sia presente
-        $response->assertDontSee('Termometro Tasse');
+        // Verifica che i dati del TaxThermometer indichino has_vat = false
+        $response->assertInertia(fn ($page) => 
+            $page->has('taxThermometerData')
+                ->where('taxThermometerData.has_vat', false)
+        );
     }
 
     /**
@@ -83,6 +93,8 @@ class TaxThermometerVisibilityTest extends TestCase
                 'has_vat' => true,
                 'family_status' => 'single',
                 'tracks_investments' => false,
+                'tax_rate' => 5,
+                'inps_rate' => 26.23,
             ],
         ]);
 
@@ -97,7 +109,12 @@ class TaxThermometerVisibilityTest extends TestCase
         // Verifica che la dashboard sia accessibile
         $response->assertStatus(200);
 
-        // Verifica che il componente TaxThermometer sia presente
-        $response->assertSee('Termometro Tasse');
+        // Verifica che i dati del TaxThermometer siano presenti con le aliquote personalizzate
+        $response->assertInertia(fn ($page) => 
+            $page->has('taxThermometerData')
+                ->where('taxThermometerData.has_vat', true)
+                ->where('taxThermometerData.tax_rate', 5)
+                ->where('taxThermometerData.inps_rate', 26.23)
+        );
     }
 }
