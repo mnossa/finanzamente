@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Account;
+use App\Models\DebtCredit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -50,6 +51,14 @@ class UpdateTransactionRequest extends FormRequest
             'tax_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
+            'debt_credit_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('debts_credits', 'id')->where(function ($query) use ($householdId) {
+                    $query->where('household_id', $householdId)
+                          ->whereIn('status', ['open', 'overdue']);
+                }),
+            ],
         ];
     }
 
@@ -79,6 +88,7 @@ class UpdateTransactionRequest extends FormRequest
             'tax_deduction_type.in' => 'Il tipo di detrazione selezionato non è valido.',
             'tax_year.min' => "L'anno fiscale non è valido.",
             'tax_year.max' => "L'anno fiscale non è valido.",
+            'debt_credit_id.exists' => 'Il debito/credito selezionato non è valido o è stato già chiuso.',
         ];
     }
 }

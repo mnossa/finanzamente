@@ -22,6 +22,9 @@ class UpdateDebtCreditRequest extends FormRequest
             'due_date' => ['nullable', 'date'],
             'status' => ['required', 'in:open,closed,overdue'],
             'description' => ['nullable', 'string', 'max:255'],
+            'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'interest_type' => ['nullable', 'in:simple,compound'],
+            'interest_calculation_date' => ['nullable', 'date'],
         ];
     }
 
@@ -41,6 +44,11 @@ class UpdateDebtCreditRequest extends FormRequest
             'status.required' => 'Lo stato è obbligatorio.',
             'status.in' => 'Lo stato non è valido.',
             'description.max' => 'La descrizione non può superare i 255 caratteri.',
+            'interest_rate.numeric' => 'Il tasso di interesse deve essere un numero.',
+            'interest_rate.min' => 'Il tasso di interesse non può essere negativo.',
+            'interest_rate.max' => 'Il tasso di interesse non può superare il 100%.',
+            'interest_type.in' => 'Il tipo di interesse deve essere semplice o composto.',
+            'interest_calculation_date.date' => 'La data di calcolo interessi non è valida.',
         ];
     }
 }

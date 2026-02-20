@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Account;
+use App\Models\DebtCredit;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -45,6 +46,14 @@ class UpdateRecurringTransactionRequest extends FormRequest
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'debt_credit_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('debts_credits', 'id')->where(function ($query) use ($householdId) {
+                    $query->where('household_id', $householdId)
+                          ->whereIn('status', ['open', 'overdue']);
+                }),
+            ],
         ];
     }
 
@@ -71,6 +80,7 @@ class UpdateRecurringTransactionRequest extends FormRequest
             'end_date.date' => 'La data di fine non è valida.',
             'end_date.after_or_equal' => 'La data di fine deve essere successiva o uguale alla data di inizio.',
             'description.max' => 'La descrizione non può superare 1000 caratteri.',
+            'debt_credit_id.exists' => 'Il debito/credito selezionato non è valido o è stato già chiuso.',
         ];
     }
 }

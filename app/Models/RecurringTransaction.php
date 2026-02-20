@@ -19,7 +19,17 @@ class RecurringTransaction extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'user_id', 'category_id', 'account_id', 'amount', 'currency_code', 'frequency', 'start_date', 'end_date', 'description', 'last_generated_date',
+        'user_id', 
+        'category_id', 
+        'account_id', 
+        'amount', 
+        'currency_code', 
+        'frequency', 
+        'start_date', 
+        'end_date', 
+        'description', 
+        'last_generated_date',
+        'debt_credit_id',
     ];
 
     protected $casts = [
@@ -42,5 +52,21 @@ class RecurringTransaction extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Relazione con il debito/credito associato.
+     */
+    public function debtCredit()
+    {
+        return $this->belongsTo(DebtCredit::class, 'debt_credit_id');
+    }
+
+    /**
+     * Verifica se la ricorrenza è associata a un debito/credito.
+     */
+    public function isDebtPayment(): bool
+    {
+        return $this->debt_credit_id !== null;
     }
 }

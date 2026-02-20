@@ -6,6 +6,7 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use Illuminate\Support\Facades\Event;
 use App\Events\ModelChanged;
 use App\Listeners\UpdateAccountBalance;
+use App\Listeners\UpdateDebtCreditBalance;
 use App\Events\HouseholdMemberAdded;
 use App\Events\HouseholdMemberRemoved;
 use App\Listeners\NotifyHouseholdMembers;
@@ -20,6 +21,7 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         ModelChanged::class => [
             UpdateAccountBalance::class,
+            UpdateDebtCreditBalance::class,
         ],
         HouseholdMemberAdded::class => [
             NotifyHouseholdMembers::class,

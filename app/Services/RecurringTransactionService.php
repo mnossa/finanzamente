@@ -153,6 +153,7 @@ class RecurringTransactionService
             'description' => $recurringTransaction->description,
             'recurring' => true,
             'recurring_transaction_id' => $recurringTransaction->id,
+            'debt_credit_id' => $recurringTransaction->debt_credit_id,
             'is_private' => false,
         ]);
 

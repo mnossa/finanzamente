@@ -6,6 +6,7 @@ use App\Http\Requests\StoreRecurringTransactionRequest;
 use App\Http\Requests\UpdateRecurringTransactionRequest;
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\DebtCredit;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
 use App\Services\RecurringTransactionService;
@@ -119,9 +120,28 @@ class RecurringTransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
+        $debtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('due_date', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'counterparty', 'amount', 'initial_amount', 'paid_amount', 'type', 'status', 'due_date', 'currency_code'])
+            ->map(function ($dc) {
+                return [
+                    'id' => $dc->id,
+                    'counterparty' => $dc->counterparty,
+                    'amount' => (float) $dc->amount,
+                    'remaining_amount' => $dc->getRemainingAmount(),
+                    'type' => $dc->type,
+                    'status' => $dc->status,
+                    'due_date' => $dc->due_date ? $dc->due_date->format('Y-m-d') : null,
+                    'currency_code' => $dc->currency_code,
+                ];
+            });
+
         return Inertia::render('RecurringTransactions/Create', [
             'accounts' => $accounts,
             'categories' => $categories,
+            'debtsCredits' => $debtsCredits,
             'frequencies' => self::FREQUENCIES,
         ]);
     }
@@ -153,6 +173,7 @@ class RecurringTransactionController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'] ?? null,
             'description' => $validated['description'] ?? null,
+            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
         ]);
 
         // Genera automaticamente tutte le transazioni fino a oggi
@@ -235,6 +256,24 @@ class RecurringTransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
+        $debtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('due_date', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'counterparty', 'amount', 'initial_amount', 'paid_amount', 'type', 'status', 'due_date', 'currency_code'])
+            ->map(function ($dc) {
+                return [
+                    'id' => $dc->id,
+                    'counterparty' => $dc->counterparty,
+                    'amount' => (float) $dc->amount,
+                    'remaining_amount' => $dc->getRemainingAmount(),
+                    'type' => $dc->type,
+                    'status' => $dc->status,
+                    'due_date' => $dc->due_date ? $dc->due_date->format('Y-m-d') : null,
+                    'currency_code' => $dc->currency_code,
+                ];
+            });
+
         return Inertia::render('RecurringTransactions/Edit', [
             'recurringTransaction' => [
                 'id' => $recurringTransaction->id,
@@ -245,9 +284,11 @@ class RecurringTransactionController extends Controller
                 'start_date' => $recurringTransaction->start_date->format('Y-m-d'),
                 'end_date' => $recurringTransaction->end_date?->format('Y-m-d'),
                 'description' => $recurringTransaction->description,
+                'debt_credit_id' => $recurringTransaction->debt_credit_id,
             ],
             'accounts' => $accounts,
             'categories' => $categories,
+            'debtsCredits' => $debtsCredits,
             'frequencies' => self::FREQUENCIES,
         ]);
     }
@@ -276,6 +317,7 @@ class RecurringTransactionController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'] ?? null,
             'description' => $validated['description'] ?? null,
+            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
         ]);
 
         return redirect()

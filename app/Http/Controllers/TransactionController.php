@@ -6,6 +6,7 @@ use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\DebtCredit;
 use App\Models\Tag;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -159,10 +160,29 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
+        $debtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('due_date', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'counterparty', 'amount', 'initial_amount', 'paid_amount', 'type', 'status', 'due_date', 'currency_code'])
+            ->map(function ($dc) {
+                return [
+                    'id' => $dc->id,
+                    'counterparty' => $dc->counterparty,
+                    'amount' => (float) $dc->amount,
+                    'remaining_amount' => $dc->getRemainingAmount(),
+                    'type' => $dc->type,
+                    'status' => $dc->status,
+                    'due_date' => $dc->due_date ? $dc->due_date->format('Y-m-d') : null,
+                    'currency_code' => $dc->currency_code,
+                ];
+            });
+
         return Inertia::render('Transactions/Create', [
             'accounts' => $accounts,
             'categories' => $categories,
             'tags' => $tags,
+            'debtsCredits' => $debtsCredits,
             'defaultAccountId' => $request->query('account_id'),
         ]);
     }
@@ -193,6 +213,7 @@ class TransactionController extends Controller
             'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
+            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
             'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
             'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
             'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
@@ -306,6 +327,24 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
+        $debtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('due_date', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'counterparty', 'amount', 'initial_amount', 'paid_amount', 'type', 'status', 'due_date', 'currency_code'])
+            ->map(function ($dc) {
+                return [
+                    'id' => $dc->id,
+                    'counterparty' => $dc->counterparty,
+                    'amount' => (float) $dc->amount,
+                    'remaining_amount' => $dc->getRemainingAmount(),
+                    'type' => $dc->type,
+                    'status' => $dc->status,
+                    'due_date' => $dc->due_date ? $dc->due_date->format('Y-m-d') : null,
+                    'currency_code' => $dc->currency_code,
+                ];
+            });
+
         $transaction->load('tags:id,name,color');
 
         // Verifica se è parte di un trasferimento inter-household
@@ -328,12 +367,14 @@ class TransactionController extends Controller
                 'tax_deduction_type' => $transaction->tax_deduction_type,
                 'tax_year' => $transaction->tax_year,
                 'tag_ids' => $transaction->tags->pluck('id')->toArray(),
+                'debt_credit_id' => $transaction->debt_credit_id,
                 'transfer_id' => $transaction->transfer_id,
                 'is_inter_household_transfer' => $isInterHouseholdTransfer,
             ],
             'accounts' => $accounts,
             'categories' => $categories,
             'tags' => $tags,
+            'debtsCredits' => $debtsCredits,
         ]);
     }
 
@@ -392,6 +433,7 @@ class TransactionController extends Controller
             'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
+            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
             'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
             'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
             'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,

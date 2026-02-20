@@ -42,6 +42,10 @@ class DebtCreditController extends Controller
                 'id' => $dc->id,
                 'counterparty' => $dc->counterparty,
                 'amount' => $dc->amount,
+                'initial_amount' => $dc->initial_amount,
+                'paid_amount' => $dc->paid_amount,
+                'remaining_amount' => $dc->getRemainingAmount(),
+                'interest_rate' => $dc->interest_rate,
                 'currency' => [
                     'code' => $dc->currency->code,
                     'symbol' => $dc->currency->symbol,
@@ -109,11 +113,16 @@ class DebtCreditController extends Controller
             'user_id' => $user->id,
             'counterparty' => $validated['counterparty'],
             'amount' => $validated['amount'],
+            'initial_amount' => $validated['amount'], // Imposta l'importo iniziale
+            'paid_amount' => 0, // Inizialmente 0
             'currency_code' => $validated['currency_code'],
             'type' => $validated['type'],
             'due_date' => $validated['due_date'] ?? null,
             'status' => $status,
             'description' => $validated['description'] ?? null,
+            'interest_rate' => $validated['interest_rate'] ?? null,
+            'interest_type' => $validated['interest_type'] ?? 'simple',
+            'interest_calculation_date' => $validated['interest_calculation_date'] ?? now(),
         ]);
 
         return redirect()
@@ -133,6 +142,14 @@ class DebtCreditController extends Controller
                 'id' => $debts_credit->id,
                 'counterparty' => $debts_credit->counterparty,
                 'amount' => $debts_credit->amount,
+                'initial_amount' => $debts_credit->initial_amount,
+                'paid_amount' => $debts_credit->paid_amount,
+                'remaining_amount' => $debts_credit->getRemainingAmount(),
+                'interest_rate' => $debts_credit->interest_rate,
+                'interest_type' => $debts_credit->interest_type,
+                'interest_calculation_date' => $debts_credit->interest_calculation_date?->format('Y-m-d'),
+                'accrued_interest' => $debts_credit->calculateAccruedInterest(),
+                'total_with_interest' => $debts_credit->getTotalAmountWithInterest(),
                 'currency' => [
                     'code' => $debts_credit->currency->code,
                     'symbol' => $debts_credit->currency->symbol,
@@ -177,6 +194,9 @@ class DebtCreditController extends Controller
                 'due_date' => $debts_credit->due_date?->format('Y-m-d'),
                 'status' => $debts_credit->status,
                 'description' => $debts_credit->description,
+                'interest_rate' => $debts_credit->interest_rate,
+                'interest_type' => $debts_credit->interest_type,
+                'interest_calculation_date' => $debts_credit->interest_calculation_date?->format('Y-m-d'),
             ],
             'currencies' => $currencies,
             'types' => self::TYPES,

@@ -20,7 +20,23 @@ class Transaction extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'user_id', 'account_id', 'category_id', 'amount', 'currency_code', 'date', 'description', 'recurring', 'recurring_transaction_id', 'is_private', 'transfer_id', 'refund_id', 'is_tax_deductible', 'tax_deduction_rate', 'tax_deduction_type', 'tax_year',
+        'user_id', 
+        'account_id', 
+        'category_id', 
+        'amount', 
+        'currency_code', 
+        'date', 
+        'description', 
+        'recurring', 
+        'recurring_transaction_id', 
+        'is_private', 
+        'transfer_id', 
+        'refund_id', 
+        'debt_credit_id',
+        'is_tax_deductible', 
+        'tax_deduction_rate', 
+        'tax_deduction_type', 
+        'tax_year',
     ];
 
     protected $casts = [
@@ -73,6 +89,14 @@ class Transaction extends Model
     public function refund()
     {
         return $this->belongsTo(Refund::class);
+    }
+
+    /**
+     * Relazione con il debito/credito associato.
+     */
+    public function debtCredit()
+    {
+        return $this->belongsTo(DebtCredit::class, 'debt_credit_id');
     }
 
     /**
@@ -152,5 +176,13 @@ class Transaction extends Model
     public function isDeductibleForYear(int $year): bool
     {
         return $this->is_tax_deductible && $this->tax_year === $year;
+    }
+
+    /**
+     * Verifica se la transazione è associata a un debito/credito.
+     */
+    public function isDebtPayment(): bool
+    {
+        return $this->debt_credit_id !== null;
     }
 }
