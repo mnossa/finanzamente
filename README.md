@@ -72,6 +72,45 @@ Finanzamente è una webapp di gestione finanziaria personale e familiare, pensat
 - Gestione privacy, consensi, GDPR, backup e disaster recovery
 - Logging, monitoraggio, analytics privacy-friendly
 
+## Testing
+
+### Database di Test
+
+I test utilizzano **SQLite in-memory** invece del database MySQL principale, garantendo:
+- **Isolamento completo**: il database di sviluppo non viene mai modificato
+- **Velocità**: esecuzione in RAM, senza I/O su disco
+- **Pulizia**: ogni test parte da uno stato vuoto grazie al trait `RefreshDatabase`
+
+### Configurazione
+
+Il file [.env.testing](.env.testing) contiene la configurazione specifica per i test:
+```ini
+DB_CONNECTION=sqlite
+DB_DATABASE=:memory:
+```
+
+Questa configurazione sovrascrive le impostazioni del file `.env` durante l'esecuzione dei test.
+
+### Esecuzione dei Test
+
+```bash
+make test                    # Esegue l'intera suite di test
+make test-auth              # Esegue solo i test di autenticazione
+make test-households        # Esegue i test degli household
+```
+
+Il comando `make test` esegue `php artisan test` nel container Docker con l'utente corretto (UID/GID).
+
+### Migrazioni e Seeding
+
+Durante i test, Laravel:
+1. Crea automaticamente lo schema SQLite in memoria
+2. Esegue tutte le migrazioni
+3. Esegue il seeding configurato in `TestCase::setUp()` (es. `CurrencySeeder`)
+4. Ripulisce tutto automaticamente tra un test e l'altro
+
+**Importante**: Il file `.env.testing` è tracciato in Git per garantire la stessa configurazione a tutti i membri del team.
+
 ## Aggiornamento e Estendibilità
 - La documentazione va aggiornata ad ogni evoluzione architetturale o funzionale
 - Il sistema è progettato per supportare nuove funzionalità (reportistica, automazioni, integrazioni, ecc.)
