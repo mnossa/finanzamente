@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Budget;
 use App\Models\DebtCredit;
 use App\Models\Transaction;
+use App\Services\RevenueNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -179,7 +180,57 @@ class DashboardController extends Controller
             'activeBudgets' => $activeBudgets,
             'openDebtsCredits' => $openDebtsCredits,
             'debtsCreditsSummary' => $debtsCreditsSummary,
+            'annualRevenueData' => $this->getAnnualRevenueData($user),
         ]);
+    }
+
+    /**
+     * Calcola il fatturato annuo e controlla le notifiche di soglia.
+     */
+    private function getAnnualRevenueData(\App\Models\User $user): array
+    {
+        $settings = $user->profile_settings ?? [];
+        $hasVat = $settings['has_vat'] ?? false;
+        $trackingEnabled = $settings['revenue_tracking_enabled'] ?? true;
+        $threshold = (float) ($settings['revenue_threshold'] ?? 85000);
+
+        if (!$hasVat || !$trackingEnabled) {
+            return [
+                'has_vat' => $hasVat,
+                'revenue_tracking_enabled' => $trackingEnabled,
+                'annual_revenue' => 0,
+                'revenue_threshold' => $threshold,
+                'revenue_percentage' => 0,
+            ];
+        }
+
+        $year = Carbon::now()->year;
+        $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfDay();
+        $endOfYear = Carbon::createFromDate($year, 12, 31)->endOfDay();
+        $householdId = $user->active_household_id;
+
+        $annualRevenue = (float) Transaction::whereHas('account', function ($q) use ($householdId) {
+                $q->where('household_id', $householdId);
+            })
+            ->where('user_id', $user->id)
+            ->where('amount', '>', 0)
+            ->whereBetween('date', [$startOfYear, $endOfYear])
+            ->sum('amount');
+
+        $percentage = $threshold > 0
+            ? round(($annualRevenue / $threshold) * 100, 1)
+            : 0;
+
+        // Controlla e crea notifiche se necessario
+        (new RevenueNotificationService())->checkAndNotify($user, $annualRevenue, $threshold);
+
+        return [
+            'has_vat' => true,
+            'revenue_tracking_enabled' => true,
+            'annual_revenue' => $annualRevenue,
+            'revenue_threshold' => $threshold,
+            'revenue_percentage' => $percentage,
+        ];
     }
 
     /**
