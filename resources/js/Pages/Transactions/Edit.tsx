@@ -43,7 +43,17 @@ interface Transaction {
     tax_year: number | null;
     tag_ids: number[];
     transfer_id: number | null;
+    debt_credit_id: number | null;
     is_inter_household_transfer?: boolean;
+}
+
+interface DebtCredit {
+    id: number;
+    counterparty: string;
+    remaining_amount: number;
+    type: 'debt' | 'credit';
+    status: string;
+    currency_code: string;
 }
 
 interface EditProps {
@@ -51,9 +61,10 @@ interface EditProps {
     accounts: Account[];
     categories: Category[];
     tags: Tag[];
+    debtsCredits: DebtCredit[];
 }
 
-export default function Edit({ transaction, accounts, categories, tags }: EditProps) {
+export default function Edit({ transaction, accounts, categories, tags, debtsCredits }: EditProps) {
     const { data, setData, patch, processing, errors } = useForm({
         account_id: String(transaction.account_id),
         category_id: String(transaction.category_id),
@@ -66,12 +77,18 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
         tax_deduction_type: transaction.tax_deduction_type || '',
         tax_year: transaction.tax_year || new Date().getFullYear(),
         tag_ids: transaction.tag_ids || [],
+        debt_credit_id: transaction.debt_credit_id ? String(transaction.debt_credit_id) : '',
     });
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
     const isExpense = selectedCategory?.type === 'expense';
     const isTransfer = transaction.transfer_id !== null;
     const isInterHouseholdTransfer = transaction.is_inter_household_transfer || false;
+
+    // Filtra i debiti/crediti in base al tipo di categoria
+    const filteredDebtsCredits = selectedCategory
+        ? debtsCredits.filter((dc) => (isExpense ? dc.type === 'debt' : dc.type === 'credit'))
+        : debtsCredits;
 
     const toggleTag = (tagId: number) => {
         const currentTags = data.tag_ids;
@@ -376,9 +393,42 @@ export default function Edit({ transaction, accounts, categories, tags }: EditPr
                                 </div>
                             )}
 
-                            {/*     </p>
+                            {/* Collega a Debito/Credito */}
+                            {debtsCredits.length > 0 && !isTransfer && !isInterHouseholdTransfer && (
+                                <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-700 dark:bg-purple-900/20">
+                                    <InputLabel htmlFor="debt_credit_id" value="🔗 Collega a Debito/Credito (opzionale)" />
+                                    {filteredDebtsCredits.length === 0 && selectedCategory ? (
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Nessun {isExpense ? 'debito' : 'credito'} aperto da collegare.
+                                        </p>
+                                    ) : (
+                                        <select
+                                            id="debt_credit_id"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={data.debt_credit_id}
+                                            onChange={(e) => setData('debt_credit_id', e.target.value)}
+                                        >
+                                            <option value="">Nessun collegamento</option>
+                                            {filteredDebtsCredits.map((dc) => (
+                                                <option key={dc.id} value={dc.id}>
+                                                    {dc.type === 'debt' ? '📤' : '📥'} {dc.counterparty} — rimanenti: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: dc.currency_code }).format(dc.remaining_amount)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {!selectedCategory && (
+                                        <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                                            Seleziona prima una categoria per filtrare i debiti/crediti pertinenti.
+                                        </p>
+                                    )}
+                                    {selectedCategory && filteredDebtsCredits.length > 0 && (
+                                        <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">
+                                            Il saldo del {isExpense ? 'debito' : 'credito'} verrà aggiornato automaticamente.
+                                        </p>
+                                    )}
+                                    <InputError message={errors.debt_credit_id} className="mt-2" />
                                 </div>
-                            </div>
+                            )}
 
                             {/* Tag */}
                             {tags.length > 0 && (

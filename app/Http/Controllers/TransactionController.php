@@ -184,6 +184,7 @@ class TransactionController extends Controller
             'tags' => $tags,
             'debtsCredits' => $debtsCredits,
             'defaultAccountId' => $request->query('account_id'),
+            'defaultDebtCreditId' => $request->query('debt_credit_id'),
         ]);
     }
 

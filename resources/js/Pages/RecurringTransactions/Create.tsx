@@ -27,13 +27,23 @@ interface Frequencies {
     [key: string]: string;
 }
 
+interface DebtCredit {
+    id: number;
+    counterparty: string;
+    remaining_amount: number;
+    type: 'debt' | 'credit';
+    status: string;
+    currency_code: string;
+}
+
 interface CreateProps {
     accounts: Account[];
     categories: Category[];
     frequencies: Frequencies;
+    debtsCredits: DebtCredit[];
 }
 
-export default function Create({ accounts, categories, frequencies }: CreateProps) {
+export default function Create({ accounts, categories, frequencies, debtsCredits }: CreateProps) {
     const today = new Date().toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors } = useForm({
@@ -44,10 +54,16 @@ export default function Create({ accounts, categories, frequencies }: CreateProp
         start_date: today,
         end_date: '',
         description: '',
+        debt_credit_id: '',
     });
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
     const isExpense = selectedCategory?.type === 'expense';
+
+    // Filtra debiti/crediti in base al tipo di categoria
+    const filteredDebtsCredits = selectedCategory
+        ? debtsCredits.filter((dc) => (isExpense ? dc.type === 'debt' : dc.type === 'credit'))
+        : debtsCredits;
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -218,6 +234,43 @@ export default function Create({ accounts, categories, frequencies }: CreateProp
                                     />
                                     <InputError message={errors.description} className="mt-2" />
                                 </div>
+
+                                {/* Collega a Debito/Credito */}
+                                {debtsCredits.length > 0 && (
+                                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-700 dark:bg-purple-900/20">
+                                        <InputLabel htmlFor="debt_credit_id" value="🔗 Collega a Debito/Credito (opzionale)" />
+                                        {filteredDebtsCredits.length === 0 && selectedCategory ? (
+                                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                Nessun {isExpense ? 'debito' : 'credito'} aperto da collegare.
+                                            </p>
+                                        ) : (
+                                            <select
+                                                id="debt_credit_id"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                value={data.debt_credit_id}
+                                                onChange={(e) => setData('debt_credit_id', e.target.value)}
+                                            >
+                                                <option value="">Nessun collegamento</option>
+                                                {filteredDebtsCredits.map((dc) => (
+                                                    <option key={dc.id} value={dc.id}>
+                                                        {dc.type === 'debt' ? '📤' : '📥'} {dc.counterparty} — rimanenti: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: dc.currency_code }).format(dc.remaining_amount)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                        {!selectedCategory && (
+                                            <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                                                Seleziona prima una categoria per filtrare i debiti/crediti pertinenti.
+                                            </p>
+                                        )}
+                                        {selectedCategory && filteredDebtsCredits.length > 0 && (
+                                            <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">
+                                                Ogni transazione generata aggiornerà automaticamente il saldo del {isExpense ? 'debito' : 'credito'}.
+                                            </p>
+                                        )}
+                                        <InputError message={errors.debt_credit_id} className="mt-2" />
+                                    </div>
+                                )}
 
                                 {/* Azioni */}
                                 <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">

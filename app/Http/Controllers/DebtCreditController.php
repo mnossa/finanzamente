@@ -137,6 +137,21 @@ class DebtCreditController extends Controller
     {
         $this->authorizeDebtCredit($debts_credit);
 
+        $debts_credit->load(['transactions' => function ($q) {
+            $q->with('account:id,name,currency_code', 'category:id,name,icon')
+              ->orderBy('date', 'desc')
+              ->limit(50);
+        }]);
+
+        $transactions = $debts_credit->transactions->map(fn($t) => [
+            'id' => $t->id,
+            'amount' => (float) $t->amount,
+            'date' => $t->date->format('Y-m-d'),
+            'description' => $t->description,
+            'account' => ['name' => $t->account->name, 'currency_code' => $t->account->currency_code],
+            'category' => $t->category ? ['name' => $t->category->name, 'icon' => $t->category->icon] : null,
+        ]);
+
         return Inertia::render('DebtsCredits/Show', [
             'debtCredit' => [
                 'id' => $debts_credit->id,
@@ -164,6 +179,7 @@ class DebtCreditController extends Controller
                 'created_at' => $debts_credit->created_at->format('d/m/Y H:i'),
                 'updated_at' => $debts_credit->updated_at->format('d/m/Y H:i'),
             ],
+            'transactions' => $transactions,
             'types' => self::TYPES,
             'statuses' => self::STATUSES,
         ]);
