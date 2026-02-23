@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ChartsController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BudgetController;
@@ -57,6 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Rotte che richiedono autenticazione E household attiva
 Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/charts', [ChartsController::class, 'index'])->name('charts.index');
 
     // Profilo utente
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
