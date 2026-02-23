@@ -21,6 +21,7 @@ use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\Api\AssetPriceController;
 use Illuminate\Foundation\Application;
@@ -98,6 +99,17 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
         Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
         Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
+
+        // Transaction Import
+        Route::get('/transactions/import', [TransactionImportController::class, 'create'])->name('transactions.import');
+        Route::post('/transactions/import/preview', [TransactionImportController::class, 'preview'])->name('transactions.import.preview');
+        Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
+
+        // Bank Import Layouts
+        Route::get('/bank-import-layouts', [TransactionImportController::class, 'layouts'])->name('bank-import-layouts.index');
+        Route::post('/bank-import-layouts', [TransactionImportController::class, 'storeLayout'])->name('bank-import-layouts.store');
+        Route::patch('/bank-import-layouts/{bankImportLayout}', [TransactionImportController::class, 'updateLayout'])->name('bank-import-layouts.update');
+        Route::delete('/bank-import-layouts/{bankImportLayout}', [TransactionImportController::class, 'destroyLayout'])->name('bank-import-layouts.destroy');
 
         // Categories - modifica
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Household;
 use App\Observers\HouseholdObserver;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,5 +31,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Registra observer per la creazione automatica delle categorie
         Household::observe(HouseholdObserver::class);
+
+        Gate::policy(\App\Models\BankImportLayout::class, \App\Policies\BankImportLayoutPolicy::class);
     }
 }

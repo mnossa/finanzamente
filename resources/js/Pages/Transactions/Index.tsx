@@ -249,12 +249,20 @@ export default function Index({
                 <PageHeader
                     title="Transazioni"
                     actions={
-                        <LinkButton
-                            href={route('transactions.create')}
-                            icon={<PlusIcon />}
-                        >
-                            Nuova Transazione
-                        </LinkButton>
+                        <div className="flex items-center gap-2">
+                            <LinkButton
+                                href={route('transactions.import')}
+                                variant="secondary"
+                            >
+                                Importa CSV
+                            </LinkButton>
+                            <LinkButton
+                                href={route('transactions.create')}
+                                icon={<PlusIcon />}
+                            >
+                                Nuova Transazione
+                            </LinkButton>
+                        </div>
                     }
                 />
             }
