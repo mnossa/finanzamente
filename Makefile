@@ -84,7 +84,7 @@ clean-duplicates:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan recurring:clean-duplicates
 
 test:
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan test
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -e APP_ENV=testing app php artisan test
 
 # Genera dati demo: 2 utenti, 4 household, 16000 transazioni totali, debiti e ricorrenze
 demo-data:

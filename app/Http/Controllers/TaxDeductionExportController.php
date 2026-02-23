@@ -218,13 +218,14 @@ class TaxDeductionExportController extends Controller
      */
     private function getAvailableYears(int $householdId): array
     {
+        // Usa PHP invece di YEAR() (MySQL-only) per compatibilità con SQLite nei test
         $years = Transaction::whereHas('account', function ($q) use ($householdId) {
             $q->where('household_id', $householdId);
         })
             ->where('is_tax_deductible', true)
-            ->selectRaw('COALESCE(tax_year, YEAR(date)) as year')
-            ->distinct()
-            ->pluck('year')
+            ->get(['tax_year', 'date'])
+            ->map(fn ($t) => $t->tax_year ?? $t->date->year)
+            ->unique()
             ->sort()
             ->values()
             ->toArray();

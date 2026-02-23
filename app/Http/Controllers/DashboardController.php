@@ -140,7 +140,7 @@ class DashboardController extends Controller
         $openDebtsCredits = DebtCredit::where('household_id', $householdId)
             ->whereIn('status', ['open', 'overdue'])
             ->with('currency')
-            ->orderByRaw("FIELD(status, 'overdue', 'open')")
+            ->orderByRaw("CASE status WHEN 'overdue' THEN 0 WHEN 'open' THEN 1 ELSE 2 END")
             ->orderBy('due_date')
             ->limit(5)
             ->get()

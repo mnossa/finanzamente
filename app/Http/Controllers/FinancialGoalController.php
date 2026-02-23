@@ -23,7 +23,7 @@ class FinancialGoalController extends Controller
 
         $goals = FinancialGoal::with(['user:id,name', 'currency:code,symbol'])
             ->where('household_id', $householdId)
-            ->orderByRaw("FIELD(status, 'in_progress', 'reached', 'cancelled')")
+            ->orderByRaw("CASE status WHEN 'in_progress' THEN 0 WHEN 'reached' THEN 1 WHEN 'cancelled' THEN 2 ELSE 3 END")
             ->orderBy('target_date')
             ->orderBy('name')
             ->get()

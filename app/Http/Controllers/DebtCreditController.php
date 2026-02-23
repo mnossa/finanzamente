@@ -35,7 +35,7 @@ class DebtCreditController extends Controller
 
         $debtsCredits = DebtCredit::where('household_id', $householdId)
             ->with(['currency', 'user'])
-            ->orderByRaw("FIELD(status, 'overdue', 'open', 'closed')")
+            ->orderByRaw("CASE status WHEN 'overdue' THEN 0 WHEN 'open' THEN 1 WHEN 'closed' THEN 2 ELSE 3 END")
             ->orderBy('due_date')
             ->get()
             ->map(fn($dc) => [
