@@ -129,6 +129,15 @@ class ModuleAccessService
             'requires' => ['has_vat'],
         ],
         
+        // Analisi Investimenti (sempre disponibile)
+        'investment_analyses' => [
+            'id' => 'investment_analyses',
+            'name' => 'Analisi Investimenti',
+            'category' => 'investments',
+            'routes' => ['investment-analyses.*'],
+            'requires' => [],
+        ],
+
         // Investimenti (richiede tracks_investments)
         'investments' => [
             'id' => 'investments',

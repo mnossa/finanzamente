@@ -11,6 +11,7 @@ use App\Http\Controllers\FixedExpenseController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\HouseholdInvitationController;
 use App\Http\Controllers\InterHouseholdTransferController;
+use App\Http\Controllers\InvestmentAnalysisController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\ProfileController;
@@ -163,6 +164,10 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::put('/financial-goals/{financialGoal}/change-status', [FinancialGoalController::class, 'changeStatus'])->name('financial-goals.change-status');
         Route::delete('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'destroy'])->name('financial-goals.destroy');
 
+        // Investment Analyses - modifica
+        Route::post('/investment-analyses', [InvestmentAnalysisController::class, 'store'])->name('investment-analyses.store');
+        Route::delete('/investment-analyses/{investmentAnalysis}', [InvestmentAnalysisController::class, 'destroy'])->name('investment-analyses.destroy');
+
         // Investment Assets - modifica
         Route::get('/investment-assets/create', [InvestmentAssetController::class, 'create'])->name('investment-assets.create');
         Route::post('/investment-assets', [InvestmentAssetController::class, 'store'])->name('investment-assets.store');
@@ -232,6 +237,9 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Financial Goals - lettura
     Route::get('/financial-goals', [FinancialGoalController::class, 'index'])->name('financial-goals.index');
     Route::get('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'show'])->name('financial-goals.show');
+
+    // Investment Analyses - lettura
+    Route::get('/investment-analyses', [InvestmentAnalysisController::class, 'index'])->name('investment-analyses.index');
 
     // Investment Assets - lettura
     Route::get('/investment-assets', [InvestmentAssetController::class, 'index'])->name('investment-assets.index');

@@ -189,6 +189,7 @@ const navigationSections: NavigationSection[] = [
         items: [
             { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments' },
             { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets' },
+            { name: 'Analisi Investimenti', href: 'investment-analyses.index', routeMatch: 'investment-analyses.*', icon: Icons.TrendingUp, moduleId: 'investment_analyses' },
         ]
     }
 ];
