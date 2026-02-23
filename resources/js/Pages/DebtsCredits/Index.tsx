@@ -17,6 +17,7 @@ interface DebtCredit {
     id: number;
     counterparty: string;
     amount: number;
+    remaining_amount: number;
     currency: Currency;
     type: string;
     type_label: string;
@@ -124,7 +125,7 @@ function DebtCreditCard({ item }: { item: DebtCredit }) {
                             )}
                         >
                             {isDebt ? '-' : '+'}
-                            {formatCurrency(item.amount, item.currency.code)}
+                            {formatCurrency(item.remaining_amount, item.currency.code)}
                         </p>
                         <StatusBadge status={item.status} statusLabel={item.status_label} />
                     </div>

@@ -62,8 +62,8 @@ class DebtCreditController extends Controller
 
         // Riepilogo
         $summary = [
-            'total_debts' => $debtsCredits->where('type', 'debt')->where('status', '!=', 'closed')->sum('amount'),
-            'total_credits' => $debtsCredits->where('type', 'credit')->where('status', '!=', 'closed')->sum('amount'),
+            'total_debts' => $debtsCredits->where('type', 'debt')->where('status', '!=', 'closed')->sum('remaining_amount'),
+            'total_credits' => $debtsCredits->where('type', 'credit')->where('status', '!=', 'closed')->sum('remaining_amount'),
             'overdue_count' => $debtsCredits->where('status', 'overdue')->count(),
         ];
 

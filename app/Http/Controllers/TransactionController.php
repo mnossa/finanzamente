@@ -230,6 +230,13 @@ class TransactionController extends Controller
         $account->current_balance += $amount;
         $account->save();
 
+        // Se la transazione è collegata a un debito/credito, torna alla sua pagina
+        if ($transaction->debt_credit_id) {
+            return redirect()
+                ->route('debts-credits.show', $transaction->debt_credit_id)
+                ->with('success', 'Pagamento registrato con successo.');
+        }
+
         return redirect()
             ->route('transactions.index')
             ->with('success', 'Transazione creata con successo.');
@@ -487,6 +494,14 @@ class TransactionController extends Controller
             $newAccount = Account::find($validated['account_id']);
             $newAccount->current_balance += $newAmount;
             $newAccount->save();
+        }
+
+        // Se la transazione è collegata a un debito/credito, torna alla sua pagina
+        $updatedDebtCreditId = $validated['debt_credit_id'] ?? null;
+        if ($updatedDebtCreditId) {
+            return redirect()
+                ->route('debts-credits.show', $updatedDebtCreditId)
+                ->with('success', 'Pagamento aggiornato con successo.');
         }
 
         return redirect()
