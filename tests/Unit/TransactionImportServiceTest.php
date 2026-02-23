@@ -160,4 +160,16 @@ class TransactionImportServiceTest extends TestCase
     {
         $this->assertEquals(100.0, $this->service->parseAmount('€ 100,00'));
     }
+
+    #[Test]
+    public function it_parses_amount_with_multiple_commas_as_thousands(): void
+    {
+        $this->assertEquals(1234567.0, $this->service->parseAmount('1,234,567'));
+    }
+
+    #[Test]
+    public function it_parses_amount_with_single_comma_thousands(): void
+    {
+        $this->assertEquals(1234.0, $this->service->parseAmount('1,234'));
+    }
 }

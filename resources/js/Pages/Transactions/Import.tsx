@@ -128,13 +128,24 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // userLayouts is available for future use (e.g. loading saved layouts)
-    void userLayouts;
-
     const { data, setData, post, processing, errors } = useForm({
         account_id: accounts.length > 0 ? String(accounts[0].id) : '',
         rows: [] as { date: string; amount: number; description: string; notes: string | null }[],
     });
+
+    const applyUserLayout = (layout: UserLayout) => {
+        setSelectedBank(layout.bank_name);
+        setDelimiter(layout.delimiter);
+        setDateFormat(layout.date_format);
+        setHasHeader(layout.has_header);
+        setEncoding(layout.encoding);
+        setColumnMapping({
+            date: layout.column_mapping.date,
+            amount: layout.column_mapping.amount,
+            description: layout.column_mapping.description,
+            notes: layout.column_mapping.notes ?? null,
+        });
+    };
 
     const steps = WIZARD_STEPS.map((label, index) => ({
         label,
@@ -294,6 +305,27 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                 selectedBank={selectedBank}
                                 onSelect={handleBankSelect}
                             />
+                            {userLayouts.length > 0 && (
+                                <div className="mt-6">
+                                    <h3 className="text-sm font-medium text-gray-700 mb-2">Oppure carica un layout salvato:</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {userLayouts.map((layout) => (
+                                            <button
+                                                key={layout.id}
+                                                type="button"
+                                                onClick={() => applyUserLayout(layout)}
+                                                className={clsx(
+                                                    'inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                                                    'bg-white border-gray-300 text-gray-700 hover:border-blue-400 hover:bg-blue-50',
+                                                    'focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                )}
+                                            >
+                                                {layout.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 

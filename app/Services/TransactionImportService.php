@@ -236,15 +236,22 @@ class TransactionImportService
                 $value = str_replace(',', '.', $value);
             }
         } elseif (str_contains($value, ',')) {
-            // Only comma: could be decimal (1234,56) or thousands (1,234)
-            $commaPos = strrpos($value, ',');
-            $afterComma = substr($value, $commaPos + 1);
-            if (strlen($afterComma) === 3 && !str_contains($afterComma, '.')) {
-                // Thousands separator: 1,234 -> 1234
+            // Only comma: could be decimal (1234,56) or thousands (1,234 or 1,234,567)
+            $commaCount = substr_count($value, ',');
+            if ($commaCount > 1) {
+                // Multiple commas: all are thousands separators (e.g., 1,234,567)
                 $value = str_replace(',', '', $value);
             } else {
-                // Decimal separator: 1234,56 -> 1234.56
-                $value = str_replace(',', '.', $value);
+                $afterComma = substr($value, strrpos($value, ',') + 1);
+                // In EUR banking context, decimal amounts have at most 2 decimal places.
+                // 3 digits after comma is treated as a thousands separator (e.g., 1,234 → 1234).
+                if (strlen($afterComma) === 3 && ctype_digit($afterComma)) {
+                    // Thousands separator: 1,234 -> 1234
+                    $value = str_replace(',', '', $value);
+                } else {
+                    // Decimal separator: 1234,56 -> 1234.56
+                    $value = str_replace(',', '.', $value);
+                }
             }
         }
 
