@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import EmojiPicker from '@/Components/EmojiPicker';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
@@ -138,17 +139,11 @@ export default function Edit({ category, categoryTypes }: EditProps) {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <InputLabel htmlFor="icon" value="Icona" />
-                                    <TextInput
-                                        id="icon"
-                                        type="text"
-                                        className="mt-1 block w-full"
+                                    <EmojiPicker
                                         value={data.icon}
-                                        onChange={(e) => setData('icon', e.target.value)}
-                                        maxLength={10}
+                                        onChange={(emoji) => setData('icon', emoji)}
+                                        className="mt-1"
                                     />
-                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Emoji o simbolo breve (es. 💰, 🏠, 🚗)
-                                    </p>
                                     <InputError message={errors.icon} className="mt-2" />
                                 </div>
 
