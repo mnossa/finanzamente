@@ -1,5 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import BankSelector from '@/Components/BankSelector';
 import ColumnMapper from '@/Components/ColumnMapper';
 import ImportWizardStep from '@/Components/ImportWizardStep';
 import InputError from '@/Components/InputError';
@@ -7,7 +6,7 @@ import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
@@ -167,6 +166,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
 
     // Layout salvati (gestito come stato per poter aggiungere nuovi layout dinamicamente)
     const [userLayouts, setUserLayouts] = useState<UserLayout[]>(initialUserLayouts);
+    const [selectedLayoutId, setSelectedLayoutId] = useState<number | null>(null);
     const [saveLayoutName, setSaveLayoutName] = useState('');
     const [savingLayout, setSavingLayout] = useState(false);
     const [saveLayoutSuccess, setSaveLayoutSuccess] = useState<string | null>(null);
@@ -218,6 +218,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
 
     const applyUserLayout = (layout: UserLayout) => {
         setSelectedBank(layout.bank_name);
+        setSelectedLayoutId(layout.id);
         setDelimiter(layout.delimiter);
         setDateFormat(layout.date_format);
         setHasHeader(layout.has_header);
@@ -228,6 +229,11 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
             description: layout.column_mapping.description,
             notes: layout.column_mapping.notes ?? null,
         });
+    };
+
+    const handleSelectCustom = () => {
+        setSelectedBank('custom');
+        setSelectedLayoutId(null);
     };
 
     const steps = WIZARD_STEPS.map((label, index) => ({
@@ -263,8 +269,8 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
         setPreviewData(null);
     };
 
-    const callPreview = async () => {
-        if (!csvFile) return;
+    const callPreview = async (): Promise<boolean> => {
+        if (!csvFile) return false;
         setPreviewLoading(true);
         setPreviewError(null);
 
@@ -292,22 +298,30 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
             setPreviewData(response.data);
             const allIndices = new Set(response.data.valid.map((_, i) => i));
             setSelectedRows(allIndices);
+            return true;
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.data?.message) {
                 setPreviewError(err.response.data.message);
             } else {
                 setPreviewError('Errore durante la lettura del file. Verifica la configurazione.');
             }
+            return false;
         } finally {
             setPreviewLoading(false);
         }
     };
 
     const handleNextStep = async () => {
-        if (currentStep === 2) {
-            await callPreview();
+        // Entrando nello step 2 (Mappa colonne): carica subito l'anteprima per mostrare le intestazioni
+        if (currentStep === 1) {
+            const ok = await callPreview();
+            if (!ok) return;
         }
-        if (currentStep === 2 && previewError) return;
+        // Uscendo dallo step 2 verso la conferma: ri-chiama l'anteprima con la mappatura corrente
+        if (currentStep === 2) {
+            const ok = await callPreview();
+            if (!ok) return;
+        }
         setCurrentStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1));
     };
 
@@ -436,39 +450,83 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
                 <ImportWizardStep steps={steps} className="mb-3 sm:mb-6" />
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                    {/* Step 0: Seleziona banca */}
+                    {/* Step 0: Seleziona layout */}
                     {currentStep === 0 && (
                         <div>
-                            <h2 className="text-lg font-semibold text-gray-900 mb-1">Seleziona la tua banca</h2>
+                            <div className="flex items-center justify-between mb-1">
+                                <h2 className="text-lg font-semibold text-gray-900">Seleziona un layout</h2>
+                                <Link
+                                    href={route('bank-import-layouts.index')}
+                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 underline"
+                                >
+                                    Gestisci template →
+                                </Link>
+                            </div>
                             <p className="text-sm text-gray-500 mb-4">
-                                Scegli la banca per applicare il formato CSV predefinito, oppure scegli &ldquo;Layout personalizzato&rdquo;.
+                                Scegli uno dei tuoi layout salvati oppure configura manualmente.
                             </p>
-                            <BankSelector
-                                bankNames={bankNames}
-                                selectedBank={selectedBank}
-                                onSelect={handleBankSelect}
-                            />
-                            {userLayouts.length > 0 && (
-                                <div className="mt-6">
-                                    <h3 className="text-sm font-medium text-gray-700 mb-2">Oppure carica un layout salvato:</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {userLayouts.map((layout) => (
-                                            <button
-                                                key={layout.id}
-                                                type="button"
-                                                onClick={() => applyUserLayout(layout)}
-                                                className={clsx(
-                                                    'inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
-                                                    'bg-white border-gray-300 text-gray-700 hover:border-blue-400 hover:bg-blue-50',
-                                                    'focus:outline-none focus:ring-2 focus:ring-blue-500',
-                                                )}
-                                            >
+
+                            {/* Griglia layout personalizzati dell'utente */}
+                            {userLayouts.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {userLayouts.map((layout) => (
+                                        <button
+                                            key={layout.id}
+                                            type="button"
+                                            onClick={() => applyUserLayout(layout)}
+                                            className={clsx(
+                                                'flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all text-center',
+                                                'hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                selectedLayoutId === layout.id
+                                                    ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                                    : 'border-gray-200 bg-white',
+                                            )}
+                                            aria-pressed={selectedLayoutId === layout.id}
+                                            aria-label={`Seleziona layout ${layout.name}`}
+                                        >
+                                            <span className="text-2xl" aria-hidden="true">⚙️</span>
+                                            <span className={clsx(
+                                                'text-sm font-medium',
+                                                selectedLayoutId === layout.id ? 'text-blue-700' : 'text-gray-700',
+                                            )}>
                                                 {layout.name}
-                                            </button>
-                                        ))}
-                                    </div>
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                                    <span className="text-3xl mb-2" aria-hidden="true">📂</span>
+                                    <p className="text-sm font-medium text-gray-700 mb-1">Nessun layout personalizzato trovato</p>
+                                    <p className="text-xs text-gray-500 mb-3">Crea un template per importare facilmente i file della tua banca.</p>
+                                    <Link
+                                        href={route('bank-import-layouts.index')}
+                                        className="text-xs font-medium text-blue-600 hover:text-blue-700 underline"
+                                    >
+                                        Crea il tuo template →
+                                    </Link>
                                 </div>
                             )}
+
+                            {/* Layout personalizzato manuale – fuori dalla griglia */}
+                            <div className="mt-6 pt-4 border-t border-gray-100">
+                                <p className="text-sm text-gray-500 mb-2">Oppure configura manualmente:</p>
+                                <button
+                                    type="button"
+                                    onClick={handleSelectCustom}
+                                    className={clsx(
+                                        'inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all',
+                                        'focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                        selectedBank === 'custom' && selectedLayoutId === null
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
+                                            : 'border-gray-200 bg-white text-gray-700 hover:border-blue-400 hover:bg-blue-50',
+                                    )}
+                                    aria-pressed={selectedBank === 'custom' && selectedLayoutId === null}
+                                >
+                                    <span aria-hidden="true">⚙️</span>
+                                    Layout personalizzato
+                                </button>
+                            </div>
                         </div>
                     )}
 

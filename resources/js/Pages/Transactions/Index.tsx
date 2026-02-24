@@ -254,7 +254,7 @@ export default function Index({
                                 href={route('transactions.import')}
                                 variant="secondary"
                             >
-                                Importa CSV
+                                Importa
                             </LinkButton>
                             <LinkButton
                                 href={route('transactions.create')}
