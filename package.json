@@ -38,6 +38,7 @@
     },
     "dependencies": {
         "@heroicons/react": "^2.2.0",
+        "@tremor/react": "^3.18.7",
         "ansi-regex": "^5.0.1",
         "ansi-styles": "^4.3.0",
         "asynckit": "^0.4.0",
@@ -89,6 +90,7 @@
         "picomatch": "^4.0.3",
         "postcss-value-parser": "^4.2.0",
         "proxy-from-env": "^1.1.0",
+        "recharts": "^3.7.0",
         "require-directory": "^2.1.1",
         "rollup": "^4.52.5",
         "rxjs": "^7.8.2",
