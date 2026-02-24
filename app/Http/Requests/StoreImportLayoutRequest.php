@@ -17,6 +17,7 @@ class StoreImportLayoutRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'bank_name' => ['nullable', 'string', 'max:50'],
+            'icon' => ['nullable', 'string', 'max:10'],
             'delimiter' => ['required', 'string', 'max:5'],
             'date_format' => ['required', 'string', 'max:50'],
             'has_header' => ['boolean'],

@@ -41,7 +41,7 @@ class TransactionImportController extends Controller
         $userLayouts = BankImportLayout::where('user_id', $user->id)
             ->orWhere('household_id', $householdId)
             ->orderBy('name')
-            ->get(['id', 'name', 'bank_name', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']);
+            ->get(['id', 'name', 'bank_name', 'icon', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']);
 
         return Inertia::render('Transactions/Import', [
             'accounts' => $accounts,
@@ -265,6 +265,7 @@ class TransactionImportController extends Controller
             'household_id' => $user->active_household_id,
             'name' => $validated['name'],
             'bank_name' => $validated['bank_name'],
+            'icon' => $validated['icon'] ?? null,
             'column_mapping' => $validated['column_mapping'],
             'delimiter' => $validated['delimiter'],
             'date_format' => $validated['date_format'],
@@ -276,7 +277,7 @@ class TransactionImportController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Layout salvato con successo.',
-                'layout' => $layout->only(['id', 'name', 'bank_name', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']),
+                'layout' => $layout->only(['id', 'name', 'bank_name', 'icon', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']),
             ]);
         }
 

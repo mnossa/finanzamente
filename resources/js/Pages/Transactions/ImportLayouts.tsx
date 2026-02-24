@@ -29,10 +29,13 @@ const DATE_FORMAT_OPTIONS = [
     { value: 'd-m-Y', label: 'GG-MM-AAAA' },
 ];
 
+const LAYOUT_ICONS = ['🏦', '💳', '💰', '🪙', '📊', '📈', '🏧', '💵', '📮', '🏛️', '💹', '⚙️'];
+
 interface Layout {
     id: number;
     name: string;
     bank_name: string;
+    icon: string | null;
     column_mapping: {
         date: number;
         amount: number;
@@ -49,6 +52,7 @@ interface Layout {
 interface EditForm {
     name: string;
     bank_name: string;
+    icon: string;
     delimiter: string;
     date_format: string;
     has_header: boolean;
@@ -93,6 +97,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
         setEditForm({
             name: layout.name,
             bank_name: layout.bank_name,
+            icon: layout.icon ?? '🏦',
             delimiter: layout.delimiter,
             date_format: layout.date_format,
             has_header: layout.has_header,
@@ -183,6 +188,8 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                             <div key={layout.id}>
                                 {/* Row header */}
                                 <div className="flex items-center justify-between px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl flex-shrink-0" aria-hidden="true">{layout.icon ?? '🏦'}</span>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{layout.name}</p>
                                         <p className="text-xs text-gray-500 mt-0.5">
@@ -191,6 +198,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                                             {' · '}{layout.encoding}
                                         </p>
                                     </div>
+                                </div>
                                     <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                                         <button
                                             type="button"
@@ -236,6 +244,30 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                                                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
                                                 />
                                                 {editErrors.name && <p className="mt-1 text-xs text-red-600">{editErrors.name}</p>}
+                                            </div>
+
+                                            {/* Icona */}
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1.5">Icona</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {LAYOUT_ICONS.map((emoji) => (
+                                                        <button
+                                                            key={emoji}
+                                                            type="button"
+                                                            onClick={() => setEditForm({ ...editForm, icon: emoji })}
+                                                            className={clsx(
+                                                                'text-xl w-9 h-9 flex items-center justify-center rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                                editForm.icon === emoji
+                                                                    ? 'border-blue-500 bg-blue-50'
+                                                                    : 'border-gray-200 bg-white hover:border-blue-300',
+                                                            )}
+                                                            aria-label={`Icona ${emoji}`}
+                                                            aria-pressed={editForm.icon === emoji}
+                                                        >
+                                                            {emoji}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
 
                                             {/* Separatore / codifica / formato data */}

@@ -21,6 +21,7 @@ interface UserLayout {
     id: number;
     name: string;
     bank_name: string;
+    icon: string | null;
     column_mapping: {
         date: number;
         amount: number;
@@ -112,6 +113,8 @@ const DATE_FORMAT_OPTIONS = [
     { value: 'd-m-Y', label: 'GG-MM-AAAA' },
 ];
 
+const LAYOUT_ICONS = ['🏦', '💳', '💰', '🪙', '📊', '📈', '🏧', '💵', '📮', '🏛️', '💹', '⚙️'];
+
 export default function Import({ accounts, userLayouts: initialUserLayouts }: ImportProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedBank, setSelectedBank] = useState('');
@@ -151,6 +154,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
     const [userLayouts, setUserLayouts] = useState<UserLayout[]>(initialUserLayouts);
     const [selectedLayoutId, setSelectedLayoutId] = useState<number | null>(null);
     const [saveLayoutName, setSaveLayoutName] = useState('');
+    const [saveLayoutIcon, setSaveLayoutIcon] = useState('🏦');
     const [savingLayout, setSavingLayout] = useState(false);
     const [saveLayoutSuccess, setSaveLayoutSuccess] = useState<string | null>(null);
     const [saveLayoutError, setSaveLayoutError] = useState<string | null>(null);
@@ -169,6 +173,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                 {
                     name: saveLayoutName.trim(),
                     bank_name: selectedBank || 'custom',
+                    icon: saveLayoutIcon,
                     delimiter: isXlsx ? ',' : delimiter,
                     date_format: dateFormat,
                     has_header: hasHeader,
@@ -184,6 +189,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
             );
             setSaveLayoutSuccess(response.data.message);
             setSaveLayoutName('');
+            setSaveLayoutIcon('🏦');
             setUserLayouts((prev) => [...prev, response.data.layout]);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -446,7 +452,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                                             aria-pressed={selectedLayoutId === layout.id}
                                             aria-label={`Seleziona layout ${layout.name}`}
                                         >
-                                            <span className="text-2xl" aria-hidden="true">⚙️</span>
+                                            <span className="text-2xl" aria-hidden="true">{layout.icon ?? '🏦'}</span>
                                             <span className={clsx(
                                                 'text-sm font-medium',
                                                 selectedLayoutId === layout.id ? 'text-blue-700' : 'text-gray-700',
@@ -634,6 +640,29 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                                 <p className="text-xs text-gray-500 mb-3">
                                     Potrai riutilizzarlo nelle prossime importazioni senza dover riconfigurare le colonne.
                                 </p>
+                                {/* Selezione icona */}
+                                <div className="mb-3">
+                                    <p className="text-xs text-gray-500 mb-1.5">Icona</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {LAYOUT_ICONS.map((emoji) => (
+                                            <button
+                                                key={emoji}
+                                                type="button"
+                                                onClick={() => setSaveLayoutIcon(emoji)}
+                                                className={clsx(
+                                                    'text-xl w-9 h-9 flex items-center justify-center rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                    saveLayoutIcon === emoji
+                                                        ? 'border-blue-500 bg-blue-50'
+                                                        : 'border-gray-200 bg-white hover:border-blue-300',
+                                                )}
+                                                aria-label={`Icona ${emoji}`}
+                                                aria-pressed={saveLayoutIcon === emoji}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                                 <div className="flex gap-2 items-start">
                                     <div className="flex-1">
                                         <InputLabel htmlFor="save_layout_name" value="Nome del layout" className="sr-only" />

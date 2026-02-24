@@ -15,6 +15,7 @@ class BankImportLayout extends Model
         'household_id',
         'name',
         'bank_name',
+        'icon',
         'column_mapping',
         'delimiter',
         'date_format',
