@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\BankImportLayout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +16,7 @@ class StoreImportLayoutRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:100'],
-            'bank_name' => ['required', 'string', Rule::in(array_keys(BankImportLayout::BANK_NAMES))],
+            'bank_name' => ['nullable', 'string', 'max:50'],
             'delimiter' => ['required', 'string', 'max:5'],
             'date_format' => ['required', 'string', 'max:50'],
             'has_header' => ['boolean'],
@@ -35,8 +34,6 @@ class StoreImportLayoutRequest extends FormRequest
         return [
             'name.required' => 'Il nome del layout è obbligatorio.',
             'name.max' => 'Il nome del layout non può superare 100 caratteri.',
-            'bank_name.required' => 'Seleziona una banca.',
-            'bank_name.in' => 'La banca selezionata non è valida.',
             'delimiter.required' => 'Il separatore CSV è obbligatorio.',
             'date_format.required' => 'Il formato della data è obbligatorio.',
             'encoding.required' => 'La codifica del file è obbligatoria.',

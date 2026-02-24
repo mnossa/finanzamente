@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\BankImportLayout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +16,7 @@ class PreviewImportRequest extends FormRequest
     {
         return [
             'csv_file'                    => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:5120'],
-            'bank_name'                   => ['required', 'string', Rule::in(array_merge(array_keys(BankImportLayout::BANK_NAMES), ['custom']))],
+            'bank_name'                   => ['nullable', 'string', 'max:50'],
             'layout_id'                   => ['nullable', 'integer', 'exists:bank_import_layouts,id'],
             'delimiter'                   => ['nullable', 'string', 'max:5'],
             'date_format'                 => ['required', 'string', 'max:50'],

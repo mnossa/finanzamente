@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('household_id')->nullable()->constrained('households')->nullOnDelete();
             $table->string('name');
-            $table->string('bank_name'); // intesa, unicredit, fineco, banco_bpm, poste_pay, custom
+            $table->string('bank_name'); // nome banca associata al layout (es. custom)
             $table->json('column_mapping'); // maps CSV column indices/names to transaction fields
             $table->string('delimiter', 5)->default(',');
             $table->string('date_format', 50)->default('d/m/Y');

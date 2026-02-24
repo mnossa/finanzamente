@@ -63,10 +63,9 @@ interface EditForm {
 
 interface ImportLayoutsProps {
     layouts: Layout[];
-    bankNames: Record<string, string>;
 }
 
-export default function ImportLayouts({ layouts, bankNames }: ImportLayoutsProps) {
+export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [layoutToDelete, setLayoutToDelete] = useState<Layout | null>(null);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -187,8 +186,7 @@ export default function ImportLayouts({ layouts, bankNames }: ImportLayoutsProps
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{layout.name}</p>
                                         <p className="text-xs text-gray-500 mt-0.5">
-                                            {bankNames[layout.bank_name] ?? layout.bank_name}
-                                            {' · '}{layout.delimiter === ';' ? 'Punto e virgola' : layout.delimiter === ',' ? 'Virgola' : 'Tab'}
+                                            {layout.delimiter === ';' ? 'Punto e virgola' : layout.delimiter === ',' ? 'Virgola' : 'Tab'}
                                             {' · '}{layout.date_format}
                                             {' · '}{layout.encoding}
                                         </p>

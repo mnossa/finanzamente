@@ -17,21 +17,6 @@ interface Account {
     currency_code: string;
 }
 
-interface PredefinedLayout {
-    name: string;
-    bank_name: string;
-    delimiter: string;
-    date_format: string;
-    has_header: boolean;
-    encoding: string;
-    column_mapping: {
-        date: number;
-        amount: number;
-        description: number;
-        notes: number | null;
-    };
-}
-
 interface UserLayout {
     id: number;
     name: string;
@@ -98,9 +83,7 @@ interface DuplicateResolution {
 
 interface ImportProps {
     accounts: Account[];
-    predefinedLayouts: Record<string, PredefinedLayout>;
     userLayouts: UserLayout[];
-    bankNames: Record<string, string>;
 }
 
 const WIZARD_STEPS = [
@@ -129,7 +112,7 @@ const DATE_FORMAT_OPTIONS = [
     { value: 'd-m-Y', label: 'GG-MM-AAAA' },
 ];
 
-export default function Import({ accounts, predefinedLayouts, userLayouts: initialUserLayouts, bankNames }: ImportProps) {
+export default function Import({ accounts, userLayouts: initialUserLayouts }: ImportProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedBank, setSelectedBank] = useState('');
     const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -241,27 +224,6 @@ export default function Import({ accounts, predefinedLayouts, userLayouts: initi
         completed: index < currentStep,
         active: index === currentStep,
     }));
-
-    const applyPredefinedLayout = (bankKey: string) => {
-        const layout = predefinedLayouts[bankKey];
-        if (layout) {
-            setDelimiter(layout.delimiter);
-            setDateFormat(layout.date_format);
-            setHasHeader(layout.has_header);
-            setEncoding(layout.encoding);
-            setColumnMapping({
-                date: layout.column_mapping.date,
-                amount: layout.column_mapping.amount,
-                description: layout.column_mapping.description,
-                notes: layout.column_mapping.notes ?? null,
-            });
-        }
-    };
-
-    const handleBankSelect = (bank: string) => {
-        setSelectedBank(bank);
-        applyPredefinedLayout(bank);
-    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;

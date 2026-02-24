@@ -45,9 +45,7 @@ class TransactionImportController extends Controller
 
         return Inertia::render('Transactions/Import', [
             'accounts' => $accounts,
-            'predefinedLayouts' => $this->importService->getPredefinedLayouts(),
             'userLayouts' => $userLayouts,
-            'bankNames' => BankImportLayout::BANK_NAMES,
         ]);
     }
 
@@ -251,7 +249,6 @@ class TransactionImportController extends Controller
 
         return Inertia::render('Transactions/ImportLayouts', [
             'layouts' => $layouts,
-            'bankNames' => BankImportLayout::BANK_NAMES,
         ]);
     }
 

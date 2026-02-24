@@ -46,7 +46,7 @@ class AccountFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'type' => 'bank',
-            'name' => $this->faker->randomElement(['Conto Corrente', 'Conto Principale', 'Banca Intesa']),
+            'name' => $this->faker->randomElement(['Conto Corrente', 'Conto Principale', 'Conto Banca']),
         ]);
     }
 

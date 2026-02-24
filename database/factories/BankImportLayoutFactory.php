@@ -16,7 +16,7 @@ class BankImportLayoutFactory extends Factory
             'user_id' => User::factory(),
             'household_id' => null,
             'name' => $this->faker->words(3, true),
-            'bank_name' => $this->faker->randomElement(array_keys(BankImportLayout::BANK_NAMES)),
+            'bank_name' => 'custom',
             'column_mapping' => [
                 'date' => 0,
                 'description' => 1,

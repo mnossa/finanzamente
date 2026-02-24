@@ -126,18 +126,6 @@ class TransactionImportServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_returns_predefined_layouts_for_all_supported_banks(): void
-    {
-        $layouts = $this->service->getPredefinedLayouts();
-
-        $this->assertArrayHasKey('intesa', $layouts);
-        $this->assertArrayHasKey('unicredit', $layouts);
-        $this->assertArrayHasKey('fineco', $layouts);
-        $this->assertArrayHasKey('banco_bpm', $layouts);
-        $this->assertArrayHasKey('poste_pay', $layouts);
-    }
-
-    #[Test]
     public function it_parses_csv_without_header(): void
     {
         $csv = "01/01/2024;Supermercato;-50,00\n";

@@ -316,8 +316,8 @@ class DemoDataSeeder extends Seeder
     private function getRandomCounterparty(): string
     {
         $counterparties = [
-            'Banca Intesa',
-            'UniCredit',
+            'Banca Principale',
+            'Secondo Istituto',
             'Amico Giovanni',
             'Fornitore ABC Srl',
             'Cliente XYZ',
