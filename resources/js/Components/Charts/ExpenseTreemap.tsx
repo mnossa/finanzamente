@@ -140,7 +140,7 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                             }
                         }}
                     >
-                        <Tooltip content={<TreemapTooltip />} />
+                        <Tooltip content={<TreemapTooltip />} wrapperStyle={{ zIndex: 1000, outline: 'none' }} />
                     </Treemap>
                 </ResponsiveContainer>
             </div>

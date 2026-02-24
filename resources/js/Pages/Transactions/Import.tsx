@@ -7,7 +7,7 @@ import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
@@ -75,6 +75,28 @@ interface ColumnMapping {
     notes: number | null;
 }
 
+interface ExistingTransaction {
+    id: number;
+    date: string;
+    amount: number;
+    description: string;
+}
+
+interface DuplicateInfo {
+    row_index: number;
+    date: string;
+    amount: number;
+    description: string;
+    existing: ExistingTransaction[];
+}
+
+type DuplicateAction = 'import' | 'ignore' | 'replace' | 'update';
+
+interface DuplicateResolution {
+    action: DuplicateAction;
+    duplicate_transaction_id: number | null;
+}
+
 interface ImportProps {
     accounts: Account[];
     predefinedLayouts: Record<string, PredefinedLayout>;
@@ -108,7 +130,7 @@ const DATE_FORMAT_OPTIONS = [
     { value: 'd-m-Y', label: 'GG-MM-AAAA' },
 ];
 
-export default function Import({ accounts, predefinedLayouts, userLayouts, bankNames }: ImportProps) {
+export default function Import({ accounts, predefinedLayouts, userLayouts: initialUserLayouts, bankNames }: ImportProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedBank, setSelectedBank] = useState('');
     const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -128,10 +150,71 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { data, setData, post, processing, errors } = useForm({
-        account_id: accounts.length > 0 ? String(accounts[0].id) : '',
-        rows: [] as { date: string; amount: number; description: string; notes: string | null }[],
+    /** true se il file selezionato è un XLSX */
+    const isXlsx = csvFile?.name.toLowerCase().endsWith('.xlsx') ?? false;
+
+    const { data, setData } = useForm({
+        account_id: '',
     });
+    const [importProcessing, setImportProcessing] = useState(false);
+    const [importErrors, setImportErrors] = useState<Record<string, string>>({});
+
+    // Gestione duplicati
+    const [duplicateCheckLoading, setDuplicateCheckLoading] = useState(false);
+    const [duplicates, setDuplicates] = useState<DuplicateInfo[]>([]);
+    const [duplicateResolutions, setDuplicateResolutions] = useState<Record<number, DuplicateResolution>>({});
+    const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+
+    // Layout salvati (gestito come stato per poter aggiungere nuovi layout dinamicamente)
+    const [userLayouts, setUserLayouts] = useState<UserLayout[]>(initialUserLayouts);
+    const [saveLayoutName, setSaveLayoutName] = useState('');
+    const [savingLayout, setSavingLayout] = useState(false);
+    const [saveLayoutSuccess, setSaveLayoutSuccess] = useState<string | null>(null);
+    const [saveLayoutError, setSaveLayoutError] = useState<string | null>(null);
+
+    const saveCurrentLayout = async () => {
+        if (!saveLayoutName.trim()) {
+            setSaveLayoutError('Inserisci un nome per il layout.');
+            return;
+        }
+        setSavingLayout(true);
+        setSaveLayoutError(null);
+        setSaveLayoutSuccess(null);
+        try {
+            const response = await axios.post<{ success: boolean; message: string; layout: UserLayout }>(
+                route('bank-import-layouts.store'),
+                {
+                    name: saveLayoutName.trim(),
+                    bank_name: selectedBank || 'custom',
+                    delimiter: isXlsx ? ',' : delimiter,
+                    date_format: dateFormat,
+                    has_header: hasHeader,
+                    encoding: isXlsx ? 'UTF-8' : encoding,
+                    column_mapping: {
+                        date: columnMapping.date ?? 0,
+                        amount: columnMapping.amount ?? 1,
+                        description: columnMapping.description ?? 2,
+                        notes: columnMapping.notes ?? null,
+                    },
+                },
+                { headers: { Accept: 'application/json' } },
+            );
+            setSaveLayoutSuccess(response.data.message);
+            setSaveLayoutName('');
+            setUserLayouts((prev) => [...prev, response.data.layout]);
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.data?.message) {
+                setSaveLayoutError(err.response.data.message);
+            } else if (axios.isAxiosError(err) && err.response?.data?.errors) {
+                const firstError = Object.values(err.response.data.errors as Record<string, string[]>)[0];
+                setSaveLayoutError(Array.isArray(firstError) ? firstError[0] : String(firstError));
+            } else {
+                setSaveLayoutError('Errore durante il salvataggio del layout.');
+            }
+        } finally {
+            setSavingLayout(false);
+        }
+    };
 
     const applyUserLayout = (layout: UserLayout) => {
         setSelectedBank(layout.bank_name);
@@ -188,10 +271,13 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
         const formData = new FormData();
         formData.append('csv_file', csvFile);
         formData.append('bank_name', selectedBank || 'custom');
-        formData.append('delimiter', delimiter);
         formData.append('date_format', dateFormat);
         formData.append('has_header', hasHeader ? '1' : '0');
-        formData.append('encoding', encoding);
+        // Delimiter e encoding non servono per XLSX: li omettiamo
+        if (!isXlsx) {
+            formData.append('delimiter', delimiter);
+            formData.append('encoding', encoding);
+        }
         formData.append('column_mapping[date]', String(columnMapping.date ?? 0));
         formData.append('column_mapping[amount]', String(columnMapping.amount ?? 1));
         formData.append('column_mapping[description]', String(columnMapping.description ?? 2));
@@ -230,6 +316,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
     };
 
     const toggleRow = (index: number) => {
+        setShowDuplicateModal(false);
         setSelectedRows((prev) => {
             const next = new Set(prev);
             if (next.has(index)) {
@@ -242,6 +329,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
     };
 
     const toggleAllRows = () => {
+        setShowDuplicateModal(false);
         if (previewData && selectedRows.size === previewData.valid.length) {
             setSelectedRows(new Set());
         } else if (previewData) {
@@ -249,11 +337,9 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
         }
     };
 
-    const handleImport = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!previewData) return;
-
-        const rowsToImport = previewData.valid
+    const getRowsToImport = () => {
+        if (!previewData) return [];
+        return previewData.valid
             .filter((_, i) => selectedRows.has(i))
             .map((row) => ({
                 date: row.date,
@@ -261,9 +347,66 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                 description: row.description,
                 notes: row.notes,
             }));
+    };
 
-        setData('rows', rowsToImport);
-        post(route('transactions.import.store'));
+    const doImport = (rows: { date: string; amount: number; description: string; notes: string | null }[]) => {
+        const rowsWithResolutions = rows.map((row, idx) => {
+            const res = duplicateResolutions[idx];
+            if (!res) return row;
+            return {
+                ...row,
+                duplicate_action: res.action,
+                ...(res.duplicate_transaction_id !== null ? { duplicate_transaction_id: res.duplicate_transaction_id } : {}),
+            };
+        });
+        setImportProcessing(true);
+        setImportErrors({});
+        router.post(
+            route('transactions.import.store'),
+            { account_id: data.account_id, rows: rowsWithResolutions },
+            {
+                onFinish: () => setImportProcessing(false),
+                onError:  (errs) => setImportErrors(errs as Record<string, string>),
+            },
+        );
+    };
+
+    const handleImport = async () => {
+        if (!previewData || !data.account_id) return;
+        const rows = getRowsToImport();
+        setDuplicateCheckLoading(true);
+        setImportErrors({});
+        try {
+            const resp = await axios.post<{ duplicates: DuplicateInfo[] }>(
+                route('transactions.import.check-duplicates'),
+                { account_id: data.account_id, rows },
+            );
+            const dups = resp.data.duplicates;
+            if (dups.length === 0) {
+                doImport(rows);
+            } else {
+                const resolutions: Record<number, DuplicateResolution> = {};
+                dups.forEach((d) => {
+                    resolutions[d.row_index] = {
+                        action: 'import',
+                        duplicate_transaction_id: d.existing[0]?.id ?? null,
+                    };
+                });
+                setDuplicates(dups);
+                setDuplicateResolutions(resolutions);
+                setShowDuplicateModal(true);
+            }
+        } catch {
+            // In caso di errore nel check, procedi comunque con l'import
+            doImport(rows);
+        } finally {
+            setDuplicateCheckLoading(false);
+        }
+    };
+
+    const handleConfirmImport = () => {
+        setShowDuplicateModal(false);
+        doImport(getRowsToImport());
     };
 
     const canProceedFromStep = (): boolean => {
@@ -289,10 +432,10 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
         >
             <Head title="Importa Transazioni" />
 
-            <div className="py-4 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-                <ImportWizardStep steps={steps} className="mb-6" />
+            <div className="py-2 px-3 sm:py-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+                <ImportWizardStep steps={steps} className="mb-3 sm:mb-6" />
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
                     {/* Step 0: Seleziona banca */}
                     {currentStep === 0 && (
                         <div>
@@ -332,11 +475,11 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                     {/* Step 1: Carica file */}
                     {currentStep === 1 && (
                         <div className="space-y-5">
-                            <h2 className="text-lg font-semibold text-gray-900">Carica il file CSV</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">Carica il file</h2>
 
                             {/* File upload */}
                             <div>
-                                <InputLabel htmlFor="csv_file" value="File CSV *" />
+                                <InputLabel htmlFor="csv_file" value="File CSV o XLSX *" />
                                 <div
                                     className={clsx(
                                         'mt-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 cursor-pointer',
@@ -346,14 +489,16 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                     onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
                                     role="button"
                                     tabIndex={0}
-                                    aria-label="Carica file CSV"
+                                    aria-label="Carica file CSV o XLSX"
                                 >
                                     {csvFile ? (
-                                        <p className="text-sm font-medium text-blue-700">📄 {csvFile.name}</p>
+                                        <p className="text-sm font-medium text-blue-700">
+                                            {isXlsx ? '📊' : '📄'} {csvFile.name}
+                                        </p>
                                     ) : (
                                         <>
                                             <p className="text-sm text-gray-500">Trascina il file qui o clicca per selezionarlo</p>
-                                            <p className="text-xs text-gray-400 mt-1">CSV, TXT – max 5 MB</p>
+                                            <p className="text-xs text-gray-400 mt-1">CSV, TXT, XLSX – max 5 MB</p>
                                         </>
                                     )}
                                 </div>
@@ -361,28 +506,47 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                     id="csv_file"
                                     ref={fileInputRef}
                                     type="file"
-                                    accept=".csv,.txt"
+                                    accept=".csv,.txt,.xlsx"
                                     className="hidden"
                                     onChange={handleFileChange}
-                                    aria-label="Seleziona file CSV"
+                                    aria-label="Seleziona file CSV o XLSX"
                                 />
                             </div>
 
                             {/* Configuration */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <InputLabel htmlFor="delimiter" value="Separatore colonne" />
-                                    <select
-                                        id="delimiter"
-                                        value={delimiter}
-                                        onChange={(e) => setDelimiter(e.target.value)}
-                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                    >
-                                        {DELIMITER_OPTIONS.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                {/* Separatore e codifica: solo CSV/TXT */}
+                                {!isXlsx && (
+                                    <>
+                                        <div>
+                                            <InputLabel htmlFor="delimiter" value="Separatore colonne" />
+                                            <select
+                                                id="delimiter"
+                                                value={delimiter}
+                                                onChange={(e) => setDelimiter(e.target.value)}
+                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                            >
+                                                {DELIMITER_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <InputLabel htmlFor="encoding" value="Codifica file" />
+                                            <select
+                                                id="encoding"
+                                                value={encoding}
+                                                onChange={(e) => setEncoding(e.target.value)}
+                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                            >
+                                                {ENCODING_OPTIONS.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div>
                                     <InputLabel htmlFor="date_format" value="Formato data" />
@@ -396,23 +560,14 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                                         ))}
                                     </select>
+                                    {isXlsx && (
+                                        <p className="mt-1 text-xs text-gray-400">
+                                            Usato solo se le date sono in formato testuale. Le date native Excel vengono lette automaticamente.
+                                        </p>
+                                    )}
                                 </div>
 
-                                <div>
-                                    <InputLabel htmlFor="encoding" value="Codifica file" />
-                                    <select
-                                        id="encoding"
-                                        value={encoding}
-                                        onChange={(e) => setEncoding(e.target.value)}
-                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                    >
-                                        {ENCODING_OPTIONS.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="flex items-center gap-3 pt-5">
+                                <div className="flex items-center gap-3">
                                     <input
                                         id="has_header"
                                         type="checkbox"
@@ -420,7 +575,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                         onChange={(e) => setHasHeader(e.target.checked)}
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <InputLabel htmlFor="has_header" value="Il file ha una riga di intestazione" className="mb-0" />
+                                    <InputLabel htmlFor="has_header" value="Il file ha una riga di intestazione" className="mb-[0px]" />
                                 </div>
                             </div>
                         </div>
@@ -431,7 +586,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                         <div className="space-y-4">
                             <h2 className="text-lg font-semibold text-gray-900">Mappa le colonne</h2>
                             <p className="text-sm text-gray-500">
-                                Indica quale colonna del CSV corrisponde a ciascun campo.
+                                Indica quale colonna del file corrisponde a ciascun campo.
                             </p>
                             <ColumnMapper
                                 headers={previewData?.headers ?? []}
@@ -452,31 +607,128 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                     {previewError}
                                 </div>
                             )}
+
+                            {/* Salva layout */}
+                            <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+                                <h3 className="text-sm font-medium text-gray-700 mb-1">Salva questa configurazione come layout</h3>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Potrai riutilizzarlo nelle prossime importazioni senza dover riconfigurare le colonne.
+                                </p>
+                                <div className="flex gap-2 items-start">
+                                    <div className="flex-1">
+                                        <InputLabel htmlFor="save_layout_name" value="Nome del layout" className="sr-only" />
+                                        <input
+                                            id="save_layout_name"
+                                            type="text"
+                                            value={saveLayoutName}
+                                            onChange={(e) => { setSaveLayoutName(e.target.value); setSaveLayoutSuccess(null); setSaveLayoutError(null); }}
+                                            placeholder="Es. Banca UniCredit – formato mensile"
+                                            maxLength={100}
+                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                            aria-label="Nome del layout da salvare"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={saveCurrentLayout}
+                                        disabled={savingLayout || !saveLayoutName.trim()}
+                                        className={clsx(
+                                            'inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                            savingLayout || !saveLayoutName.trim()
+                                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                : 'bg-blue-600 text-white hover:bg-blue-700',
+                                        )}
+                                    >
+                                        {savingLayout ? 'Salvataggio…' : 'Salva layout'}
+                                    </button>
+                                </div>
+                                {saveLayoutSuccess && (
+                                    <p className="mt-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
+                                        ✓ {saveLayoutSuccess}
+                                    </p>
+                                )}
+                                {saveLayoutError && (
+                                    <p className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                                        {saveLayoutError}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
 
                     {/* Step 3: Conferma */}
                     {currentStep === 3 && (
-                        <form onSubmit={handleImport} className="space-y-5">
+                        <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
                             <h2 className="text-lg font-semibold text-gray-900">Anteprima e conferma</h2>
 
                             {/* Account selector */}
                             <div>
                                 <InputLabel htmlFor="account_id" value="Conto di destinazione *" />
-                                <select
-                                    id="account_id"
-                                    value={data.account_id}
-                                    onChange={(e) => setData('account_id', e.target.value)}
-                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                    required
-                                >
-                                    {accounts.map((acc) => (
-                                        <option key={acc.id} value={acc.id}>
-                                            {acc.name} ({acc.currency_code})
-                                        </option>
-                                    ))}
-                                </select>
-                                <InputError message={errors.account_id} className="mt-1" />
+                                <p className="mt-0.5 text-xs text-gray-500 mb-2">
+                                    Le transazioni importate verranno aggiunte al conto selezionato.
+                                </p>
+
+                                {accounts.length <= 8 ? (
+                                    /* Card picker per pochi conti */
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                                        {accounts.map((acc) => {
+                                            const selected = String(data.account_id) === String(acc.id);
+                                            return (
+                                                <button
+                                                    key={acc.id}
+                                                    type="button"
+                                                    onClick={() => setData('account_id', String(acc.id))}
+                                                    className={clsx(
+                                                        'flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                        selected
+                                                            ? 'border-blue-500 bg-blue-50 text-blue-900'
+                                                            : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50',
+                                                    )}
+                                                    aria-pressed={selected}
+                                                >
+                                                    <span className={clsx(
+                                                        'flex h-9 w-9 flex-none items-center justify-center rounded-full text-sm font-bold',
+                                                        selected ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-500',
+                                                    )}>
+                                                        {acc.name.charAt(0).toUpperCase()}
+                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate font-medium text-sm">{acc.name}</p>
+                                                        <p className={clsx('text-xs', selected ? 'text-blue-600' : 'text-gray-400')}>
+                                                            {acc.currency_code}
+                                                        </p>
+                                                    </div>
+                                                    {selected && (
+                                                        <span className="flex-none text-blue-500">✓</span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    /* Dropdown per molti conti */
+                                    <select
+                                        id="account_id"
+                                        value={data.account_id}
+                                        onChange={(e) => setData('account_id', e.target.value)}
+                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                        required
+                                    >
+                                        <option value="" disabled>— Seleziona un conto —</option>
+                                        {accounts.map((acc) => (
+                                            <option key={acc.id} value={acc.id}>
+                                                {acc.name} ({acc.currency_code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                {!data.account_id && (
+                                    <p className="mt-1.5 text-xs text-amber-600">
+                                        ⚠️ Seleziona un conto per procedere con l&apos;importazione.
+                                    </p>
+                                )}
+                                <InputError message={importErrors.account_id} className="mt-1" />
                             </div>
 
                             {/* Stats */}
@@ -563,7 +815,7 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                 </div>
                             )}
 
-                            <InputError message={errors.rows} className="mt-1" />
+                            <InputError message={importErrors.rows} className="mt-1" />
                         </form>
                     )}
 
@@ -597,15 +849,148 @@ export default function Import({ accounts, predefinedLayouts, userLayouts, bankN
                                 <PrimaryButton
                                     type="button"
                                     onClick={handleImport}
-                                    disabled={selectedRows.size === 0 || processing || !data.account_id}
+                                    disabled={selectedRows.size === 0 || importProcessing || duplicateCheckLoading || !data.account_id}
                                 >
-                                    {processing ? 'Importazione…' : `Importa ${selectedRows.size} transazioni`}
+                                    {importProcessing ? 'Importazione…' : duplicateCheckLoading ? 'Verifica duplicati…' : `Importa ${selectedRows.size} transazioni`}
                                 </PrimaryButton>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Modal risoluzione duplicati */}
+            {showDuplicateModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="duplicate-modal-title"
+                >
+                    <div className="relative w-full max-w-2xl my-8 bg-white rounded-xl shadow-xl">
+                        <div className="p-5 border-b border-gray-200">
+                            <h2 id="duplicate-modal-title" className="text-lg font-semibold text-gray-900">
+                                &#9888;&#65039; {duplicates.length} transazion{duplicates.length === 1 ? 'e potenzialmente duplicata' : 'i potenzialmente duplicate'}
+                            </h2>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Sono state trovate transazioni già presenti nel conto con la stessa data e importo. Scegli come gestire ognuna.
+                            </p>
+                            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
+                                <span><strong className="text-blue-700">Importa comunque</strong> — crea una nuova transazione (doppia)</span>
+                                <span><strong className="text-gray-700">Ignora</strong> — non importare questa riga</span>
+                                <span><strong className="text-red-700">Sostituisci</strong> — elimina la vecchia, crea la nuova</span>
+                                <span><strong className="text-green-700">Aggiorna</strong> — sovrascrive i dati della transazione esistente</span>
+                            </div>
+                        </div>
+
+                        <div className="p-5 space-y-4 max-h-[55vh] overflow-y-auto">
+                            {duplicates.map((dup) => {
+                                const res = duplicateResolutions[dup.row_index] ?? { action: 'import' as DuplicateAction, duplicate_transaction_id: dup.existing[0]?.id ?? null };
+                                const showExistingSelect = (res.action === 'replace' || res.action === 'update') && dup.existing.length > 1;
+                                return (
+                                    <div key={dup.row_index} className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                        <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dal file</p>
+                                                <p className={clsx('text-sm font-bold', dup.amount >= 0 ? 'text-green-700' : 'text-red-700')}>{formatAmount(dup.amount)}</p>
+                                                <p className="text-xs text-gray-600">{new Date(dup.date).toLocaleDateString('it-IT')}</p>
+                                                <p className="text-xs text-gray-500 truncate">{dup.description}</p>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Già presente</p>
+                                                {dup.existing.map((ex) => (
+                                                    <div key={ex.id} className="border-l-2 border-amber-400 pl-2 mb-1">
+                                                        <p className={clsx('text-xs font-bold', Number(ex.amount) >= 0 ? 'text-green-700' : 'text-red-700')}>{formatAmount(Number(ex.amount))}</p>
+                                                        <p className="text-xs text-gray-600">{new Date(ex.date).toLocaleDateString('it-IT')}</p>
+                                                        <p className="text-xs text-gray-500 truncate">{ex.description}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            {(['import', 'ignore', 'replace', 'update'] as DuplicateAction[]).map((action) => {
+                                                const labels: Record<DuplicateAction, string> = {
+                                                    import: 'Importa comunque',
+                                                    ignore: 'Ignora',
+                                                    replace: 'Sostituisci',
+                                                    update: 'Aggiorna',
+                                                };
+                                                const activeColors: Record<DuplicateAction, string> = {
+                                                    import: 'bg-blue-600 text-white border-blue-600',
+                                                    ignore: 'bg-gray-600 text-white border-gray-600',
+                                                    replace: 'bg-red-600 text-white border-red-600',
+                                                    update: 'bg-green-600 text-white border-green-600',
+                                                };
+                                                const inactiveColors: Record<DuplicateAction, string> = {
+                                                    import: 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50',
+                                                    ignore: 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
+                                                    replace: 'bg-white text-red-700 border-red-300 hover:bg-red-50',
+                                                    update: 'bg-white text-green-700 border-green-300 hover:bg-green-50',
+                                                };
+                                                return (
+                                                    <button
+                                                        key={action}
+                                                        type="button"
+                                                        onClick={() => setDuplicateResolutions((prev) => ({
+                                                            ...prev,
+                                                            [dup.row_index]: {
+                                                                action,
+                                                                duplicate_transaction_id: prev[dup.row_index]?.duplicate_transaction_id ?? dup.existing[0]?.id ?? null,
+                                                            },
+                                                        }))}
+                                                        className={clsx(
+                                                            'px-3 py-1.5 text-xs font-medium rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500',
+                                                            res.action === action ? activeColors[action] : inactiveColors[action],
+                                                        )}
+                                                    >
+                                                        {labels[action]}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {showExistingSelect && (
+                                            <div className="mt-2">
+                                                <label className="text-xs text-gray-600 block mb-1">
+                                                    Transazione da {res.action === 'replace' ? 'sostituire' : 'aggiornare'}:
+                                                </label>
+                                                <select
+                                                    value={res.duplicate_transaction_id ?? ''}
+                                                    onChange={(e) => setDuplicateResolutions((prev) => ({
+                                                        ...prev,
+                                                        [dup.row_index]: { ...prev[dup.row_index], duplicate_transaction_id: Number(e.target.value) },
+                                                    }))}
+                                                    className="block w-full text-xs border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                >
+                                                    {dup.existing.map((ex) => (
+                                                        <option key={ex.id} value={ex.id}>
+                                                            {formatAmount(Number(ex.amount))} — {new Date(ex.date).toLocaleDateString('it-IT')} — {ex.description}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="p-5 border-t border-gray-200 flex items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowDuplicateModal(false)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                Annulla
+                            </button>
+                            <PrimaryButton type="button" onClick={handleConfirmImport} disabled={importProcessing}>
+                                {importProcessing ? 'Importazione…' : 'Conferma e importa'}
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }

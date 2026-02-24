@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 
 class TransactionImportService
 {
@@ -279,5 +281,149 @@ class TransactionImportService
         }
 
         return ['valid' => $valid, 'invalid' => $invalid];
+    }
+
+    /**
+     * Legge la prima riga di un file XLSX come intestazioni di colonna.
+     */
+    public function getXlsxHeaders(string $filePath): array
+    {
+        $reader = new XlsxReader();
+        $reader->open($filePath);
+
+        $headers = [];
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $headers = array_map(
+                    fn ($cell) => (string) ($cell->getValue() ?? ''),
+                    $row->getCells(),
+                );
+                break;
+            }
+            break; // solo prima scheda
+        }
+
+        $reader->close();
+        return $headers;
+    }
+
+    /**
+     * Legge un file XLSX e restituisce le righe nel formato normalizzato.
+     *
+     * @param string $filePath Percorso assoluto al file .xlsx
+     * @param array  $layout   { date_format, has_header, column_mapping }
+     * @return array Array di righe: [{date, amount, description, notes, raw, errors}]
+     */
+    public function parseXlsx(string $filePath, array $layout): array
+    {
+        $dateFormat    = $layout['date_format']    ?? 'd/m/Y';
+        $hasHeader     = $layout['has_header']     ?? true;
+        $columnMapping = $layout['column_mapping'] ?? [];
+
+        $reader = new XlsxReader();
+        $reader->open($filePath);
+
+        $rows       = [];
+        $lineNumber = 0;
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $lineNumber++;
+                if ($hasHeader && $lineNumber === 1) {
+                    continue; // riga di intestazione ignorata
+                }
+                $rows[] = $this->mapXlsxRow($row->getCells(), $columnMapping, $dateFormat, $lineNumber);
+            }
+            break; // solo prima scheda
+        }
+
+        $reader->close();
+        return $rows;
+    }
+
+    /**
+     * Mappa una riga XLSX (array di Cell) ai campi normalizzati della transazione.
+     * Gestisce celle DateTime (date native Excel), numeriche e testuali.
+     */
+    /**
+     * Converte in modo sicuro il valore di una cella XLSX in stringa.
+     * DateTimeImmutable/DateTime non implementano __toString: li formattiamo esplicitamente.
+     */
+    private function cellValueToString(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value)->format('Y-m-d');
+        }
+        return (string) $value;
+    }
+
+    private function mapXlsxRow(array $cells, array $mapping, string $dateFormat, int $lineNumber): array
+    {
+        $errors = [];
+
+        $getCell = fn (?int $idx) => ($idx !== null && isset($cells[$idx])) ? $cells[$idx] : null;
+
+        $dateCell   = $getCell($mapping['date']        ?? 0);
+        $amountCell = $getCell($mapping['amount']      ?? 1);
+        $descCell   = $getCell($mapping['description'] ?? 2);
+        $notesCell  = $getCell(
+            (isset($mapping['notes']) && $mapping['notes'] !== null) ? (int) $mapping['notes'] : null
+        );
+
+        // ── Data ────────────────────────────────────────────────────────────
+        $date      = null;
+        $dateValue = $dateCell?->getValue();
+        if ($dateValue instanceof \DateTimeInterface) {
+            // Excel memorizza date come oggetti DateTimeImmutable nativi
+            $date = Carbon::instance($dateValue)->format('Y-m-d');
+        } elseif ($dateValue !== null && trim($this->cellValueToString($dateValue)) !== '') {
+            try {
+                $date = Carbon::createFromFormat($dateFormat, trim($this->cellValueToString($dateValue)))->format('Y-m-d');
+            } catch (\Exception) {
+                $errors[] = "Riga {$lineNumber}: formato data non valido ({$this->cellValueToString($dateValue)})";
+            }
+        } else {
+            $errors[] = "Riga {$lineNumber}: data mancante";
+        }
+
+        // ── Importo ─────────────────────────────────────────────────────────
+        $amount      = null;
+        $amountValue = $amountCell?->getValue();
+        if (is_float($amountValue) || is_int($amountValue)) {
+            $amount = (float) $amountValue;
+        } elseif ($amountValue !== null && !($amountValue instanceof \DateTimeInterface)) {
+            $amountStr = trim($this->cellValueToString($amountValue));
+            if ($amountStr !== '') {
+                $amount = $this->parseAmount($amountStr);
+                if ($amount === null) {
+                    $errors[] = "Riga {$lineNumber}: importo non valido ({$amountStr})";
+                }
+            } else {
+                $errors[] = "Riga {$lineNumber}: importo mancante";
+            }
+        } else {
+            $errors[] = "Riga {$lineNumber}: importo mancante";
+        }
+
+        // ── Descrizione / Note ───────────────────────────────────────────────
+        $description = $descCell !== null ? trim($this->cellValueToString($descCell->getValue())) : '';
+        if ($description === '') {
+            $errors[] = "Riga {$lineNumber}: descrizione mancante";
+        }
+
+        $notesRaw = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
+
+        return [
+            'line_number' => $lineNumber,
+            'date'        => $date,
+            'amount'      => $amount,
+            'description' => $description,
+            'notes'       => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
+            'raw'         => "Riga {$lineNumber}",
+            'errors'      => $errors,
+        ];
     }
 }

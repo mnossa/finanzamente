@@ -105,6 +105,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         // Transaction Import
         Route::get('/transactions/import', [TransactionImportController::class, 'create'])->name('transactions.import');
         Route::post('/transactions/import/preview', [TransactionImportController::class, 'preview'])->name('transactions.import.preview');
+        Route::post('/transactions/import/check-duplicates', [TransactionImportController::class, 'checkDuplicates'])->name('transactions.import.check-duplicates');
         Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
 
         // Bank Import Layouts

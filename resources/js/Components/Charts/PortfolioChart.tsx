@@ -113,7 +113,7 @@ export default function PortfolioChart({ data, className }: PortfolioChartProps)
                                 />
                             ))}
                         </Pie>
-                        <Tooltip content={<PortfolioTooltip />} />
+                        <Tooltip content={<PortfolioTooltip />} wrapperStyle={{ zIndex: 1000, outline: 'none' }} />
                         <Legend
                             formatter={(value) => (
                                 <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>

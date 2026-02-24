@@ -1,6 +1,27 @@
 import React from 'react';
 import { AreaChart, Card } from '@tremor/react';
+import type { CustomTooltipProps } from '@tremor/react';
 import { formatEuro } from './chartConfig';
+
+function NetWorthTooltip({ payload, active, label }: CustomTooltipProps) {
+    if (!active || !payload?.length) return null;
+    const value = Number(payload[0]?.value ?? 0);
+    return (
+        <div style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+            padding: '8px 12px',
+            fontSize: '13px',
+            color: '#1e293b',
+            minWidth: '160px',
+        }}>
+            <p style={{ fontWeight: 600, marginBottom: '4px', color: '#475569' }}>{label}</p>
+            <p style={{ color: '#3b82f6', fontWeight: 700 }}>{formatEuro(value)}</p>
+        </div>
+    );
+}
 
 export interface NetWorthDataPoint {
     month: string;
@@ -11,6 +32,14 @@ interface NetWorthChartProps {
     data: NetWorthDataPoint[];
     className?: string;
 }
+
+/** Formatter compatto per i tick dell'asse Y */
+const yAxisFormatter = (value: number): string => {
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000)     return `€${(value / 1_000).toFixed(0)}k`;
+    return `€${value.toFixed(0)}`;
+};
 
 const valueFormatter = (value: number) => formatEuro(value);
 
@@ -79,6 +108,10 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                 showGridLines
                 showAnimation
                 curveType="monotone"
+                yAxisWidth={65}
+                rotateLabelX={{ angle: -45, verticalShift: 20, xAxisHeight: 60 }}
+                valueFormatter={yAxisFormatter}
+                customTooltip={NetWorthTooltip}
             />
         </Card>
     );

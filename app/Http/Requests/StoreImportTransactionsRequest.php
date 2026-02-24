@@ -29,12 +29,14 @@ class StoreImportTransactionsRequest extends FormRequest
             ->toArray();
 
         return [
-            'account_id' => ['required', 'integer', Rule::in($accessibleAccountIds)],
-            'rows' => ['required', 'array', 'min:1'],
-            'rows.*.date' => ['required', 'date'],
-            'rows.*.amount' => ['required', 'numeric'],
-            'rows.*.description' => ['required', 'string', 'max:1000'],
-            'rows.*.notes' => ['nullable', 'string', 'max:1000'],
+            'account_id'                        => ['required', 'integer', Rule::in($accessibleAccountIds)],
+            'rows'                              => ['required', 'array', 'min:1'],
+            'rows.*.date'                       => ['required', 'date'],
+            'rows.*.amount'                     => ['required', 'numeric'],
+            'rows.*.description'                => ['required', 'string', 'max:1000'],
+            'rows.*.notes'                      => ['nullable', 'string', 'max:1000'],
+            'rows.*.duplicate_action'           => ['nullable', 'string', Rule::in(['import', 'ignore', 'replace', 'update'])],
+            'rows.*.duplicate_transaction_id'   => ['nullable', 'integer'],
         ];
     }
 
