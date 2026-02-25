@@ -17,6 +17,7 @@ use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
+use App\Http\Controllers\ThemePreferenceController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
@@ -65,6 +66,9 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Preferenze tema utente
+    Route::patch('/user/preferences/theme', [ThemePreferenceController::class, 'update'])->name('user.preferences.theme');
     
     // Modifica impostazioni quiz di profilazione dal profilo
     Route::get('/profile/quiz-settings', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
