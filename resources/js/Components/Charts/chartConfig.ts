@@ -3,6 +3,8 @@
  * Palette colori e stili condivisi per tutti i grafici (Tremor e Recharts).
  */
 
+import { useEffect, useState } from 'react';
+
 export const chartColors = {
     primary:   '#3b82f6', // blue-500
     secondary: '#10b981', // emerald-500
@@ -43,6 +45,48 @@ export const tooltipStyle = {
     fontSize:        '13px',
     color:           '#1e293b',
 };
+
+export function useChartDarkMode(): boolean {
+    const [isDark, setIsDark] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const updateTheme = () => {
+            setIsDark(document.documentElement.classList.contains('dark'));
+        };
+
+        updateTheme();
+
+        const observer = new MutationObserver(updateTheme);
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+
+        return () => observer.disconnect();
+    }, []);
+
+    return isDark;
+}
+
+export function getChartTooltipStyle(isDark: boolean) {
+    return {
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+        borderRadius: '8px',
+        boxShadow: isDark
+            ? '0 10px 20px -8px rgb(0 0 0 / 0.5)'
+            : '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+        padding: '8px 12px',
+        fontSize: '13px',
+        color: isDark ? '#e2e8f0' : '#1e293b',
+    };
+}
+
+export function getChartMutedTextColor(isDark: boolean): string {
+    return isDark ? '#94a3b8' : '#64748b';
+}
 
 /** Formattazione valuta in euro (it-IT) */
 export function formatEuro(value: number): string {

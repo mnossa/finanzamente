@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
+import CardBox from '@/Components/CardBox';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -225,7 +226,7 @@ export default function Index({ refunds }: IndexProps) {
                         </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         {refunds.data.length > 0 ? (
                             <>
                                 <div className="p-4">
@@ -244,7 +245,7 @@ export default function Index({ refunds }: IndexProps) {
                                 createLabel="Nuovo Rimborso"
                             />
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

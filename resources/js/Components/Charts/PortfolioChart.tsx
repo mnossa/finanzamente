@@ -1,4 +1,5 @@
 import React from 'react';
+import CardBox from '@/Components/CardBox';
 import {
     ResponsiveContainer,
     PieChart,
@@ -7,7 +8,7 @@ import {
     Tooltip,
     Legend,
 } from 'recharts';
-import { categoryPalette, formatEuro, tooltipStyle } from './chartConfig';
+import { categoryPalette, formatEuro, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
 
 export interface PortfolioItem {
     name: string;
@@ -27,10 +28,12 @@ interface TooltipPayload {
 }
 
 function PortfolioTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
+    const isDark = useChartDarkMode();
+
     if (!active || !payload?.length) return null;
     const d = payload[0];
     return (
-        <div style={tooltipStyle} className="dark:bg-slate-900 dark:border-slate-700 dark:text-white">
+        <div style={getChartTooltipStyle(isDark)}>
             <p className="font-semibold">{d.name}</p>
             <p className="text-blue-500 font-bold">{formatEuro(d.value)}</p>
             <p className="text-gray-500 dark:text-gray-400 text-xs">{d.payload.percentage.toFixed(1)}% del portafoglio</p>
@@ -64,7 +67,7 @@ export default function PortfolioChart({ data, className }: PortfolioChartProps)
 
     if (!data.length) {
         return (
-            <div className={`overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800 ${className ?? ''}`}>
+            <CardBox className={className ?? ''}>
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     💼 Allocazione Portafoglio
                 </h3>
@@ -74,12 +77,12 @@ export default function PortfolioChart({ data, className }: PortfolioChartProps)
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun investimento attivo trovato
                 </div>
-            </div>
+            </CardBox>
         );
     }
 
     return (
-        <div className={`overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800 ${className ?? ''}`}>
+        <CardBox className={className ?? ''}>
             <div className="flex items-start justify-between">
                 <div>
                     <h3 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -137,6 +140,6 @@ export default function PortfolioChart({ data, className }: PortfolioChartProps)
                     </div>
                 ))}
             </div>
-        </div>
+        </CardBox>
     );
 }

@@ -6,6 +6,7 @@ import TextInput from '@/Components/TextInput';
 import EmojiPicker from '@/Components/EmojiPicker';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface CategoryTypes {
@@ -52,7 +53,7 @@ export default function Create({ categoryTypes }: CreateProps) {
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         <form onSubmit={submit} className="space-y-6">
                             {/* Nome */}
                             <div>
@@ -206,7 +207,7 @@ export default function Create({ categoryTypes }: CreateProps) {
                                 </PrimaryButton>
                             </div>
                         </form>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

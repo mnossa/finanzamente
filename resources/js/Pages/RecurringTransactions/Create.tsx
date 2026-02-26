@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Category {
@@ -75,7 +76,6 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
             header={
                 <PageHeader
                     title="Nuova Transazione Ricorrente"
-                    backLink={route('recurring-transactions.index')}
                 />
             }
         >
@@ -83,7 +83,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">🏦</div>
@@ -115,20 +115,22 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                 {/* Conto */}
                                 <div>
                                     <InputLabel htmlFor="account_id" value="Conto" />
-                                    <select
-                                        id="account_id"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={data.account_id}
-                                        onChange={(e) => setData('account_id', e.target.value)}
-                                        required
-                                    >
-                                        <option value="">Seleziona un conto</option>
-                                        {accounts.map((account) => (
-                                            <option key={account.id} value={account.id}>
-                                                {account.name} ({account.currency_code})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        <CardBox>
+                                            <select
+                                                id="account_id"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                value={data.account_id}
+                                                onChange={(e) => setData('account_id', e.target.value)}
+                                                required
+                                            >
+                                                <option value="">Seleziona un conto</option>
+                                                {accounts.map((account) => (
+                                                    <option key={account.id} value={account.id}>
+                                                        {account.name} ({account.currency_code})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </CardBox>
                                     <InputError message={errors.account_id} className="mt-2" />
                                 </div>
 
@@ -286,7 +288,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                 </div>
                             </form>
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

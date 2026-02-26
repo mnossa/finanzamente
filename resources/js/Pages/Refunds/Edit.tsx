@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Category {
@@ -86,7 +87,7 @@ export default function Edit({ refund }: EditProps) {
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <form onSubmit={submit} className="space-y-6">
                             {/* Transazione originale (solo lettura) */}
                             <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
@@ -219,7 +220,7 @@ export default function Edit({ refund }: EditProps) {
                                 </PrimaryButton>
                             </div>
                         </form>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

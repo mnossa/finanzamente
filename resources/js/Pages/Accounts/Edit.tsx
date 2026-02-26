@@ -7,6 +7,7 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 
 interface Currency {
     code: string;
@@ -65,7 +66,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         <form onSubmit={submit} className="space-y-6">
                             {/* Nome */}
                             <div>
@@ -206,7 +207,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                 </PrimaryButton>
                             </div>
                         </form>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

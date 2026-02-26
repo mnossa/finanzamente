@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
@@ -60,10 +61,11 @@ import { StatusBadge } from '@/Components/StatusBadge';
 
 function GoalCard({ goal }: { goal: FinancialGoal }) {
     return (
-        <Link
-            href={route('financial-goals.show', goal.id)}
-            className="block overflow-hidden rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800"
-        >
+        <CardBox className="overflow-hidden p-6 shadow-sm transition-shadow hover:shadow-md">
+            <Link
+                href={route('financial-goals.show', goal.id)}
+                className="block"
+            >
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div
@@ -123,7 +125,8 @@ function GoalCard({ goal }: { goal: FinancialGoal }) {
                     </p>
                 )}
             </div>
-        </Link>
+            </Link>
+        </CardBox>
     );
 }
 
@@ -158,31 +161,31 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Obiettivi Attivi
                             </p>
                             <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
                                 {stats.in_progress}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Obiettivi Raggiunti
                             </p>
                             <p className="mt-1 text-3xl font-bold text-green-500">
                                 {stats.reached}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Totale Risparmiato
                             </p>
                             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(stats.total_current)}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Progresso Complessivo
                             </p>
@@ -192,7 +195,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <div className="mt-2">
                                 <ProgressBar percentage={overallProgress} color="#6366f1" />
                             </div>
-                        </div>
+                        </CardBox>
                     </div>
 
                     {/* Obiettivi in Corso */}
@@ -239,7 +242,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
 
                     {/* Empty State */}
                     {goals.length === 0 && (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="🎯"
                                 title="Nessun obiettivo finanziario"
@@ -247,7 +250,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                                 createUrl={route('financial-goals.create')}
                                 createLabel="Crea il Primo Obiettivo"
                             />
-                        </div>
+                        </CardBox>
                     )}
                 </div>
             </div>

@@ -8,6 +8,7 @@ import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState } from 'react';
+import CardBox from '@/Components/CardBox';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Category {
@@ -159,7 +160,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {categories.length === 0 ? (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="📁"
                                 title="Nessuna categoria trovata"
@@ -167,7 +168,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                                 createUrl={route('categories.create')}
                                 createLabel="Crea la tua prima categoria"
                             />
-                        </div>
+                        </CardBox>
                     ) : (
                         <>
                             {/* Riepilogo */}

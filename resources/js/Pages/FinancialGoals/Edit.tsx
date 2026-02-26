@@ -6,6 +6,7 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
@@ -89,7 +90,7 @@ export default function Edit({ goal, currencies, suggestedIcons, statuses }: Edi
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
                     <form onSubmit={submit}>
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <div className="p-6">
                                 {/* Icon e Nome */}
                                 <div className="mb-6">
@@ -281,7 +282,7 @@ export default function Edit({ goal, currencies, suggestedIcons, statuses }: Edi
                                     {processing ? 'Salvataggio...' : '💾 Salva Modifiche'}
                                 </PrimaryButton>
                             </div>
-                        </div>
+                        </CardBox>
                     </form>
                 </div>
             </div>

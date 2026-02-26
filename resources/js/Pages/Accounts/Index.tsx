@@ -7,6 +7,7 @@ import ArchiveIcon from '@/Components/Icons/ArchiveIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Account {
@@ -51,9 +52,9 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
 
 function AccountCard({ account }: { account: Account }) {
     return (
-        <div
+        <CardBox
             className={clsx(
-                'rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800',
+                'p-4 shadow-sm transition-shadow hover:shadow-md',
                 !account.active && 'opacity-60'
             )}
         >
@@ -121,7 +122,7 @@ function AccountCard({ account }: { account: Account }) {
                     <ArchiveIcon size={18} />
                 </button>
             </div>
-        </div>
+        </CardBox>
     );
 }
 
@@ -155,7 +156,7 @@ export default function Index({
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {accounts.length === 0 ? (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="🏦"
                                 title="Nessun conto trovato"
@@ -163,7 +164,7 @@ export default function Index({
                                 createUrl={route('accounts.create')}
                                 createLabel="Crea il tuo primo conto"
                             />
-                        </div>
+                        </CardBox>
                     ) : (
                         <>
                             {/* Saldo Totale */}
@@ -185,9 +186,9 @@ export default function Index({
                                     const stats = totalsByType[type];
                                     if (!stats) return null;
                                     return (
-                                        <div
+                                        <CardBox
                                             key={type}
-                                            className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800"
+                                            className="p-4 shadow-sm"
                                         >
                                             <div className="flex items-center space-x-2">
                                                 <span className="text-xl">
@@ -203,7 +204,7 @@ export default function Index({
                                             <p className="text-xs text-gray-400">
                                                 {stats.count} {stats.count === 1 ? 'conto' : 'conti'}
                                             </p>
-                                        </div>
+                                        </CardBox>
                                     );
                                 })}
                             </div>

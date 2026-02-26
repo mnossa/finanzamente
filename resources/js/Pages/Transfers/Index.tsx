@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
+import CardBox from '@/Components/CardBox';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
@@ -169,7 +170,7 @@ export default function Index({ transfers }: IndexProps) {
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         {transfers.data.length > 0 ? (
                             <>
                                 <div className="p-4">
@@ -188,7 +189,7 @@ export default function Index({ transfers }: IndexProps) {
                                 createLabel="Nuovo Trasferimento"
                             />
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

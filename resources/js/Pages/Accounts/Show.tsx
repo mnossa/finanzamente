@@ -4,6 +4,7 @@ import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Category {
@@ -111,34 +112,34 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                 <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Riepilogo */}
                     <div className="grid gap-4 sm:grid-cols-3">
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Saldo corrente
                             </p>
                             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(account.current_balance, account.currency_code)}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Saldo iniziale
                             </p>
                             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(account.initial_balance, account.currency_code)}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Creato il
                             </p>
                             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                                 {account.created_at}
                             </p>
-                        </div>
+                        </CardBox>
                     </div>
 
                     {/* Transazioni Recenti */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                                 Ultime transazioni
@@ -159,7 +160,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

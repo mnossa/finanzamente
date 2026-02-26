@@ -7,6 +7,7 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 
 interface Currency {
     code: string;
@@ -88,9 +89,9 @@ function DebtCreditCard({ item }: { item: DebtCredit }) {
     const isDebt = item.type === 'debt';
 
     return (
-        <div
+        <CardBox
             className={clsx(
-                'rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800',
+                'p-4 shadow-sm transition-shadow hover:shadow-md',
                 item.status === 'closed' && 'opacity-70'
             )}
         >
@@ -168,7 +169,7 @@ function DebtCreditCard({ item }: { item: DebtCredit }) {
                     <TrashIcon size={18} />
                 </button>
             </div>
-        </div>
+        </CardBox>
     );
 }
 
@@ -197,7 +198,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {debtsCredits.length === 0 ? (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="💸"
                                 title="Nessun debito o credito trovato"
@@ -205,7 +206,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                 createUrl={route('debts-credits.create')}
                                 createLabel="Aggiungi il primo"
                             />
-                        </div>
+                        </CardBox>
                     ) : (
                         <>
                             {/* Riepilogo */}

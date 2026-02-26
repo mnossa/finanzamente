@@ -4,6 +4,7 @@ import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import clsx from 'clsx';
 import React from 'react';
+import CardBox from '@/Components/CardBox';
 
 interface Category {
     id: number;
@@ -156,7 +157,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                         <>
                             <div className="grid gap-4 sm:grid-cols-3">
                                 {/* Totale transazioni */}
-                                <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                                <CardBox className="p-6 shadow-sm">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -168,10 +169,10 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                         </div>
                                         <span className="text-4xl">📋</span>
                                     </div>
-                                </div>
+                                </CardBox>
 
                                 {/* Totale spese */}
-                                <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                                <CardBox className="p-6 shadow-sm">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -183,7 +184,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                         </div>
                                         <span className="text-4xl">💸</span>
                                     </div>
-                                </div>
+                                </CardBox>
 
                                 {/* Totale detraibile */}
                                 <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-sm">
@@ -209,9 +210,9 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                     const typeDeductible = calculateTypeDeductible(typeTransactions);
 
                                     return (
-                                        <div
+                                        <CardBox
                                             key={type}
-                                            className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800"
+                                            className="overflow-hidden shadow-sm"
                                         >
                                             {/* Header tipo */}
                                             <div className="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
@@ -279,7 +280,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </CardBox>
                                     );
                                 })}
                             </div>
@@ -299,7 +300,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                         </>
                     ) : (
                         /* Empty state */
-                        <div className="rounded-xl bg-white p-12 text-center shadow-sm dark:bg-gray-800">
+                        <CardBox className="p-12 text-center shadow-sm">
                             <span className="text-6xl">📋</span>
                             <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
                                 Nessuna transazione detraibile per l'anno {year}
@@ -313,7 +314,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                             >
                                 ➕ Nuova Transazione
                             </Link>
-                        </div>
+                        </CardBox>
                     )}
                 </div>
             </div>

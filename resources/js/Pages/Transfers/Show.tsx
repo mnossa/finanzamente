@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
 import { Head, Link } from '@inertiajs/react';
+import CardBox from '@/Components/CardBox';
 
 interface Account {
     id: number;
@@ -65,7 +66,7 @@ export default function Show({ transfer }: ShowProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Card Principale */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="mb-6 flex items-center justify-center">
                             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl dark:bg-emerald-900/30">
                                 🔄
@@ -139,11 +140,11 @@ export default function Show({ transfer }: ShowProps) {
                                 <span className="font-mono text-xs text-gray-400">{transfer.uuid}</span>
                             </div>
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Transazioni collegate */}
                     {transfer.transactions.length > 0 && (
-                        <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden p-6 shadow-sm">
                             <h3 className="mb-4 font-medium text-gray-900 dark:text-white">
                                 Transazioni collegate
                             </h3>
@@ -177,7 +178,7 @@ export default function Show({ transfer }: ShowProps) {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </CardBox>
                     )}
                 </div>
             </div>

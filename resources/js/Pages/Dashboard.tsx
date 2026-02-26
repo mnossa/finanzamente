@@ -3,6 +3,7 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import PageHeader from '@/Components/PageHeader';
@@ -156,12 +157,7 @@ function StatCard({
     className?: string;
 }) {
     return (
-        <div
-            className={clsx(
-                'overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800',
-                className
-            )}
-        >
+            <CardBox className={className}>
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 {title}
             </h3>
@@ -202,7 +198,7 @@ function StatCard({
                     )}
                 </div>
             )}
-        </div>
+            </CardBox>
     );
 }
 
@@ -471,7 +467,7 @@ export default function Dashboard({
                     {/* Griglia principale */}
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* Conti */}
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     I tuoi conti
@@ -492,10 +488,10 @@ export default function Dashboard({
                                     <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />
                                 )}
                             </div>
-                        </div>
+                        </CardBox>
 
                         {/* Transazioni Recenti */}
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     Ultime transazioni
@@ -516,14 +512,14 @@ export default function Dashboard({
                                     <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />
                                 )}
                             </div>
-                        </div>
+                        </CardBox>
                     </div>
 
                     {/* Budget e Debiti/Crediti */}
                     <div className="grid gap-6 lg:grid-cols-2">
                         {/* Budget Attivi */}
                         {isModuleEnabled('budgets') ? (
-                            <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                            <CardBox className="overflow-hidden shadow-sm">
                                 <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                                     <h3 className="font-semibold text-gray-900 dark:text-white">
                                         📊 Budget Attivi
@@ -553,14 +549,14 @@ export default function Dashboard({
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </CardBox>
                         ) : (
                             <LockedModuleCard moduleId="budgets" />
                         )}
 
                         {/* Debiti e Crediti */}
                         {isModuleEnabled('debts_credits') ? (
-                            <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                            <CardBox className="overflow-hidden shadow-sm">
                                 <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                                     <h3 className="font-semibold text-gray-900 dark:text-white">
                                         💸 Debiti e Crediti
@@ -608,7 +604,7 @@ export default function Dashboard({
                                     </div>
                                 )}
                             </div>
-                        </div>
+                            </CardBox>
                         ) : (
                             <LockedModuleCard moduleId="debts_credits" />
                         )}
@@ -632,7 +628,7 @@ export default function Dashboard({
                     )}
 
                     {/* Quick Actions */}
-                    <div className="overflow-hidden rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-4 shadow-sm">
                         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
                             Azioni rapide
                         </h3>
@@ -658,7 +654,7 @@ export default function Dashboard({
                                 label="Nuova Categoria"
                             />
                         </div>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -8,6 +8,7 @@ import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthCh
 import BudgetProgress, { BudgetItem } from '@/Components/Charts/BudgetProgress';
 import PortfolioChart, { PortfolioItem } from '@/Components/Charts/PortfolioChart';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 
 interface ChartsProps {
     cashFlowData: CashFlowDataPoint[];
@@ -106,7 +107,7 @@ export default function ChartsIndex({
                     <PortfolioChart data={portfolioData} />
 
                     {/* Riepilogo statistico */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                             📋 Riepilogo Periodo
                         </h3>
@@ -136,9 +137,10 @@ export default function ChartsIndex({
                                 color="text-violet-500"
                             />
                         </div>
+                    </CardBox>
                     </div>
                 </div>
-            </div>
+            {/* </div> */}
         </AuthenticatedLayout>
     );
 }

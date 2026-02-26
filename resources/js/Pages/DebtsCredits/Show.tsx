@@ -4,6 +4,7 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import { StatusBadge } from '@/Components/StatusBadge';
 import PageHeader from '@/Components/PageHeader';
 
@@ -115,7 +116,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
             <div className="py-6">
                 <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Card riepilogo */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
                             <div
                                 className={clsx(
@@ -221,7 +222,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                                 <p className="mt-1 text-gray-900 dark:text-white">{debtCredit.description}</p>
                             </div>
                         )}
-                    </div>
+                    </CardBox>
 
                     {/* Azioni rapide */}
                     <div className="flex flex-wrap justify-center gap-3">
@@ -257,7 +258,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                     </div>
 
                     {/* Lista transazioni collegate */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                                 Transazioni collegate
@@ -330,7 +331,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                                 })}
                             </div>
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

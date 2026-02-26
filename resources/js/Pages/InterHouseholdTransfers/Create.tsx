@@ -5,6 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import PageHeader from '@/Components/PageHeader';
@@ -139,7 +140,7 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
 
             <div className="py-6">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         {sourceAccounts.length === 0 ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">🏦</div>
@@ -426,7 +427,7 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
                                 </div>
                             </form>
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

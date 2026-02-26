@@ -103,7 +103,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">🏦</div>
@@ -421,7 +421,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
                                 </div>
                             </form>
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

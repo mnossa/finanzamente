@@ -4,8 +4,9 @@ import {
     Treemap,
     Tooltip,
 } from 'recharts';
-import { categoryPalette, formatEuro, tooltipStyle } from './chartConfig';
+import { categoryPalette, formatEuro, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
 import { Link } from '@inertiajs/react';
+import CardBox from '@/Components/CardBox';
 
 export interface ExpenseCategory {
     name: string;
@@ -74,10 +75,12 @@ function CustomTreemapContent({
 }
 
 function TreemapTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
+    const isDark = useChartDarkMode();
+
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
-        <div style={tooltipStyle} className="dark:bg-slate-900 dark:border-slate-700 dark:text-white">
+        <div style={getChartTooltipStyle(isDark)}>
             <p className="font-semibold">
                 {d.icon ?? '📁'} {d.name}
             </p>
@@ -101,7 +104,7 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
 
     if (!data.length) {
         return (
-            <div className={`overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800 ${className ?? ''}`}>
+            <CardBox className={className ?? ''}>
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     🗂️ Spese per Categoria
                 </h3>
@@ -111,12 +114,12 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessuna spesa registrata nel periodo selezionato
                 </div>
-            </div>
+            </CardBox>
         );
     }
 
     return (
-        <div className={`overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800 ${className ?? ''}`}>
+        <CardBox className={className ?? ''}>
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                 🗂️ Spese per Categoria
             </h3>
@@ -197,6 +200,6 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                     </div>
                 ))}
             </div>
-        </div>
+        </CardBox>
     );
 }

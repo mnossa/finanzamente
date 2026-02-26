@@ -6,6 +6,7 @@ import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
+import CardBox from '@/Components/CardBox';
 
 interface Currency {
     code: string;
@@ -106,10 +107,11 @@ function ProfitBadge({ profit, percentage }: { profit: number | null; percentage
 
 function InvestmentCard({ investment }: { investment: Investment }) {
     return (
-        <Link
-            href={route('investments.show', investment.id)}
-            className="block overflow-hidden rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800"
-        >
+        <CardBox className="overflow-hidden p-4 shadow-sm transition-shadow hover:shadow-md">
+            <Link
+                href={route('investments.show', investment.id)}
+                className="block"
+            >
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl dark:bg-gray-700">
@@ -172,7 +174,8 @@ function InvestmentCard({ investment }: { investment: Investment }) {
                     </div>
                 )}
             </div>
-        </Link>
+            </Link>
+        </CardBox>
     );
 }
 
@@ -208,23 +211,23 @@ export default function Index({
 
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Posizioni Aperte
                             </p>
                             <p className="mt-1 text-3xl font-bold text-blue-600">
                                 {stats.open_count}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Totale Investito
                             </p>
                             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(stats.total_invested)}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Profitto Realizzato
                             </p>
@@ -235,15 +238,15 @@ export default function Index({
                                 {stats.total_realized_profit >= 0 ? '+' : ''}
                                 {formatCurrency(stats.total_realized_profit)}
                             </p>
-                        </div>
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        </CardBox>
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Commissioni Pagate
                             </p>
                             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                                 {formatCurrency(stats.total_fees || 0)}
                             </p>
-                        </div>
+                        </CardBox>
                     </div>
 
                     {/* Investimenti Aperti */}
@@ -276,7 +279,7 @@ export default function Index({
 
                     {/* Empty State */}
                     {investments.length === 0 && (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="📊"
                                 title="Nessun investimento registrato"
@@ -297,7 +300,7 @@ export default function Index({
                                     </LinkButton>
                                 </div>
                             </EmptyState>
-                        </div>
+                        </CardBox>
                     )}
                 </div>
             </div>

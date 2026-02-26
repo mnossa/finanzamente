@@ -4,6 +4,7 @@ import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
 
@@ -68,7 +69,7 @@ export default function Show({ budget, transactions }: ShowProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Card principale */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         <div className="mb-6 text-center">
                             <span className="text-5xl">{budget.category.icon || '📁'}</span>
                             <h3 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
@@ -162,10 +163,10 @@ export default function Show({ budget, transactions }: ShowProps) {
                                 </p>
                             </div>
                         )}
-                    </div>
+                    </CardBox>
 
                     {/* Transazioni */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="border-b border-gray-200 p-4 dark:border-gray-700">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 Transazioni ({transactions.length})
@@ -201,7 +202,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                                 ))}
                             </div>
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

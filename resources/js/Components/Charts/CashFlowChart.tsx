@@ -1,7 +1,16 @@
 import React from 'react';
-import { BarChart, Card } from '@tremor/react';
-import type { CustomTooltipProps } from '@tremor/react';
-import { formatEuro } from './chartConfig';
+import {
+    ResponsiveContainer,
+    BarChart as ReBarChart,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Bar,
+    Legend,
+} from 'recharts';
+import CardBox from '@/Components/CardBox';
+import { formatEuro, getChartMutedTextColor, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
 
 export interface CashFlowDataPoint {
     month: string;
@@ -28,20 +37,17 @@ const CATEGORY_COLORS: Record<string, string> = {
     Uscite: '#f97316',
 };
 
-function CashFlowTooltip({ payload, active, label }: CustomTooltipProps) {
+function CashFlowTooltip({ payload, active, label }: { payload?: Array<{ dataKey?: string; name?: string; value?: number }>; active?: boolean; label?: string }) {
+    const isDark = useChartDarkMode();
+    const tooltipStyle = getChartTooltipStyle(isDark);
+
     if (!active || !payload?.length) return null;
     return (
         <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-            padding: '8px 12px',
-            fontSize: '13px',
-            color: '#1e293b',
+            ...tooltipStyle,
             minWidth: '160px',
         }}>
-            <p style={{ fontWeight: 600, marginBottom: '4px', color: '#475569' }}>{label}</p>
+            <p style={{ fontWeight: 600, marginBottom: '4px', color: getChartMutedTextColor(isDark) }}>{label ?? ''}</p>
             {payload.map((entry) => (
                 <p key={String(entry.dataKey)} style={{ margin: '2px 0', color: CATEGORY_COLORS[String(entry.dataKey)] ?? '#64748b' }}>
                     {entry.name}: <strong>{formatEuro(Number(entry.value))}</strong>
@@ -52,9 +58,11 @@ function CashFlowTooltip({ payload, active, label }: CustomTooltipProps) {
 }
 
 export default function CashFlowChart({ data, className }: CashFlowChartProps) {
+    const isDark = useChartDarkMode();
+
     if (!data.length) {
         return (
-            <Card className={className}>
+            <CardBox className={className ?? ''}>
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     📊 Panoramica Cash Flow
                 </h3>
@@ -64,12 +72,12 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun dato disponibile per il periodo selezionato
                 </div>
-            </Card>
+            </CardBox>
         );
     }
 
     return (
-        <Card className={className}>
+        <CardBox className={className ?? ''}>
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                 📊 Panoramica Cash Flow
             </h3>
@@ -85,21 +93,32 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                     </div>
                 ))}
             </div>
-            <BarChart
-                className="mt-2 h-72"
-                data={data}
-                index="month"
-                categories={['Entrate', 'Uscite']}
-                colors={['emerald', 'orange']}
-                valueFormatter={yAxisFormatter}
-                showLegend={false}
-                showGridLines
-                showAnimation
-                stack={false}
-                yAxisWidth={65}
-                rotateLabelX={{ angle: -45, verticalShift: 20, xAxisHeight: 60 }}
-                customTooltip={CashFlowTooltip}
-            />
+            <div className="mt-2 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ReBarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                        <XAxis
+                            dataKey="month"
+                            angle={-35}
+                            textAnchor="end"
+                            height={54}
+                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                        />
+                        <YAxis
+                            width={68}
+                            tickFormatter={yAxisFormatter}
+                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                        />
+                        <Tooltip content={<CashFlowTooltip />} />
+                        <Legend
+                            wrapperStyle={{ color: isDark ? '#cbd5e1' : '#334155' }}
+                            formatter={(value) => <span style={{ color: isDark ? '#cbd5e1' : '#334155' }}>{value}</span>}
+                        />
+                        <Bar dataKey="Entrate" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={34} />
+                        <Bar dataKey="Uscite" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={34} />
+                    </ReBarChart>
+                </ResponsiveContainer>
+            </div>
             {/* Linea risparmio netto sotto il grafico */}
             <div className="mt-3 flex flex-wrap gap-4 border-t border-gray-100 pt-3 dark:border-gray-700">
                 {data.slice(-6).map((d) => (
@@ -117,6 +136,6 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                     </div>
                 ))}
             </div>
-        </Card>
+        </CardBox>
     );
 }

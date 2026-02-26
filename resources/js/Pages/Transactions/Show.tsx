@@ -147,7 +147,7 @@ export default function Show({ transaction }: ShowProps) {
 
                     {/* Banner rimborso */}
                     {isRefundTransaction && (
-                        <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                        <CardBox className="flex items-center gap-3 border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 p-4">
                             <span className="text-xl">💸</span>
                             <div>
                                 <p className="font-medium text-blue-800 dark:text-blue-200">
@@ -163,11 +163,11 @@ export default function Show({ transaction }: ShowProps) {
                             >
                                 Vedi dettagli →
                             </Link>
-                        </div>
+                        </CardBox>
                     )}
 
                     {/* Card principale */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
                             <div
                                 className="mx-auto flex h-16 w-16 items-center justify-center rounded-full text-3xl"
@@ -335,17 +335,17 @@ export default function Show({ transaction }: ShowProps) {
                                 </div>
                             </div>
 
-                            <div className="mt-4 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-900/20">
+                            <CardBox className="mt-4 bg-emerald-50 dark:bg-emerald-900/20 p-3">
                                 <p className="text-xs text-emerald-700 dark:text-emerald-300">
                                     💡 Ricorda di allegare i documenti necessari (scontrini, fatture) per la dichiarazione dei redditi.
                                 </p>
-                            </div>
+                            </CardBox>
                         </div>
                     )}
 
                     {/* Sezione Rimborsi (solo per spese) */}
                     {(hasRefunds || canBeRefunded) && (
-                        <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden p-6 shadow-sm">
                             <h3 className="mb-4 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
                                 <span className="mr-2">💸</span> Rimborsi
                             </h3>

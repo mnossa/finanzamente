@@ -1,23 +1,28 @@
 import React from 'react';
-import { AreaChart, Card } from '@tremor/react';
-import type { CustomTooltipProps } from '@tremor/react';
-import { formatEuro } from './chartConfig';
+import {
+    ResponsiveContainer,
+    AreaChart as ReAreaChart,
+    Area,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+} from 'recharts';
+import CardBox from '@/Components/CardBox';
+import { formatEuro, getChartMutedTextColor, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
 
-function NetWorthTooltip({ payload, active, label }: CustomTooltipProps) {
+function NetWorthTooltip({ payload, active, label }: { payload?: Array<{ value?: number }>; active?: boolean; label?: string }) {
+    const isDark = useChartDarkMode();
+    const tooltipStyle = getChartTooltipStyle(isDark);
+
     if (!active || !payload?.length) return null;
     const value = Number(payload[0]?.value ?? 0);
     return (
         <div style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-            padding: '8px 12px',
-            fontSize: '13px',
-            color: '#1e293b',
+            ...tooltipStyle,
             minWidth: '160px',
         }}>
-            <p style={{ fontWeight: 600, marginBottom: '4px', color: '#475569' }}>{label}</p>
+            <p style={{ fontWeight: 600, marginBottom: '4px', color: getChartMutedTextColor(isDark) }}>{label ?? ''}</p>
             <p style={{ color: '#3b82f6', fontWeight: 700 }}>{formatEuro(value)}</p>
         </div>
     );
@@ -44,6 +49,8 @@ const yAxisFormatter = (value: number): string => {
 const valueFormatter = (value: number) => formatEuro(value);
 
 export default function NetWorthChart({ data, className }: NetWorthChartProps) {
+    const isDark = useChartDarkMode();
+
     const lastValue = data.length ? data[data.length - 1]['Patrimonio Netto'] : null;
     const firstValue = data.length ? data[0]['Patrimonio Netto'] : null;
     const growth =
@@ -53,7 +60,7 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
 
     if (!data.length) {
         return (
-            <Card className={className}>
+            <CardBox className={className ?? ''}>
                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                     📈 Patrimonio Netto
                 </h3>
@@ -63,12 +70,12 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun dato disponibile per il periodo selezionato
                 </div>
-            </Card>
+            </CardBox>
         );
     }
 
     return (
-        <Card className={className}>
+        <CardBox className={className ?? ''}>
             <div className="flex items-start justify-between">
                 <div>
                     <h3 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -97,22 +104,41 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                     </div>
                 )}
             </div>
-            <AreaChart
-                className="mt-4 h-72"
-                data={data}
-                index="month"
-                categories={['Patrimonio Netto']}
-                colors={['blue']}
-                valueFormatter={valueFormatter}
-                showLegend={false}
-                showGridLines
-                showAnimation
-                curveType="monotone"
-                yAxisWidth={65}
-                rotateLabelX={{ angle: -45, verticalShift: 20, xAxisHeight: 60 }}
-                valueFormatter={yAxisFormatter}
-                customTooltip={NetWorthTooltip}
-            />
-        </Card>
+            <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ReAreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
+                        <defs>
+                            <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#60a5fa" stopOpacity={isDark ? 0.45 : 0.30} />
+                                <stop offset="95%" stopColor="#60a5fa" stopOpacity={isDark ? 0.06 : 0.02} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                        <XAxis
+                            dataKey="month"
+                            angle={-35}
+                            textAnchor="end"
+                            height={54}
+                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                        />
+                        <YAxis
+                            width={68}
+                            tickFormatter={yAxisFormatter}
+                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                        />
+                        <Tooltip content={<NetWorthTooltip />} />
+                        <Area
+                            type="monotone"
+                            dataKey="Patrimonio Netto"
+                            stroke="#60a5fa"
+                            strokeWidth={3}
+                            fill="url(#netWorthGradient)"
+                            dot={false}
+                            activeDot={{ r: 5, fill: '#60a5fa', stroke: isDark ? '#0f172a' : '#ffffff', strokeWidth: 2 }}
+                        />
+                    </ReAreaChart>
+                </ResponsiveContainer>
+            </div>
+        </CardBox>
     );
 }

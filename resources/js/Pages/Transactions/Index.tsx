@@ -10,6 +10,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
+import CardBox from '@/Components/CardBox';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
@@ -282,7 +283,7 @@ export default function Index({
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Filtri */}
-                    <div className="overflow-hidden rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-4 shadow-sm">
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="flex-1 min-w-[150px]">
                                 <select
@@ -350,10 +351,10 @@ export default function Index({
                                 </button>
                             )}
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Lista Transazioni */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         {transactions.data.length > 0 ? (
                             <>
                                 <div className="p-4">
@@ -381,7 +382,7 @@ export default function Index({
                                 showCreateButton={!hasFilters}
                             />
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

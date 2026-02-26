@@ -9,6 +9,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { FormEventHandler, useState } from 'react';
+import CardBox from '@/Components/CardBox';
 
 interface Currency {
     code: string;
@@ -219,7 +220,7 @@ export default function Show({ goal, statuses }: ShowProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Progress Card */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="p-6 sm:p-8">
                             <div className="flex flex-col items-center text-center sm:flex-row sm:text-left">
                                 <div className="mb-6 sm:mb-0 sm:mr-8">
@@ -292,10 +293,10 @@ export default function Show({ goal, statuses }: ShowProps) {
                                 </button>
                             </div>
                         )}
-                    </div>
+                    </CardBox>
 
                     {/* Details */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                                 Dettagli
@@ -339,10 +340,10 @@ export default function Show({ goal, statuses }: ShowProps) {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Actions */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                                 Azioni
@@ -438,7 +439,7 @@ export default function Show({ goal, statuses }: ShowProps) {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
 

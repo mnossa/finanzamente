@@ -5,6 +5,7 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React from 'react';
+import CardBox from '@/Components/CardBox';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import PageHeader from '@/Components/PageHeader';
 
@@ -123,7 +124,7 @@ export default function Show({ refund }: ShowProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-3xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Card principale rimborso */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
                             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl dark:bg-green-900/30">
                                 💸
@@ -150,14 +151,14 @@ export default function Show({ refund }: ShowProps) {
                                 {refund.status === 'completed' ? '✓ Completato' : refund.status === 'pending' ? '⏳ In attesa' : '✗ Annullato'}
                             </span>
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Transazione Originale */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <h4 className="mb-4 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
                             <span className="mr-2">📤</span> Spesa Originale
                         </h4>
-                        <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
+                        <CardBox className="bg-red-50 p-4 dark:bg-red-900/20">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
                                     <div
@@ -208,7 +209,7 @@ export default function Show({ refund }: ShowProps) {
                                     <span>Costo netto: {formatCurrency(Math.abs(originalTx.net_amount), refund.currency_code)}</span>
                                 </div>
                             </div>
-                        </div>
+                        </CardBox>
 
                         <Link
                             href={route('transactions.show', originalTx.id)}
@@ -216,15 +217,15 @@ export default function Show({ refund }: ShowProps) {
                         >
                             Vedi transazione originale →
                         </Link>
-                    </div>
+                    </CardBox>
 
                     {/* Transazione di Rimborso */}
                     {refundTx && (
-                        <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden p-6 shadow-sm">
                             <h4 className="mb-4 flex items-center text-lg font-semibold text-gray-900 dark:text-white">
                                 <span className="mr-2">📥</span> Transazione di Rimborso
                             </h4>
-                            <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+                            <CardBox className="bg-green-50 p-4 dark:bg-green-900/20">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
                                         <div
@@ -255,7 +256,7 @@ export default function Show({ refund }: ShowProps) {
                                         </p>
                                     </div>
                                 </div>
-                            </div>
+                            </CardBox>
 
                             <Link
                                 href={route('transactions.show', refundTx.id)}
@@ -263,11 +264,11 @@ export default function Show({ refund }: ShowProps) {
                             >
                                 Vedi transazione di rimborso →
                             </Link>
-                        </div>
+                        </CardBox>
                     )}
 
                     {/* Dettagli aggiuntivi */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <h4 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                             Dettagli
                         </h4>
@@ -289,7 +290,7 @@ export default function Show({ refund }: ShowProps) {
                                 <span className="text-gray-900 dark:text-white">{refund.created_at}</span>
                             </div>
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">

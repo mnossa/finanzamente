@@ -7,6 +7,7 @@ import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Category {
@@ -178,7 +179,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
 
             <div className="py-6">
                 <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         {refundableTransactions.length === 0 && !originalTransaction ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">💸</div>
@@ -438,7 +439,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
 
                                 {/* Anteprima */}
                                 {selectedTransaction && data.amount && Number(data.amount) > 0 && (
-                                    <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
+                                    <CardBox className="bg-green-50 p-4 dark:bg-green-900/20">
                                         <p className="text-sm text-green-600 dark:text-green-400">
                                             Verrà creata una transazione di entrata:
                                         </p>
@@ -448,7 +449,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                         <p className="text-sm text-green-600 dark:text-green-400">
                                             sul conto {selectedTransaction.account.name}
                                         </p>
-                                    </div>
+                                    </CardBox>
                                 )}
 
                                 {/* Azioni */}
@@ -473,7 +474,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                 </div>
                             </form>
                         )}
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -7,6 +7,7 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
@@ -24,7 +25,7 @@ interface IndexProps {
 
 function TagCard({ tag, onDeleteClick }: { tag: Tag; onDeleteClick: (id: number, name: string) => void }) {
     return (
-        <div className="rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800">
+        <CardBox className="p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                     <div
@@ -66,7 +67,7 @@ function TagCard({ tag, onDeleteClick }: { tag: Tag; onDeleteClick: (id: number,
                     <TrashIcon size={18} />
                 </button>
             </div>
-        </div>
+        </CardBox>
     );
 }
 
@@ -123,7 +124,7 @@ export default function Index({ tags }: IndexProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {tags.length === 0 ? (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="🏷️"
                                 title="Nessun tag trovato"
@@ -131,7 +132,7 @@ export default function Index({ tags }: IndexProps) {
                                 createUrl={route('tags.create')}
                                 createLabel="Crea il tuo primo tag"
                             />
-                        </div>
+                        </CardBox>
                     ) : (
                         <>
                             {/* Riepilogo */}

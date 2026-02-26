@@ -7,6 +7,7 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
@@ -236,7 +237,7 @@ export default function Show({ investment }: ShowProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Stato e Azioni */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="p-6">
                             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                                 <div className="flex items-center gap-3">
@@ -281,12 +282,12 @@ export default function Show({ investment }: ShowProps) {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Dettagli Acquisto/Vendita */}
                     <div className="grid gap-6 sm:grid-cols-2">
                         {/* Acquisto */}
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     📥 Acquisto
@@ -314,10 +315,10 @@ export default function Show({ investment }: ShowProps) {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </CardBox>
 
                         {/* Vendita o Posizione */}
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     {investment.is_sold ? '📤 Vendita' : '📊 Posizione'}
@@ -359,7 +360,7 @@ export default function Show({ investment }: ShowProps) {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </CardBox>
                     </div>
 
                     {/* Risultato (se venduto) */}
@@ -408,7 +409,7 @@ export default function Show({ investment }: ShowProps) {
                     )}
 
                     {/* Info aggiuntive */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                                 Dettagli
@@ -450,10 +451,10 @@ export default function Show({ investment }: ShowProps) {
                                 </div>
                             )}
                         </div>
-                    </div>
+                    </CardBox>
 
                     {/* Azioni */}
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden shadow-sm">
                         <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">Azioni</h3>
                         </div>
@@ -502,7 +503,7 @@ export default function Show({ investment }: ShowProps) {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
 

@@ -2,6 +2,7 @@ import PageHeader from '@/Components/PageHeader';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 
 interface Household {
     id: number;
@@ -127,7 +128,7 @@ export default function Show({ transfer }: ShowProps) {
                 <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                     <div className="space-y-6">
                         {/* Informazioni principali */}
-                        <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                        <CardBox>
                             <h3 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
                                 Informazioni Trasferimento
                             </h3>
@@ -230,7 +231,7 @@ export default function Show({ transfer }: ShowProps) {
                                     </p>
                                 </div>
                             )}
-                        </div>
+                        </CardBox>
 
                         {/* Stato e azioni */}
                         {transfer.status === 'approved' && (

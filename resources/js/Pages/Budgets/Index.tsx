@@ -8,6 +8,7 @@ import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
+import CardBox from '@/Components/CardBox';
 import { ProgressBar } from '@/Components/ProgressBar';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
@@ -47,9 +48,9 @@ interface IndexProps {
 
 function BudgetCard({ budget, onDeleteClick }: { budget: Budget; onDeleteClick: (id: number, name: string) => void }) {
     return (
-        <div
+        <CardBox
             className={clsx(
-                'rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:bg-gray-800',
+                'p-4 shadow-sm transition-shadow hover:shadow-md',
                 !budget.is_active && 'opacity-70'
             )}
         >
@@ -127,7 +128,7 @@ function BudgetCard({ budget, onDeleteClick }: { budget: Budget; onDeleteClick: 
                     <TrashIcon size={18} />
                 </button>
             </div>
-        </div>
+        </CardBox>
     );
 }
 
@@ -192,7 +193,7 @@ export default function Index({ budgets }: IndexProps) {
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {budgets.length === 0 ? (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="📊"
                                 title="Nessun budget trovato"
@@ -200,7 +201,7 @@ export default function Index({ budgets }: IndexProps) {
                                 createUrl={route('budgets.create')}
                                 createLabel="Crea il tuo primo budget"
                             />
-                        </div>
+                        </CardBox>
                     ) : (
                         <>
                             {/* Riepilogo */}

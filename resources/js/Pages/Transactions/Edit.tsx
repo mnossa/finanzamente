@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 
@@ -117,7 +118,7 @@ export default function Edit({ transaction, accounts, categories, tags, debtsCre
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox>
                         {/* Avviso trasferimento inter-household */}
                         {isInterHouseholdTransfer && (
                             <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
@@ -478,7 +479,7 @@ export default function Edit({ transaction, accounts, categories, tags, debtsCre
                                 )}
                             </div>
                         </form>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

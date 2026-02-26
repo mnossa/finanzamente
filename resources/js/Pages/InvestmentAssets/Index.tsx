@@ -8,6 +8,7 @@ import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React from 'react';
+import CardBox from '@/Components/CardBox';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Currency {
@@ -125,29 +126,29 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                 <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                        <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Totale Asset
                             </p>
                             <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
                                 {stats.total_assets}
                             </p>
-                        </div>
+                        </CardBox>
                         {stats.by_type.slice(0, 3).map((stat) => (
-                            <div key={stat.label} className="rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
+                            <CardBox key={stat.label} className="p-4 shadow-sm">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {stat.icon} {stat.label}
                                 </p>
                                 <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
                                     {stat.count}
                                 </p>
-                            </div>
+                            </CardBox>
                         ))}
                     </div>
 
                     {/* Lista Asset per Tipo */}
                     {Object.entries(groupedAssets).map(([type, typeAssets]) => (
-                        <div key={type} className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox key={type} className="overflow-hidden shadow-sm">
                             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
                                 <h3 className="font-semibold text-gray-900 dark:text-white">
                                     {typeIcons[type]} {types[type]} ({typeAssets.length})
@@ -198,12 +199,12 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </CardBox>
                     ))}
 
                     {/* Empty State */}
                     {assets.length === 0 && (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
                                 icon="💼"
                                 title="Nessun asset configurato"
@@ -211,7 +212,7 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                                 createUrl={route('investment-assets.create')}
                                 createLabel="Crea il Primo Asset"
                             />
-                        </div>
+                        </CardBox>
                     )}
                 </div>
             </div>

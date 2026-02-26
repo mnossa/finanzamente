@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Category {
@@ -93,7 +94,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
 
             <div className="py-6">
                 <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <form onSubmit={submit} className="space-y-6">
                             {/* Conto */}
                             <div>
@@ -124,7 +125,6 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                     error={errors.category_id}
                                     className="mt-2"
                                 />
-                            </div>
 
                             {/* Importo e Frequenza */}
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -147,7 +147,6 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                             className="block w-full pl-8"
                                             value={data.amount}
                                             onChange={(e) => setData('amount', e.target.value)}
-                                            required
                                         />
                                     </div>
                                     <InputError message={errors.amount} className="mt-2" />
@@ -266,7 +265,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                 </PrimaryButton>
                             </div>
                         </form>
-                    </div>
+                    </CardBox>
                 </div>
             </div>
         </AuthenticatedLayout>

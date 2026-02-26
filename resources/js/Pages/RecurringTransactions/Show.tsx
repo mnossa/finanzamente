@@ -5,6 +5,7 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
@@ -115,7 +116,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title={`Ricorrenza: ${rt.description || rt.category?.name || 'Dettaglio'}`}
+                    title="Dettaglio Ricorrenza"
                     backLink={route('recurring-transactions.index')}
                     actions={
                         <LinkButton href={route('recurring-transactions.edit', rt.id)} icon={<PencilIcon />}>
@@ -150,7 +151,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
             <div className="py-6">
                 <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
                     {/* Card principale */}
-                    <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+                    <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
                             <div
                                 className={clsx(
@@ -273,7 +274,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                                 </p>
                             </div>
                         )}
-                    </div>
+                    </CardBox>
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
