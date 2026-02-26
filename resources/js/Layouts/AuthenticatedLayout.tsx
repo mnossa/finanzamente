@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
+import ThemeToggle from '@/Components/ThemeToggle';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ActiveHousehold, PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent } from 'react';
@@ -351,6 +353,7 @@ export default function Authenticated({
     const { auth, activeHousehold } = usePage<PageProps>().props;
     const user = auth.user;
     const { isModuleEnabled } = useModules();
+    const initialTheme = (user.preferences?.theme as string | undefined) ?? 'light';
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -423,7 +426,8 @@ export default function Authenticated({
     ];
 
     return (
-        <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
+        <ThemeProvider initialTheme={initialTheme}>
+        <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
             {/* Overlay Mobile */}
             {sidebarOpen && (
                 <div
@@ -485,7 +489,7 @@ export default function Authenticated({
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="app-header">
+                <header className="app-header dark:bg-slate-800/80 dark:border-slate-700">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setSidebarOpen(true)}
@@ -517,10 +521,13 @@ export default function Authenticated({
                         </div>
 
                         {/* Notifications */}
-                        <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+                        <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors">
                             <Icons.Bell />
                             <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
                         </button>
+
+                        {/* Theme Toggle */}
+                        <ThemeToggle />
 
                         {/* User Menu */}
                         <Dropdown>
@@ -561,8 +568,8 @@ export default function Authenticated({
 
                 {/* Mobile Header with title */}
                 {header && (
-                    <div className="sm:hidden px-4 py-3 bg-white border-b border-slate-200">
-                        <div className="text-lg font-bold text-slate-800">{header}</div>
+                    <div className="sm:hidden px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                        <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{header}</div>
                     </div>
                 )}
 
@@ -577,5 +584,6 @@ export default function Authenticated({
                 </main>
             </div>
         </div>
+        </ThemeProvider>
     );
 }
