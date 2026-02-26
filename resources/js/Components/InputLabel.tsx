@@ -11,7 +11,7 @@ export default function InputLabel({
         <label
             {...props}
             className={clsx(
-                'block text-sm font-medium text-slate-700 mb-1.5',
+                'block text-sm font-medium text-slate-700 mb-1.5 dark:text-slate-300',
                 className
             )}
         >
