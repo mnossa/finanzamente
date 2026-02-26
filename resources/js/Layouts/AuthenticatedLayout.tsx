@@ -536,7 +536,7 @@ export default function Authenticated({
                                     <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
                                         {user.name.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="hidden sm:block text-sm font-medium text-slate-700">
+                                    <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-700 ">
                                         {user.name}
                                     </span>
                                     <Icons.ChevronDown />
