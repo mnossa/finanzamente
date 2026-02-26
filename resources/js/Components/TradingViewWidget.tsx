@@ -29,7 +29,7 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({ widgetSrc, config
         script.src = widgetSrc;
         script.type = 'text/javascript';
         script.async = true;
-        script.innerHTML = JSON.stringify({
+        script.textContent = JSON.stringify({
             ...config,
             colorTheme: isDark ? 'dark' : 'light',
         });
@@ -40,7 +40,8 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({ widgetSrc, config
         return () => {
             container.innerHTML = '';
         };
-    }, [isDark, widgetSrc, config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isDark, widgetSrc, JSON.stringify(config)]);
 
     return (
         <div

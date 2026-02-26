@@ -56,7 +56,6 @@ const WIDGET_CONFIG = {
         {
             title: 'Materie Prime',
             symbols: [
-                { s: 'CME_MINI:NQ1!', d: 'Nasdaq Futures' },
                 { s: 'NYMEX:CL1!', d: 'Petrolio WTI' },
                 { s: 'NYMEX:NG1!', d: 'Gas Naturale' },
                 { s: 'COMEX:GC1!', d: 'Oro' },
