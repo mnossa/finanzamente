@@ -102,6 +102,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         // Transactions - modifica
         Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
         Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
+        Route::delete('/transactions/bulk', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
         Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
         Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
         Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');

@@ -88,15 +88,30 @@ interface IndexProps {
 }
 
 
-function TransactionRow({ transaction, onDeleteClick }: { transaction: Transaction; onDeleteClick: (id: number, description: string) => void }) {
+function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect }: {
+    transaction: Transaction;
+    onDeleteClick: (id: number, description: string) => void;
+    isSelected: boolean;
+    onToggleSelect: (id: number) => void;
+}) {
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
     const isRefund = transaction.refund_id !== null;
     const hasRefunds = transaction.has_refunds;
 
     return (
-        <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 -mx-4 px-4 transition-colors">
+        <div className={clsx(
+            "flex items-center justify-between border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 -mx-4 px-4 transition-colors",
+            isSelected && "bg-emerald-50 dark:bg-emerald-900/20"
+        )}>
             <div className="flex items-center space-x-3">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(transaction.id)}
+                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                />
                 <div
                     className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
                     style={{
@@ -211,6 +226,32 @@ export default function Index({
 }: IndexProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
+    const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
+
+    const allIds = transactions.data.map((t) => t.id);
+    const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+    const isIndeterminate = selectedIds.size > 0 && !isAllSelected;
+
+    const toggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(allIds));
+        }
+    };
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
 
     const openDeleteDialog = (id: number, description: string) => {
         setDeleteTarget({ id, description });
@@ -228,6 +269,24 @@ export default function Index({
     const handleCancelDelete = () => {
         setDeleteDialogOpen(false);
         setDeleteTarget(null);
+    };
+
+    const handleBulkDelete = () => {
+        setBulkDeleteDialogOpen(true);
+    };
+
+    const handleConfirmBulkDelete = () => {
+        router.delete(route('transactions.bulk-destroy'), {
+            data: { ids: Array.from(selectedIds) },
+            onFinish: () => {
+                setSelectedIds(new Set());
+            },
+        });
+        setBulkDeleteDialogOpen(false);
+    };
+
+    const handleCancelBulkDelete = () => {
+        setBulkDeleteDialogOpen(false);
     };
 
     const handleFilterChange = (key: string, value: string) => {
@@ -278,6 +337,16 @@ export default function Index({
                 cancelLabel="Annulla"
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
+            />
+
+            <ConfirmDeleteDialog
+                open={bulkDeleteDialogOpen}
+                title="Conferma eliminazione multipla"
+                description={`Sei sicuro di voler eliminare ${selectedIds.size} transazioni selezionate? Questa azione non può essere annullata.`}
+                confirmLabel={`Elimina ${selectedIds.size} transazioni`}
+                cancelLabel="Annulla"
+                onConfirm={handleConfirmBulkDelete}
+                onCancel={handleCancelBulkDelete}
             />
 
             <div className="py-6">
@@ -357,12 +426,42 @@ export default function Index({
                     <CardBox className="overflow-hidden shadow-sm">
                         {transactions.data.length > 0 ? (
                             <>
+                                {/* Barra selezione multipla */}
+                                <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
+                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllSelected}
+                                            ref={(el) => {
+                                                if (el) el.indeterminate = isIndeterminate;
+                                            }}
+                                            onChange={toggleSelectAll}
+                                            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800"
+                                        />
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                                            {selectedIds.size > 0
+                                                ? `${selectedIds.size} selezionate`
+                                                : 'Seleziona tutto'}
+                                        </span>
+                                    </label>
+                                    {selectedIds.size > 0 && (
+                                        <button
+                                            onClick={handleBulkDelete}
+                                            className="flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                        >
+                                            <TrashIcon size={15} />
+                                            Elimina selezionate
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="p-4">
                                     {transactions.data.map((transaction) => (
                                         <TransactionRow
                                             key={transaction.id}
                                             transaction={transaction}
                                             onDeleteClick={openDeleteDialog}
+                                            isSelected={selectedIds.has(transaction.id)}
+                                            onToggleSelect={toggleSelect}
                                         />
                                     ))}
                                 </div>

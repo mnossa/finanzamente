@@ -510,6 +510,63 @@ class TransactionController extends Controller
     }
 
     /**
+     * Elimina più transazioni contemporaneamente (bulk delete).
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $user = Auth::user();
+        $ids = $request->input('ids');
+
+        $transactions = Transaction::with('account')
+            ->whereIn('id', $ids)
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)
+                    ->orWhere('user_id', $user->id);
+            })
+            ->whereHas('account', function ($q) use ($user) {
+                $q->where('household_id', $user->active_household_id);
+            })
+            ->get();
+
+        if ($transactions->count() !== count($ids)) {
+            abort(403, 'Non hai accesso ad alcune transazioni selezionate.');
+        }
+
+        $deletedCount = 0;
+        $processedTransferIds = [];
+
+        foreach ($transactions as $transaction) {
+            $interHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+                $q->where('source_transaction_id', $transaction->id)
+                  ->orWhere('dest_transaction_id', $transaction->id);
+            })->first();
+
+            if ($interHouseholdTransfer) {
+                if (!in_array($interHouseholdTransfer->id, $processedTransferIds)) {
+                    $interHouseholdTransfer->delete();
+                    $processedTransferIds[] = $interHouseholdTransfer->id;
+                    $deletedCount++;
+                }
+            } else {
+                $account = $transaction->account;
+                $account->current_balance -= (float) $transaction->amount;
+                $account->save();
+                $transaction->delete();
+                $deletedCount++;
+            }
+        }
+
+        return redirect()
+            ->route('transactions.index')
+            ->with('success', "{$deletedCount} transazioni eliminate con successo.");
+    }
+
+    /**
      * Elimina una transazione (soft delete).
      */
     public function destroy(Transaction $transaction): RedirectResponse
