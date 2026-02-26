@@ -7,6 +7,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
+import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
+import TradingViewEconomicCalendar from '@/Components/TradingViewEconomicCalendar';
 
 interface Currency {
     code: string;
@@ -247,6 +249,12 @@ export default function Index({
                                 {formatCurrency(stats.total_fees || 0)}
                             </p>
                         </CardBox>
+                    </div>
+
+                    {/* Widget Mercati */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <TradingViewMarketOverview />
+                        <TradingViewEconomicCalendar />
                     </div>
 
                     {/* Investimenti Aperti */}
