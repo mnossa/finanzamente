@@ -144,7 +144,7 @@ class TransactionImportTest extends TestCase
             'column_mapping' => ['date' => 0, 'description' => 1, 'amount' => 2, 'notes' => null],
         ]);
 
-        $response->assertStatus(302);
+        $response->assertStatus(200);
         $this->assertDatabaseHas('bank_import_layouts', [
             'user_id' => $this->user->id,
             'name' => 'Il mio layout',
