@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
+import { trackEvent } from '../../../utils/tracking';
 
 export default function DeleteUserForm({
     className = '',
@@ -36,7 +37,10 @@ export default function DeleteUserForm({
 
         destroy(route('profile.destroy'), {
             preserveScroll: true,
-            onSuccess: () => closeModal(),
+            onSuccess: () => {
+                trackEvent('cancellazione_account_completata');
+                closeModal();
+            },
             onError: () => passwordInput.current?.focus(),
             onFinish: () => reset(),
         });

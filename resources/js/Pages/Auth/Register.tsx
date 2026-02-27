@@ -21,14 +21,16 @@ export default function Register() {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        // Tracking evento registrazione
-        trackEvent('registrazione_inviata', {
-            user_type: data.user_type,
-        });
+
 
         // Invia i dati al server
         post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
+            onFinish: () => {
+                trackEvent('registrazione_effettuata', {
+                    user_type: data.user_type,
+                });
+                reset('password', 'password_confirmation')
+            },
         });
     };
 
