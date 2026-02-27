@@ -125,7 +125,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                     error={errors.category_id}
                                     className="mt-2"
                                 />
-
+                            </div>
                             {/* Importo e Frequenza */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>

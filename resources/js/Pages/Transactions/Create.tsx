@@ -9,6 +9,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
+import CardBox from '@/Components/CardBox';
 
 interface Category {
     id: number;

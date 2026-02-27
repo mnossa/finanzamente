@@ -8,6 +8,7 @@ import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
+import CardBox from '@/Components/CardBox';
 
 interface Category {
     id: number;
@@ -293,7 +294,7 @@ export default function Show({ transaction }: ShowProps) {
                                 </p>
                             </div>
                         )}
-                    </div>
+                    </CardBox>
 
                     {/* Sezione Detrazione Fiscale */}
                     {transaction.is_tax_deductible && (
@@ -421,7 +422,7 @@ export default function Show({ transaction }: ShowProps) {
                                     </span>
                                 </div>
                             )}
-                        </div>
+                        </CardBox>
                     )}
 
                     {/* Azioni */}
