@@ -15,6 +15,14 @@
     @vite('resources/js/app-blade.js')
     
     @stack('styles')
+
+    {{-- Umami Analytics --}}
+    @php
+        $umamiId = app()->environment('production')
+            ? '6366c67f-6c67-402f-a09b-43f6d73b780c'
+            : '804a1613-7828-42fb-9cd8-c6ed1f34644d';
+    @endphp
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ $umamiId }}"></script>
 </head>
 <body class="antialiased bg-surface-50 text-surface-900">
     <!-- Skip to main content link for accessibility -->

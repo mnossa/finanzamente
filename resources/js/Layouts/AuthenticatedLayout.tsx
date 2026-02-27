@@ -7,6 +7,7 @@ import { ActiveHousehold, PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent } from 'react';
 import { useModules } from '@/hooks/useModules';
+import UmamiAnalytics from '@/Components/UmamiAnalytics';
 
 // Icone SVG inline per evitare dipendenze esterne
 const Icons = {
@@ -427,6 +428,7 @@ export default function Authenticated({
 
     return (
         <ThemeProvider initialTheme={initialTheme}>
+        <UmamiAnalytics />
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
             {/* Overlay Mobile */}
             {sidebarOpen && (
