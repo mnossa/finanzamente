@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import axios from 'axios';
 
 interface ThemeContextType {
     isDark: boolean;
@@ -32,8 +33,7 @@ export function ThemeProvider({
         setIsDark(newIsDark);
 
         // Persist preference to backend
-        fetch('/user/preferences/theme', {
-            method: 'PATCH',
+        axios.patch('/user/preferences/theme', { theme: newIsDark ? 'dark' : 'light' }, {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN':
@@ -42,8 +42,7 @@ export function ThemeProvider({
                         ?.getAttribute('content') ?? '',
                 Accept: 'application/json',
             },
-            credentials: 'same-origin',
-            body: JSON.stringify({ theme: newIsDark ? 'dark' : 'light' }),
+            withCredentials: true,
         });
     };
 

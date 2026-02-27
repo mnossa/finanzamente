@@ -2,6 +2,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import axios from 'axios';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const { post, processing } = useForm({});
@@ -12,19 +13,21 @@ export default function VerifyEmail({ status }: { status?: string }) {
         post(route('verification.send'));
     };
 
-    const handleLogout: FormEventHandler = (e) => {
+    const handleLogout: FormEventHandler = async (e) => {
         e.preventDefault();
         const form = e.currentTarget as HTMLFormElement;
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin',
-        }).then(() => {
+        try {
+            await axios.post(form.action, {}, {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true,
+            });
             window.location.href = '/';
-        });
+        } catch (error) {
+            // Gestione errore opzionale
+        }
     };
 
     return (

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import axios from 'axios';
 import TextInput from '@/Components/TextInput';
 import clsx from 'clsx';
 
@@ -30,9 +31,8 @@ export default function AssetSearch({ onSelect, className, disabled }: AssetSear
 
     // Verifica se l'API è configurata
     useEffect(() => {
-        fetch('/api/assets/status')
-            .then(res => res.json())
-            .then(data => setApiConfigured(data.configured))
+        axios.get('/api/assets/status')
+            .then(res => setApiConfigured(res.data.configured))
             .catch(() => setApiConfigured(false));
     }, []);
 
@@ -58,8 +58,8 @@ export default function AssetSearch({ onSelect, className, disabled }: AssetSear
         setError(null);
 
         try {
-            const response = await fetch(`/api/assets/search?q=${encodeURIComponent(searchQuery)}`);
-            const data = await response.json();
+            const response = await axios.get(`/api/assets/search?q=${encodeURIComponent(searchQuery)}`);
+            const data = response.data;
 
             if (data.success) {
                 setResults(data.results);

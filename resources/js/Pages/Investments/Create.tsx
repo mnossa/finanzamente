@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import { FormEventHandler, useMemo, useState, useEffect, useCallback } from 'react';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
+import axios from 'axios';
 
 interface Currency {
     code: string;
@@ -79,8 +80,8 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
         setPriceInfo(null);
 
         try {
-            const response = await fetch(`/api/assets/price/${encodeURIComponent(symbol)}/history?date=${date}`);
-            const result = await response.json();
+            const response = await axios.get(`/api/assets/price/${encodeURIComponent(symbol)}/history?date=${date}`);
+            const result = response.data;
 
             if (result.success && result.data) {
                 setPriceInfo({

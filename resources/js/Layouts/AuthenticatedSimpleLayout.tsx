@@ -2,6 +2,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import { PageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { PropsWithChildren, FormEvent } from 'react';
+import axios from 'axios';
 
 /**
  * Layout semplificato per utenti autenticati senza sidebar.
@@ -14,19 +15,21 @@ export default function AuthenticatedSimpleLayout({
     const { auth } = usePage<PageProps>().props;
     const user = auth.user;
 
-    const handleLogout = (e: FormEvent<HTMLFormElement>) => {
+    const handleLogout = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const form = e.currentTarget as HTMLFormElement;
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin',
-        }).then(() => {
+        try {
+            await axios.post(form.action, {}, {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true,
+            });
             window.location.href = '/';
-        });
+        } catch (error) {
+            // Gestione errore opzionale
+        }
     };
 
     return (

@@ -8,6 +8,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent } from 'react';
 import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
+import axios from 'axios';
 
 // Icone SVG inline per evitare dipendenze esterne
 const Icons = {
@@ -252,17 +253,17 @@ function FlashMessages() {
 }
 
 // Componente NavItem per la sidebar
-function SidebarNavItem({ 
-    item, 
-    isActive, 
-    onClick 
-}: { 
-    item: NavigationItem; 
+function SidebarNavItem({
+    item,
+    isActive,
+    onClick
+}: {
+    item: NavigationItem;
     isActive: boolean;
     onClick?: () => void;
 }) {
     const Icon = item.icon;
-    
+
     return (
         <Link
             href={item.hrefParams ? route(item.href, item.hrefParams) : route(item.href)}
@@ -300,9 +301,9 @@ function CollapsibleNavSection({
     onClick?: () => void;
 }) {
     const [isExpanded, setIsExpanded] = useState(section.defaultExpanded ?? false);
-    
+
     // Controlla se qualche elemento della sezione è attivo
-    const hasActiveItem = section.items.some(item => 
+    const hasActiveItem = section.items.some(item =>
         isRouteActive(item.routeMatch, item.altRouteMatch)
     );
 
@@ -358,19 +359,21 @@ export default function Authenticated({
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const handleLogout = (e: FormEvent<HTMLFormElement>) => {
+    const handleLogout = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const form = e.currentTarget as HTMLFormElement;
-        fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin',
-        }).then(() => {
+        try {
+            await axios.post(form.action, {}, {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true,
+            });
             window.location.href = '/';
-        });
+        } catch (error) {
+            // Gestione errore opzionale
+        }
     };
 
     // Chiude la sidebar quando si ridimensiona la finestra a desktop
@@ -393,7 +396,7 @@ export default function Authenticated({
         return sections
             .map(section => ({
                 ...section,
-                items: section.items.filter(item => 
+                items: section.items.filter(item =>
                     !item.moduleId || isModuleEnabled(item.moduleId)
                 ),
             }))
@@ -402,25 +405,25 @@ export default function Authenticated({
 
     // Crea le sezioni dinamicamente includendo Household se presente
     const baseNavigationSections = filterSectionsByModules(navigationSections);
-    
+
     const allNavigationSections = [
         ...baseNavigationSections,
         ...(activeHousehold ? [{
             title: 'Household',
             defaultExpanded: false,
             items: [
-                { 
-                    name: activeHousehold.name, 
-                    href: 'households.show', 
-                    routeMatch: 'households.show', 
+                {
+                    name: activeHousehold.name,
+                    href: 'households.show',
+                    routeMatch: 'households.show',
                     icon: Icons.Home,
                     hrefParams: { household: activeHousehold.id }
                 },
-                { 
-                    name: 'Cambia Household', 
-                    href: 'households.select', 
-                    routeMatch: 'households.select', 
-                    icon: Icons.Settings 
+                {
+                    name: 'Cambia Household',
+                    href: 'households.select',
+                    routeMatch: 'households.select',
+                    icon: Icons.Settings
                 },
             ]
         }] : [])
@@ -428,164 +431,164 @@ export default function Authenticated({
 
     return (
         <ThemeProvider initialTheme={initialTheme}>
-        <UmamiAnalytics />
-        <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
-            {/* Overlay Mobile */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm animate-fade-in"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* Sidebar */}
-            <aside
-                className={clsx(
-                    'fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white pr-1',
-                    'transition-transform duration-300 ease-in-out',
-                    'lg:translate-x-0 lg:static lg:block',
-                    'shadow-sidebar lg:shadow-none',
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                )}
-            >
-                {/* Sidebar Header */}
-                <div className="flex items-center justify-between h-20 px-6 border-b border-slate-700 bg-slate-950">
-                    <a href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
-                        <ApplicationLogo className="w-8 h-8" />
-                        <span className="text-white">Finanzamente</span>
-                    </a>
-                    <button
+            <UmamiAnalytics />
+            <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
+                {/* Overlay Mobile */}
+                {sidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm animate-fade-in"
                         onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden text-slate-400 hover:text-white transition-colors p-1"
-                    >
-                        <Icons.X />
-                    </button>
-                </div>
+                    />
+                )}
 
-                {/* Navigation */}
-                <nav className="mt-1 p-4 pb-8 space-y-1 overflow-y-auto h-[calc(100vh-162px)]">
-                    {allNavigationSections.map((section) => (
-                        <CollapsibleNavSection
-                            key={section.title}
-                            section={section}
-                            isRouteActive={isRouteActive}
-                            onClick={() => setSidebarOpen(false)}
-                        />
-                    ))}
-                </nav>
-
-                {/* User Profile Bottom */}
-                <div className="absolute bottom-0 w-full p-4 bg-slate-950 border-t border-slate-700">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-semibold">
-                            {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
-                <header className="app-header dark:bg-slate-800/80 dark:border-slate-700">
-                    <div className="flex items-center gap-4">
+                {/* Sidebar */}
+                <aside
+                    className={clsx(
+                        'fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white pr-1',
+                        'transition-transform duration-300 ease-in-out',
+                        'lg:translate-x-0 lg:static lg:block',
+                        'shadow-sidebar lg:shadow-none',
+                        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    )}
+                >
+                    {/* Sidebar Header */}
+                    <div className="flex items-center justify-between h-20 px-6 border-b border-slate-700 bg-slate-950">
+                        <a href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
+                            <ApplicationLogo className="w-8 h-8" />
+                            <span className="text-white">Finanzamente</span>
+                        </a>
                         <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                            onClick={() => setSidebarOpen(false)}
+                            className="lg:hidden text-slate-400 hover:text-white transition-colors p-1"
                         >
-                            <Icons.Menu />
+                            <Icons.X />
                         </button>
-                        
-                        {header && (
-                            <div className="hidden sm:block">
-                                {header}
-                            </div>
-                        )}
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Search - Desktop only */}
-                        <div className="relative hidden md:block">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                <Icons.Search />
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Cerca..."
-                                className="pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-xl text-sm w-56 
+                    {/* Navigation */}
+                    <nav className="mt-1 p-4 pb-8 space-y-1 overflow-y-auto h-[calc(100vh-162px)]">
+                        {allNavigationSections.map((section) => (
+                            <CollapsibleNavSection
+                                key={section.title}
+                                section={section}
+                                isRouteActive={isRouteActive}
+                                onClick={() => setSidebarOpen(false)}
+                            />
+                        ))}
+                    </nav>
+
+                    {/* User Profile Bottom */}
+                    <div className="absolute bottom-0 w-full p-4 bg-slate-950 border-t border-slate-700">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-semibold">
+                                {user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                                <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Header */}
+                    <header className="app-header dark:bg-slate-800/80 dark:border-slate-700">
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                            >
+                                <Icons.Menu />
+                            </button>
+
+                            {header && (
+                                <div className="hidden sm:block">
+                                    {header}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            {/* Search - Desktop only */}
+                            <div className="relative hidden md:block">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    <Icons.Search />
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Cerca..."
+                                    className="pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-xl text-sm w-56 
                                          focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
                                          transition-all outline-none"
-                            />
-                        </div>
+                                />
+                            </div>
 
-                        {/* Notifications */}
-                        <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors">
-                            <Icons.Bell />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-                        </button>
+                            {/* Notifications */}
+                            <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                                <Icons.Bell />
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+                            </button>
 
-                        {/* Theme Toggle */}
-                        <ThemeToggle />
+                            {/* Theme Toggle */}
+                            <ThemeToggle />
 
-                        {/* User Menu */}
-                        <Dropdown>
-                            <Dropdown.Trigger>
-                                <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
-                                        {user.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-700 ">
-                                        {user.name}
-                                    </span>
-                                    <Icons.ChevronDown />
-                                </button>
-                            </Dropdown.Trigger>
-
-                            <Dropdown.Content>
-                                <Dropdown.Link href={route('profile.edit')}>
-                                    <span className="flex items-center gap-2">
-                                        <Icons.User />
-                                        Profilo
-                                    </span>
-                                </Dropdown.Link>
-                                <form onSubmit={handleLogout} action={route('logout')} method="POST">
-                                    <button
-                                        type="submit"
-                                        className="block w-full px-4 py-2.5 text-start text-sm leading-5 text-slate-700 hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:bg-slate-50"
-                                    >
-                                        <span className="flex items-center gap-2 text-rose-600">
-                                            <Icons.LogOut />
-                                            Esci
+                            {/* User Menu */}
+                            <Dropdown>
+                                <Dropdown.Trigger>
+                                    <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
+                                            {user.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-700 ">
+                                            {user.name}
                                         </span>
+                                        <Icons.ChevronDown />
                                     </button>
-                                </form>
-                            </Dropdown.Content>
-                        </Dropdown>
-                    </div>
-                </header>
+                                </Dropdown.Trigger>
 
-                {/* Mobile Header with title */}
-                {header && (
-                    <div className="sm:hidden px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                        <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{header}</div>
-                    </div>
-                )}
+                                <Dropdown.Content>
+                                    <Dropdown.Link href={route('profile.edit')}>
+                                        <span className="flex items-center gap-2">
+                                            <Icons.User />
+                                            Profilo
+                                        </span>
+                                    </Dropdown.Link>
+                                    <form onSubmit={handleLogout} action={route('logout')} method="POST">
+                                        <button
+                                            type="submit"
+                                            className="block w-full px-4 py-2.5 text-start text-sm leading-5 text-slate-700 hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:bg-slate-50"
+                                        >
+                                            <span className="flex items-center gap-2 text-rose-600">
+                                                <Icons.LogOut />
+                                                Esci
+                                            </span>
+                                        </button>
+                                    </form>
+                                </Dropdown.Content>
+                            </Dropdown>
+                        </div>
+                    </header>
 
-                {/* Flash Messages */}
-                <FlashMessages />
+                    {/* Mobile Header with title */}
+                    {header && (
+                        <div className="sm:hidden px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                            <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{header}</div>
+                        </div>
+                    )}
 
-                {/* Scrollable Content */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-                    <div className="max-w-7xl mx-auto">
-                        {children}
-                    </div>
-                </main>
+                    {/* Flash Messages */}
+                    <FlashMessages />
+
+                    {/* Scrollable Content */}
+                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                        <div className="max-w-7xl mx-auto">
+                            {children}
+                        </div>
+                    </main>
+                </div>
             </div>
-        </div>
         </ThemeProvider>
     );
 }

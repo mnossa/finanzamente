@@ -42,6 +42,12 @@ export default forwardRef(function TextInput(
                 className
             )}
             ref={localRef}
+            onWheel={e => {
+                if (type === 'number') {
+                    (e.target as HTMLInputElement).blur();
+                }
+                if (props.onWheel) props.onWheel(e);
+            }}
         />
     );
 });

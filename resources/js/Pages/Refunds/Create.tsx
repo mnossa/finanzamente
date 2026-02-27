@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
+import axios from 'axios';
 
 interface Category {
     id: number;
@@ -111,21 +112,17 @@ export default function Create({ originalTransaction, refundableTransactions, to
             abortControllerRef.current = new AbortController();
 
             try {
-                const response = await fetch(
+                const response = await axios.get(
                     route('refunds.search-transactions') + `?search=${encodeURIComponent(debouncedSearchTerm)}&limit=30`,
                     {
-                        signal: abortControllerRef.current.signal,
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                         },
+                        signal: abortControllerRef.current.signal,
                     }
                 );
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setTransactions(data.transactions);
-                }
+                setTransactions(response.data.transactions);
             } catch (error) {
                 if ((error as Error).name !== 'AbortError') {
                     console.error('Errore nella ricerca:', error);
