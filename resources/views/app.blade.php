@@ -20,12 +20,7 @@
         @inertiaHead
 
         {{-- Umami Analytics --}}
-        @php
-            $umamiId = app()->environment('production')
-                ? '6366c67f-6c67-402f-a09b-43f6d73b780c'
-                : '804a1613-7828-42fb-9cd8-c6ed1f34644d';
-        @endphp
-        <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ $umamiId }}"></script>
+        <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ env('UMAMI_ID') }}"></script>
     </head>
     <body class="font-sans antialiased">
         @inertia
