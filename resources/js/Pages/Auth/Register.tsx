@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import { trackEvent } from '../../utils/tracking';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -20,6 +21,12 @@ export default function Register() {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
+        // Tracking evento registrazione
+        trackEvent('registrazione_inviata', {
+            user_type: data.user_type,
+        });
+
+        // Invia i dati al server
         post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
         });
