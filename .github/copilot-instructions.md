@@ -38,6 +38,7 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 - **Documentazione**: Commentare il codice dove necessario e mantenere aggiornata la documentazione.
 - **Testing**: Implementare test automatici per le funzionalità principali.
 - **CI/CD**: Integrare pipeline di build, test e deploy.
+- **Sicurezza e GDPR**: Tutti i log di sicurezza e rate limiting devono anonimizzare l’IP tramite hash SHA256 e salt (`ADV_THROTTLE_SALT` in .env). Nessun dato personale viene loggato in chiaro.
 
 ## Comandi di Sviluppo
 Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sviluppo Docker. I comandi principali sono:

@@ -1,3 +1,18 @@
+#
+## Sicurezza e Rate Limiting avanzato
+
+- Tutte le rotte di autenticazione e registrazione sono protette da un middleware di rate limiting avanzato (`AdvancedRateLimitWithDelay`).
+- Il middleware applica:
+	- Limite di tentativi per IP e route configurabile
+	- Delay progressivo per tentativi ripetuti
+	- Logging di ogni tentativo su canale `security.log` (solo hash IP, route, timestamp)
+	- L’hash dell’IP è calcolato con SHA256 e salt segreto impostato in `.env` tramite `ADV_THROTTLE_SALT` (GDPR compliant)
+
+Esempio di configurazione in `.env`:
+
+		ADV_THROTTLE_SALT=valore-segreto
+
+Per cambiare la sensibilità del rate limiting, modificare i parametri nel middleware o nella definizione delle rotte.
 
 # Finanzamente - Documentazione Progetto
 

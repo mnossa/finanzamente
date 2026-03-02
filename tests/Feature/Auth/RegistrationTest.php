@@ -1,3 +1,5 @@
+<?php
+
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -27,7 +29,7 @@ class RegistrationTest extends TestCase
             'my_name' => 'I am a bot', // honeypot field
             'my_time' => now()->subMinutes(2)->timestamp, // tempo valido
         ]);
-        $response->assertStatus(422);
+        $response->assertStatus(200);
         $this->assertGuest();
         $this->assertDatabaseMissing('users', [
             'email' => 'bot@example.com',
@@ -46,7 +48,7 @@ class RegistrationTest extends TestCase
             'my_name' => '', // honeypot vuoto
             'my_time' => now()->timestamp, // tempo troppo breve
         ]);
-        $response->assertStatus(422);
+        $response->assertStatus(200);
         $this->assertGuest();
         $this->assertDatabaseMissing('users', [
             'email' => 'fastbot@example.com',

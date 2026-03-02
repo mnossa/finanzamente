@@ -10,43 +10,55 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+use Spatie\Honeypot\ProtectAgainstSpam;
 
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-        // Throttle: max 5 richieste ogni 2 minuti per IP
-        Route::post('register', [RegisteredUserController::class, 'store'])
-            ->middleware(['throttle:5,2']);
+    // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
+    Route::post('register', [RegisteredUserController::class, 'store'])
+        ->middleware(['adv-throttle:5,2', ProtectAgainstSpam::class])
+        ->name('register.store');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware(['adv-throttle:5,2'])
+        ->name('login.store');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
+    // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->name('password.email');
+        ->name('password.email')
+        ->middleware(['adv-throttle:5,2']);
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
+    // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
     Route::post('reset-password', [NewPasswordController::class, 'store'])
-        ->name('password.store');
+        ->name('password.store')
+        ->middleware(['adv-throttle:5,2']);
 });
 
 Route::middleware('auth')->group(function () {
+
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
+    // Rate limiting avanzato: max 6 tentativi ogni 1 minuto per IP, delay progressivo, logging GDPR compliant
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
+        ->middleware(['signed', 'adv-throttle:6,1'])
         ->name('verification.verify');
 
+    // Rate limiting avanzato: max 6 tentativi ogni 1 minuto per IP, delay progressivo, logging GDPR compliant
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
+        ->middleware('adv-throttle:6,1')
         ->name('verification.send');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
