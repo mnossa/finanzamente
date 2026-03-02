@@ -1,5 +1,3 @@
-<?php
-
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -15,6 +13,44 @@ class RegistrationTest extends TestCase
         parent::setUp();
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
+
+    public function test_registration_is_blocked_if_honeypot_field_filled(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Bot User',
+            'email' => 'bot@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'user_type' => 'persona',
+            'fiscal_code' => 'RSSMRA80A01H501U',
+            'my_name' => 'I am a bot', // honeypot field
+            'my_time' => now()->subMinutes(2)->timestamp, // tempo valido
+        ]);
+        $response->assertStatus(422);
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'bot@example.com',
+        ]);
+    }
+
+    public function test_registration_is_blocked_if_honeypot_time_too_short(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Fast Bot',
+            'email' => 'fastbot@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'user_type' => 'persona',
+            'fiscal_code' => 'RSSMRA80A01H501U',
+            'my_name' => '', // honeypot vuoto
+            'my_time' => now()->timestamp, // tempo troppo breve
+        ]);
+        $response->assertStatus(422);
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'fastbot@example.com',
+        ]);
     }
 
     public function test_registration_screen_can_be_rendered(): void

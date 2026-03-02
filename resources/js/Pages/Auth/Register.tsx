@@ -38,7 +38,10 @@ export default function Register() {
         <GuestLayout>
             <Head title="Registrati" />
 
-            <form onSubmit={submit}>
+            <form onSubmit={submit} autoComplete="off">
+                {/* Honeypot fields per laravel-honeypot */}
+                <input type="text" name="my_name" className="hidden" tabIndex={-1} autoComplete="off" />
+                <input type="hidden" name="my_time" value={typeof window !== 'undefined' ? Date.now() : ''} />
                 <div>
                     <InputLabel htmlFor="name" value="Nome *" />
 

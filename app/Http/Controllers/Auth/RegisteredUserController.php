@@ -14,6 +14,12 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
+    public function __construct()
+    {
+        // Applica honeypot solo alla registrazione
+        $this->middleware(\Spatie\Honeypot\ProtectAgainstSpam::class)->only('store');
+    }
+
     /**
      * Display the registration view.
      */

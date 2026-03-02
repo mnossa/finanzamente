@@ -73,6 +73,16 @@ reset-mysql-root-password-step:
 exec:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app $(cmd)
 
+# Installa un pacchetto composer nel container app
+composer:
+	@if [ -z "$(pkg)" ]; then \
+		echo "[ERRORE] Specificare il pacchetto con make composer pkg=vendor/package"; \
+		exit 1; \
+	fi; \
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app composer require $(pkg)
+
+
+
 
 #
 exec-recurring:
