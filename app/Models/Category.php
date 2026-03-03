@@ -18,11 +18,12 @@ class Category extends Model
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
     protected $fillable = [
-        'household_id', 'name', 'type', 'color', 'icon', 'is_fixed_expense',
+        'household_id', 'name', 'type', 'color', 'icon', 'is_fixed_expense', 'exclude_from_lifestyle_score',
     ];
 
     protected $casts = [
         'is_fixed_expense' => 'boolean',
+        'exclude_from_lifestyle_score' => 'boolean',
     ];
 
     public function household()

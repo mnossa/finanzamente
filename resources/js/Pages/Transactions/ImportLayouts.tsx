@@ -41,6 +41,7 @@ interface Layout {
         amount: number;
         description: number;
         notes: number | null;
+        category?: number | null;
     };
     delimiter: string;
     date_format: string;
@@ -62,6 +63,7 @@ interface EditForm {
         amount: number | null;
         description: number | null;
         notes: number | null;
+        category?: number | null;
     };
 }
 
@@ -107,6 +109,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                 amount: layout.column_mapping.amount,
                 description: layout.column_mapping.description,
                 notes: layout.column_mapping.notes ?? null,
+                category: layout.column_mapping.category ?? null,
             },
         });
         setEditErrors({});
@@ -130,6 +133,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                     amount: editForm.column_mapping.amount ?? 1,
                     description: editForm.column_mapping.description ?? 2,
                     notes: editForm.column_mapping.notes,
+                    category: editForm.column_mapping.category ?? null,
                 },
             },
             {

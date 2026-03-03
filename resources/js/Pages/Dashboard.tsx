@@ -11,6 +11,7 @@ import { ModuleAccessInfo, LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
 import RevenueProgressCard from '@/Components/RevenueProgressCard';
 import TaxThermometer from '@/Components/TaxThermometer';
+import LifestyleWidget, { LifestyleWidgetData } from '@/Components/LifestyleWidget';
 import { PageProps } from '@/types';
 
 interface Account {
@@ -110,6 +111,7 @@ interface DashboardProps {
     debtsCreditsSummary: DebtsCreditsSummary;
     annualRevenueData: AnnualRevenueData;
     taxThermometerData: TaxThermometerData;
+    lifestyleWidgetData: LifestyleWidgetData;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -370,6 +372,7 @@ export default function Dashboard({
     debtsCreditsSummary,
     annualRevenueData,
     taxThermometerData,
+    lifestyleWidgetData,
 }: DashboardProps) {
     const { isModuleEnabled } = useModules();
     const { auth } = usePage<PageProps>().props;
@@ -463,6 +466,9 @@ export default function Dashboard({
                             inpsRate={taxThermometerData.inps_rate}
                         />
                     )}
+
+                    {/* Widget Lifestyle Inflation Score */}
+                    <LifestyleWidget data={lifestyleWidgetData} />
 
                     {/* Griglia principale */}
                     <div className="grid gap-6 lg:grid-cols-2">

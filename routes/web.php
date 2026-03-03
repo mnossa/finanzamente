@@ -22,6 +22,7 @@ use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
+use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
@@ -125,6 +126,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::post('/categories/{category}/toggle-lifestyle-score', [CategoryController::class, 'toggleLifestyleScore'])->name('categories.toggle-lifestyle-score');
 
         // Transfers - modifica
         Route::get('/transfers/create', [TransferController::class, 'create'])->name('transfers.create');
@@ -214,6 +216,11 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/tax-deductions', [TaxDeductionExportController::class, 'index'])->name('tax-deductions.index');
     Route::get('/tax-deductions/export-pdf', [TaxDeductionExportController::class, 'exportPdf'])->name('tax-deductions.export-pdf');
     Route::get('/tax-deductions/export-attachments', [TaxDeductionExportController::class, 'exportAttachments'])->name('tax-deductions.export-attachments');
+
+    // Lifestyle Inflation Score
+    Route::get('/lifestyle-score', [LifestyleScoreController::class, 'index'])->name('lifestyle-score.index');
+    Route::get('/lifestyle-score/export-xls', [LifestyleScoreController::class, 'exportXls'])->name('lifestyle-score.export-xls');
+    Route::get('/lifestyle-score/export-pdf', [LifestyleScoreController::class, 'exportPdf'])->name('lifestyle-score.export-pdf');
 
     // Accounts - lettura
     Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');

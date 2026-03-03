@@ -26,7 +26,8 @@ class StoreImportLayoutRequest extends FormRequest
             'column_mapping.date' => ['required', 'integer', 'min:0'],
             'column_mapping.amount' => ['required', 'integer', 'min:0'],
             'column_mapping.description' => ['required', 'integer', 'min:0'],
-            'column_mapping.notes' => ['nullable', 'integer', 'min:0'],
+            'column_mapping.notes'     => ['nullable', 'integer', 'min:0'],
+            'column_mapping.category' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

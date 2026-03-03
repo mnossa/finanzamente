@@ -7,6 +7,7 @@ use App\Http\Requests\StoreImportLayoutRequest;
 use App\Http\Requests\StoreImportTransactionsRequest;
 use App\Models\Account;
 use App\Models\BankImportLayout;
+use App\Models\Category;
 use App\Models\Transaction;
 use App\Services\TransactionImportService;
 use Illuminate\Http\RedirectResponse;
@@ -43,9 +44,18 @@ class TransactionImportController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'bank_name', 'icon', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']);
 
+        $categories = Category::where(function ($q) use ($householdId) {
+            $q->where('household_id', $householdId)
+                ->orWhereNull('household_id');
+        })
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'color', 'icon']);
+
         return Inertia::render('Transactions/Import', [
-            'accounts' => $accounts,
+            'accounts'    => $accounts,
             'userLayouts' => $userLayouts,
+            'categories'  => $categories,
         ]);
     }
 
@@ -97,13 +107,21 @@ class TransactionImportController extends Controller
 
         $validated = $this->importService->validateRows($rows);
 
+        $uniqueCategories = collect($validated['valid'])
+            ->pluck('category_name')
+            ->filter(fn ($v) => $v !== null && $v !== '')
+            ->unique()
+            ->values()
+            ->toArray();
+
         return response()->json([
-            'headers'       => $headers,
-            'valid'         => $validated['valid'],
-            'invalid'       => $validated['invalid'],
-            'total'         => count($rows),
-            'valid_count'   => count($validated['valid']),
-            'invalid_count' => count($validated['invalid']),
+            'headers'           => $headers,
+            'valid'             => $validated['valid'],
+            'invalid'           => $validated['invalid'],
+            'total'             => count($rows),
+            'valid_count'       => count($validated['valid']),
+            'invalid_count'     => count($validated['invalid']),
+            'unique_categories' => $uniqueCategories,
         ]);
     }
 
@@ -159,6 +177,31 @@ class TransactionImportController extends Controller
         $imported = 0;
         $skipped  = 0;
 
+        // Risolvi i mapping delle categorie (nome dal file → category_id)
+        $categoryIdMap = [];
+        if (!empty($validated['category_mappings'])) {
+            foreach ($validated['category_mappings'] as $catMapping) {
+                $catName   = $catMapping['name'];
+                $catAction = $catMapping['action'];
+                if ($catAction === 'existing') {
+                    $categoryIdMap[$catName] = isset($catMapping['category_id']) ? (int) $catMapping['category_id'] : null;
+                } elseif ($catAction === 'create') {
+                    $cat = Category::firstOrCreate([
+                        'household_id' => $user->active_household_id,
+                        'name'         => $catName,
+                        'type'         => $catMapping['type'] ?? 'expense',
+                    ]);
+                    $categoryIdMap[$catName] = $cat->id;
+                } else {
+                    $categoryIdMap[$catName] = null;
+                }
+            }
+        }
+        $resolveCategoryId = fn (?string $name): ?int =>
+            ($name !== null && $name !== '' && isset($categoryIdMap[$name]))
+                ? $categoryIdMap[$name]
+                : null;
+
         foreach ($validated['rows'] as $row) {
             $action = $row['duplicate_action'] ?? 'import';
 
@@ -187,7 +230,7 @@ class TransactionImportController extends Controller
                         Transaction::create([
                             'user_id'       => $user->id,
                             'account_id'    => $account->id,
-                            'category_id'   => null,
+                            'category_id'   => $resolveCategoryId($row['category_name'] ?? null),
                             'amount'        => $amount,
                             'currency_code' => $account->currency_code,
                             'date'          => $row['date'],
@@ -211,7 +254,7 @@ class TransactionImportController extends Controller
             Transaction::create([
                 'user_id'       => $user->id,
                 'account_id'    => $account->id,
-                'category_id'   => null,
+                'category_id'   => $resolveCategoryId($row['category_name'] ?? null),
                 'amount'        => $amount,
                 'currency_code' => $account->currency_code,
                 'date'          => $row['date'],

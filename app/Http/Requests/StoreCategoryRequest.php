@@ -29,6 +29,7 @@ class StoreCategoryRequest extends FormRequest
             'color' => ['nullable', 'string', 'max:20'],
             'icon' => ['nullable', 'string', 'max:10'],
             'is_fixed_expense' => ['sometimes', 'boolean'],
+            'exclude_from_lifestyle_score' => ['sometimes', 'boolean'],
         ];
     }
 

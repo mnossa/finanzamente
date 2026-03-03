@@ -32,6 +32,7 @@ export default function Create({ categoryTypes }: CreateProps) {
         color: '#6366f1',
         icon: '💸',
         is_fixed_expense: false,
+        exclude_from_lifestyle_score: false,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -127,6 +128,32 @@ export default function Create({ categoryTypes }: CreateProps) {
                                 </div>
                             )}
 
+                            {/* Escludi dal Lifestyle Score (solo per categorie di spesa) */}
+                            {data.type === 'expense' && (
+                                <div>
+                                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
+                                        <label className="flex items-start space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={data.exclude_from_lifestyle_score}
+                                                onChange={(e) => setData('exclude_from_lifestyle_score', e.target.checked)}
+                                                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                                                    📈 Escludi dal Lifestyle Score
+                                                </span>
+                                                <p className="mt-1 text-xs text-purple-700 dark:text-purple-200">
+                                                    Le spese in questa categoria non incidono sul tuo Lifestyle Inflation Score
+                                                    (es. investimenti, risparmio, previdenza)
+                                                </p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <InputError message={errors.exclude_from_lifestyle_score} className="mt-2" />
+                                </div>
+                            )}
+
                             {/* Icona e Colore */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
@@ -189,6 +216,11 @@ export default function Create({ categoryTypes }: CreateProps) {
                                     {data.is_fixed_expense && (
                                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                                             📌 Spesa Fissa
+                                        </span>
+                                    )}
+                                    {data.exclude_from_lifestyle_score && (
+                                        <span className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                            📈 Escluso da Score
                                         </span>
                                     )}
                                 </div>

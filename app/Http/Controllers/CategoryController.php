@@ -42,6 +42,7 @@ class CategoryController extends Controller
                     'color' => $category->color,
                     'icon' => $category->icon,
                     'is_fixed_expense' => $category->is_fixed_expense ?? false,
+                    'exclude_from_lifestyle_score' => $category->exclude_from_lifestyle_score ?? false,
                     'created_at' => $category->created_at->format('Y-m-d'),
                 ];
             });
@@ -101,6 +102,7 @@ class CategoryController extends Controller
                 'color' => $category->color,
                 'icon' => $category->icon,
                 'is_fixed_expense' => $category->is_fixed_expense ?? false,
+                'exclude_from_lifestyle_score' => $category->exclude_from_lifestyle_score ?? false,
             ],
             'categoryTypes' => self::TYPES,
         ]);
@@ -137,6 +139,20 @@ class CategoryController extends Controller
         return redirect()
             ->route('categories.index')
             ->with('success', 'Categoria eliminata con successo.');
+    }
+
+    /**
+     * Attiva/disattiva l'esclusione di una categoria dal Lifestyle Score.
+     */
+    public function toggleLifestyleScore(Category $category): RedirectResponse
+    {
+        $this->authorizeCategory($category);
+
+        $category->update([
+            'exclude_from_lifestyle_score' => !$category->exclude_from_lifestyle_score,
+        ]);
+
+        return back();
     }
 
     /**

@@ -17,6 +17,14 @@ interface Account {
     currency_code: string;
 }
 
+interface Category {
+    id: number;
+    name: string;
+    type: 'income' | 'expense';
+    color: string | null;
+    icon: string | null;
+}
+
 interface UserLayout {
     id: number;
     name: string;
@@ -27,6 +35,7 @@ interface UserLayout {
         amount: number;
         description: number;
         notes: number | null;
+        category?: number | null;
     };
     delimiter: string;
     date_format: string;
@@ -40,6 +49,7 @@ interface ImportRow {
     amount: number;
     description: string;
     notes: string | null;
+    category_name: string | null;
     raw: string;
     errors: string[];
 }
@@ -51,6 +61,7 @@ interface PreviewResponse {
     total: number;
     valid_count: number;
     invalid_count: number;
+    unique_categories: string[];
 }
 
 interface ColumnMapping {
@@ -58,6 +69,13 @@ interface ColumnMapping {
     amount: number | null;
     description: number | null;
     notes: number | null;
+    category: number | null;
+}
+
+interface CategoryMappingEntry {
+    action: 'existing' | 'create' | 'none';
+    category_id: number | null;
+    type: 'income' | 'expense' | null;
 }
 
 interface ExistingTransaction {
@@ -85,6 +103,7 @@ interface DuplicateResolution {
 interface ImportProps {
     accounts: Account[];
     userLayouts: UserLayout[];
+    categories: Category[];
 }
 
 const WIZARD_STEPS = [
@@ -115,7 +134,7 @@ const DATE_FORMAT_OPTIONS = [
 
 const LAYOUT_ICONS = ['🏦', '💳', '💰', '🪙', '📊', '📈', '🏧', '💵', '📮', '🏛️', '💹', '⚙️'];
 
-export default function Import({ accounts, userLayouts: initialUserLayouts }: ImportProps) {
+export default function Import({ accounts, userLayouts: initialUserLayouts, categories }: ImportProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedBank, setSelectedBank] = useState('');
     const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -128,7 +147,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
         amount: 1,
         description: 2,
         notes: null,
+        category: null,
     });
+    const [categoryMappings, setCategoryMappings] = useState<Record<string, CategoryMappingEntry>>({});
     const [previewData, setPreviewData] = useState<PreviewResponse | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
@@ -183,6 +204,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                         amount: columnMapping.amount ?? 1,
                         description: columnMapping.description ?? 2,
                         notes: columnMapping.notes ?? null,
+                        category: columnMapping.category ?? null,
                     },
                 },
                 { headers: { Accept: 'application/json' } },
@@ -217,6 +239,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
             amount: layout.column_mapping.amount,
             description: layout.column_mapping.description,
             notes: layout.column_mapping.notes ?? null,
+            category: layout.column_mapping.category ?? null,
         });
     };
 
@@ -258,6 +281,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
         if (columnMapping.notes !== null) {
             formData.append('column_mapping[notes]', String(columnMapping.notes));
         }
+        if (columnMapping.category !== null) {
+            formData.append('column_mapping[category]', String(columnMapping.category));
+        }
 
         try {
             const response = await axios.post<PreviewResponse>(route('transactions.import.preview'), formData, {
@@ -266,6 +292,18 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
             setPreviewData(response.data);
             const allIndices = new Set(response.data.valid.map((_, i) => i));
             setSelectedRows(allIndices);
+            // Inizializza i mapping delle categorie per quelle nuove trovate nel file
+            if (response.data.unique_categories.length > 0) {
+                setCategoryMappings((prev) => {
+                    const updated = { ...prev };
+                    response.data.unique_categories.forEach((name) => {
+                        if (!updated[name]) {
+                            updated[name] = { action: 'none', category_id: null, type: null };
+                        }
+                    });
+                    return updated;
+                });
+            }
             return true;
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -328,10 +366,11 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                 amount: row.amount,
                 description: row.description,
                 notes: row.notes,
+                ...(row.category_name ? { category_name: row.category_name } : {}),
             }));
     };
 
-    const doImport = (rows: { date: string; amount: number; description: string; notes: string | null }[]) => {
+    const doImport = (rows: ReturnType<typeof getRowsToImport>) => {
         const rowsWithResolutions = rows.map((row, idx) => {
             const res = duplicateResolutions[idx];
             if (!res) return row;
@@ -341,11 +380,20 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                 ...(res.duplicate_transaction_id !== null ? { duplicate_transaction_id: res.duplicate_transaction_id } : {}),
             };
         });
+        // Costruisce l'array category_mappings da inviare al server
+        const categoryMappingsArray = Object.entries(categoryMappings)
+            .filter(([, entry]) => entry.action !== 'none')
+            .map(([name, entry]) => ({
+                name,
+                action: entry.action,
+                ...(entry.action === 'existing' && entry.category_id ? { category_id: entry.category_id } : {}),
+                ...(entry.action === 'create' && entry.type ? { type: entry.type } : {}),
+            }));
         setImportProcessing(true);
         setImportErrors({});
         router.post(
             route('transactions.import.store'),
-            { account_id: data.account_id, rows: rowsWithResolutions },
+            { account_id: data.account_id, rows: rowsWithResolutions, category_mappings: categoryMappingsArray },
             {
                 onFinish: () => setImportProcessing(false),
                 onError:  (errs) => setImportErrors(errs as Record<string, string>),
@@ -618,7 +666,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                                 headers={previewData?.headers ?? []}
                                 columnCount={6}
                                 mapping={columnMapping}
-                                onChange={setColumnMapping}
+                                onChange={(m) => setColumnMapping({ ...m, category: m.category ?? null })}
                             />
                             <PrimaryButton
                                 type="button"
@@ -797,6 +845,77 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                                 </div>
                             )}
 
+                            {/* Risoluzione categorie */}
+                            {previewData && previewData.unique_categories.length > 0 && (
+                                <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                                    <h3 className="mb-1 text-sm font-semibold text-gray-800">
+                                        🏷️ Categorie trovate nel file ({previewData.unique_categories.length})
+                                    </h3>
+                                    <p className="mb-3 text-xs text-gray-500">
+                                        Indica come assegnare ogni categoria presente nel file importato.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {previewData.unique_categories.map((catName) => {
+                                            const entry = categoryMappings[catName] ?? { action: 'none' as const, category_id: null, type: null };
+                                            return (
+                                                <div key={catName} className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                                    <span className="min-w-[80px] flex-shrink-0 text-sm font-medium text-gray-800">{catName}</span>
+                                                    <select
+                                                        value={entry.action}
+                                                        onChange={(e) => {
+                                                            const action = e.target.value as 'none' | 'existing' | 'create';
+                                                            setCategoryMappings((prev) => ({
+                                                                ...prev,
+                                                                [catName]: { action, category_id: null, type: null },
+                                                            }));
+                                                        }}
+                                                        className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    >
+                                                        <option value="none">— Non assegnare —</option>
+                                                        <option value="existing">Mappa su categoria esistente</option>
+                                                        <option value="create">Crea nuova categoria</option>
+                                                    </select>
+                                                    {entry.action === 'existing' && (
+                                                        <select
+                                                            value={entry.category_id ?? ''}
+                                                            onChange={(e) => setCategoryMappings((prev) => ({
+                                                                ...prev,
+                                                                [catName]: { ...prev[catName], category_id: Number(e.target.value) || null },
+                                                            }))}
+                                                            className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        >
+                                                            <option value="">Seleziona categoria…</option>
+                                                            {categories.map((cat) => (
+                                                                <option key={cat.id} value={cat.id}>
+                                                                    {cat.icon ? cat.icon + ' ' : ''}{cat.name} ({cat.type === 'income' ? 'Entrata' : 'Uscita'})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                    {entry.action === 'create' && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-gray-500">Tipo:</span>
+                                                            <select
+                                                                value={entry.type ?? ''}
+                                                                onChange={(e) => setCategoryMappings((prev) => ({
+                                                                    ...prev,
+                                                                    [catName]: { ...prev[catName], type: (e.target.value as 'income' | 'expense') || null },
+                                                                }))}
+                                                                className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                            >
+                                                                <option value="">Seleziona tipo…</option>
+                                                                <option value="expense">Uscita</option>
+                                                                <option value="income">Entrata</option>
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Preview table */}
                             {previewData && previewData.valid.length > 0 && (
                                 <div className="overflow-x-auto -mx-6">
@@ -816,6 +935,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                                                 <th className="px-4 py-3 text-right font-medium text-gray-600">Importo</th>
                                                 <th className="px-4 py-3 text-left font-medium text-gray-600">Descrizione</th>
                                                 <th className="px-4 py-3 text-left font-medium text-gray-600 hidden sm:table-cell">Note</th>
+                                                {previewData.unique_categories.length > 0 && (
+                                                    <th className="px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Categoria (file)</th>
+                                                )}
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-100">
@@ -851,6 +973,15 @@ export default function Import({ accounts, userLayouts: initialUserLayouts }: Im
                                                     <td className="px-4 py-3 text-gray-500 max-w-xs truncate hidden sm:table-cell">
                                                         {row.notes ?? '—'}
                                                     </td>
+                                                    {previewData.unique_categories.length > 0 && (
+                                                        <td className="px-4 py-3 hidden md:table-cell">
+                                                            {row.category_name ? (
+                                                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                                                    {row.category_name}
+                                                                </span>
+                                                            ) : '—'}
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>

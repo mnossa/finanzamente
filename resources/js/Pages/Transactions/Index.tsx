@@ -375,6 +375,7 @@ export default function Index({
                                     onChange={(e) => handleFilterChange('category_id', e.target.value)}
                                 >
                                     <option value="">Tutte le categorie</option>
+                                    <option value="__none__">— Senza categoria</option>
                                     {categories.map((category) => (
                                         <option key={category.id} value={category.id}>
                                             {category.icon} {category.name}

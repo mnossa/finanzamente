@@ -6,6 +6,7 @@ interface ColumnMapping {
     amount: number | null;
     description: number | null;
     notes: number | null;
+    category?: number | null;
 }
 
 interface ColumnMapperProps {
@@ -35,6 +36,7 @@ export default function ColumnMapper({ headers, columnCount, mapping, onChange, 
         { key: 'amount', label: 'Importo *', required: true },
         { key: 'description', label: 'Descrizione *', required: true },
         { key: 'notes', label: 'Note (opzionale)', required: false },
+        { key: 'category', label: 'Categoria (opzionale)', required: false },
     ];
 
     return (

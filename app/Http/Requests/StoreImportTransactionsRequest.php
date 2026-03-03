@@ -37,6 +37,12 @@ class StoreImportTransactionsRequest extends FormRequest
             'rows.*.notes'                      => ['nullable', 'string', 'max:1000'],
             'rows.*.duplicate_action'           => ['nullable', 'string', Rule::in(['import', 'ignore', 'replace', 'update'])],
             'rows.*.duplicate_transaction_id'   => ['nullable', 'integer'],
+            'rows.*.category_name'              => ['nullable', 'string', 'max:255'],
+            'category_mappings'                 => ['nullable', 'array'],
+            'category_mappings.*.name'          => ['required_with:category_mappings', 'string', 'max:255'],
+            'category_mappings.*.action'        => ['required_with:category_mappings', 'string', Rule::in(['existing', 'create', 'none'])],
+            'category_mappings.*.category_id'   => ['nullable', 'integer', 'exists:categories,id'],
+            'category_mappings.*.type'          => ['nullable', 'string', Rule::in(['income', 'expense'])],
         ];
     }
 

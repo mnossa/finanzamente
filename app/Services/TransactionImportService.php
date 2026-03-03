@@ -80,6 +80,9 @@ class TransactionImportService
         $notesRaw = isset($mapping['notes']) && $mapping['notes'] !== null
             ? $this->getColumn($cols, $mapping['notes'])
             : null;
+        $categoryRaw = isset($mapping['category']) && $mapping['category'] !== null
+            ? $this->getColumn($cols, $mapping['category'])
+            : null;
 
         // Parse date
         $date = null;
@@ -111,13 +114,14 @@ class TransactionImportService
         }
 
         return [
-            'line_number' => $lineNumber,
-            'date' => $date,
-            'amount' => $amount,
-            'description' => $description,
-            'notes' => $notesRaw !== null ? trim($notesRaw) : null,
-            'raw' => $raw,
-            'errors' => $errors,
+            'line_number'   => $lineNumber,
+            'date'          => $date,
+            'amount'        => $amount,
+            'description'   => $description,
+            'notes'         => $notesRaw !== null ? trim($notesRaw) : null,
+            'category_name' => ($categoryRaw !== null && trim($categoryRaw) !== '') ? trim($categoryRaw) : null,
+            'raw'           => $raw,
+            'errors'        => $errors,
         ];
     }
 
@@ -291,6 +295,9 @@ class TransactionImportService
         $notesCell  = $getCell(
             (isset($mapping['notes']) && $mapping['notes'] !== null) ? (int) $mapping['notes'] : null
         );
+        $categoryCell = $getCell(
+            (isset($mapping['category']) && $mapping['category'] !== null) ? (int) $mapping['category'] : null
+        );
 
         // ── Data ────────────────────────────────────────────────────────────
         $date      = null;
@@ -333,16 +340,18 @@ class TransactionImportService
             $errors[] = "Riga {$lineNumber}: descrizione mancante";
         }
 
-        $notesRaw = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
+        $notesRaw    = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
+        $categoryRaw = $categoryCell !== null ? trim($this->cellValueToString($categoryCell->getValue())) : null;
 
         return [
-            'line_number' => $lineNumber,
-            'date'        => $date,
-            'amount'      => $amount,
-            'description' => $description,
-            'notes'       => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
-            'raw'         => "Riga {$lineNumber}",
-            'errors'      => $errors,
+            'line_number'   => $lineNumber,
+            'date'          => $date,
+            'amount'        => $amount,
+            'description'   => $description,
+            'notes'         => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
+            'category_name' => ($categoryRaw !== null && $categoryRaw !== '') ? $categoryRaw : null,
+            'raw'           => "Riga {$lineNumber}",
+            'errors'        => $errors,
         ];
     }
 }

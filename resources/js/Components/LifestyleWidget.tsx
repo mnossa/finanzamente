@@ -1,0 +1,201 @@
+import React from 'react';
+import { Link } from '@inertiajs/react';
+import clsx from 'clsx';
+import CardBox from '@/Components/CardBox';
+
+export interface LifestyleWidgetData {
+    lifestyle_score: number | null;
+    net_income: number;
+    effective_expenses: number;
+    is_partita_iva: boolean;
+    top_categories: Array<{
+        category_id: number | null;
+        name: string;
+        icon: string | null;
+        color: string | null;
+        amount: number;
+        percentage: number;
+        excluded: boolean;
+    }>;
+    trend: {
+        last30_score: number | null;
+        prev30_score: number | null;
+        delta: number | null;
+        direction: 'up' | 'down' | 'stable' | 'new' | 'unknown';
+    };
+}
+
+interface LifestyleWidgetProps {
+    data: LifestyleWidgetData;
+    className?: string;
+}
+
+function formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('it-IT', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
+
+function getScoreColor(score: number | null): string {
+    if (score === null) return '#94a3b8';
+    if (score >= 30) return '#10b981'; // emerald-500
+    if (score >= 10) return '#f59e0b'; // amber-500
+    return '#ef4444';                  // red-500
+}
+
+function getScoreLabel(score: number | null): string {
+    if (score === null) return 'Dati insufficienti';
+    if (score >= 30) return 'Ottimo';
+    if (score >= 10) return 'Attenzione';
+    return 'Critico';
+}
+
+/**
+ * Widget Lifestyle Inflation Score per la Dashboard.
+ *
+ * Mostra il punteggio percentuale del mese corrente e un mini
+ * donut chart con la suddivisione per macro-categorie di spesa.
+ * È cliccabile e rimanda alla pagina di dettaglio /lifestyle-score.
+ */
+export default function LifestyleWidget({ data, className }: LifestyleWidgetProps) {
+    const score      = data.lifestyle_score;
+    const scoreColor = getScoreColor(score);
+    const scoreLabel = getScoreLabel(score);
+
+    // Dimensioni gauge circolare SVG
+    const size        = 100;
+    const strokeWidth = 10;
+    const radius      = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const pct     = score !== null ? Math.min(Math.max(score, 0), 100) : 0;
+    const offset  = circumference - (pct / 100) * circumference;
+
+    return (
+        <Link href={route('lifestyle-score.index')} className="block">
+            <CardBox
+                className={clsx(
+                    'cursor-pointer transition-shadow duration-200 hover:shadow-md',
+                    className
+                )}
+            >
+                {/* Header */}
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <h3 className="flex items-center font-semibold text-gray-900 dark:text-white">
+                            <span className="mr-2">📈</span>
+                            Lifestyle Score
+                        </h3>
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                            Tocca per dettagli
+                        </p>
+                    </div>
+                    <span
+                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                        style={{ backgroundColor: scoreColor + '20', color: scoreColor }}
+                    >
+                        {scoreLabel}
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-6">
+                    {/* Gauge circolare */}
+                    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+                        <svg width={size} height={size} className="-rotate-90 transform">
+                            <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius}
+                                stroke="currentColor"
+                                strokeWidth={strokeWidth}
+                                fill="none"
+                                className="text-gray-200 dark:text-gray-700"
+                            />
+                            <circle
+                                cx={size / 2}
+                                cy={size / 2}
+                                r={radius}
+                                stroke={scoreColor}
+                                strokeWidth={strokeWidth}
+                                fill="none"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={offset}
+                                strokeLinecap="round"
+                                className="transition-all duration-500 ease-in-out"
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-2xl font-bold" style={{ color: scoreColor }}>
+                                {score !== null ? `${score.toFixed(0)}%` : '—'}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Score</span>
+                        </div>
+                    </div>
+
+                    {/* Colonna destra: importi + trend */}
+                    <div className="min-w-0 flex-1">
+                        <div className="space-y-1.5 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 dark:text-gray-400">Reddito netto</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {formatCurrency(data.net_income)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500 dark:text-gray-400">Spese effettive</span>
+                                <span className="font-medium text-red-500">
+                                    {formatCurrency(data.effective_expenses)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Indicatore trend ultimi 30 gg */}
+                        {data.trend.direction !== 'unknown' && (
+                            <div className="mt-3 flex items-center gap-1.5 text-xs">
+                                {data.trend.direction === 'up' && (
+                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                        ↑ +{data.trend.delta?.toFixed(1)}% vs 30 gg fa
+                                    </span>
+                                )}
+                                {data.trend.direction === 'down' && (
+                                    <span className="font-semibold text-red-500">
+                                        ↓ {data.trend.delta?.toFixed(1)}% vs 30 gg fa
+                                    </span>
+                                )}
+                                {data.trend.direction === 'stable' && (
+                                    <span className="text-gray-400">
+                                        → Stabile vs 30 gg fa
+                                    </span>
+                                )}
+                                {data.trend.direction === 'new' && (
+                                    <span className="text-gray-400">
+                                        Primo mese registrato
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer: top-3 categorie */}
+                {data.top_categories.length > 0 && (
+                    <div className="mt-4 space-y-1 border-t border-gray-100 pt-3 dark:border-gray-700">
+                        {data.top_categories.slice(0, 3).map((cat, i) => (
+                            <div key={cat.category_id ?? i} className="flex items-center justify-between text-xs">
+                                <div className="flex min-w-0 items-center gap-1 truncate text-gray-600 dark:text-gray-400">
+                                    <span>{cat.icon ?? '📁'}</span>
+                                    <span className="truncate">{cat.name}</span>
+                                </div>
+                                <span className="ml-2 flex-shrink-0 text-gray-700 dark:text-gray-300">
+                                    {cat.percentage.toFixed(0)}%
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </CardBox>
+        </Link>
+    );
+}

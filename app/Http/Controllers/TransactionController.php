@@ -43,7 +43,11 @@ class TransactionController extends Controller
             $query->where('account_id', $request->account_id);
         }
         if ($request->filled('category_id')) {
-            $query->where('category_id', $request->category_id);
+            if ($request->category_id === '__none__') {
+                $query->whereNull('category_id');
+            } else {
+                $query->where('category_id', $request->category_id);
+            }
         }
         if ($request->filled('type')) {
             if ($request->type === 'income') {

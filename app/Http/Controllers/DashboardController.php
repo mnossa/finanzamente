@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Budget;
 use App\Models\DebtCredit;
 use App\Models\Transaction;
+use App\Services\FinancialMetricsService;
 use App\Services\RevenueNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -182,6 +183,7 @@ class DashboardController extends Controller
             'debtsCreditsSummary' => $debtsCreditsSummary,
             'annualRevenueData' => $this->getAnnualRevenueData($user),
             'taxThermometerData' => $this->getTaxThermometerData($user),
+            'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
         ]);
     }
 
@@ -319,6 +321,68 @@ class DashboardController extends Controller
             'expenses' => (float) $expenses,
             'net' => (float) $net,
             'transaction_count' => $transactionCount,
+        ];
+    }
+
+    /**
+     * Calcola i dati per il widget Lifestyle Score (storico completo + trend 30 gg).
+     */
+    private function getLifestyleWidgetData(\App\Models\User $user): array
+    {
+        $service = new FinancialMetricsService();
+
+        // Score sull'intero storico
+        $firstTx = \App\Models\Transaction::whereHas(
+            'account',
+            fn ($q) => $q->where('household_id', $user->active_household_id)
+        )->whereNull('transfer_id')->oldest('date')->first();
+
+        $start   = $firstTx ? $firstTx->date->startOfDay() : Carbon::now()->startOfMonth();
+        $overall = $service->calculate($user, $start, Carbon::now()->endOfDay());
+
+        // Trend: ultimi 30 gg vs 30 gg precedenti
+        $last30 = $service->calculate(
+            $user,
+            Carbon::now()->subDays(29)->startOfDay(),
+            Carbon::now()->endOfDay()
+        );
+        $prev30 = $service->calculate(
+            $user,
+            Carbon::now()->subDays(59)->startOfDay(),
+            Carbon::now()->subDays(30)->endOfDay()
+        );
+
+        $last30Score = $last30['lifestyle_score'];
+        $prev30Score = $prev30['lifestyle_score'];
+        $delta       = ($last30Score !== null && $prev30Score !== null)
+            ? round($last30Score - $prev30Score, 1)
+            : null;
+        $direction   = match (true) {
+            $delta === null && $last30Score !== null => 'new',
+            $delta === null                          => 'unknown',
+            $delta > 1.0                             => 'up',
+            $delta < -1.0                            => 'down',
+            default                                  => 'stable',
+        };
+
+        $topCategories = array_slice(
+            array_filter($overall['category_breakdown'], fn ($c) => !$c['excluded']),
+            0,
+            5
+        );
+
+        return [
+            'lifestyle_score'    => $overall['lifestyle_score'],
+            'net_income'         => $overall['net_income'],
+            'effective_expenses' => $overall['effective_expenses'],
+            'is_partita_iva'     => $overall['is_partita_iva'],
+            'top_categories'     => array_values($topCategories),
+            'trend' => [
+                'last30_score' => $last30Score !== null ? round($last30Score, 1) : null,
+                'prev30_score' => $prev30Score !== null ? round($prev30Score, 1) : null,
+                'delta'        => $delta,
+                'direction'    => $direction,
+            ],
         ];
     }
 }
