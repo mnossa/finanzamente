@@ -80,11 +80,237 @@ interface Filters {
     to?: string;
 }
 
+interface DebtCredit {
+    id: number;
+    description: string;
+    type: 'debt' | 'credit';
+}
+
 interface IndexProps {
     transactions: PaginatedData<Transaction>;
     accounts: Array<{ id: number; name: string }>;
     categories: Category[];
+    debtCredits: DebtCredit[];
     filters: Filters;
+}
+
+// Sentinel: campo non modificato
+const UNCHANGED = '__unchanged__';
+// Sentinel: rimuovi collegamento (per campi nullable)
+const REMOVE = '__remove__';
+
+type TriState = '__unchanged__' | 'true' | 'false';
+
+interface BulkEditState {
+    category_id: string;      // UNCHANGED | REMOVE | '<number>'
+    is_private: TriState;
+    debt_credit_id: string;   // UNCHANGED | REMOVE | '<number>'
+    is_tax_deductible: TriState;
+    account_id: string;       // UNCHANGED | '<number>'
+}
+
+const defaultBulkEdit: BulkEditState = {
+    category_id: UNCHANGED,
+    is_private: UNCHANGED,
+    debt_credit_id: UNCHANGED,
+    is_tax_deductible: UNCHANGED,
+    account_id: UNCHANGED,
+};
+
+function TriStateButton({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: TriState;
+    onChange: (v: TriState) => void;
+}) {
+    return (
+        <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
+            <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
+                {([UNCHANGED, 'true', 'false'] as TriState[]).map((v) => (
+                    <button
+                        key={v}
+                        type="button"
+                        onClick={() => onChange(v)}
+                        className={clsx(
+                            'px-3 py-1.5 text-sm transition-colors',
+                            value === v
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
+                        )}
+                    >
+                        {v === UNCHANGED ? '—' : v === 'true' ? 'Sì' : 'No'}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function BulkEditModal({
+    open,
+    count,
+    categories,
+    accounts,
+    debtCredits,
+    onClose,
+    onConfirm,
+}: {
+    open: boolean;
+    count: number;
+    categories: Category[];
+    accounts: Array<{ id: number; name: string }>;
+    debtCredits: DebtCredit[];
+    onClose: () => void;
+    onConfirm: (state: BulkEditState) => void;
+}) {
+    const [state, setState] = React.useState<BulkEditState>(defaultBulkEdit);
+
+    React.useEffect(() => {
+        if (open) setState(defaultBulkEdit);
+    }, [open]);
+
+    if (!open) return null;
+
+    const set = <K extends keyof BulkEditState>(key: K, val: BulkEditState[K]) =>
+        setState((prev) => ({ ...prev, [key]: val }));
+
+    const hasChanges =
+        state.category_id !== UNCHANGED ||
+        state.is_private !== UNCHANGED ||
+        state.debt_credit_id !== UNCHANGED ||
+        state.is_tax_deductible !== UNCHANGED ||
+        state.account_id !== UNCHANGED;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/40"
+                onClick={onClose}
+            />
+            <div className="relative z-10 w-full max-w-lg rounded-xl bg-white dark:bg-gray-800 shadow-xl">
+                <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Modifica in massa — {count} transazioni
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-5">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Solo i campi che modifichi verranno aggiornati. I campi su «—» rimarranno invariati per ogni transazione.
+                    </p>
+
+                    {/* Categoria */}
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+                        <select
+                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                            value={state.category_id}
+                            onChange={(e) => set('category_id', e.target.value)}
+                        >
+                            <option value={UNCHANGED}>— Invariata —</option>
+                            <option value={REMOVE}>Nessuna categoria (rimuovi)</option>
+                            {['income' as const, 'expense' as const].map((type) => {
+                                const list = categories.filter((c) => c.type === type);
+                                if (!list.length) return null;
+                                return (
+                                    <optgroup key={type} label={type === 'income' ? 'Entrate' : 'Uscite'}>
+                                        {list.map((c) => (
+                                            <option key={c.id} value={String(c.id)}>
+                                                {c.icon} {c.name}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                );
+                            })}
+                        </select>
+                    </div>
+
+                    {/* Privacy */}
+                    <TriStateButton
+                        label="Privata"
+                        value={state.is_private}
+                        onChange={(v) => set('is_private', v)}
+                    />
+
+                    {/* Deducibilità */}
+                    <TriStateButton
+                        label="Detraibile fiscalmente"
+                        value={state.is_tax_deductible}
+                        onChange={(v) => set('is_tax_deductible', v)}
+                    />
+
+                    {/* Debito/Credito */}
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Debito / Credito</label>
+                        <select
+                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                            value={state.debt_credit_id}
+                            onChange={(e) => set('debt_credit_id', e.target.value)}
+                        >
+                            <option value={UNCHANGED}>— Invariato —</option>
+                            <option value={REMOVE}>Rimuovi collegamento</option>
+                            {debtCredits.map((dc) => (
+                                <option key={dc.id} value={String(dc.id)}>
+                                    {dc.type === 'debt' ? '🔴' : '🟢'} {dc.description}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Conto */}
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Conto</label>
+                        <select
+                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                            value={state.account_id}
+                            onChange={(e) => set('account_id', e.target.value)}
+                        >
+                            <option value={UNCHANGED}>— Invariato —</option>
+                            {accounts.map((a) => (
+                                <option key={a.id} value={String(a.id)}>
+                                    {a.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                        Annulla
+                    </button>
+                    <button
+                        type="button"
+                        disabled={!hasChanges}
+                        onClick={() => onConfirm(state)}
+                        className={clsx(
+                            'rounded-md px-4 py-2 text-sm font-medium text-white transition-colors',
+                            hasChanges
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed',
+                        )}
+                    >
+                        Applica modifiche
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 
@@ -222,12 +448,14 @@ export default function Index({
     transactions,
     accounts,
     categories,
+    debtCredits,
     filters,
 }: IndexProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
+    const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
 
     const allIds = transactions.data.map((t) => t.id);
     const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
@@ -289,6 +517,33 @@ export default function Index({
         setBulkDeleteDialogOpen(false);
     };
 
+    const handleBulkEdit = (state: BulkEditState) => {
+        const payload: Record<string, unknown> = { ids: Array.from(selectedIds) };
+
+        if (state.category_id !== UNCHANGED) {
+            payload.category_id = state.category_id === REMOVE ? null : Number(state.category_id);
+        }
+        if (state.is_private !== UNCHANGED) {
+            payload.is_private = state.is_private === 'true';
+        }
+        if (state.debt_credit_id !== UNCHANGED) {
+            payload.debt_credit_id = state.debt_credit_id === REMOVE ? null : Number(state.debt_credit_id);
+        }
+        if (state.is_tax_deductible !== UNCHANGED) {
+            payload.is_tax_deductible = state.is_tax_deductible === 'true';
+        }
+        if (state.account_id !== UNCHANGED) {
+            payload.account_id = Number(state.account_id);
+        }
+
+        router.patch(route('transactions.bulk-update'), payload, {
+            onSuccess: () => {
+                setSelectedIds(new Set());
+                setBulkEditOpen(false);
+            },
+        });
+    };
+
     const handleFilterChange = (key: string, value: string) => {
         router.get(
             route('transactions.index'),
@@ -328,6 +583,16 @@ export default function Index({
             }
         >
             <Head title="Transazioni" />
+
+            <BulkEditModal
+                open={bulkEditOpen}
+                count={selectedIds.size}
+                categories={categories}
+                accounts={accounts}
+                debtCredits={debtCredits}
+                onClose={() => setBulkEditOpen(false)}
+                onConfirm={handleBulkEdit}
+            />
 
             <ConfirmDeleteDialog
                 open={deleteDialogOpen}
@@ -446,13 +711,22 @@ export default function Index({
                                         </span>
                                     </label>
                                     {selectedIds.size > 0 && (
-                                        <button
-                                            onClick={handleBulkDelete}
-                                            className="flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                                        >
-                                            <TrashIcon size={15} />
-                                            Elimina selezionate
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setBulkEditOpen(true)}
+                                                className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                                            >
+                                                <PencilIcon size={15} />
+                                                Modifica selezionate
+                                            </button>
+                                            <button
+                                                onClick={handleBulkDelete}
+                                                className="flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                            >
+                                                <TrashIcon size={15} />
+                                                Elimina selezionate
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                                 <div className="p-4">

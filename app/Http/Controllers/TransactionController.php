@@ -127,10 +127,15 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
+        $debtCredits = DebtCredit::where('household_id', $householdId)
+            ->orderBy('description')
+            ->get(['id', 'description', 'type']);
+
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
             'accounts' => $accounts,
             'categories' => $categories,
+            'debtCredits' => $debtCredits,
             'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible']),
         ]);
     }
@@ -511,6 +516,92 @@ class TransactionController extends Controller
         return redirect()
             ->route('transactions.index')
             ->with('success', 'Transazione aggiornata con successo.');
+    }
+
+    /**
+     * Aggiorna in massa i campi selezionati per più transazioni.
+     * Solo i campi esplicitamente presenti nella richiesta vengono modificati.
+     */
+    public function bulkUpdate(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'ids'               => 'required|array|min:1',
+            'ids.*'             => 'integer',
+            'category_id'       => 'sometimes|nullable|integer|exists:categories,id',
+            'is_private'        => 'sometimes|boolean',
+            'debt_credit_id'    => 'sometimes|nullable|integer|exists:debt_credits,id',
+            'is_tax_deductible' => 'sometimes|boolean',
+            'account_id'        => 'sometimes|integer|exists:accounts,id',
+        ]);
+
+        $user = Auth::user();
+        $ids  = $request->input('ids');
+
+        $transactions = Transaction::with('account')
+            ->whereIn('id', $ids)
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)
+                    ->orWhere('user_id', $user->id);
+            })
+            ->whereHas('account', function ($q) use ($user) {
+                $q->where('household_id', $user->active_household_id);
+            })
+            ->get();
+
+        if ($transactions->count() !== count($ids)) {
+            abort(403, 'Non hai accesso ad alcune transazioni selezionate.');
+        }
+
+        $fields = [];
+
+        if ($request->has('category_id')) {
+            $fields['category_id'] = $request->input('category_id');
+        }
+        if ($request->has('is_private')) {
+            $fields['is_private'] = $request->boolean('is_private');
+        }
+        if ($request->has('debt_credit_id')) {
+            $fields['debt_credit_id'] = $request->input('debt_credit_id');
+        }
+        if ($request->has('is_tax_deductible')) {
+            $fields['is_tax_deductible'] = $request->boolean('is_tax_deductible');
+        }
+
+        $newAccountId = $request->has('account_id') ? (int) $request->input('account_id') : null;
+
+        if (empty($fields) && $newAccountId === null) {
+            return redirect()->route('transactions.index')
+                ->with('info', 'Nessuna modifica da applicare.');
+        }
+
+        foreach ($transactions as $transaction) {
+            // Gestione cambio conto con aggiornamento saldi
+            if ($newAccountId !== null && $transaction->account_id !== $newAccountId) {
+                $newAccount = Account::where('id', $newAccountId)
+                    ->where('household_id', $user->active_household_id)
+                    ->first();
+
+                if ($newAccount) {
+                    // Storna dal conto vecchio
+                    $transaction->account->current_balance -= (float) $transaction->amount;
+                    $transaction->account->save();
+
+                    // Accredita sul nuovo conto
+                    $newAccount->current_balance += (float) $transaction->amount;
+                    $newAccount->save();
+
+                    $fields['account_id'] = $newAccountId;
+                }
+            }
+
+            $transaction->fill($fields);
+            $transaction->save();
+        }
+
+        $count = $transactions->count();
+
+        return redirect()->route('transactions.index')
+            ->with('success', "{$count} transazioni aggiornate con successo.");
     }
 
     /**
