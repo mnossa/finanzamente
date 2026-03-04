@@ -185,22 +185,6 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                 title="Lifestyle Inflation Score"
                 subtitle={`Storico: ${dateRangeLabel}`}
                 backLink={route('dashboard')}
-                actions={
-                    <div className="flex gap-2">
-                        <a
-                            href={exportXlsUrl}
-                            className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
-                        >
-                            <span>📊</span> Esporta XLS
-                        </a>
-                        <a
-                            href={exportPdfUrl}
-                            className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                        >
-                            <span>📄</span> Esporta PDF
-                        </a>
-                    </div>
-                }
             />
         }>
             <Head title="Lifestyle Inflation Score" />
@@ -529,6 +513,31 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                 Nessuna transazione registrata
                             </div>
                         )}
+                    </CardBox>
+
+                    {/* ── Esporta dati ────────────────────────────────────────────────────── */}
+                    <CardBox>
+                        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+                            Esporta i tuoi dati
+                        </h3>
+                        <div className="flex flex-wrap gap-3">
+                            <a
+                                href={exportXlsUrl}
+                                className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50"
+                            >
+                                <span>📊</span>
+                                <span>Esporta XLS</span>
+                                <span className="text-xs text-emerald-500 dark:text-emerald-500">— dati completi con dettaglio categorie</span>
+                            </a>
+                            <a
+                                href={exportPdfUrl}
+                                className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                            >
+                                <span>📄</span>
+                                <span>Esporta PDF</span>
+                                <span className="text-xs text-blue-500 dark:text-blue-500">— report sintetico stampabile</span>
+                            </a>
+                        </div>
                     </CardBox>
 
                     {/* ── Tip configurazione ──────────────────────────────────────────────── */}

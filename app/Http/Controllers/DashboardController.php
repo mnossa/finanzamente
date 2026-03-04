@@ -326,9 +326,55 @@ class DashboardController extends Controller
 
     /**
      * Calcola i dati per il widget Lifestyle Score (storico completo + trend 30 gg).
+     *
+     * Il widget si sblocca soltanto quando l'utente ha transazioni registrate in
+     * almeno 2 mesi di calendario distinti. Prima di allora viene restituito uno
+     * stato "locked" con il numero di mesi già coperti, così il frontend può
+     * mostrare la challenge di sblocco.
      */
     private function getLifestyleWidgetData(\App\Models\User $user): array
     {
+        // ── Verifica mesi distinti con transazioni ───────────────────────────────
+        // Compatibile con MySQL (produzione) e SQLite (test in-memory)
+        $driver         = \Illuminate\Support\Facades\DB::getDriverName();
+        $yearMonthExpr  = $driver === 'sqlite'
+            ? "strftime('%Y-%m', date)"
+            : "DATE_FORMAT(date, '%Y-%m')";
+
+        $monthsWithData = (int) \App\Models\Transaction::whereHas(
+            'account',
+            fn ($q) => $q->where('household_id', $user->active_household_id)
+        )
+            ->whereNull('transfer_id')
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->selectRaw("{$yearMonthExpr} as ym")
+            ->distinct()
+            ->get()
+            ->count();
+
+        $monthsNeeded = 2;
+        $unlocked     = $monthsWithData >= $monthsNeeded;
+
+        if (! $unlocked) {
+            return [
+                'unlocked'        => false,
+                'months_with_data' => $monthsWithData,
+                'months_needed'   => $monthsNeeded,
+                // campi nullable per soddisfare l'interfaccia TS
+                'lifestyle_score'    => null,
+                'net_income'         => 0.0,
+                'effective_expenses' => 0.0,
+                'is_partita_iva'     => $user->user_type === 'partita_iva',
+                'top_categories'     => [],
+                'trend' => [
+                    'last30_score' => null,
+                    'prev30_score' => null,
+                    'delta'        => null,
+                    'direction'    => 'unknown',
+                ],
+            ];
+        }
+
         $service = new FinancialMetricsService();
 
         // Score sull'intero storico
@@ -372,6 +418,9 @@ class DashboardController extends Controller
         );
 
         return [
+            'unlocked'           => true,
+            'months_with_data'   => $monthsWithData,
+            'months_needed'      => $monthsNeeded,
             'lifestyle_score'    => $overall['lifestyle_score'],
             'net_income'         => $overall['net_income'],
             'effective_expenses' => $overall['effective_expenses'],
