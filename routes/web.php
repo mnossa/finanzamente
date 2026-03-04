@@ -22,6 +22,7 @@ use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
+use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
@@ -61,6 +62,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Rotte che richiedono autenticazione E household attiva
 Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
+    Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
+    Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
     Route::get('/charts', [ChartsController::class, 'index'])->name('charts.index');
 
     // Profilo utente

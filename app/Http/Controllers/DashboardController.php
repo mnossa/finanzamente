@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Budget;
+use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
 use App\Models\Transaction;
 use App\Services\FinancialMetricsService;
@@ -184,6 +185,7 @@ class DashboardController extends Controller
             'annualRevenueData' => $this->getAnnualRevenueData($user),
             'taxThermometerData' => $this->getTaxThermometerData($user),
             'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
+            'dashboardLayout' => $this->getDashboardLayout($user),
         ]);
     }
 
@@ -433,5 +435,18 @@ class DashboardController extends Controller
                 'direction'    => $direction,
             ],
         ];
+    }
+
+    /**
+     * Recupera la configurazione layout della dashboard per l'utente corrente.
+     * Se non esiste una configurazione salvata, restituisce quella di default.
+     */
+    private function getDashboardLayout(\App\Models\User $user): array
+    {
+        $layout = DashboardLayout::where('user_id', $user->id)
+            ->where('household_id', $user->active_household_id)
+            ->first();
+
+        return $layout ? $layout->config : DashboardLayout::defaultConfig();
     }
 }

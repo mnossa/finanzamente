@@ -13,6 +13,23 @@ import RevenueProgressCard from '@/Components/RevenueProgressCard';
 import TaxThermometer from '@/Components/TaxThermometer';
 import LifestyleWidget, { LifestyleWidgetData } from '@/Components/LifestyleWidget';
 import { PageProps } from '@/types';
+import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
+import {
+    DndContext,
+    closestCenter,
+    PointerSensor,
+    KeyboardSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    rectSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface Account {
     id: number;
@@ -112,6 +129,7 @@ interface DashboardProps {
     annualRevenueData: AnnualRevenueData;
     taxThermometerData: TaxThermometerData;
     lifestyleWidgetData: LifestyleWidgetData;
+    dashboardLayout: DashboardLayoutConfig;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -142,7 +160,6 @@ function getAccountTypeLabel(type: string): string {
     return types[type] || type;
 }
 
-
 function StatCard({
     title,
     value,
@@ -159,48 +176,29 @@ function StatCard({
     className?: string;
 }) {
     return (
-            <CardBox className={className}>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {title}
-            </h3>
-            <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
-                {value}
-            </p>
+        <CardBox className={className}>
+            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
+            <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
             {(subtitle || trendLabel) && (
                 <div className="mt-2 flex items-center text-sm">
                     {trend && (
-                        <span
-                            className={clsx(
-                                'mr-1',
-                                trend === 'up' && 'text-green-500',
-                                trend === 'down' && 'text-red-500',
-                                trend === 'neutral' && 'text-gray-400'
-                            )}
-                        >
+                        <span className={clsx('mr-1', trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-400')}>
                             {trend === 'up' && '↑'}
                             {trend === 'down' && '↓'}
                             {trend === 'neutral' && '→'}
                         </span>
                     )}
                     {trendLabel && (
-                        <span
-                            className={clsx(
-                                trend === 'up' && 'text-green-500',
-                                trend === 'down' && 'text-red-500',
-                                trend === 'neutral' && 'text-gray-500'
-                            )}
-                        >
+                        <span className={clsx(trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-500')}>
                             {trendLabel}
                         </span>
                     )}
                     {subtitle && !trendLabel && (
-                        <span className="text-gray-500 dark:text-gray-400">
-                            {subtitle}
-                        </span>
+                        <span className="text-gray-500 dark:text-gray-400">{subtitle}</span>
                     )}
                 </div>
             )}
-            </CardBox>
+        </CardBox>
     );
 }
 
@@ -208,32 +206,17 @@ function AccountCard({ account }: { account: Account }) {
     return (
         <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
             <div className="flex items-center space-x-3">
-                <span className="text-2xl">
-                    {getAccountTypeIcon(account.type)}
-                </span>
+                <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
                 <div>
                     <p className="font-medium text-gray-900 dark:text-white">
                         {account.name}
-                        {account.is_private && (
-                            <span className="ml-2 text-xs text-gray-400">
-                                🔒
-                            </span>
-                        )}
+                        {account.is_private && <span className="ml-2 text-xs text-gray-400">🔒</span>}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {getAccountTypeLabel(account.type)}
-                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{getAccountTypeLabel(account.type)}</p>
                 </div>
             </div>
             <div className="text-right">
-                <p
-                    className={clsx(
-                        'text-lg font-semibold',
-                        account.current_balance >= 0
-                            ? 'text-gray-900 dark:text-white'
-                            : 'text-red-500'
-                    )}
-                >
+                <p className={clsx('text-lg font-semibold', account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500')}>
                     {formatCurrency(account.current_balance, account.currency_code)}
                 </p>
             </div>
@@ -243,7 +226,6 @@ function AccountCard({ account }: { account: Account }) {
 
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
-    
     return (
         <div className="flex items-center justify-between border-b border-gray-100 py-3 last:border-0 dark:border-gray-700">
             <div className="flex items-center space-x-3">
@@ -252,9 +234,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     style={{
                         backgroundColor: transaction.category?.color
                             ? `${transaction.category.color}20`
-                            : isIncome
-                            ? '#22c55e20'
-                            : '#ef444420',
+                            : isIncome ? '#22c55e20' : '#ef444420',
                     }}
                 >
                     {transaction.category?.icon || (isIncome ? '💰' : '💸')}
@@ -268,14 +248,8 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     </p>
                 </div>
             </div>
-            <p
-                className={clsx(
-                    'font-semibold',
-                    isIncome ? 'text-green-500' : 'text-red-500'
-                )}
-            >
-                {isIncome ? '+' : ''}
-                {formatCurrency(transaction.amount)}
+            <p className={clsx('font-semibold', isIncome ? 'text-green-500' : 'text-red-500')}>
+                {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
             </p>
         </div>
     );
@@ -290,7 +264,6 @@ function EmptyState({ message }: { message: string }) {
     );
 }
 
-
 function BudgetCard({ budget }: { budget: ActiveBudget }) {
     return (
         <Link
@@ -300,13 +273,9 @@ function BudgetCard({ budget }: { budget: ActiveBudget }) {
             <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                     <span>{budget.category_icon || '📁'}</span>
-                    <span className="font-medium text-gray-900 dark:text-white">
-                        {budget.category_name}
-                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">{budget.category_name}</span>
                 </div>
-                {budget.is_exceeded && (
-                    <span className="text-red-500">⚠️</span>
-                )}
+                {budget.is_exceeded && <span className="text-red-500">⚠️</span>}
             </div>
             <ProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} height="0.5rem" />
             <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -321,17 +290,13 @@ function BudgetCard({ budget }: { budget: ActiveBudget }) {
 function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
     const isDebt = item.type === 'debt';
     const isOverdue = item.status === 'overdue';
-    
     return (
         <Link
             href={route('debts-credits.show', item.id)}
             className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
         >
             <div className="flex items-center space-x-2">
-                <span className={clsx(
-                    'flex h-8 w-8 items-center justify-center rounded-full text-sm',
-                    isDebt ? 'bg-red-100 dark:bg-red-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'
-                )}>
+                <span className={clsx('flex h-8 w-8 items-center justify-center rounded-full text-sm', isDebt ? 'bg-red-100 dark:bg-red-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30')}>
                     {isDebt ? '📤' : '📥'}
                 </span>
                 <div>
@@ -340,19 +305,13 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
                         {isOverdue && <span className="ml-1 text-red-500">⚠️</span>}
                     </p>
                     {item.due_date && (
-                        <p className={clsx(
-                            'text-xs',
-                            isOverdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
-                        )}>
+                        <p className={clsx('text-xs', isOverdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400')}>
                             Scadenza: {formatDate(item.due_date)}
                         </p>
                     )}
                 </div>
             </div>
-            <span className={clsx(
-                'font-semibold',
-                isDebt ? 'text-red-500' : 'text-emerald-500'
-            )}>
+            <span className={clsx('font-semibold', isDebt ? 'text-red-500' : 'text-emerald-500')}>
                 {isDebt ? '-' : '+'}{item.currency_symbol}{item.amount.toFixed(2)}
             </span>
         </Link>
@@ -373,294 +332,319 @@ export default function Dashboard({
     annualRevenueData,
     taxThermometerData,
     lifestyleWidgetData,
+    dashboardLayout,
 }: DashboardProps) {
     const { isModuleEnabled } = useModules();
     const { auth } = usePage<PageProps>().props;
-    
-    // Il termometro tasse è visibile solo per utenti con Partita IVA (user_type = 'partita_iva')
     const hasVat = auth.user.user_type === 'partita_iva';
-    
-    // Calcola trend rispetto al mese precedente
+
+    const {
+        sortedWidgets,
+        isEditing,
+        isSaving,
+        saveError,
+        toggleEditing,
+        cancelEditing,
+        toggleWidgetVisibility,
+        setWidgetSize,
+        moveWidget,
+        saveLayout,
+        resetLayout,
+    } = useDashboardLayout(dashboardLayout);
+
     const incomeTrend =
         lastMonthStats.income > 0
             ? ((monthlyStats.income - lastMonthStats.income) / lastMonthStats.income) * 100
-            : monthlyStats.income > 0
-            ? 100
-            : 0;
+            : monthlyStats.income > 0 ? 100 : 0;
 
     const expensesTrend =
         lastMonthStats.expenses > 0
             ? ((monthlyStats.expenses - lastMonthStats.expenses) / lastMonthStats.expenses) * 100
-            : monthlyStats.expenses > 0
-            ? 100
-            : 0;
+            : monthlyStats.expenses > 0 ? 100 : 0;
 
-    return (
-        <AuthenticatedLayout
-            header={<PageHeader title="Dashboard" />}
-        >
-            <Head title="Dashboard" />
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-                    {/* Info sui moduli bloccati */}
-                    <ModuleAccessInfo />
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const oldIndex = sortedWidgets.findIndex((w) => w.id === active.id);
+        const newIndex = sortedWidgets.findIndex((w) => w.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1) moveWidget(oldIndex, newIndex);
+    }
 
-                    {/* Saldo Totale */}
+    function renderWidgetContent(widgetId: WidgetId): React.ReactNode {
+        switch (widgetId) {
+            case 'total_balance':
+                return (
                     <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
-                        <h3 className="text-sm font-medium text-slate-300">
-                            Saldo Totale
-                        </h3>
-                        <p className="mt-2 text-4xl font-bold">
-                            {formatCurrency(totalBalance)}
-                        </p>
+                        <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
+                        <p className="mt-2 text-4xl font-bold">{formatCurrency(totalBalance)}</p>
                         <p className="mt-1 text-sm text-slate-400">
                             {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                         </p>
                     </div>
+                );
 
-                    {/* Statistiche Mensili */}
+            case 'monthly_stats':
+                return (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard
-                            title="Entrate"
-                            value={formatCurrency(monthlyStats.income)}
-                            subtitle={currentMonth}
-                            trend={incomeTrend >= 0 ? 'up' : 'down'}
-                            trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${lastMonth}`}
-                        />
-                        <StatCard
-                            title="Uscite"
-                            value={formatCurrency(monthlyStats.expenses)}
-                            subtitle={currentMonth}
-                            trend={expensesTrend <= 0 ? 'up' : 'down'}
-                            trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${lastMonth}`}
-                        />
-                        <StatCard
-                            title="Saldo Netto"
-                            value={formatCurrency(monthlyStats.net)}
-                            subtitle={currentMonth}
-                            trend={monthlyStats.net >= 0 ? 'up' : 'down'}
-                        />
-                        <StatCard
-                            title="Transazioni"
-                            value={monthlyStats.transaction_count.toString()}
-                            subtitle={currentMonth}
-                        />
+                        <StatCard title="Entrate" value={formatCurrency(monthlyStats.income)} subtitle={currentMonth} trend={incomeTrend >= 0 ? 'up' : 'down'} trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${lastMonth}`} />
+                        <StatCard title="Uscite" value={formatCurrency(monthlyStats.expenses)} subtitle={currentMonth} trend={expensesTrend <= 0 ? 'up' : 'down'} trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${lastMonth}`} />
+                        <StatCard title="Saldo Netto" value={formatCurrency(monthlyStats.net)} subtitle={currentMonth} trend={monthlyStats.net >= 0 ? 'up' : 'down'} />
+                        <StatCard title="Transazioni" value={monthlyStats.transaction_count.toString()} subtitle={currentMonth} />
                     </div>
+                );
 
-                    {/* Widget Fatturato Annuo (solo per utenti P.IVA con monitoraggio abilitato) */}
-                    {annualRevenueData.visible && (
-                        <RevenueProgressCard
-                            currentRevenue={annualRevenueData.annual_revenue}
-                            threshold={annualRevenueData.revenue_threshold}
-                            percentage={annualRevenueData.revenue_percentage}
-                            year={new Date().getFullYear()}
-                        />
-                    )}
+            case 'annual_revenue':
+                if (!annualRevenueData.visible) return null;
+                return (
+                    <RevenueProgressCard
+                        currentRevenue={annualRevenueData.annual_revenue}
+                        threshold={annualRevenueData.revenue_threshold}
+                        percentage={annualRevenueData.revenue_percentage}
+                        year={new Date().getFullYear()}
+                    />
+                );
 
-                    {/* Termometro Tasse - Visibile solo per Partita IVA */}
-                    {taxThermometerData.visible && (
-                        <TaxThermometer 
-                            grossIncome={taxThermometerData.gross_income}
-                            taxRate={taxThermometerData.tax_rate}
-                            inpsRate={taxThermometerData.inps_rate}
-                        />
-                    )}
+            case 'tax_thermometer':
+                if (!taxThermometerData.visible) return null;
+                return (
+                    <TaxThermometer
+                        grossIncome={taxThermometerData.gross_income}
+                        taxRate={taxThermometerData.tax_rate}
+                        inpsRate={taxThermometerData.inps_rate}
+                    />
+                );
 
-                    {/* Widget Lifestyle Inflation Score */}
-                    <LifestyleWidget data={lifestyleWidgetData} />
+            case 'lifestyle_widget':
+                return <LifestyleWidget data={lifestyleWidgetData} />;
 
-                    {/* Griglia principale */}
-                    <div className="grid gap-6 lg:grid-cols-2">
-                        {/* Conti */}
-                        <CardBox className="overflow-hidden shadow-sm">
-                            <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">
-                                    I tuoi conti
-                                </h3>
-                                <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                    Vedi tutti
-                                </Link>
-                            </div>
-                            <div className="space-y-3 p-4">
-                                {accounts.length > 0 ? (
-                                    accounts.map((account) => (
-                                        <AccountCard
-                                            key={account.id}
-                                            account={account}
-                                        />
-                                    ))
-                                ) : (
-                                    <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />
-                                )}
-                            </div>
-                        </CardBox>
-
-                        {/* Transazioni Recenti */}
-                        <CardBox className="overflow-hidden shadow-sm">
-                            <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">
-                                    Ultime transazioni
-                                </h3>
-                                <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                    Vedi tutte
-                                </Link>
-                            </div>
-                            <div className="p-4">
-                                {recentTransactions.length > 0 ? (
-                                    recentTransactions.map((transaction) => (
-                                        <TransactionRow
-                                            key={transaction.id}
-                                            transaction={transaction}
-                                        />
-                                    ))
-                                ) : (
-                                    <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />
-                                )}
-                            </div>
-                        </CardBox>
-                    </div>
-
-                    {/* Budget e Debiti/Crediti */}
-                    <div className="grid gap-6 lg:grid-cols-2">
-                        {/* Budget Attivi */}
-                        {isModuleEnabled('budgets') ? (
-                            <CardBox className="overflow-hidden shadow-sm">
-                                <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                                        📊 Budget Attivi
-                                    </h3>
-                                    <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                        Vedi tutti
-                                    </Link>
-                                </div>
-                                <div className="p-4">
-                                    {activeBudgets.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {activeBudgets.map((budget) => (
-                                                <BudgetCard key={budget.id} budget={budget} />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="py-8 text-center">
-                                            <p className="mb-3 text-gray-500 dark:text-gray-400">
-                                                Nessun budget attivo
-                                            </p>
-                                            <Link
-                                                href={route('budgets.create')}
-                                                className="text-sm text-emerald-500 hover:text-emerald-600"
-                                            >
-                                                Crea il tuo primo budget →
-                                            </Link>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardBox>
-                        ) : (
-                            <LockedModuleCard moduleId="budgets" />
-                        )}
-
-                        {/* Debiti e Crediti */}
-                        {isModuleEnabled('debts_credits') ? (
-                            <CardBox className="overflow-hidden shadow-sm">
-                                <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                                        💸 Debiti e Crediti
-                                    </h3>
-                                    <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                        Vedi tutti
-                                    </Link>
-                                </div>
-                                <div className="p-4">
-                                    {/* Riepilogo */}
-                                    {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
-                                        <div className="mb-4 grid grid-cols-2 gap-3">
-                                            <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
-                                                <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
-                                                <p className="text-lg font-bold text-red-500">
-                                                    {formatCurrency(debtsCreditsSummary.total_debts)}
-                                                </p>
-                                            </div>
-                                            <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
-                                                <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
-                                                <p className="text-lg font-bold text-emerald-500">
-                                                    {formatCurrency(debtsCreditsSummary.total_credits)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {openDebtsCredits.length > 0 ? (
-                                        <div>
-                                        {openDebtsCredits.map((item) => (
-                                            <DebtCreditRow key={item.id} item={item} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-8 text-center">
-                                        <p className="mb-3 text-gray-500 dark:text-gray-400">
-                                            Nessun debito o credito aperto
-                                        </p>
-                                        <Link
-                                            href={route('debts-credits.create')}
-                                            className="text-sm text-emerald-500 hover:text-emerald-600"
-                                        >
-                                            Aggiungi il primo →
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-                            </CardBox>
-                        ) : (
-                            <LockedModuleCard moduleId="debts_credits" />
-                        )}
-                    </div>
-
-                    {/* Moduli Suggeriti (se bloccati) */}
-                    {(!isModuleEnabled('investments') || !isModuleEnabled('vat_management')) && (
-                        <div>
-                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                                ✨ Sblocca Nuove Funzionalità
-                            </h3>
-                            <div className="grid gap-6 lg:grid-cols-2">
-                                {!isModuleEnabled('investments') && (
-                                    <LockedModuleCard moduleId="investments" />
-                                )}
-                                {!isModuleEnabled('vat_management') && (
-                                    <LockedModuleCard moduleId="vat_management" />
-                                )}
-                            </div>
+            case 'accounts':
+                return (
+                    <CardBox className="overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">I tuoi conti</h3>
+                            <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
                         </div>
-                    )}
-
-                    {/* Quick Actions */}
-                    <CardBox className="overflow-hidden p-4 shadow-sm">
-                        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
-                            Azioni rapide
-                        </h3>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <QuickActionCard
-                                href={route('transactions.create')}
-                                icon={<PlusIcon size={28} />}
-                                label="Nuova Transazione"
-                            />
-                            <QuickActionCard
-                                href={route('transfers.create')}
-                                icon="🔄"
-                                label="Trasferimento"
-                            />
-                            <QuickActionCard
-                                href={route('accounts.create')}
-                                icon="🏦"
-                                label="Nuovo Conto"
-                            />
-                            <QuickActionCard
-                                href={route('categories.create')}
-                                icon="🏷️"
-                                label="Nuova Categoria"
-                            />
+                        <div className="space-y-3 p-4">
+                            {accounts.length > 0
+                                ? accounts.map((account) => <AccountCard key={account.id} account={account} />)
+                                : <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />}
                         </div>
                     </CardBox>
+                );
+
+            case 'recent_transactions':
+                return (
+                    <CardBox className="overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">Ultime transazioni</h3>
+                            <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutte</Link>
+                        </div>
+                        <div className="p-4">
+                            {recentTransactions.length > 0
+                                ? recentTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
+                                : <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />}
+                        </div>
+                    </CardBox>
+                );
+
+            case 'active_budgets':
+                return isModuleEnabled('budgets') ? (
+                    <CardBox className="overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">📊 Budget Attivi</h3>
+                            <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
+                        </div>
+                        <div className="p-4">
+                            {activeBudgets.length > 0 ? (
+                                <div className="space-y-3">
+                                    {activeBudgets.map((budget) => <BudgetCard key={budget.id} budget={budget} />)}
+                                </div>
+                            ) : (
+                                <div className="py-8 text-center">
+                                    <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun budget attivo</p>
+                                    <Link href={route('budgets.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Crea il tuo primo budget →</Link>
+                                </div>
+                            )}
+                        </div>
+                    </CardBox>
+                ) : <LockedModuleCard moduleId="budgets" />;
+
+            case 'debts_credits':
+                return isModuleEnabled('debts_credits') ? (
+                    <CardBox className="overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">💸 Debiti e Crediti</h3>
+                            <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
+                        </div>
+                        <div className="p-4">
+                            {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
+                                <div className="mb-4 grid grid-cols-2 gap-3">
+                                    <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
+                                        <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
+                                        <p className="text-lg font-bold text-red-500">{formatCurrency(debtsCreditsSummary.total_debts)}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
+                                        <p className="text-lg font-bold text-emerald-500">{formatCurrency(debtsCreditsSummary.total_credits)}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {openDebtsCredits.length > 0 ? (
+                                <div>{openDebtsCredits.map((item) => <DebtCreditRow key={item.id} item={item} />)}</div>
+                            ) : (
+                                <div className="py-8 text-center">
+                                    <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun debito o credito aperto</p>
+                                    <Link href={route('debts-credits.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Aggiungi il primo →</Link>
+                                </div>
+                            )}
+                        </div>
+                    </CardBox>
+                ) : <LockedModuleCard moduleId="debts_credits" />;
+
+            case 'quick_actions':
+                return (
+                    <CardBox className="overflow-hidden p-4 shadow-sm">
+                        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Azioni rapide</h3>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" />
+                            <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" />
+                            <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" />
+                            <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" />
+                        </div>
+                    </CardBox>
+                );
+
+            default:
+                return null;
+        }
+    }
+
+    function isWidgetRenderable(widgetId: WidgetId): boolean {
+        switch (widgetId) {
+            case 'annual_revenue':
+                return annualRevenueData.visible || hasVat;
+            case 'tax_thermometer':
+                return taxThermometerData.visible || hasVat;
+            default:
+                return true;
+        }
+    }
+
+    return (
+        <AuthenticatedLayout header={<PageHeader title="Dashboard" />}>
+            <Head title="Dashboard" />
+            <div className="py-6">
+                <div className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
+                    <ModuleAccessInfo />
+
+                    {/* Barra personalizzazione dashboard */}
+                    {isEditing ? (
+                        <div
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-dashed border-emerald-400 bg-emerald-50 px-4 py-3 dark:border-emerald-600 dark:bg-emerald-900/20"
+                            role="region"
+                            aria-label="Modalità personalizzazione dashboard"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg" aria-hidden="true">✏️</span>
+                                <span className="font-semibold text-emerald-800 dark:text-emerald-200">Modalità personalizzazione</span>
+                                <span className="hidden text-sm text-emerald-600 dark:text-emerald-400 sm:inline">
+                                    — Trascina i widget per riordinarli, usa i controlli per mostrare/nascondere e ridimensionare.
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {saveError && (
+                                    <span className="text-sm text-red-600 dark:text-red-400" role="alert">{saveError}</span>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={resetLayout}
+                                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    Ripristina default
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={cancelEditing}
+                                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                >
+                                    Annulla
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={saveLayout}
+                                    disabled={isSaving}
+                                    className="rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-600 disabled:opacity-60"
+                                >
+                                    {isSaving ? 'Salvataggio…' : 'Salva layout'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex justify-end">
+                            <button
+                                type="button"
+                                onClick={toggleEditing}
+                                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                aria-label="Personalizza la dashboard"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                                Personalizza dashboard
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Griglia widget con DnD */}
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={sortedWidgets.map((w) => w.id)}
+                            strategy={rectSortingStrategy}
+                        >
+                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                {sortedWidgets.map((widget) => {
+                                    const renderable = isWidgetRenderable(widget.id);
+                                    const content = renderWidgetContent(widget.id);
+
+                                    if (!renderable && !isEditing) return null;
+                                    if (!widget.visible && !isEditing) return null;
+                                    if (content === null && !isEditing) return null;
+
+                                    return (
+                                        <DashboardWidgetCard
+                                            key={widget.id}
+                                            widget={widget}
+                                            isEditing={isEditing}
+                                            onToggleVisibility={() => toggleWidgetVisibility(widget.id)}
+                                            onChangeSize={(size: WidgetSize) => setWidgetSize(widget.id, size)}
+                                        >
+                                            {content}
+                                        </DashboardWidgetCard>
+                                    );
+                                })}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+
+                    {/* Moduli Suggeriti (se bloccati) */}
+                    {(!isModuleEnabled('investments') || !isModuleEnabled('vat_management')) && !isEditing && (
+                        <div>
+                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">✨ Sblocca Nuove Funzionalità</h3>
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                {!isModuleEnabled('investments') && <LockedModuleCard moduleId="investments" />}
+                                {!isModuleEnabled('vat_management') && <LockedModuleCard moduleId="vat_management" />}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>
