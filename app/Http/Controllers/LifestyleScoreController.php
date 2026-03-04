@@ -63,7 +63,15 @@ class LifestyleScoreController extends Controller
 
         if ($data['is_partita_iva']) {
             $writer->addRow(Row::fromValues([
-                'Tasse Stimate (' . $data['tax_rate'] . '% + ' . $data['inps_rate'] . '% INPS)',
+                'Contributi INPS (' . $data['inps_rate'] . '%)',
+                number_format($data['inps_amount'], 2, ',', '.') . ' €',
+            ]));
+            $writer->addRow(Row::fromValues([
+                'Flat Tax (' . $data['tax_rate'] . '% su lordo−INPS)',
+                number_format($data['flat_tax_amount'], 2, ',', '.') . ' €',
+            ]));
+            $writer->addRow(Row::fromValues([
+                'Totale Tasse Stimate',
                 number_format($data['estimated_taxes'], 2, ',', '.') . ' €',
             ]));
         }

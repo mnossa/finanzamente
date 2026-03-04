@@ -36,6 +36,8 @@ interface CategoryRow {
 interface Metrics {
     gross_income: number;
     estimated_taxes: number;
+    inps_amount: number;
+    flat_tax_amount: number;
     net_income: number;
     total_expenses: number;
     excluded_expenses: number;
@@ -224,11 +226,19 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                     value={formatEur(metrics.gross_income)}
                                 />
                                 {metrics.is_partita_iva && (
-                                    <MetricCard
-                                        label={`Tasse stimate (${metrics.tax_rate}% + ${metrics.inps_rate}% INPS)`}
-                                        value={formatEur(metrics.estimated_taxes)}
-                                        color="text-orange-500"
-                                    />
+                                    <>
+                                        <MetricCard
+                                            label={`INPS (${metrics.inps_rate}%)`}
+                                            value={formatEur(metrics.inps_amount)}
+                                            color="text-orange-400"
+                                        />
+                                        <MetricCard
+                                            label={`Flat Tax (${metrics.tax_rate}% su lordo−INPS)`}
+                                            value={formatEur(metrics.flat_tax_amount)}
+                                            color="text-orange-500"
+                                            sub="base imponibile = lordo − INPS"
+                                        />
+                                    </>
                                 )}
                                 <MetricCard
                                     label="Reddito Netto"
@@ -255,10 +265,16 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                             </div>
 
                             {/* Formula visuale */}
-                            <div className="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
-                                <span className="font-mono">
+                            <div className="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400 space-y-1">
+                                {metrics.is_partita_iva && (
+                                    <p className="font-mono">
+                                        INPS = Lordo × {metrics.inps_rate}% &nbsp;|&nbsp;
+                                        Flat Tax = (Lordo − INPS) × {metrics.tax_rate}%
+                                    </p>
+                                )}
+                                <p className="font-mono">
                                     Score = (Reddito Netto − Spese Effettive) ÷ Reddito Netto × 100
-                                </span>
+                                </p>
                             </div>
                         </CardBox>
                     </div>
@@ -525,8 +541,101 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                         .
                     </div>
 
+                    {/* ── FAQ ─────────────────────────────────────────────────────────────── */}
+                    <CardBox>
+                        <h3 className="mb-5 font-semibold text-gray-900 dark:text-white text-lg">
+                            ❓ Domande frequenti sul Lifestyle Inflation Score
+                        </h3>
+                        <div className="space-y-4">
+                            <FaqItem
+                                question="Cos'è il Lifestyle Inflation Score?"
+                                answer="È un indicatore che misura la percentuale di reddito netto rimasta dopo aver coperto le spese di stile di vita. Un valore alto significa che stai mantenendo buone abitudini finanziarie; un valore basso indica che le spese si avvicinano pericolosamente al reddito disponibile."
+                            />
+                            <FaqItem
+                                question="Come viene calcolato lo score?"
+                                answer="Score = (Reddito Netto − Spese Effettive) ÷ Reddito Netto × 100. Le «Spese Effettive» escludono investimenti e categorie che hai scelto di non conteggiare, così da misurare soltanto la spesa «di stile di vita»."
+                            />
+                            <FaqItem
+                                question="Come si interpretano i valori?"
+                                answer={
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li><span className="font-semibold text-emerald-600">≥ 30% — Ottimo:</span> stai risparmiando in modo sano e mantenendo un margine finanziario solido.</li>
+                                        <li><span className="font-semibold text-amber-500">10%–29% — Attenzione:</span> le spese stanno erodendo buona parte del reddito. Monitora le categorie più pesanti.</li>
+                                        <li><span className="font-semibold text-red-500">&lt; 10% — Critico:</span> le spese coprono quasi tutto il reddito netto. Rivedi il budget il prima possibile.</li>
+                                    </ul>
+                                }
+                            />
+                            <FaqItem
+                                question="Perché per la Partita IVA il calcolo è diverso?"
+                                answer="I lavoratori autonomi in regime forfettario ricevono compensi lordi: devono versare INPS e flat tax prima di poter spendere. Lo score usa quindi il reddito netto stimato (dopo le tasse) per rispecchiare il reale potere d'acquisto. I dipendenti invece ricevono già lo stipendio netto in busta paga, quindi nessun calcolo fiscale viene applicato."
+                            />
+                            <FaqItem
+                                question="Come vengono calcolate le tasse per la Partita IVA?"
+                                answer={
+                                    <ol className="list-decimal pl-5 space-y-1">
+                                        <li><strong>INPS</strong> = Reddito Lordo × aliquota INPS (default 26,23%)</li>
+                                        <li><strong>Flat Tax</strong> = (Reddito Lordo − INPS) × aliquota flat tax (default 15%)<br /><span className="text-gray-500 text-xs">I contributi INPS sono deducibili dalla base imponibile fiscale (art. 1 c. 64 L. 190/2014).</span></li>
+                                        <li><strong>Tasse totali</strong> = INPS + Flat Tax</li>
+                                        <li><strong>Reddito Netto</strong> = Reddito Lordo − Tasse Totali</li>
+                                    </ol>
+                                }
+                            />
+                            <FaqItem
+                                question="Posso personalizzare le aliquote?"
+                                answer="Sì. Nelle impostazioni del tuo profilo puoi modificare l'aliquota INPS e la flat tax per adattarle alla tua situazione specifica (es. regime ordinario, aliquota INPS ridotta al 5% per nuove aperture, ecc.)."
+                            />
+                            <FaqItem
+                                question="Cosa si intende per «spese escluse»?"
+                                answer="Sono le transazioni appartenenti a categorie marcate come «escludi dal Lifestyle Score», ad esempio Investimenti, Fondi pensione o Risparmio programmato. Questi importi vengono sottratti dalle spese totali prima del calcolo: non influenzano negativamente lo score perché non rappresentano «consumo» ma accumulo di ricchezza."
+                            />
+                            <FaqItem
+                                question="Lo score considera lo storico completo o solo il mese in corso?"
+                                answer="La pagina di dettaglio mostra lo score calcolato sull'intero storico disponibile (dalla prima transazione registrata ad oggi). Il widget in dashboard e la sezione «Tendenza» mostrano invece gli ultimi 30 giorni e il confronto con i 30 giorni precedenti."
+                            />
+                            <FaqItem
+                                question="I trasferimenti tra conti influenzano lo score?"
+                                answer="No. I trasferimenti interni tra conti dello stesso nucleo familiare (household) vengono esclusi automaticamente sia dal calcolo del reddito che da quello delle spese, per evitare doppi conteggi."
+                            />
+                        </div>
+                    </CardBox>
+
                 </div>
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FaqItem sub-component
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FaqItem({ question, answer }: { question: string; answer: React.ReactNode }) {
+    const [open, setOpen] = React.useState(false);
+
+    return (
+        <div className="rounded-lg border border-gray-100 dark:border-gray-700">
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/50 transition-colors rounded-lg"
+                aria-expanded={open}
+            >
+                <span>{question}</span>
+                <span
+                    className={clsx(
+                        'ml-4 shrink-0 text-gray-400 transition-transform duration-200',
+                        open && 'rotate-180'
+                    )}
+                    aria-hidden
+                >
+                    ▾
+                </span>
+            </button>
+            {open && (
+                <div className="border-t border-gray-100 px-4 py-3 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400 leading-relaxed">
+                    {answer}
+                </div>
+            )}
+        </div>
     );
 }

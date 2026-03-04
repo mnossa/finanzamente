@@ -10,10 +10,19 @@ use Illuminate\Support\Collection;
 /**
  * Service centralizzato per la logica di calcolo del Lifestyle Inflation Score.
  *
- * Formule:
- *   RedditoNetto = RedditoLordo - TassePreviste  (solo P.IVA; per "persona" = RedditoLordo)
- *   SpeseEffettive = TotaleUscite - EsclusiDalScore  (investimenti, trasferimenti, categorie escluse)
- *   LifestyleScore = (RedditoNetto - SpeseEffettive) / RedditoNetto  * 100
+ * Formule (Partita IVA — regime forfettario):
+ *   InpsContributi  = RedditoLordo × inps_rate / 100
+ *   FlatTax         = (RedditoLordo − InpsContributi) × tax_rate / 100
+ *   TassePreviste   = InpsContributi + FlatTax
+ *   RedditoNetto    = RedditoLordo − TassePreviste
+ *
+ * Note: i contributi INPS sono deducibili dalla base imponibile della flat tax
+ * (art. 1 c. 64 L. 190/2014 — regime forfettario).
+ * Per utenti "persona" (dipendenti) le tasse stimate sono 0 e RedditoNetto = RedditoLordo.
+ *
+ * Spese:
+ *   SpeseEffettive = TotaleUscite − EsclusiDalScore  (investimenti, trasferimenti, cat. escluse)
+ *   LifestyleScore = (RedditoNetto − SpeseEffettive) / RedditoNetto × 100
  */
 class FinancialMetricsService
 {
@@ -26,6 +35,8 @@ class FinancialMetricsService
      * @return array{
      *   gross_income: float,
      *   estimated_taxes: float,
+     *   inps_amount: float,
+     *   flat_tax_amount: float,
      *   net_income: float,
      *   total_expenses: float,
      *   excluded_expenses: float,
@@ -54,10 +65,17 @@ class FinancialMetricsService
             ->whereBetween('date', [$startDate, $endDate])
             ->sum('amount');
 
-        // ── Tasse stimate (solo P.IVA) ───────────────────────────────────────────
-        $estimatedTaxes = $isPartitaIva
-            ? ($grossIncome * ($taxRate + $inpsRate)) / 100
-            : 0.0;
+        // ── Tasse stimate (solo P.IVA — regime forfettario) ──────────────────────
+        // I contributi INPS sono deducibili dalla base imponibile della flat tax.
+        $inpsAmount   = 0.0;
+        $flatTaxAmount = 0.0;
+
+        if ($isPartitaIva) {
+            $inpsAmount    = ($grossIncome * $inpsRate) / 100;
+            $flatTaxAmount = (($grossIncome - $inpsAmount) * $taxRate) / 100;
+        }
+
+        $estimatedTaxes = $inpsAmount + $flatTaxAmount;
 
         $netIncome = max(0.0, $grossIncome - $estimatedTaxes);
 
@@ -97,6 +115,8 @@ class FinancialMetricsService
         return [
             'gross_income'       => round($grossIncome, 2),
             'estimated_taxes'    => round($estimatedTaxes, 2),
+            'inps_amount'        => round($inpsAmount, 2),
+            'flat_tax_amount'    => round($flatTaxAmount, 2),
             'net_income'         => round($netIncome, 2),
             'total_expenses'     => round($totalExpenses, 2),
             'excluded_expenses'  => round($excludedExpenses, 2),
