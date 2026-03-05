@@ -194,6 +194,96 @@ Durante i test, Laravel:
 
 ---
 
+## Personalizzazione della Dashboard
+
+La dashboard è completamente personalizzabile da ogni utente autenticato. È possibile:
+
+1. **Scegliere i widget visibili** — mostrare o nascondere ogni blocco della dashboard.
+2. **Riordinare i widget** — trascinare i widget per cambiarli di posizione (drag & drop).
+3. **Ridimensionare i widget** — scegliere tra le dimensioni consentite (`sm`, `md`, `lg`, `xl`).
+4. **Salvare la configurazione** — il layout viene persistito nel database per household attiva.
+5. **Ripristinare il layout di default** — in qualsiasi momento tramite il pulsante dedicato.
+
+### Attivazione della modalità personalizzazione
+
+Il pulsante **"Personalizza dashboard"** è visibile in alto a destra nella pagina della dashboard. Cliccandolo si entra in modalità modifica:
+
+- Ogni widget mostra una barra di controllo con maniglia drag, selettore dimensione e toggle visibilità.
+- Al termine delle modifiche, cliccare **"Salva layout"** per persistere o **"Annulla"** per ripristinare lo stato precedente.
+- Il pulsante **"Ripristina default"** elimina la configurazione personalizzata e ripristina il layout di default.
+
+### Struttura dati della configurazione
+
+La configurazione viene salvata nella tabella `dashboard_layouts` con struttura JSON:
+
+```json
+{
+  "widgets": [
+    { "id": "total_balance",      "visible": true,  "position": 0, "size": "lg" },
+    { "id": "monthly_stats",      "visible": true,  "position": 1, "size": "lg" },
+    { "id": "annual_revenue",     "visible": true,  "position": 2, "size": "lg" },
+    { "id": "tax_thermometer",    "visible": true,  "position": 3, "size": "lg" },
+    { "id": "lifestyle_widget",   "visible": true,  "position": 4, "size": "lg" },
+    { "id": "accounts",           "visible": true,  "position": 5, "size": "md" },
+    { "id": "recent_transactions","visible": true,  "position": 6, "size": "md" },
+    { "id": "active_budgets",     "visible": true,  "position": 7, "size": "md" },
+    { "id": "debts_credits",      "visible": true,  "position": 8, "size": "md" },
+    { "id": "quick_actions",      "visible": true,  "position": 9, "size": "lg" }
+  ]
+}
+```
+
+#### Campi del singolo widget
+
+| Campo      | Tipo      | Descrizione                                                  |
+|------------|-----------|--------------------------------------------------------------|
+| `id`       | `string`  | Identificativo stabile del widget (vedi lista sotto)         |
+| `visible`  | `boolean` | Se `false` il widget non viene renderizzato in dashboard     |
+| `position` | `integer` | Indice di posizione (usato per ordinare i widget)            |
+| `size`     | `string`  | Dimensione griglia: `sm`, `md`, `lg`, `xl`                   |
+
+#### Widget disponibili
+
+| ID                   | Titolo                    | Visibilità condizionale              |
+|----------------------|---------------------------|--------------------------------------|
+| `total_balance`      | Saldo Totale              | Sempre visibile                      |
+| `monthly_stats`      | Statistiche Mensili       | Sempre visibile                      |
+| `annual_revenue`     | Fatturato Annuo           | Solo utenti Partita IVA              |
+| `tax_thermometer`    | Termometro Tasse          | Solo utenti Partita IVA              |
+| `lifestyle_widget`   | Lifestyle Inflation Score | Sempre visibile (sblocco progressivo)|
+| `accounts`           | I tuoi Conti              | Sempre visibile                      |
+| `recent_transactions`| Ultime Transazioni        | Sempre visibile                      |
+| `active_budgets`     | Budget Attivi             | Richiede modulo `budgets`            |
+| `debts_credits`      | Debiti e Crediti          | Richiede modulo `debts_credits`      |
+| `quick_actions`      | Azioni Rapide             | Sempre visibile                      |
+
+#### Dimensioni griglia
+
+| Valore | Comportamento                                 |
+|--------|-----------------------------------------------|
+| `sm`   | 1 colonna (metà larghezza su desktop)         |
+| `md`   | 1 colonna (metà larghezza su desktop)         |
+| `lg`   | 2 colonne su desktop (larghezza intera)       |
+| `xl`   | 2 colonne su desktop (larghezza intera)       |
+
+#### Note su griglia responsive
+
+- La griglia usa `grid-cols-2` su schermi `lg` e superiori, `grid-cols-1` su mobile.
+- I widget con dimensione `lg` o `xl` occupano entrambe le colonne su desktop (`col-span-2`).
+- I widget con dimensione `sm` o `md` occupano una singola colonna.
+
+### API backend
+
+| Metodo   | URL                      | Azione                                   |
+|----------|--------------------------|------------------------------------------|
+| `GET`    | `/dashboard/layout`      | Legge la configurazione corrente (o default) |
+| `POST`   | `/dashboard/layout`      | Salva la configurazione                  |
+| `DELETE` | `/dashboard/layout`      | Ripristina il layout di default          |
+
+La configurazione è salvata per coppia `(user_id, household_id)`.
+
+---
+
 ## Trasferimenti: contratto Frontend → Backend
 
 Il backend calcola `dest_amount` in modo autoritativo. Il frontend non deve inviarlo, ma può mostrare una stima locale.
