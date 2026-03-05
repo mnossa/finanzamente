@@ -7,22 +7,24 @@ import { WidgetDefinition } from '@/types/dashboard';
  * default e le dimensioni consentite. I vincoli di visibilità (es. P.IVA,
  * moduli) sono indicati tramite le proprietà `requiresVat` e `requiresModule`.
  */
+const ALL_SIZES: WidgetDefinition['allowedSizes'] = ['sm', 'md', 'lg', 'xl'];
+
 export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
         id: 'total_balance',
         title: 'Saldo Totale',
         description: 'Visualizza il saldo complessivo di tutti i conti.',
-        defaultSize: 'lg',
+        defaultSize: 'xl',
         defaultVisible: true,
-        allowedSizes: ['lg', 'xl'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'monthly_stats',
         title: 'Statistiche Mensili',
         description: 'Entrate, uscite, saldo netto e transazioni del mese corrente.',
-        defaultSize: 'lg',
+        defaultSize: 'xl',
         defaultVisible: true,
-        allowedSizes: ['lg', 'xl'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'annual_revenue',
@@ -31,7 +33,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultSize: 'lg',
         defaultVisible: true,
         requiresVat: true,
-        allowedSizes: ['lg', 'xl'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'tax_thermometer',
@@ -40,15 +42,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultSize: 'lg',
         defaultVisible: true,
         requiresVat: true,
-        allowedSizes: ['lg', 'xl'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'lifestyle_widget',
         title: 'Lifestyle Inflation Score',
         description: 'Analizza l\'indice di inflazione del tuo stile di vita.',
-        defaultSize: 'lg',
+        defaultSize: 'xl',
         defaultVisible: true,
-        allowedSizes: ['md', 'lg', 'xl'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'accounts',
@@ -56,7 +58,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         description: 'Panoramica di tutti i conti attivi con saldo aggiornato.',
         defaultSize: 'md',
         defaultVisible: true,
-        allowedSizes: ['sm', 'md', 'lg'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'recent_transactions',
@@ -64,7 +66,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         description: 'Le 10 transazioni più recenti della household.',
         defaultSize: 'md',
         defaultVisible: true,
-        allowedSizes: ['sm', 'md', 'lg'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'active_budgets',
@@ -73,7 +75,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultSize: 'md',
         defaultVisible: true,
         requiresModule: 'budgets',
-        allowedSizes: ['sm', 'md', 'lg'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'debts_credits',
@@ -82,15 +84,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultSize: 'md',
         defaultVisible: true,
         requiresModule: 'debts_credits',
-        allowedSizes: ['sm', 'md', 'lg'],
+        allowedSizes: ALL_SIZES,
     },
     {
         id: 'quick_actions',
         title: 'Azioni Rapide',
         description: 'Accesso rapido alle operazioni più frequenti.',
-        defaultSize: 'lg',
+        defaultSize: 'xl',
         defaultVisible: true,
-        allowedSizes: ['lg', 'xl'],
+        allowedSizes: ALL_SIZES,
     },
 ];
 

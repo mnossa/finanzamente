@@ -6,6 +6,7 @@ interface QuickActionCardProps {
     href: string;
     icon: ReactNode;
     label: string;
+    compact?: boolean;
     className?: string;
 }
 
@@ -13,11 +14,13 @@ export default function QuickActionCard({
     href,
     icon,
     label,
+    compact = false,
     className = '',
 }: QuickActionCardProps) {
     return (
         <Link
             href={href}
+            title={compact ? label : undefined}
             className={clsx(
                 'flex flex-col items-center rounded-xl p-4',
                 'bg-emerald-50 text-emerald-600',
@@ -28,8 +31,8 @@ export default function QuickActionCard({
                 className
             )}
         >
-            <span className="mb-2 text-2xl">{icon}</span>
-            <span className="text-center text-sm font-medium">{label}</span>
+            <span className={clsx('text-2xl', !compact && 'mb-2')}>{icon}</span>
+            {!compact && <span className="text-center text-sm font-medium">{label}</span>}
         </Link>
     );
 }

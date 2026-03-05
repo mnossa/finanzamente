@@ -73,7 +73,7 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
         const pct      = Math.round((progress / data.months_needed) * 100);
 
         return (
-            <CardBox className={clsx('relative overflow-hidden', className)}>
+            <CardBox className={clsx('relative overflow-hidden h-full', className)}>
                 {/* Widget sfumato in background */}
                 <div className="pointer-events-none select-none opacity-20 blur-[2px]" aria-hidden>
                     <div className="mb-4 flex items-center justify-between">
@@ -161,10 +161,10 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
     const offset  = circumference - (pct / 100) * circumference;
 
     return (
-        <Link href={route('lifestyle-score.index')} className="block">
+        <Link href={route('lifestyle-score.index')} className="block h-full">
             <CardBox
                 className={clsx(
-                    'cursor-pointer transition-shadow duration-200 hover:shadow-md',
+                    'cursor-pointer transition-shadow duration-200 hover:shadow-md h-full',
                     className
                 )}
             >

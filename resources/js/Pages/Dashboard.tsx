@@ -334,7 +334,7 @@ export default function Dashboard({
     lifestyleWidgetData,
     dashboardLayout,
 }: DashboardProps) {
-    const { isModuleEnabled } = useModules();
+    const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
     const hasVat = auth.user.user_type === 'partita_iva';
 
@@ -363,7 +363,7 @@ export default function Dashboard({
             : monthlyStats.expenses > 0 ? 100 : 0;
 
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -375,7 +375,7 @@ export default function Dashboard({
         if (oldIndex !== -1 && newIndex !== -1) moveWidget(oldIndex, newIndex);
     }
 
-    function renderWidgetContent(widgetId: WidgetId): React.ReactNode {
+    function renderWidgetContent(widgetId: WidgetId, size: string): React.ReactNode {
         switch (widgetId) {
             case 'total_balance':
                 return (
@@ -506,18 +506,20 @@ export default function Dashboard({
                     </CardBox>
                 ) : <LockedModuleCard moduleId="debts_credits" />;
 
-            case 'quick_actions':
+            case 'quick_actions': {
+                const compact = size === 'sm';
                 return (
                     <CardBox className="overflow-hidden p-4 shadow-sm">
                         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Azioni rapide</h3>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" />
-                            <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" />
-                            <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" />
-                            <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" />
+                            <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
+                            <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" compact={compact} />
+                            <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" compact={compact} />
+                            <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" compact={compact} />
                         </div>
                     </CardBox>
                 );
+            }
 
             default:
                 return null;
@@ -538,12 +540,28 @@ export default function Dashboard({
     return (
         <AuthenticatedLayout header={<PageHeader title="Dashboard" />}>
             <Head title="Dashboard" />
+
+            {/* FAB personalizzazione — non editing */}
+            {!isEditing && (
+                <button
+                    type="button"
+                    onClick={toggleEditing}
+                    className="fixed bottom-6 right-6 z-40 hidden h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow-xl sm:flex dark:bg-gray-800 dark:ring-gray-700 dark:hover:bg-gray-700"
+                    aria-label="Personalizza la dashboard"
+                    title="Personalizza dashboard"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-gray-600 dark:text-gray-300" aria-hidden="true">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                </button>
+            )}
+
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
                     <ModuleAccessInfo />
 
-                    {/* Barra personalizzazione dashboard */}
-                    {isEditing ? (
+                    {/* Barra personalizzazione dashboard — solo in editing */}
+                    {isEditing && (
                         <div
                             className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-dashed border-emerald-400 bg-emerald-50 px-4 py-3 dark:border-emerald-600 dark:bg-emerald-900/20"
                             role="region"
@@ -584,20 +602,6 @@ export default function Dashboard({
                                 </button>
                             </div>
                         </div>
-                    ) : (
-                        <div className="flex justify-end">
-                            <button
-                                type="button"
-                                onClick={toggleEditing}
-                                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                                aria-label="Personalizza la dashboard"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                                Personalizza dashboard
-                            </button>
-                        </div>
                     )}
 
                     {/* Griglia widget con DnD */}
@@ -607,15 +611,15 @@ export default function Dashboard({
                         onDragEnd={handleDragEnd}
                     >
                         <SortableContext
-                            items={sortedWidgets.map((w) => w.id)}
+                            items={sortedWidgets.filter((w) => isWidgetRenderable(w.id)).map((w) => w.id)}
                             strategy={rectSortingStrategy}
                         >
-                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
                                 {sortedWidgets.map((widget) => {
                                     const renderable = isWidgetRenderable(widget.id);
-                                    const content = renderWidgetContent(widget.id);
+                                    const content = renderWidgetContent(widget.id, widget.size);
 
-                                    if (!renderable && !isEditing) return null;
+                                    if (!renderable) return null;
                                     if (!widget.visible && !isEditing) return null;
                                     if (content === null && !isEditing) return null;
 
@@ -636,12 +640,12 @@ export default function Dashboard({
                     </DndContext>
 
                     {/* Moduli Suggeriti (se bloccati) */}
-                    {(!isModuleEnabled('investments') || !isModuleEnabled('vat_management')) && !isEditing && (
+                    {(isModuleEnabled('investments') === false && isModuleLocked('investments') || isModuleEnabled('vat_management') === false && isModuleLocked('vat_management')) && !isEditing && (
                         <div>
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">✨ Sblocca Nuove Funzionalità</h3>
                             <div className="grid gap-6 lg:grid-cols-2">
-                                {!isModuleEnabled('investments') && <LockedModuleCard moduleId="investments" />}
-                                {!isModuleEnabled('vat_management') && <LockedModuleCard moduleId="vat_management" />}
+                                {!isModuleEnabled('investments') && isModuleLocked('investments') && <LockedModuleCard moduleId="investments" />}
+                                {!isModuleEnabled('vat_management') && isModuleLocked('vat_management') && <LockedModuleCard moduleId="vat_management" />}
                             </div>
                         </div>
                     )}

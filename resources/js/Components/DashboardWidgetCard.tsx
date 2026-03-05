@@ -22,10 +22,10 @@ const SIZE_LABELS: Record<WidgetSize, string> = {
 };
 
 const SIZE_COL_CLASSES: Record<WidgetSize, string> = {
-    sm: 'col-span-1',
-    md: 'col-span-1',
-    lg: 'col-span-1 lg:col-span-2',
-    xl: 'col-span-1 lg:col-span-2',
+    sm: 'col-span-full xl:col-span-2',
+    md: 'col-span-full xl:col-span-3',
+    lg: 'col-span-full xl:col-span-4',
+    xl: 'col-span-full xl:col-span-6',
 };
 
 /**
@@ -69,9 +69,9 @@ export default function DashboardWidgetCard({
             style={style}
             className={clsx(
                 SIZE_COL_CLASSES[widget.size],
+                'flex flex-col',
                 isDragging && 'opacity-70 shadow-2xl ring-2 ring-emerald-400',
-                !widget.visible && isEditing && 'opacity-50',
-                isEditing && 'relative',
+                isEditing && !widget.visible && 'opacity-50',
                 className
             )}
         >
@@ -98,7 +98,7 @@ export default function DashboardWidgetCard({
                             className="h-4 w-4"
                             aria-hidden="true"
                         >
-                            <path d="M7 2a1 1 0 011 1v1h4V3a1 1 0 112 0v1h1a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h1V3a1 1 0 011-1zm0 5a1 1 0 000 2h6a1 1 0 100-2H7z" />
+                            <path d="M7 2a1 1 0 110 2 1 1 0 010-2zm6 0a1 1 0 110 2 1 1 0 010-2zM7 7a1 1 0 110 2 1 1 0 010-2zm6 0a1 1 0 110 2 1 1 0 010-2zM7 12a1 1 0 110 2 1 1 0 010-2zm6 0a1 1 0 110 2 1 1 0 010-2z" />
                         </svg>
                     </button>
 
@@ -163,7 +163,7 @@ export default function DashboardWidgetCard({
             )}
 
             {/* Contenuto del widget */}
-            <div className={clsx(!widget.visible && isEditing && 'pointer-events-none select-none')}>
+            <div className={clsx('flex-1 [&>*]:h-full', !widget.visible && isEditing && 'pointer-events-none select-none')}>
                 {children}
             </div>
         </div>

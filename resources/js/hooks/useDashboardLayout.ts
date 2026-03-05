@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { arrayMove } from '@dnd-kit/sortable';
-import { router } from '@inertiajs/react';
+import axios from 'axios';
 import { DashboardLayoutConfig, WidgetConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 
 /**
@@ -17,6 +17,7 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
     const [config, setConfig] = useState<DashboardLayoutConfig>(() => ({
         widgets: [...initialConfig.widgets].sort((a, b) => a.position - b.position),
     }));
+    const [snapshot, setSnapshot] = useState<DashboardLayoutConfig | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -26,18 +27,31 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
 
     /** Attiva/disattiva la modalità di modifica. */
     const toggleEditing = useCallback(() => {
-        setIsEditing((prev) => !prev);
+        setIsEditing((prev) => {
+            if (!prev) {
+                // Salva snapshot prima di entrare in modifica
+                setSnapshot((s) => s ?? null);
+                setConfig((current) => {
+                    setSnapshot({ widgets: [...current.widgets] });
+                    return current;
+                });
+            }
+            return !prev;
+        });
         setSaveError(null);
     }, []);
 
-    /** Annulla le modifiche ripristinando la configurazione iniziale. */
+    /** Annulla le modifiche ripristinando la configurazione al momento dell'apertura. */
     const cancelEditing = useCallback(() => {
-        setConfig({
-            widgets: [...initialConfig.widgets].sort((a, b) => a.position - b.position),
-        });
+        if (snapshot) {
+            setConfig({
+                widgets: [...snapshot.widgets].sort((a, b) => a.position - b.position),
+            });
+        }
+        setSnapshot(null);
         setIsEditing(false);
         setSaveError(null);
-    }, [initialConfig]);
+    }, [snapshot]);
 
     /** Aggiorna la visibilità di un widget. */
     const toggleWidgetVisibility = useCallback((id: WidgetId) => {
@@ -80,39 +94,38 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
             position: i,
         }));
 
-        return new Promise<void>((resolve, reject) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            router.post(
-                route('dashboard.layout.store'),
-                { config: { widgets: normalizedWidgets } } as any,
-                {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        setIsEditing(false);
-                        setIsSaving(false);
-                        resolve();
-                    },
-                    onError: (errors) => {
-                        const msg =
-                            Object.values(errors)[0]?.toString() ??
-                            'Errore durante il salvataggio del layout.';
-                        setSaveError(msg);
-                        setIsSaving(false);
-                        reject(new Error(msg));
-                    },
-                }
-            );
-        });
+        return axios
+            .post(route('dashboard.layout.store'), { config: { widgets: normalizedWidgets } })
+            .then(() => {
+                setSnapshot(null);
+                setIsEditing(false);
+                setIsSaving(false);
+            })
+            .catch((error) => {
+                const errors = error?.response?.data?.errors;
+                const msg = errors
+                    ? (Object.values(errors)[0] as string[])?.[0] ?? 'Errore durante il salvataggio del layout.'
+                    : 'Errore durante il salvataggio del layout.';
+                setSaveError(msg);
+                setIsSaving(false);
+                throw new Error(msg);
+            });
     }, [sortedWidgets]);
 
     /** Ripristina il layout di default. */
     const resetLayout = useCallback(() => {
-        router.delete(route('dashboard.layout.reset'), {
-            preserveScroll: true,
-            onSuccess: () => {
+        axios
+            .delete(route('dashboard.layout.reset'))
+            .then((response) => {
+                const widgets: WidgetConfig[] = response.data?.config?.widgets ?? [];
+                if (widgets.length > 0) {
+                    setConfig({ widgets: [...widgets].sort((a, b) => a.position - b.position) });
+                }
                 setIsEditing(false);
-            },
-        });
+            })
+            .catch(() => {
+                setSaveError('Errore durante il ripristino del layout.');
+            });
     }, []);
 
     return {
