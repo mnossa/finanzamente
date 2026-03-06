@@ -4,7 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#4f4ce5">
-    
+    <link rel="icon" type="image/webp" href="{{ asset('images/finanzamente-logo.webp') }}">
+
+    {{-- SEO Tags dinamici tramite artesaos/seotools (impostati nei controller) --}}
+    {!! SEOMeta::generate() !!}
+    {!! OpenGraph::generate() !!}
+    {!! Twitter::generate() !!}
+    {!! JsonLd::generate() !!}
+
+    {{-- Slot opzionale per override manuali nelle singole viste --}}
     @yield('meta-tags')
     
     <!-- Preconnect for performance -->

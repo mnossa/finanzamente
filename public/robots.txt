@@ -1,2 +1,13 @@
 User-agent: *
-Disallow:
+# Esclude la dashboard autenticata e tutte le sotto-rotte (risparmio crawl budget)
+Disallow: /app/
+Disallow: /dashboard
+Disallow: /profile-quiz
+Disallow: /households/
+Disallow: /invitations/
+# Esclude le rotte di autenticazione interna
+Disallow: /verify-email
+Disallow: /confirm-password
+Disallow: /email/
+
+# Sitemap — URL aggiornato dinamicamente tramite la rotta /robots.txt

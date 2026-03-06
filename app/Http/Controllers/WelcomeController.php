@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Illuminate\View\View;
+
+/**
+ * Controller per la homepage pubblica.
+ * Imposta i meta tag SEO tramite artesaos/seotools prima di restituire la vista.
+ */
+class WelcomeController extends Controller
+{
+    public function index(): View
+    {
+        SEOMeta::setTitle('FinanzaMente - Gestisci le tue finanze con intelligenza');
+        SEOMeta::setDescription('FinanzaMente è la webapp di gestione finanziaria personale pensata per chi vive in Italia. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.');
+        SEOMeta::setKeywords(['gestione finanze', 'budget personale', 'risparmio', 'spese', 'finanza personale', 'vivere in Italia', 'webapp finanze']);
+        SEOMeta::setCanonical(url('/'));
+
+        OpenGraph::setTitle('FinanzaMente - Gestisci le tue finanze con intelligenza');
+        OpenGraph::setDescription('Prendi il controllo totale delle tue finanze. Gestisci ogni transazione, pianifica il tuo budget e raggiungi i tuoi obiettivi finanziari. Per tutti chi vive in Italia.');
+        OpenGraph::setUrl(url('/'));
+        OpenGraph::addProperty('type', 'website');
+        OpenGraph::addProperty('site_name', 'FinanzaMente');
+        OpenGraph::addProperty('locale', 'it_IT');
+
+        TwitterCard::setTitle('FinanzaMente - Gestisci le tue finanze');
+        TwitterCard::setDescription('Webapp di gestione finanziaria personale per chi vive in Italia.');
+        TwitterCard::addValue('card', 'summary_large_image');
+
+        return view('welcome');
+    }
+}

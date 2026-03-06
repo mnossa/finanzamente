@@ -1,12 +1,6 @@
 @extends('layouts.guest')
 
-@section('meta-tags')
-    <x-meta-tags 
-        title="FinanzaMente - Gestisci le tue finanze con intelligenza"
-        description="FinanzaMente è l'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità."
-        keywords="gestione finanze, budget personale, risparmio, spese, finanza personale, Italia"
-    />
-@endsection
+{{-- I meta tag sono impostati in WelcomeController tramite artesaos/seotools --}}
 
 @section('content')
     <!-- Hero Section -->

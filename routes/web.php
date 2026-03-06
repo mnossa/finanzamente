@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ChartsController;
+use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BudgetController;
@@ -32,9 +34,19 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [WelcomeController::class, 'index'])->name('home');
+
+// robots.txt dinamico con Sitemap URL corretto
+Route::get('/robots.txt', [RobotsController::class, 'index']);
+
+// Sitemap XML — generata tramite `php artisan sitemap:generate` (schedulato ogni domenica)
+Route::get('/sitemap.xml', function () {
+    $path = public_path('sitemap.xml');
+    if (! file_exists($path)) {
+        abort(404);
+    }
+    return response()->file($path, ['Content-Type' => 'application/xml']);
+})->name('sitemap');
 
 // Rotte pubbliche per inviti household
 Route::get('/invitations/{token}/register', [HouseholdInvitationController::class, 'showRegisterForm'])
