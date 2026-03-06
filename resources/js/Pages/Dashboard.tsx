@@ -571,7 +571,7 @@ export default function Dashboard({
                                 <span className="text-lg" aria-hidden="true">✏️</span>
                                 <span className="font-semibold text-emerald-800 dark:text-emerald-200">Modalità personalizzazione</span>
                                 <span className="hidden text-sm text-emerald-600 dark:text-emerald-400 sm:inline">
-                                    — Trascina i widget per riordinarli, usa i controlli per mostrare/nascondere e ridimensionare.
+                                    — Afferra l'icona ⠿ per riordinare o usa i selettori S/M/L per cambiare dimensione.
                                 </span>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">

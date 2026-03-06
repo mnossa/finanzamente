@@ -58,7 +58,9 @@ export default function DashboardWidgetCard({
     } = useSortable({ id: widget.id, disabled: !isEditing });
 
     const style: React.CSSProperties = {
-        transform: CSS.Transform.toString(transform),
+        transform: isDragging
+            ? `${CSS.Transform.toString(transform)} scale(1.02)`
+            : CSS.Transform.toString(transform),
         transition,
         zIndex: isDragging ? 50 : undefined,
     };
@@ -70,7 +72,10 @@ export default function DashboardWidgetCard({
             className={clsx(
                 SIZE_COL_CLASSES[widget.size],
                 'flex flex-col',
-                isDragging && 'opacity-70 shadow-2xl ring-2 ring-emerald-400',
+                // Effetto sollevamento durante il drag
+                isDragging && 'opacity-90 shadow-2xl ring-2 ring-emerald-400 rounded-xl',
+                // Bordo tratteggiato in modalità editing per segnalare la manipolabilità
+                isEditing && !isDragging && 'rounded-xl outline-dashed outline-2 outline-emerald-400/50 dark:outline-emerald-600/50',
                 isEditing && !widget.visible && 'opacity-50',
                 className
             )}
@@ -82,12 +87,12 @@ export default function DashboardWidgetCard({
                     role="toolbar"
                     aria-label={`Controlli widget ${definition?.title ?? widget.id}`}
                 >
-                    {/* Maniglia drag */}
+                    {/* Maniglia drag — icona ⠿ ben visibile per comunicare la manipolabilità */}
                     <button
                         {...attributes}
                         {...listeners}
                         type="button"
-                        className="cursor-grab touch-none rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        className="cursor-grab touch-none rounded p-1.5 text-gray-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 active:cursor-grabbing dark:text-gray-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
                         aria-label="Trascina per riordinare"
                         title="Trascina per riordinare"
                     >
@@ -95,7 +100,7 @@ export default function DashboardWidgetCard({
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"
-                            className="h-4 w-4"
+                            className="h-5 w-5"
                             aria-hidden="true"
                         >
                             <path d="M7 2a1 1 0 110 2 1 1 0 010-2zm6 0a1 1 0 110 2 1 1 0 010-2zM7 7a1 1 0 110 2 1 1 0 010-2zm6 0a1 1 0 110 2 1 1 0 010-2zM7 12a1 1 0 110 2 1 1 0 010-2zm6 0a1 1 0 110 2 1 1 0 010-2z" />
