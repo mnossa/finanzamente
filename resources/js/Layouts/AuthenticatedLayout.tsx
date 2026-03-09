@@ -163,6 +163,7 @@ const navigationSections: NavigationSection[] = [
         items: [
             { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet, moduleId: 'accounts' },
             { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
+            { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags },
             { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
             { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer, moduleId: 'transfers' },
         ]
