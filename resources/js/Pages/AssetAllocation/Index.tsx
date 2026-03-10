@@ -137,7 +137,6 @@ function RiskGauge({ index, label }: { index: number; label: string }) {
 // ---------------------------------------------------------------------------
 
 function PositionModal({ position, onClose }: { position: Position; onClose: () => void }) {
-    const isGain = position.buy_price != null && position.value > (position.buy_price * (position.quantity ?? 1));
 
     return (
         <div

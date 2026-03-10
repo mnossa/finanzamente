@@ -8,10 +8,12 @@ use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
 use App\Models\Investment;
 use App\Models\Transaction;
+use App\Services\AssetClassificationService;
 use App\Services\FinancialMetricsService;
 use App\Services\RevenueNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -455,38 +457,12 @@ class DashboardController extends Controller
     /**
      * Dati sintetici per il widget Asset Allocation in dashboard.
      * Restituisce il valore totale, l'allocazione per classe e l'indice di rischio.
+     * Utilizza AssetClassificationService per i mapping e un'aggregazione unica
+     * delle transazioni per evitare query N+1.
      */
     private function getAssetAllocationWidgetData(\App\Models\User $user): array
     {
         $householdId = $user->active_household_id;
-
-        // Mappa: asset type → asset class e rischio (replicata qui per evitare dipendenze circolari)
-        $assetTypeClass = [
-            'etf' => 'equities', 'stock' => 'equities', 'index' => 'equities',
-            'commodity' => 'commodities', 'insurance' => 'bonds',
-            'crypto' => 'crypto', 'other' => 'other',
-        ];
-        $assetTypeRisk = [
-            'etf' => 4, 'stock' => 6, 'index' => 4,
-            'commodity' => 5, 'insurance' => 2, 'crypto' => 7, 'other' => 3,
-        ];
-        $accountTypeClass = [
-            'bank' => 'liquidity', 'cash' => 'liquidity', 'card' => 'liquidity',
-            'crypto' => 'crypto', 'other' => 'liquidity',
-        ];
-        $accountTypeRisk = [
-            'bank' => 1, 'cash' => 1, 'card' => 1, 'crypto' => 7, 'other' => 1,
-        ];
-        $classColors = [
-            'equities' => '#3b82f6', 'bonds' => '#10b981',
-            'commodities' => '#f59e0b', 'crypto' => '#8b5cf6',
-            'liquidity' => '#06b6d4', 'other' => '#94a3b8',
-        ];
-        $classLabels = [
-            'equities' => 'Azionario', 'bonds' => 'Obbligazionario',
-            'commodities' => 'Commodities', 'crypto' => 'Crypto',
-            'liquidity' => 'Liquidità', 'other' => 'Altro',
-        ];
 
         // Investimenti aperti
         $investments = Investment::with('asset')
@@ -495,48 +471,54 @@ class DashboardController extends Controller
             ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->get();
 
-        $classValues = [];
+        $classValues   = [];
         $riskNumerator = 0.0;
-        $totalValue = 0.0;
+        $totalValue    = 0.0;
 
         foreach ($investments as $inv) {
             $type = $inv->asset->type ?? 'other';
-            $cls = $assetTypeClass[$type] ?? 'other';
-            $risk = $assetTypeRisk[$type] ?? 3;
-            $val = $inv->total_buy_value;
+            $cls  = AssetClassificationService::ASSET_TYPE_CLASS[$type] ?? 'other';
+            $risk = AssetClassificationService::ASSET_TYPE_RISK[$type] ?? 3;
+            $val  = $inv->total_buy_value;
             $classValues[$cls] = ($classValues[$cls] ?? 0) + $val;
-            $riskNumerator += $val * $risk;
-            $totalValue += $val;
+            $riskNumerator    += $val * $risk;
+            $totalValue       += $val;
         }
 
-        // Liquidità conti
+        // Liquidità conti — aggregazione unica per evitare N+1
         $accounts = Account::where('household_id', $householdId)
             ->where('active', true)
             ->whereNotIn('type', ['broker'])
             ->where(fn($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
             ->get();
 
-        foreach ($accounts as $account) {
-            $sum = Transaction::where('account_id', $account->id)
+        if ($accounts->isNotEmpty()) {
+            $transactionSums = Transaction::whereIn('account_id', $accounts->pluck('id'))
                 ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
-                ->sum('amount');
-            $balance = (float) $account->initial_balance + (float) $sum;
-            if ($balance <= 0) continue;
+                ->groupBy('account_id')
+                ->pluck(DB::raw('SUM(amount)'), 'account_id');
 
-            $type = $account->type ?? 'other';
-            $cls = $accountTypeClass[$type] ?? 'liquidity';
-            $risk = $accountTypeRisk[$type] ?? 1;
-            $classValues[$cls] = ($classValues[$cls] ?? 0) + $balance;
-            $riskNumerator += $balance * $risk;
-            $totalValue += $balance;
+            foreach ($accounts as $account) {
+                $balance = (float) $account->initial_balance + (float) ($transactionSums[$account->id] ?? 0);
+                if ($balance <= 0) {
+                    continue;
+                }
+
+                $type = $account->type ?? 'other';
+                $cls  = AssetClassificationService::ACCOUNT_TYPE_CLASS[$type] ?? 'liquidity';
+                $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$type] ?? 1;
+                $classValues[$cls] = ($classValues[$cls] ?? 0) + $balance;
+                $riskNumerator    += $balance * $risk;
+                $totalValue       += $balance;
+            }
         }
 
         $allocation = [];
         foreach ($classValues as $cls => $val) {
             $allocation[] = [
                 'asset_class' => $cls,
-                'label'       => $classLabels[$cls] ?? $cls,
-                'color'       => $classColors[$cls] ?? '#94a3b8',
+                'label'       => AssetClassificationService::CLASS_LABELS[$cls] ?? $cls,
+                'color'       => AssetClassificationService::CLASS_COLORS[$cls] ?? '#94a3b8',
                 'value'       => round($val, 2),
                 'percentage'  => $totalValue > 0 ? round(($val / $totalValue) * 100, 1) : 0,
             ];
@@ -547,20 +529,10 @@ class DashboardController extends Controller
             ? min(7, max(1, round($riskNumerator / $totalValue, 1)))
             : 1;
 
-        $riskLabel = match (true) {
-            $riskIndex <= 1.5 => 'Molto Basso',
-            $riskIndex <= 2.5 => 'Basso',
-            $riskIndex <= 3.5 => 'Moderato-Basso',
-            $riskIndex <= 4.5 => 'Moderato',
-            $riskIndex <= 5.5 => 'Moderato-Alto',
-            $riskIndex <= 6.5 => 'Alto',
-            default            => 'Molto Alto',
-        };
-
         return [
             'total_value' => round($totalValue, 2),
             'risk_index'  => $riskIndex,
-            'risk_label'  => $riskLabel,
+            'risk_label'  => AssetClassificationService::getRiskLabel($riskIndex),
             'allocation'  => $allocation,
         ];
     }
