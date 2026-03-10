@@ -94,6 +94,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultVisible: true,
         allowedSizes: ALL_SIZES,
     },
+    {
+        id: 'asset_allocation',
+        title: 'Asset Allocation',
+        description: 'Panoramica del patrimonio suddiviso per asset class e indice di rischio.',
+        defaultSize: 'md',
+        defaultVisible: true,
+        requiresModule: 'investments',
+        allowedSizes: ALL_SIZES,
+    },
 ];
 
 /** Mappa per accesso rapido al widget per ID. */

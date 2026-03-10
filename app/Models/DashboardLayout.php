@@ -38,16 +38,17 @@ class DashboardLayout extends Model
     {
         return [
             'widgets' => [
-                ['id' => 'total_balance',       'visible' => true, 'position' => 0, 'size' => 'xl'],
-                ['id' => 'monthly_stats',        'visible' => true, 'position' => 1, 'size' => 'xl'],
-                ['id' => 'annual_revenue',       'visible' => true, 'position' => 2, 'size' => 'lg'],
-                ['id' => 'tax_thermometer',      'visible' => true, 'position' => 3, 'size' => 'lg'],
-                ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 4, 'size' => 'xl'],
-                ['id' => 'accounts',             'visible' => true, 'position' => 5, 'size' => 'md'],
-                ['id' => 'recent_transactions',  'visible' => true, 'position' => 6, 'size' => 'md'],
-                ['id' => 'active_budgets',       'visible' => true, 'position' => 7, 'size' => 'md'],
-                ['id' => 'debts_credits',        'visible' => true, 'position' => 8, 'size' => 'md'],
-                ['id' => 'quick_actions',        'visible' => true, 'position' => 9, 'size' => 'xl'],
+                ['id' => 'total_balance',       'visible' => true, 'position' => 0,  'size' => 'xl'],
+                ['id' => 'monthly_stats',        'visible' => true, 'position' => 1,  'size' => 'xl'],
+                ['id' => 'annual_revenue',       'visible' => true, 'position' => 2,  'size' => 'lg'],
+                ['id' => 'tax_thermometer',      'visible' => true, 'position' => 3,  'size' => 'lg'],
+                ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 4,  'size' => 'xl'],
+                ['id' => 'accounts',             'visible' => true, 'position' => 5,  'size' => 'md'],
+                ['id' => 'recent_transactions',  'visible' => true, 'position' => 6,  'size' => 'md'],
+                ['id' => 'active_budgets',       'visible' => true, 'position' => 7,  'size' => 'md'],
+                ['id' => 'debts_credits',        'visible' => true, 'position' => 8,  'size' => 'md'],
+                ['id' => 'quick_actions',        'visible' => true, 'position' => 9,  'size' => 'xl'],
+                ['id' => 'asset_allocation',     'visible' => true, 'position' => 10, 'size' => 'md'],
             ],
         ];
     }
