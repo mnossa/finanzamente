@@ -60,6 +60,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Investment::class);
     }
 
+    public function telegramLinkTokens()
+    {
+        return $this->hasMany(TelegramLinkToken::class);
+    }
+
+    public function inboxItems()
+    {
+        return $this->hasMany(InboxItem::class);
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -75,6 +85,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'status',
         'preferences',
         'active_household_id',
+        'telegram_chat_id',
         'user_type',
         'fiscal_code',
         'vat_number',

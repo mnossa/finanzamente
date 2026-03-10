@@ -61,4 +61,35 @@ return [
         'key' => env('ALPHA_VANTAGE_API_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Telegram Bot
+    |--------------------------------------------------------------------------
+    |
+    | Credenziali per il bot Telegram usato per l'ingest di spese via chat.
+    | TELEGRAM_BOT_TOKEN: token ottenuto da @BotFather
+    | TELEGRAM_BOT_USERNAME: username del bot (senza @), per generare i link
+    |
+    */
+
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'bot_username' => env('TELEGRAM_BOT_USERNAME'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mistral AI (La Plateforme)
+    |--------------------------------------------------------------------------
+    |
+    | API key per Mistral AI, usata per l'estrazione OCR da scontrini
+    | tramite il modello Pixtral (pixtral-12b-2409).
+    | Registrazione: https://console.mistral.ai/
+    |
+    */
+
+    'mistral' => [
+        'api_key' => env('MISTRAL_API_KEY'),
+    ],
+
 ];

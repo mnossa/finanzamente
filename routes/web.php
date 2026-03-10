@@ -13,12 +13,15 @@ use App\Http\Controllers\FinancialGoalController;
 use App\Http\Controllers\FixedExpenseController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\HouseholdInvitationController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\InterHouseholdTransferController;
 use App\Http\Controllers\InvestmentAnalysisController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
+use App\Http\Controllers\TelegramLinkController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\ThemePreferenceController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
@@ -47,6 +50,11 @@ Route::get('/sitemap.xml', function () {
     }
     return response()->file($path, ['Content-Type' => 'application/xml']);
 })->name('sitemap');
+
+// Webhook Telegram — pubblico, escluso da CSRF (gestito in bootstrap/app.php o VerifyCsrfToken)
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
+    ->name('telegram.webhook')
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
 // Rotte pubbliche per inviti household
 Route::get('/invitations/{token}/register', [HouseholdInvitationController::class, 'showRegisterForm'])
@@ -78,6 +86,19 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
     Route::get('/charts', [ChartsController::class, 'index'])->name('charts.index');
+
+    // Inbox / Staging Area (voci da Telegram o manuali, in attesa di revisione)
+    Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+    Route::put('/inbox/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
+    Route::post('/inbox/{inboxItem}/confirm', [InboxController::class, 'confirm'])->name('inbox.confirm');
+    Route::post('/inbox/{inboxItem}/reject', [InboxController::class, 'reject'])->name('inbox.reject');
+    Route::delete('/inbox/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');
+    Route::get('/inbox/{inboxItem}/image', [InboxController::class, 'image'])->name('inbox.image');
+
+    // Collegamento account Telegram
+    Route::get('/telegram/link', [TelegramLinkController::class, 'show'])->name('telegram.link.show');
+    Route::post('/telegram/link/generate', [TelegramLinkController::class, 'generate'])->name('telegram.link.generate');
+    Route::delete('/telegram/link', [TelegramLinkController::class, 'unlink'])->name('telegram.link.unlink');
 
     // Profilo utente
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
