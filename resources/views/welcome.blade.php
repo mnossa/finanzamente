@@ -5,452 +5,474 @@
 @section('content')
     <!-- Hero Section -->
     <section class="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden" aria-labelledby="hero-title">
-        <!-- Background decoration -->
         <div class="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 opacity-60" aria-hidden="true"></div>
         <div class="absolute top-0 right-0 -translate-y-12 translate-x-12 w-72 h-72 bg-primary-200 rounded-full blur-3xl opacity-20" aria-hidden="true"></div>
         <div class="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-72 h-72 bg-accent-200 rounded-full blur-3xl opacity-20" aria-hidden="true"></div>
-        
+
         <div class="relative container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-4xl mx-auto text-center">
-                <!-- Main headline -->
                 <h1 id="hero-title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 leading-tight mb-4 sm:mb-6">
-                    Gestisci le tue finanze con
-                    <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">intelligenza</span>
+                    Il tuo quadro finanziario completo,
+                    <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">tutto in un posto</span>
                 </h1>
-                
-                <!-- Subheadline -->
+
                 <p class="text-base sm:text-lg md:text-xl text-surface-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Prendi il controllo totale delle tue finanze. Gestisci ogni transazione, pianifica il tuo budget e raggiungi i tuoi obiettivi con consapevolezza e privacy totale.
+                    Dal conto corrente agli investimenti, dai debiti agli obiettivi di risparmio: FinanzaMente ti dà una visione chiara e completa del tuo patrimonio, con privacy totale e senza complicazioni.
                 </p>
-                
-                <!-- CTA Buttons -->
+
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12">
                     @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-accent hover:shadow-accent-lg transition-all duration-200 transform ">
+                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-accent hover:shadow-accent-lg transition-all duration-200">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             Inizia gratis ora
                         </a>
                     @endif
-                    <a href="#come-funziona" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium text-primary-700 bg-white hover:bg-surface-50 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200">
-                        Scopri come funziona
+                    <a href="#funzionalita" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium text-primary-700 bg-white hover:bg-surface-50 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200">
+                        Scopri le funzionalità
                     </a>
                 </div>
-                
+
                 <!-- Trust indicators -->
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm text-surface-600">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-accent-600 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-surface-600">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-accent-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
-                        Gratis e senza pubblicità
+                        100% gratuito
                     </div>
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-accent-600 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-accent-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                             <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
-                        Dati sicuri e privati
+                        Privacy totale, nessun tracciamento
                     </div>
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-accent-600 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-accent-600" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                             <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
                         </svg>
-                        Facile da usare
+                        Pensato per l'Italia
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Features Section -->
-    <section class="py-12 sm:py-20 bg-white" aria-labelledby="features-title">
+    <!-- Features Grid Section -->
+    <section id="funzionalita" class="py-12 sm:py-20 bg-white" aria-labelledby="features-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
                 <h2 id="features-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
-                    Tutto quello che ti serve per gestire il tuo denaro
+                    Tutto quello che serve, niente di superfluo
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Funzionalità pensate per semplificarti la vita finanziaria
+                    Funzionalità concrete per ogni aspetto della tua vita finanziaria
                 </p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-                <!-- Feature 1 -->
+                <!-- Transazioni rapide -->
                 <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Traccia ogni spesa</h3>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Inserimento lampo</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Registra entrate e uscite in pochi secondi. Organizza per categorie e tieni tutto sotto controllo.
+                        Sessione rapida per inserire più transazioni di fila in pochi secondi. Perfetta per registrare la spesa del supermercato o le uscite del weekend.
                     </p>
                 </div>
 
-                <!-- Feature 2 -->
+                <!-- Portfolio investimenti -->
                 <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Portfolio e Asset Allocation</h3>
+                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                        Traccia ETF, azioni, criptovalute e obbligazioni. Visualizza la tua asset allocation con indice di rischio KIID (scala 1–7) per capire quanto sei esposto.
+                    </p>
+                </div>
+
+                <!-- Budget -->
+                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Budget intelligenti</h3>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Budget per categoria</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Imposta budget mensili e ricevi notifiche quando stai per superarli. Risparmia senza sforzo.
+                        Imposta tetti di spesa mensili per ogni categoria. Monitora l'avanzamento in tempo reale e tieni a bada le cattive abitudini.
                     </p>
                 </div>
 
-                <!-- Feature 3 -->
+                <!-- Debiti e crediti -->
                 <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                         </svg>
                     </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Gestione conti multipli</h3>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Debiti e crediti</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Inserisci manualmente tutti i tuoi conti correnti, carte e portafogli. Visualizza il saldo totale in un colpo d'occhio.
+                        Tieni traccia di chi ti deve soldi e di cosa devi restituire. Collega i rimborsi alle transazioni originali e chiudi i conti in sospeso senza dimenticare nulla.
                     </p>
                 </div>
 
-                <!-- Feature 4 -->
+                <!-- Spese ricorrenti -->
                 <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-700 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Transazioni ricorrenti</h3>
+                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                        Automatizza abbonamenti, affitti e stipendi. Definisci la frequenza e genera le transazioni con un click quando arriva il momento.
+                    </p>
+                </div>
+
+                <!-- Detrazioni fiscali -->
+                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Detrazioni fiscali</h3>
+                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                        Marca le spese detraibili durante l'anno ed esporta tutto in PDF per la dichiarazione dei redditi. Nessuna spesa dimenticata al 730.
+                    </p>
+                </div>
+
+                <!-- Household condiviso -->
+                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-700 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Finanze condivise</h3>
+                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                        Gestisci le finanze di famiglia o coinquilini in un household condiviso. Ognuno vede solo ciò che gli compete, con trasferimenti tra nuclei diversi.
+                    </p>
+                </div>
+
+                <!-- Import CSV -->
+                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Import da banca</h3>
+                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                        Importa i movimenti dal CSV della tua banca con rilevamento automatico dei duplicati. Salva i layout personalizzati per ogni istituto con un click.
+                    </p>
+                </div>
+
+                <!-- Lifestyle Score -->
+                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                     </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Obiettivi finanziari</h3>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Lifestyle Inflation Score</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Definisci obiettivi di risparmio e monitora i progressi. Realizza i tuoi progetti più importanti.
-                    </p>
-                </div>
-
-                <!-- Feature 5 -->
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Gestione familiare</h3>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Condividi le finanze con partner o famiglia. Collabora e mantieni tutto organizzato insieme.
-                    </p>
-                </div>
-
-                <!-- Feature 6 -->
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Report dettagliati</h3>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Analizza le tue abitudini di spesa con grafici e statistiche. Prendi decisioni informate.
+                        Scopri se le tue spese voluttuarie crescono più velocemente delle entrate. Un indicatore unico per capire se stai cadendo nella trappola dell'inflazione del tenore di vita.
                     </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- How it works Section -->
-    <section id="come-funziona" class="py-12 sm:py-20 bg-gradient-to-br from-primary-50 to-accent-50" aria-labelledby="how-it-works-title">
+    <!-- Highlight speciale: Asset Allocation -->
+    <section class="py-12 sm:py-20 bg-gradient-to-br from-primary-50 to-accent-50" aria-labelledby="allocation-title">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16 items-center">
+                <div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-4">
+                        💼 Patrimonio completo
+                    </span>
+                    <h2 id="allocation-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-4 sm:mb-6">
+                        Dal conto corrente agli investimenti: un unico patrimonio
+                    </h2>
+                    <p class="text-base sm:text-lg text-surface-600 mb-6 leading-relaxed">
+                        FinanzaMente non si limita alle spese quotidiane. Aggiungi il tuo portafoglio di ETF, azioni e crypto per avere la visione completa di quanto vali davvero.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <p class="text-sm sm:text-base text-surface-700">Grafico donut della composizione del portafoglio per asset class (azionario, obbligazionario, crypto, liquidità…)</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <p class="text-sm sm:text-base text-surface-700">Indice di rischio sintetico stile KIID (scala 1–7) calcolato sulla composizione reale del tuo patrimonio</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-blue-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <p class="text-sm sm:text-base text-surface-700">Supporto per ETF, azioni, indici, materie prime, crypto e prodotti assicurativi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual card portfolio -->
+                <div class="relative bg-white rounded-2xl p-6 sm:p-8 shadow-soft-lg border border-surface-200">
+                    <p class="text-xs text-surface-500 uppercase font-semibold tracking-wider mb-5">Esempio asset allocation</p>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="font-medium text-surface-800">Azionario</span>
+                                    <span class="text-surface-600">52%</span>
+                                </div>
+                                <div class="w-full h-2 bg-surface-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full" style="width: 52%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-cyan-500 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="font-medium text-surface-800">Liquidità</span>
+                                    <span class="text-surface-600">28%</span>
+                                </div>
+                                <div class="w-full h-2 bg-surface-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-cyan-500 rounded-full" style="width: 28%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-violet-500 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="font-medium text-surface-800">Crypto</span>
+                                    <span class="text-surface-600">12%</span>
+                                </div>
+                                <div class="w-full h-2 bg-surface-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-violet-500 rounded-full" style="width: 12%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="font-medium text-surface-800">Obbligazionario</span>
+                                    <span class="text-surface-600">8%</span>
+                                </div>
+                                <div class="w-full h-2 bg-surface-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-emerald-500 rounded-full" style="width: 8%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-5 pt-5 border-t border-surface-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-surface-500 mb-1">Patrimonio totale</p>
+                            <p class="text-xl font-bold text-surface-900">€ 42.350,00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-surface-500 mb-1">Rischio KIID</p>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">4 / 7 — Moderato</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Come funziona -->
+    <section id="come-funziona" class="py-12 sm:py-20 bg-white" aria-labelledby="how-it-works-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
                 <h2 id="how-it-works-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
-                    Come funziona
+                    Operativo in 3 minuti
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Inizia in 3 semplici passi
+                    Nessuna configurazione complicata, nessuna carta di credito richiesta
                 </p>
             </div>
 
-            <div class="max-w-4xl mx-auto">
-                <div class="space-y-6 sm:space-y-8">
-                    <!-- Step 1 -->
-                    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-white rounded-2xl p-6 sm:p-8 shadow-soft-md">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
-                                1
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Crea il tuo account</h3>
-                            <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                                Registrati gratuitamente in pochi secondi. Non serve carta di credito, non ci sono costi nascosti.
-                            </p>
-                        </div>
+            <div class="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+                <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200">
+                    <div class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
+                        1
                     </div>
-
-                    <!-- Step 2 -->
-                    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-white rounded-2xl p-6 sm:p-8 shadow-soft-md">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-accent-600 to-accent-800 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
-                                2
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Configura i tuoi conti</h3>
-                            <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                                Aggiungi i tuoi conti correnti, carte e portafogli. Inserisci il saldo iniziale e sei pronto a partire.
-                            </p>
-                        </div>
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Crea il tuo account e completa il profilo</h3>
+                        <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                            Registrati gratuitamente e rispondi a poche domande per personalizzare l'app al tuo stile di vita. Nessuna carta di credito richiesta.
+                        </p>
                     </div>
+                </div>
 
-                    <!-- Step 3 -->
-                    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-white rounded-2xl p-6 sm:p-8 shadow-soft-md">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
-                                3
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Inizia a tracciare</h3>
-                            <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                                Registra le tue spese quotidiane, imposta budget e obiettivi. FinanzaMente fa il resto, offrendoti insights preziosi.
-                            </p>
-                        </div>
+                <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200">
+                    <div class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-accent-600 to-accent-800 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
+                        2
+                    </div>
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Aggiungi conti e portafoglio</h3>
+                        <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                            Inserisci i tuoi conti correnti, carte, contanti e — se li hai — i tuoi investimenti. Puoi anche importare i movimenti dal CSV della tua banca.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200">
+                    <div class="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary-600 to-primary-800 rounded-full flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
+                        3
+                    </div>
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Registra e analizza</h3>
+                        <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+                            Usa la sessione rapida per inserire le spese quotidiane in secondi. La dashboard ti mostrerà subito trend, budget consumati e la tua situazione patrimoniale complessiva.
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Benefits Section -->
-    <section class="py-12 sm:py-20 bg-white" aria-labelledby="benefits-title">
+    <!-- Perché FinanzaMente -->
+    <section class="py-12 sm:py-20 bg-gradient-to-br from-surface-50 to-surface-100" aria-labelledby="benefits-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-6xl mx-auto">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
-                    <!-- Text content -->
-                    <div class="order-2 lg:order-1">
-                        <h2 id="benefits-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-4 sm:mb-6">
-                            Perché scegliere FinanzaMente?
-                        </h2>
-                        <div class="space-y-4 sm:space-y-6">
-                            <div class="flex items-start gap-3 sm:gap-4">
-                                <div class="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-accent-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-accent-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Controllo manuale totale</h3>
-                                    <p class="text-sm sm:text-base text-surface-600">Inserisci manualmente ogni transazione e mantieni piena consapevolezza delle tue finanze.</p>
-                                </div>
-                            </div>
+            <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
+                <h2 id="benefits-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
+                    Perché scegliere FinanzaMente?
+                </h2>
+                <p class="text-base sm:text-lg text-surface-600">
+                    Non è un altro tracker di spese. È la gestione finanziaria completa per chi vuole capire davvero dove sta andando il suo denaro.
+                </p>
+            </div>
 
-                            <div class="flex items-start gap-3 sm:gap-4">
-                                <div class="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-accent-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-accent-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Privacy totale garantita</h3>
-                                    <p class="text-sm sm:text-base text-surface-600">I tuoi dati rimangono solo tuoi. Nessuna sincronizzazione esterna, protezione massima della tua privacy.</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-3 sm:gap-4">
-                                <div class="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-accent-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-accent-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Intuitivo e veloce</h3>
-                                    <p class="text-sm sm:text-base text-surface-600">Interfaccia pensata per l'Italia, mobile-first, facile da usare ovunque ti trovi.</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-3 sm:gap-4">
-                                <div class="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-accent-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-accent-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-base sm:text-lg font-semibold text-surface-900 mb-1">Fatto per l'Italia</h3>
-                                    <p class="text-sm sm:text-base text-surface-600">Euro, formato italiano, totalmente in lingua italiana. Progettato per utenti italiani.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Visual/Mockup placeholder -->
-                    <div class="order-1 lg:order-2">
-                        <div class="relative rounded-2xl bg-gradient-to-br from-primary-100 to-accent-100 p-8 sm:p-12 aspect-square flex items-center justify-center shadow-soft-lg">
-                            <div class="text-center">
-                                <svg class="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                                <p class="text-lg sm:text-xl font-semibold text-primary-800">Sicurezza & Privacy</p>
-                                <p class="text-sm sm:text-base text-primary-600 mt-2">I tuoi dati sono protetti</p>
-                            </div>
-                        </div>
-                    </div>
+            <div class="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-2xl p-6 border border-surface-200 text-center hover:shadow-soft-md transition-all duration-300">
+                    <div class="text-3xl mb-3">🔒</div>
+                    <h3 class="font-semibold text-surface-900 mb-2">Privacy totale</h3>
+                    <p class="text-sm text-surface-600">I tuoi dati non vengono mai condivisi con terze parti o banche. Zero sincronizzazione esterna.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-surface-200 text-center hover:shadow-soft-md transition-all duration-300">
+                    <div class="text-3xl mb-3">🇮🇹</div>
+                    <h3 class="font-semibold text-surface-900 mb-2">Fatto per l'Italia</h3>
+                    <p class="text-sm text-surface-600">Euro, formato italiano, 730 e detrazioni fiscali: pensato per la realtà fiscale italiana.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-surface-200 text-center hover:shadow-soft-md transition-all duration-300">
+                    <div class="text-3xl mb-3">📱</div>
+                    <h3 class="font-semibold text-surface-900 mb-2">Mobile first</h3>
+                    <p class="text-sm text-surface-600">Interfaccia ottimizzata per smartphone. Registra una spesa in 5 secondi mentre sei ancora alla cassa.</p>
+                </div>
+                <div class="bg-white rounded-2xl p-6 border border-surface-200 text-center hover:shadow-soft-md transition-all duration-300">
+                    <div class="text-3xl mb-3">💸</div>
+                    <h3 class="font-semibold text-surface-900 mb-2">Gratis per sempre</h3>
+                    <p class="text-sm text-surface-600">Nessun abbonamento obbligatorio, nessuna pubblicità, nessun costo nascosto.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Pricing Comparison Section -->
-    <section class="py-12 sm:py-20 bg-gradient-to-br from-surface-50 to-surface-100" aria-labelledby="pricing-title">
+    <!-- Piani -->
+    <section class="py-12 sm:py-20 bg-white" aria-labelledby="pricing-title">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
                 <h2 id="pricing-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
-                    Scegli il piano adatto a te
+                    Semplice e trasparente
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Inizia gratis e passa al Premium quando sei pronto per crescere
+                    Nessun paywall, nessuna feature nascosta. Tutto quello che serve è già incluso gratis.
                 </p>
             </div>
 
-            <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
                 <!-- Piano Free -->
-                <div class="bg-white rounded-2xl p-6 sm:p-8 border-2 border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="mb-6">
-                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-surface-100 text-surface-700 text-sm font-medium mb-4">
-                            Piano Base
-                        </div>
-                        <h3 class="text-2xl sm:text-3xl font-bold text-surface-900 mb-2">Free</h3>
-                        <p class="text-base sm:text-lg text-surface-600">
-                            Perfetto per iniziare a gestire le tue finanze personali
-                        </p>
+                <div class="bg-white rounded-2xl border-2 border-primary-500 p-6 sm:p-8 shadow-soft-md relative flex flex-col">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span class="bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Disponibile ora</span>
                     </div>
-
-                    <div class="space-y-4 mb-8">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700">Gestione personale delle finanze</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700">Gestione di un singolo conto</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700">Promemoria e notifiche</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700">Privacy totale - nessuna sincronizzazione esterna</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700">Tutte le funzionalità base</span>
-                        </div>
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-bold text-surface-900 mb-1">FinanzaMente Free</h3>
+                        <div class="text-4xl font-extrabold text-primary-600 my-3">€0</div>
+                        <p class="text-sm text-surface-500">Per sempre. Nessuna carta richiesta.</p>
                     </div>
-
-                    <div class="pt-6 border-t border-surface-200">
-                        <div class="text-3xl sm:text-4xl font-bold text-surface-900 mb-4">
-                            Gratis
-                            <span class="text-base sm:text-lg font-normal text-surface-600">per sempre</span>
-                        </div>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200">
-                                Inizia gratis
-                            </a>
-                        @endif
-                    </div>
+                    <ul class="space-y-3 mb-8 text-sm text-surface-700 flex-1">
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Transazioni illimitate</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Conti e portafogli multipli</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Budget per categoria</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Investimenti e Asset Allocation KIID</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Debiti, crediti e trasferimenti</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Transazioni ricorrenti</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Detrazioni fiscali 730</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Finanze condivise (household)</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Import da banca via CSV</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Sessione rapida di inserimento</li>
+                    </ul>
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" class="block w-full text-center py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors duration-200">
+                            Inizia gratis
+                        </a>
+                    @endif
                 </div>
 
-                <!-- Piano Premium -->
-                <div class="bg-white rounded-2xl p-6 sm:p-8 border-2 border-primary-500 hover:border-primary-600 shadow-soft-lg hover:shadow-soft-xl transition-all duration-300 relative">
-                    <!-- Badge consigliato -->
-                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <span class="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold shadow-md">
-                            Consigliato
-                        </span>
+                <!-- Piano Premium (coming soon) -->
+                <div class="bg-surface-50 rounded-2xl border-2 border-dashed border-surface-300 p-6 sm:p-8 relative opacity-80 flex flex-col">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span class="bg-surface-400 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Presto disponibile</span>
                     </div>
-
-                    <div class="mb-6 mt-2">
-                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-4">
-                            Piano Avanzato
-                        </div>
-                        <h3 class="text-2xl sm:text-3xl font-bold text-surface-900 mb-2">Premium</h3>
-                        <p class="text-base sm:text-lg text-surface-600">
-                            Per chi vuole gestire finanze più complesse
-                        </p>
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-bold text-surface-900 mb-1">FinanzaMente Premium</h3>
+                        <div class="text-4xl font-extrabold text-surface-400 my-3">TBD</div>
+                        <p class="text-sm text-surface-500">Funzionalità avanzate in arrivo.</p>
                     </div>
-
-                    <div class="space-y-4 mb-8">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700"><strong>Nessun limite</strong> di conti correnti e carte</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700"><strong>Gestione multi-households</strong> (famiglie, gruppi)</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700"><strong>Strumenti per partite IVA</strong> e professionisti</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700"><strong>Reportistica avanzata</strong> e analisi dettagliate</span>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <svg class="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-sm sm:text-base text-surface-700"><strong>Export dati</strong> in CSV ed Excel</span>
-                        </div>
-                    </div>
-
-                    <div class="pt-6 border-t border-surface-200">
-                        <div class="text-3xl sm:text-4xl font-bold text-surface-900 mb-1">
-                            Prossimamente
-                        </div>
-                        <p class="text-sm sm:text-base text-surface-600 mb-4">
-                            Il piano Premium sarà disponibile a breve
-                        </p>
-                        <button disabled class="w-full inline-flex items-center justify-center px-6 py-3 text-base font-semibold text-white bg-surface-400 rounded-xl cursor-not-allowed">
-                            Disponibile presto
-                        </button>
-                    </div>
+                    <ul class="space-y-3 mb-8 text-sm text-surface-500 flex-1">
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Tutto il piano Free</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Report e analisi avanzate</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Obiettivi finanziari con proiezioni</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Notifiche intelligenti e avvisi budget</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Export dati avanzato (PDF, Excel)</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Integrazione con servizi esterni</li>
+                    </ul>
+                    <button disabled class="block w-full text-center py-3 px-6 bg-surface-200 text-surface-400 font-semibold rounded-xl cursor-not-allowed">
+                        Coming soon
+                    </button>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CTA Section -->
+    <!-- CTA finale -->
     <section class="py-12 sm:py-20 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-4xl mx-auto text-center">
                 <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
-                    Pronto a prendere il controllo delle tue finanze?
+                    Inizia oggi a capire davvero le tue finanze
                 </h2>
                 <p class="text-base sm:text-lg text-primary-100 mb-6 sm:mb-8 max-w-2xl mx-auto">
-                    Unisciti a migliaia di italiani che stanno già gestendo meglio il loro denaro con FinanzaMente.
+                    Registrati in 30 secondi. Nessuna carta di credito, nessun abbonamento, nessuna connessione bancaria richiesta.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
                     @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-700 bg-white hover:bg-surface-50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform ">
-                            Registrati gratis
+                        <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-700 bg-white hover:bg-surface-50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                            Crea il tuo account gratis
                             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>
@@ -468,7 +490,6 @@
 @endsection
 
 @push('scripts')
-    <!-- Smooth scroll script -->
     <script>
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -478,14 +499,9 @@
                     const headerOffset = 80;
                     const elementPosition = target.getBoundingClientRect().top;
                     const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-                    window.scrollTo({
-                        top: offsetPosition,
-                        behavior: 'smooth'
-                    });
+                    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
                 }
             });
         });
     </script>
 @endpush
-
