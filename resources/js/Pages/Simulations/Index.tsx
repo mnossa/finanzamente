@@ -219,7 +219,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
             });
         }
 
-        if (monthlyContribution > 0) {
+        if (monthlyContribution > 0 && totalValue > 0 && annualReturn > 0) {
             const extraMonthly = 50;
             const rateM = annualReturn / 100 / 12;
             const extraFV = extraMonthly * ((Math.pow(1 + rateM, years * 12) - 1) / rateM);
@@ -755,7 +755,7 @@ function EmergencyFundSimulator() {
 
                     {/* Barra di progresso */}
                     <div>
-                        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+                        <div className="flex justify-between mb-1 text-sm text-gray-500 dark:text-gray-400">
                             <span>Progresso</span>
                             <span className="font-bold">{progressPercent.toFixed(1)}%</span>
                         </div>
@@ -819,15 +819,15 @@ function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScena
     const data = useMemo(() => {
         if (!selectedCrisis) return [];
 
-        // Mix portafoglio: azioni con rendimento crisi, obbligazioni con rendimento stabile
-        const bondMonthlyReturn = 0.25; // ~3% annuo
+        // Mix portafoglio: azioni con rendimento crisi, obbligazioni con rendimento stabile (~3%/anno → 0.25%/mese)
+        const bondMonthlyReturnPct = 0.25;
 
         let value = portfolioValue;
         const initialValue = portfolioValue;
 
         return selectedCrisis.monthly_returns.map((monthReturn, i) => {
             const equityReturn = monthReturn / 100;
-            const bondReturn = bondMonthlyReturn / 100;
+            const bondReturn = bondMonthlyReturnPct / 100;
             const blendedReturn = (equityPercent / 100) * equityReturn + ((100 - equityPercent) / 100) * bondReturn;
 
             value = value * (1 + blendedReturn);
