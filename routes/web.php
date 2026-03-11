@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AssetAllocationController;
 use App\Http\Controllers\ChartsController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\RobotsController;
@@ -138,6 +139,9 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::post('/accounts/{account}/toggle-active', [AccountController::class, 'toggleActive'])->name('accounts.toggle-active');
 
         // Transactions - modifica
+        Route::get('/transactions/quick-session', [TransactionController::class, 'quickSession'])->name('transactions.quick-session');
+        Route::post('/transactions/quick-session', [TransactionController::class, 'quickStore'])->name('transactions.quick-store');
+        Route::delete('/transactions/quick-session', [TransactionController::class, 'clearQuickSession'])->name('transactions.quick-session.clear');
         Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
         Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
         Route::delete('/transactions/bulk', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
@@ -312,6 +316,10 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // Investments - lettura
     Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
     Route::get('/investments/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
+
+    // Asset Allocation
+    Route::get('/asset-allocation', [AssetAllocationController::class, 'index'])->name('asset-allocation.index');
+    Route::get('/asset-allocation/widget', [AssetAllocationController::class, 'widget'])->name('asset-allocation.widget');
 
     // Fixed Expenses - lettura (disponibile per tutte le household con bilanciamento debiti)
     Route::get('/households/{household}/fixed-expenses', [FixedExpenseController::class, 'dashboard'])->name('fixed-expenses.dashboard');

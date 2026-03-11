@@ -6,11 +6,14 @@ use App\Models\Account;
 use App\Models\Budget;
 use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
+use App\Models\Investment;
 use App\Models\Transaction;
+use App\Services\AssetClassificationService;
 use App\Services\FinancialMetricsService;
 use App\Services\RevenueNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -186,6 +189,7 @@ class DashboardController extends Controller
             'taxThermometerData' => $this->getTaxThermometerData($user),
             'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
             'dashboardLayout' => $this->getDashboardLayout($user),
+            'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
         ]);
     }
 
@@ -448,5 +452,88 @@ class DashboardController extends Controller
             ->first();
 
         return $layout ? $layout->config : DashboardLayout::defaultConfig();
+    }
+
+    /**
+     * Dati sintetici per il widget Asset Allocation in dashboard.
+     * Restituisce il valore totale, l'allocazione per classe e l'indice di rischio.
+     * Utilizza AssetClassificationService per i mapping e un'aggregazione unica
+     * delle transazioni per evitare query N+1.
+     */
+    private function getAssetAllocationWidgetData(\App\Models\User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        // Investimenti aperti
+        $investments = Investment::with('asset')
+            ->where('household_id', $householdId)
+            ->whereNull('sell_date')
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->get();
+
+        $classValues   = [];
+        $riskNumerator = 0.0;
+        $totalValue    = 0.0;
+
+        foreach ($investments as $inv) {
+            $type = $inv->asset->type ?? 'other';
+            $cls  = AssetClassificationService::ASSET_TYPE_CLASS[$type] ?? 'other';
+            $risk = AssetClassificationService::ASSET_TYPE_RISK[$type] ?? 3;
+            $val  = $inv->total_buy_value;
+            $classValues[$cls] = ($classValues[$cls] ?? 0) + $val;
+            $riskNumerator    += $val * $risk;
+            $totalValue       += $val;
+        }
+
+        // Liquidità conti — aggregazione unica per evitare N+1
+        $accounts = Account::where('household_id', $householdId)
+            ->where('active', true)
+            ->whereNotIn('type', ['broker'])
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
+            ->get();
+
+        if ($accounts->isNotEmpty()) {
+            $transactionSums = Transaction::whereIn('account_id', $accounts->pluck('id'))
+                ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+                ->groupBy('account_id')
+                ->pluck(DB::raw('SUM(amount)'), 'account_id');
+
+            foreach ($accounts as $account) {
+                $balance = (float) $account->initial_balance + (float) ($transactionSums[$account->id] ?? 0);
+                if ($balance <= 0) {
+                    continue;
+                }
+
+                $type = $account->type ?? 'other';
+                $cls  = AssetClassificationService::ACCOUNT_TYPE_CLASS[$type] ?? 'liquidity';
+                $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$type] ?? 1;
+                $classValues[$cls] = ($classValues[$cls] ?? 0) + $balance;
+                $riskNumerator    += $balance * $risk;
+                $totalValue       += $balance;
+            }
+        }
+
+        $allocation = [];
+        foreach ($classValues as $cls => $val) {
+            $allocation[] = [
+                'asset_class' => $cls,
+                'label'       => AssetClassificationService::CLASS_LABELS[$cls] ?? $cls,
+                'color'       => AssetClassificationService::CLASS_COLORS[$cls] ?? '#94a3b8',
+                'value'       => round($val, 2),
+                'percentage'  => $totalValue > 0 ? round(($val / $totalValue) * 100, 1) : 0,
+            ];
+        }
+        usort($allocation, fn($a, $b) => $b['value'] <=> $a['value']);
+
+        $riskIndex = $totalValue > 0
+            ? min(7, max(1, round($riskNumerator / $totalValue, 1)))
+            : 1;
+
+        return [
+            'total_value' => round($totalValue, 2),
+            'risk_index'  => $riskIndex,
+            'risk_label'  => AssetClassificationService::getRiskLabel($riskIndex),
+            'allocation'  => $allocation,
+        ];
     }
 }

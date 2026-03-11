@@ -115,6 +115,21 @@ interface TaxThermometerData {
     inps_rate: number;
 }
 
+interface AssetAllocationEntry {
+    asset_class: string;
+    label: string;
+    color: string;
+    value: number;
+    percentage: number;
+}
+
+interface AssetAllocationData {
+    total_value: number;
+    risk_index: number;
+    risk_label: string;
+    allocation: AssetAllocationEntry[];
+}
+
 interface DashboardProps {
     accounts: Account[];
     totalBalance: number;
@@ -130,6 +145,7 @@ interface DashboardProps {
     taxThermometerData: TaxThermometerData;
     lifestyleWidgetData: LifestyleWidgetData;
     dashboardLayout: DashboardLayoutConfig;
+    assetAllocationData: AssetAllocationData;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -333,6 +349,7 @@ export default function Dashboard({
     taxThermometerData,
     lifestyleWidgetData,
     dashboardLayout,
+    assetAllocationData,
 }: DashboardProps) {
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
@@ -513,12 +530,79 @@ export default function Dashboard({
                         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Azioni rapide</h3>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
+                            <QuickActionCard href={route('transactions.quick-session')} icon="⚡" label="Sessione Rapida" compact={compact} />
                             <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" compact={compact} />
                             <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" compact={compact} />
                             <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" compact={compact} />
                         </div>
                     </CardBox>
                 );
+            }
+
+            case 'asset_allocation': {
+                const { allocation, total_value, risk_index, risk_label } = assetAllocationData;
+                const riskColor = risk_index <= 2
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : risk_index <= 4
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-red-600 dark:text-red-400';
+
+                return isModuleEnabled('investments') ? (
+                    <CardBox className="overflow-hidden shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">📊 Asset Allocation</h3>
+                            <Link href={route('asset-allocation.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                Dettaglio →
+                            </Link>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {total_value > 0 ? (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</span>
+                                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                            {formatCurrency(total_value)}
+                                        </span>
+                                    </div>
+                                    {/* Mini allocation bar */}
+                                    <div className="flex h-2 rounded-full overflow-hidden gap-px">
+                                        {allocation.map(a => (
+                                            <div
+                                                key={a.asset_class}
+                                                style={{ width: `${a.percentage}%`, backgroundColor: a.color }}
+                                                title={`${a.label}: ${a.percentage.toFixed(1)}%`}
+                                            />
+                                        ))}
+                                    </div>
+                                    {/* Legend */}
+                                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                        {allocation.map(a => (
+                                            <span key={a.asset_class} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                                                <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
+                                                {a.label} {a.percentage.toFixed(0)}%
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">Rischio</span>
+                                        <span className={`text-sm font-semibold ${riskColor}`}>
+                                            {risk_label} — {risk_index.toFixed(1)}/7
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="py-4 text-center">
+                                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                        Nessuna posizione trovata
+                                    </p>
+                                    <Link href={route('investments.create')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                        Aggiungi il primo →
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </CardBox>
+                ) : <LockedModuleCard moduleId="investments" />;
             }
 
             default:

@@ -163,6 +163,7 @@ const navigationSections: NavigationSection[] = [
         items: [
             { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet, moduleId: 'accounts' },
             { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
+            { name: 'Sessione Rapida', href: 'transactions.quick-session', routeMatch: 'transactions.quick-session', icon: Icons.ArrowLeftRight },
             { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags },
             { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
             { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer, moduleId: 'transfers' },
@@ -199,6 +200,7 @@ const navigationSections: NavigationSection[] = [
         defaultExpanded: false,
         items: [
             { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments' },
+            { name: 'Asset Allocation', href: 'asset-allocation.index', routeMatch: 'asset-allocation.*', icon: Icons.BarChart2, moduleId: 'investments' },
             { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets' },
             { name: 'Analisi Investimenti', href: 'investment-analyses.index', routeMatch: 'investment-analyses.*', icon: Icons.TrendingUp, moduleId: 'investment_analyses' },
         ]

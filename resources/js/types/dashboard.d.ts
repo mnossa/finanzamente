@@ -13,7 +13,8 @@ export type WidgetId =
     | 'recent_transactions'
     | 'active_budgets'
     | 'debts_credits'
-    | 'quick_actions';
+    | 'quick_actions'
+    | 'asset_allocation';
 
 /** Dimensioni supportate per ogni widget nella griglia. */
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
