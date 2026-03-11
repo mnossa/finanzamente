@@ -206,8 +206,8 @@ class AssetAllocationController extends Controller
         return [
             'positions'   => array_values($positions),
             'allocation'  => $allocation,
-            'totalValue'  => round($totalValue, 2),
-            'riskIndex'   => $riskIndex,
+            'totalValue'  => (float) round($totalValue, 2),
+            'riskIndex'   => (float) $riskIndex,
             'riskLabel'   => $riskLabel,
             'classColors' => AssetClassificationService::CLASS_COLORS,
             'classLabels' => AssetClassificationService::CLASS_LABELS,

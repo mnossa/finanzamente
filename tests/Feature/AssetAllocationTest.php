@@ -72,7 +72,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('totalValue', 0.0)
+            $page->where('totalValue', 0)
                 ->where('positions', [])
                 ->where('allocation', [])
         );
@@ -116,7 +116,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('totalValue', 500.0)
+            $page->where('totalValue', 500)
                 ->has('positions', 1)
                 ->has('allocation', 1)
         );
@@ -147,7 +147,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('totalValue', 0.0)
+            $page->where('totalValue', 0)
                 ->where('positions', [])
         );
     }
@@ -173,7 +173,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('totalValue', 1000.0)
+            $page->where('totalValue', 1000)
                 ->has('positions', 1)
         );
     }
@@ -197,7 +197,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('totalValue', 0.0)
+            $page->where('totalValue', 0)
                 ->where('positions', [])
         );
     }
@@ -219,7 +219,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('riskIndex', 1.0)
+            $page->where('riskIndex', 1)
                 ->where('riskLabel', 'Molto Basso')
         );
     }
@@ -248,7 +248,7 @@ class AssetAllocationTest extends TestCase
             ->get(route('asset-allocation.index'));
 
         $response->assertInertia(fn ($page) =>
-            $page->where('riskIndex', 7.0)
+            $page->where('riskIndex', 7)
                 ->where('riskLabel', 'Molto Alto')
         );
     }
