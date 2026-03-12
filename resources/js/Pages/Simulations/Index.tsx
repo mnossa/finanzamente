@@ -328,6 +328,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                             </div>
                             <button
                                 role="switch"
+                                aria-label="Correggi per inflazione"
                                 aria-checked={inflationEnabled}
                                 onClick={() => setInflationEnabled(!inflationEnabled)}
                                 className={clsx(
@@ -764,6 +765,7 @@ function EmergencyFundSimulator() {
                                 className={clsx('h-4 rounded-full transition-all duration-500', progressBarColor)}
                                 style={{ width: `${progressPercent}%` }}
                                 role="progressbar"
+                                aria-label="Progresso"
                                 aria-valuenow={progressPercent}
                                 aria-valuemin={0}
                                 aria-valuemax={100}
