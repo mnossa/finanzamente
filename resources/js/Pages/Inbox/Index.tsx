@@ -47,6 +47,8 @@ interface PaginatedData<T> {
     last_page: number;
     per_page: number;
     total: number;
+    from: number | null;
+    to: number | null;
     links: Array<{ url: string | null; label: string; active: boolean }>;
 }
 
@@ -438,9 +440,7 @@ export default function InboxIndex({ items, accounts, categories, pendingCount }
 
                 {items.last_page > 1 && (
                     <Pagination
-                        currentPage={items.current_page}
-                        lastPage={items.last_page}
-                        links={items.links}
+                        data={items}
                     />
                 )}
             </div>

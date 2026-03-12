@@ -14,9 +14,15 @@ interface PageHeaderProps {
     actions?: ReactNode;
 
     /**
-     * Sottotitolo o descrizione opzionale
+     * Sottotitolo o descrizione opzionale.
+     * @deprecated Usare `description` per i nuovi componenti.
      */
     subtitle?: string;
+
+    /**
+     * Descrizione opzionale mostrata sotto il titolo (preferire questo rispetto a `subtitle`).
+     */
+    description?: string;
 
     /**
      * Classi CSS aggiuntive per personalizzazione
@@ -46,7 +52,8 @@ interface PageHeaderProps {
  * />
  * ```
  */
-export default function PageHeader({ title, actions, subtitle, className, backLink }: PageHeaderProps) {
+export default function PageHeader({ title, actions, subtitle, description, className, backLink }: PageHeaderProps) {
+    const subtext = description ?? subtitle;
     return (
         <div className={clsx('flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between', className)}>
             <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
@@ -60,9 +67,9 @@ export default function PageHeader({ title, actions, subtitle, className, backLi
                 )}
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
                     {title}
-                    {subtitle && (
+                    {subtext && (
                     <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        {subtitle}
+                        {subtext}
                     </p>
                 )}
                 </h2>
