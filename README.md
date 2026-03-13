@@ -189,11 +189,36 @@ Durante i test, Laravel:
 **Importante**: Il file `.env.testing` è tracciato in Git per garantire la stessa configurazione a tutti i membri del team.
 
 ## Aggiornamento e Estendibilità
-- La documentazione va aggiornata ad ogni evoluzione architetturale o funzionale
-- Il sistema è progettato per supportare nuove funzionalità (reportistica, automazioni, integrazioni, ecc.)
 
----
 
+## Flusso Git e Protezione Branch
+
+Per garantire stabilità e test approfonditi, il progetto utilizza il branch `staging` come ambiente intermedio prima del rilascio su `main`.
+
+**Workflow consigliato:**
+1. Tutte le nuove feature, fix e modifiche vengono sviluppate e testate su branch dedicati (feature/fix), poi merge su `staging`.
+2. Il branch `staging` viene testato su ambiente Raspberry Pi o altri ambienti di staging.
+3. Solo dopo test superati, si esegue il merge da `staging` a `main`.
+4. Il branch `main` rappresenta sempre la versione stabile e pronta per il deploy.
+
+**Best practice:**
+- Evitare commit o merge diretti su `main`. Usare solo merge da `staging`.
+- Proteggere il branch `main` tramite regole GitHub (vedi sotto).
+- Taggare ogni release su `main` (es. `v1.2.3`).
+- Documentare eventuali hotfix o merge inversi (main → staging).
+
+**Protezione branch main su GitHub:**
+1. Vai su "Settings" del repository → "Branches" → "Branch protection rules".
+2. Crea una regola per `main`:
+	- Blocca push diretti (richiedi pull request).
+	- Richiedi almeno 1 review.
+	- Richiedi che i test CI siano passati.
+	- (Opzionale) Blocca merge se ci sono conflitti o build fallite.
+3. Salva la regola.
+
+Questo garantisce che ogni rilascio passi da test e review, evitando disallineamenti tra `staging` e `main`.
+
+> Per dettagli tecnici e linee guida, consultare `.github/copilot-instructions.md`.
 ## Personalizzazione della Dashboard
 
 La dashboard è completamente personalizzabile da ogni utente autenticato. È possibile:

@@ -7,6 +7,7 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, Link, router } from '@inertiajs/react';
+import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
@@ -518,7 +519,7 @@ export default function Index({
     };
 
     const handleBulkEdit = (state: BulkEditState) => {
-        const payload: Record<string, unknown> = { ids: Array.from(selectedIds) };
+        const payload: Record<string, FormDataConvertible> = { ids: Array.from(selectedIds) };
 
         if (state.category_id !== UNCHANGED) {
             payload.category_id = state.category_id === REMOVE ? null : Number(state.category_id);
