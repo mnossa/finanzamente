@@ -5,14 +5,16 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const port = env.VITE_PORT ? parseInt(env.VITE_PORT) : 5174;
+    const hmrHost = env.APP_URL ? new URL(env.APP_URL).hostname : 'localhost';
     return {
         server: {
             port,
             host: '0.0.0.0',
             hmr: {
-                host: 'localhost',
+                host: hmrHost,
                 port: port,
             },
+            allowedHosts: ['pi-server', 'localhost'],
         },
         plugins: [
             laravel({
