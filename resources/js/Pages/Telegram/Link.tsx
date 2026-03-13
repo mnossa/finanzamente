@@ -59,7 +59,7 @@ export default function TelegramLink({ linked, token, tokenExpiresAt, botUsernam
 
     return (
         <AuthenticatedLayout
-            header={<PageHeader title="Collegamento Telegram" description="Invia spese direttamente da Telegram alla tua Inbox" />}
+            header={<PageHeader title="Collegamento Telegram" subtitle="Invia spese direttamente da Telegram alla tua Inbox" />}
         >
             <Head title="Collegamento Telegram" />
 

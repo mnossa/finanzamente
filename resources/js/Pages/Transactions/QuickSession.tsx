@@ -117,7 +117,7 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
 }) {
     const amountRef = useRef<HTMLInputElement>(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm<FormState>({
+    const { data, setData, post, processing, errors, reset } = useForm({
         account_id: defaultAccountId ?? (accounts[0]?.id?.toString() ?? ''),
         category_id: '',
         amount: '',

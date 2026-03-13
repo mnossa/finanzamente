@@ -24,5 +24,39 @@ export default defineConfig(({ mode }) => {
             }),
             react(),
         ],
+        build: {
+            chunkSizeWarningLimit: 900,
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (!id.includes('node_modules')) return;
+
+                        if (id.includes('recharts')) {
+                            return 'vendor-recharts';
+                        }
+                        if (id.includes('d3-') || id.includes('d3/') || id.includes('victory-vendor')) {
+                            return 'vendor-d3';
+                        }
+                        if (id.includes('@tremor')) {
+                            return 'vendor-tremor';
+                        }
+                        if (id.includes('@dnd-kit')) {
+                            return 'vendor-dnd';
+                        }
+                        if (id.includes('@inertiajs')) {
+                            return 'vendor-inertia';
+                        }
+                        if (
+                            id.includes('react-dom') ||
+                            id.includes('node_modules/react/') ||
+                            id.includes('node_modules/react-is') ||
+                            id.includes('scheduler')
+                        ) {
+                            return 'vendor-react';
+                        }
+                    },
+                },
+            },
+        },
     };
 });
