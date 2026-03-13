@@ -96,7 +96,8 @@ merge-to-staging:
 	git fetch origin && \
 	git checkout staging && \
 	git pull --ff-only origin staging && \
-	git merge --no-ff "$$current_branch"
+	git merge --no-ff "$$current_branch" && \
+	git push origin staging
 
 # Merge di staging dentro main
 merge-staging-to-main:
@@ -106,7 +107,8 @@ merge-staging-to-main:
 	git checkout main && \
 	git pull --ff-only origin main && \
 	echo "[+] Merge di staging in main" && \
-	git merge --no-ff staging
+	git merge --no-ff staging && \
+	git push origin main
 
 
 
