@@ -5,7 +5,7 @@ LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -80,6 +80,33 @@ composer:
 		exit 1; \
 	fi; \
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app composer require $(pkg)
+
+# Merge del branch corrente dentro staging
+merge-to-staging:
+	@current_branch=$$(git branch --show-current); \
+	if [ -z "$$current_branch" ]; then \
+		echo "[ERRORE] Impossibile determinare il branch corrente."; \
+		exit 1; \
+	fi; \
+	if [ "$$current_branch" = "staging" ]; then \
+		echo "[ERRORE] Sei gia' su staging."; \
+		exit 1; \
+	fi; \
+	echo "[+] Merge di $$current_branch in staging"; \
+	git fetch origin && \
+	git checkout staging && \
+	git pull --ff-only origin staging && \
+	git merge --no-ff "$$current_branch"
+
+# Merge di staging dentro main
+merge-staging-to-main:
+	@git fetch origin && \
+	git checkout staging && \
+	git pull --ff-only origin staging && \
+	git checkout main && \
+	git pull --ff-only origin main && \
+	echo "[+] Merge di staging in main" && \
+	git merge --no-ff staging
 
 
 
