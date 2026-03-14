@@ -195,13 +195,17 @@ export default function Index({
                 <PageHeader
                     title="Investimenti"
                     actions={
-
-                        <LinkButton
-                            href={route('investments.create')}
-                            icon={<PlusIcon />}
-                        >
-                            Nuovo Investimento
-                        </LinkButton>
+                        <div className="flex items-center gap-2">
+                            <LinkButton href={route('investments.import')}>
+                                📥 Importa CSV
+                            </LinkButton>
+                            <LinkButton
+                                href={route('investments.create')}
+                                icon={<PlusIcon />}
+                            >
+                                Nuovo Investimento
+                            </LinkButton>
+                        </div>
                     }
                 />
             }
