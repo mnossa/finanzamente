@@ -161,6 +161,8 @@ class InvestmentImportController extends Controller
         $imported = 0;
 
         DB::transaction(function () use ($user, $validated, $account, $createCashTransaction, $investmentCategory, &$imported) {
+            $balanceDelta = 0.0;
+
             foreach ($validated['rows'] as $row) {
                 $investment = Investment::create([
                     'user_id'      => $user->id,
@@ -192,13 +194,14 @@ class InvestmentImportController extends Controller
                         'is_private'    => $investment->is_private,
                     ]);
 
-                    $account->current_balance -= $totalCost;
+                    $balanceDelta -= $totalCost;
                 }
 
                 $imported++;
             }
 
-            if ($createCashTransaction && $account !== null) {
+            if ($createCashTransaction && $account !== null && $balanceDelta !== 0.0) {
+                $account->current_balance += $balanceDelta;
                 $account->save();
             }
         });

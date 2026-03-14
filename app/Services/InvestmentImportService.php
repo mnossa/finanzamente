@@ -162,7 +162,7 @@ class InvestmentImportService
         $bySymbol = $allAssets->keyBy(fn ($a) => strtoupper($a->symbol ?? ''));
         $byIsin   = $allAssets->keyBy(fn ($a) => strtoupper($a->isin   ?? ''));
 
-        foreach ($rows as &$row) {
+        return array_map(function (array $row) use ($bySymbol, $byIsin): array {
             $asset = null;
 
             if (!empty($row['ticker'])) {
@@ -174,20 +174,21 @@ class InvestmentImportService
             }
 
             if ($asset !== null) {
-                $row['asset_id']      = $asset->id;
-                $row['asset_name']    = $asset->name;
-                $row['asset_symbol']  = $asset->symbol;
-                $row['asset_missing'] = false;
-            } else {
-                $row['asset_id']      = null;
-                $row['asset_name']    = null;
-                $row['asset_symbol']  = null;
-                $row['asset_missing'] = true;
+                return array_merge($row, [
+                    'asset_id'      => $asset->id,
+                    'asset_name'    => $asset->name,
+                    'asset_symbol'  => $asset->symbol,
+                    'asset_missing' => false,
+                ]);
             }
-        }
-        unset($row);
 
-        return $rows;
+            return array_merge($row, [
+                'asset_id'      => null,
+                'asset_name'    => null,
+                'asset_symbol'  => null,
+                'asset_missing' => true,
+            ]);
+        }, $rows);
     }
 
     /**
@@ -259,8 +260,10 @@ class InvestmentImportService
         }
 
         // Ticker / ISIN (almeno uno obbligatorio)
-        $ticker = ($tickerRaw !== null && trim($tickerRaw) !== '') ? strtoupper(trim($tickerRaw)) : null;
-        $isin   = ($isinRaw   !== null && trim($isinRaw)   !== '') ? strtoupper(trim($isinRaw))   : null;
+        $tickerTrimmed = $tickerRaw !== null ? trim($tickerRaw) : '';
+        $isinTrimmed   = $isinRaw   !== null ? trim($isinRaw)   : '';
+        $ticker = $tickerTrimmed !== '' ? strtoupper($tickerTrimmed) : null;
+        $isin   = $isinTrimmed   !== '' ? strtoupper($isinTrimmed)   : null;
 
         if ($ticker === null && $isin === null) {
             $errors[] = "Riga {$lineNumber}: ticker o ISIN obbligatorio";

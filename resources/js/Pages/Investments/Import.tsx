@@ -237,7 +237,8 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
             setCurrentStep(2);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.data?.message) {
-                setPreviewError(err.response.data.message as string);
+                const msg = err.response.data.message;
+                setPreviewError(typeof msg === 'string' ? msg : 'Errore durante l\'anteprima.');
             } else {
                 setPreviewError('Errore durante l\'anteprima. Verifica il file e le impostazioni.');
             }
@@ -274,8 +275,11 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                 setSaveLayoutSuccess('Layout salvato con successo!');
                 setSaveLayoutName('');
             }
-        } catch {
-            setSaveLayoutError('Errore nel salvataggio del layout.');
+        } catch (err: unknown) {
+            const errMsg = axios.isAxiosError(err) && typeof err.response?.data?.message === 'string'
+                ? err.response.data.message
+                : 'Errore nel salvataggio del layout.';
+            setSaveLayoutError(errMsg);
         } finally {
             setSavingLayout(false);
         }
