@@ -20,6 +20,7 @@ use App\Http\Controllers\InterHouseholdTransferController;
 use App\Http\Controllers\InvestmentAnalysisController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
+use App\Http\Controllers\InvestmentImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
 use App\Http\Controllers\TelegramLinkController;
@@ -242,6 +243,13 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::delete('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'destroy'])->name('investment-assets.destroy');
 
         // Investments - modifica
+        Route::get('/investments/import', [InvestmentImportController::class, 'create'])->name('investments.import');
+        Route::post('/investments/import/preview', [InvestmentImportController::class, 'preview'])->name('investments.import.preview');
+        Route::post('/investments/import', [InvestmentImportController::class, 'store'])->name('investments.import.store');
+        Route::get('/investments/import/layouts', [InvestmentImportController::class, 'layouts'])->name('investments.import.layouts');
+        Route::post('/investments/import/layouts', [InvestmentImportController::class, 'storeLayout'])->name('investments.import.layouts.store');
+        Route::patch('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'updateLayout'])->name('investments.import.layouts.update');
+        Route::delete('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'destroyLayout'])->name('investments.import.layouts.destroy');
         Route::get('/investments/create', [InvestmentController::class, 'create'])->name('investments.create');
         Route::post('/investments', [InvestmentController::class, 'store'])->name('investments.store');
         Route::get('/investments/{investment}/edit', [InvestmentController::class, 'edit'])->name('investments.edit');
