@@ -166,3 +166,12 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 
 ## Funzionalità Future da Considerare
 - Usa i metodi isDebtBalancingMode() e isSharedWalletMode() nelle future funzionalità di calcolo del saldo, per gestire modalità specifiche come il bilanciamento debiti e portafogli condivisi.
+
+# Pull Request e Code Review
+- Ogni modifica rilevante deve essere sottoposta a pull request e code review, anche automatizzata, per garantire qualità, coerenza e individuare eventuali errori o miglioramenti.
+- Utilizzare strumenti di linting e formatter per mantenere uno stile di codice uniforme e prevenire errori comuni.
+- Applicare i principi DRY (Don't Repeat Yourself) e KISS (Keep It Simple, Stupid) per ridurre la complessità e la ridondanza.
+- Implementare una gestione centralizzata e consistente degli errori sia lato frontend che backend.
+- Fornire esempi di nomenclatura per variabili, funzioni, tabelle e componenti per favorire la coerenza (es: `utente_id`, `transazione_annuale`, `getSaldoAttuale`).
+- Prima di ogni merge, verificare: test superati, assenza di duplicazioni, performance accettabili, documentazione aggiornata, sicurezza rispettata.
+- Ogni pull request deve essere fatta verso il branch `staging`

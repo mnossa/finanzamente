@@ -71,6 +71,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
 
                     {layouts.length === 0 ? (
                         <EmptyState
+                            icon="📋"
                             title="Nessun layout salvato"
                             description="Importa investimenti da CSV e salva la configurazione come layout per riutilizzarla."
                         />
