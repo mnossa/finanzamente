@@ -6,6 +6,10 @@ on:
     branches:
       - staging
 
+# Permessi minimi per default; il job release sovrascrive con contents: write
+permissions:
+  contents: read
+
 jobs:
 
   # ── Job 1: Esegui la suite di test ────────────────────────────────────────────
