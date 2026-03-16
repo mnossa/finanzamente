@@ -122,6 +122,11 @@ Aggiungi questa riga al file `~/.bashrc` o direttamente nel crontab (vedi sezion
    [Releases](https://github.com/mnossa/finanzamente/releases) del repository,
    oppure tramite CLI:
 
+   Nota: l'endpoint `https://api.github.com/repos/mnossa/finanzamente/releases/latest`
+   restituisce `404 Not Found` in due casi distinti:
+   - il repository e' privato e la richiesta non include un `GITHUB_TOKEN` valido;
+   - non esiste ancora nessuna GitHub Release pubblicata.
+
    ```bash
    # Per repository pubblico
    RELEASE_URL=$(curl -s https://api.github.com/repos/mnossa/finanzamente/releases/latest \
@@ -256,6 +261,8 @@ tail -f /home/mnossa/logs/finanzamente-deploy.log
 | Nuova release disponibile       | Scarica, backup, aggiorna, migra, riavvia            |
 | Errore durante il deploy        | Rollback automatico alla versione precedente         |
 | Primo deploy (nessuna versione) | Installa la versione più recente disponibile         |
+| Repo privato senza token        | Interrompe il deploy con errore esplicito            |
+| Nessuna release pubblicata      | Esce senza fare nulla e segnala il motivo            |
 
 ---
 
