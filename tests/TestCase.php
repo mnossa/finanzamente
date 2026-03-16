@@ -4,6 +4,7 @@ namespace Tests;
 
 use Database\Seeders\CurrencySeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Vite;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -24,6 +25,10 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Evita l'errore "Vite manifest not found" durante i test:
+        // non è necessario compilare gli asset frontend per testare la logica backend.
+        Vite::fake();
 
         // Seed currencies per tutti i test che ne hanno bisogno
         $this->seed(CurrencySeeder::class);
