@@ -73,10 +73,6 @@ class TransactionImportController extends Controller
         try {
             $tempPath = $this->resolveFilePath($request);
 
-            if ($tempPath === null) {
-                return response()->json(['error' => 'Nessun file ricevuto.'], 422);
-            }
-
             $extension = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
             if ($extension !== 'xlsx') {
                 return response()->json(['sheets' => []]);

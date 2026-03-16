@@ -231,8 +231,8 @@ class TransactionImportTest extends TestCase
     public function preview_with_google_drive_returns_error_on_failed_download(): void
     {
         // Simula una chiamata Google Drive che fallisce (access token non valido)
-        \Illuminate\Support\Facades\Http::fake([
-            'https://www.googleapis.com/*' => \Illuminate\Support\Facades\Http::response('Unauthorized', 401),
+        Http::fake([
+            'https://www.googleapis.com/*' => Http::response('Unauthorized', 401),
         ]);
 
         $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [

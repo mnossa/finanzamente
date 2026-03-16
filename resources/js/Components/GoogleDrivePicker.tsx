@@ -120,8 +120,9 @@ export default function GoogleDrivePicker({
                     setScriptsReady(true);
                 });
             })
-            .catch((err: Error) => {
-                onError?.(err.message ?? 'Impossibile caricare le API di Google.');
+            .catch((err: unknown) => {
+                const message = err instanceof Error ? err.message : 'Impossibile caricare le API di Google.';
+                onError?.(message);
             });
     }, [isConfigured]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -225,7 +226,6 @@ export default function GoogleDrivePicker({
             )}
             aria-label="Seleziona file da Google Drive"
         >
-            {/* Google Drive icon */}
             <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
                 <path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 48.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
