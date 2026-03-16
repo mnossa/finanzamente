@@ -345,9 +345,11 @@ main() {
         storage/logs
 
     # ── Attendi che MySQL sia pronto ──────────────────────────────────────────
+    # Nota: mysqladmin ping verifica solo la connessione TCP. Per verificare che
+    # l'inizializzazione dei db/utenti sia completa, autentichiamo con mysql -e.
     log "Attesa disponibilità database..."
     retries=0
-    until docker compose exec -T db mysqladmin ping -h localhost --silent > /dev/null 2>&1; do
+    until docker compose exec -T db bash -c 'mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" -e "SELECT 1"' > /dev/null 2>&1; do
         retries=$((retries + 1))
         if [ "${retries}" -ge "${MAX_RETRIES}" ]; then
             error "Timeout: il database non risponde dopo $((MAX_RETRIES * 5)) secondi."
