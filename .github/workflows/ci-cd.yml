@@ -1,0 +1,206 @@
+name: CI/CD Pipeline — Finanzamente
+
+# Attivazione: ad ogni push sul branch staging
+on:
+  push:
+    branches:
+      - staging
+
+# Permessi minimi per default; il job release sovrascrive con contents: write
+permissions:
+  contents: read
+
+jobs:
+
+  # ── Job 1: Esegui la suite di test ────────────────────────────────────────────
+  test:
+    name: Esegui Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codice sorgente
+        uses: actions/checkout@v4
+
+      - name: Imposta UID/GID per Docker Compose
+        run: |
+          echo "LOCAL_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "LOCAL_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      - name: Crea .env.docker per l'ambiente CI
+        run: |
+          {
+            echo "APP_NAME=Finanzamente"
+            echo "APP_ENV=local"
+            echo "APP_KEY=base64:$(openssl rand -base64 32)"
+            echo "APP_DEBUG=false"
+            echo "APP_URL=http://localhost"
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=db"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=finanzamente"
+            echo "DB_USERNAME=finanzamente"
+            echo "DB_PASSWORD=finanzamente"
+            echo "SESSION_DRIVER=database"
+            echo "CACHE_STORE=database"
+            echo "QUEUE_CONNECTION=database"
+            echo "MAIL_MAILER=log"
+            echo "ADV_THROTTLE_SALT=ci-salt-$(openssl rand -hex 8)"
+          } > .env.docker
+
+      - name: Avvia stack Docker Compose
+        run: docker compose up -d --build
+
+      - name: Installa dipendenze PHP nel container
+        run: |
+          timeout 120 bash -c \
+            'until docker compose exec -T app php --version > /dev/null 2>&1; do sleep 5; echo "Attesa container app..."; done'
+          docker compose exec -T app composer install \
+            --optimize-autoloader \
+            --no-interaction
+          docker compose ps
+
+      - name: Esegui suite di test (make test)
+        run: make test
+
+      - name: Ferma stack Docker Compose
+        if: always()
+        run: docker compose down --volumes
+
+  # ── Job 2: Build e Pacchettizzazione ─────────────────────────────────────────
+  build:
+    name: Build e Pacchettizzazione
+    runs-on: ubuntu-latest
+    needs: test
+
+    outputs:
+      version: ${{ steps.calcola-versione.outputs.version }}
+      archive-name: ${{ steps.calcola-versione.outputs.archive-name }}
+
+    steps:
+      - name: Checkout del codice sorgente
+        uses: actions/checkout@v4
+
+      - name: Calcola versione release
+        id: calcola-versione
+        run: |
+          DATE=$(date +%Y%m%d)
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          VERSION="v${DATE}-${SHORT_SHA}"
+          ARCHIVE="finanzamente-${VERSION}.tar.gz"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "archive-name=${ARCHIVE}" >> "$GITHUB_OUTPUT"
+          echo "Versione release: ${VERSION}"
+
+      - name: Configura Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Installa dipendenze Node.js
+        run: npm ci
+
+      - name: Build frontend (TypeScript + Vite)
+        run: npm run build
+
+      - name: Configura PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, pdo_mysql, mbstring, exif, pcntl, bcmath, gd, zip, intl
+          tools: composer:2
+
+      - name: Cache dipendenze Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-
+
+      - name: Installa dipendenze PHP (senza dev)
+        run: composer install --optimize-autoloader --no-dev --no-interaction
+
+      - name: Crea archivio distribuibile
+        run: |
+          VERSION="${{ steps.calcola-versione.outputs.version }}"
+          ARCHIVE="${{ steps.calcola-versione.outputs.archive-name }}"
+
+          echo "Creazione archivio ${ARCHIVE}..."
+
+          # Esclude file non necessari al deploy in produzione
+          tar -czf "/tmp/${ARCHIVE}" \
+            --exclude='./.git' \
+            --exclude='./node_modules' \
+            --exclude='./.env' \
+            --exclude='./.env.docker' \
+            --exclude='./.env.testing' \
+            --exclude='./.vite' \
+            --exclude='./storage/logs/*.log' \
+            --exclude='./storage/framework/cache/data' \
+            --exclude='./storage/framework/sessions' \
+            --exclude='./storage/framework/views' \
+            .
+
+          cp "/tmp/${ARCHIVE}" .
+          echo "Archivio creato: $(du -sh "${ARCHIVE}" | cut -f1)"
+
+      - name: Carica artefatto CI
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-archive
+          path: ${{ steps.calcola-versione.outputs.archive-name }}
+          retention-days: 7
+
+  # ── Job 3: Crea GitHub Release ────────────────────────────────────────────────
+  release:
+    name: Crea Release GitHub
+    runs-on: ubuntu-latest
+    needs: build
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Scarica artefatto dal job build
+        uses: actions/download-artifact@v4
+        with:
+          name: release-archive
+
+      - name: Crea Release GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+          ARCHIVE: ${{ needs.build.outputs.archive-name }}
+        run: |
+          BUILD_DATE=$(date -u '+%d/%m/%Y %H:%M UTC')
+          cat > /tmp/release-notes.md << NOTES
+          ## Release ${VERSION}
+
+          **Branch**: ${{ github.ref_name }}
+          **Commit**: \`${{ github.sha }}\`
+          **Data build**: ${BUILD_DATE}
+
+          ### Contenuto dell'archivio
+
+          L'archivio \`${ARCHIVE}\` contiene tutto il necessario per eseguire
+          la webapp su Raspberry Pi tramite Docker Compose:
+
+          - Codice sorgente PHP (Laravel)
+          - Asset frontend pre-compilati (\`public/build/\`)
+          - Dipendenze PHP (\`vendor/\`)
+          - Configurazione Docker (\`Dockerfile\`, \`docker-compose.yml\`, \`nginx/\`)
+          - Script di deploy (\`scripts/raspberry-deploy.sh\`)
+
+          ### Deploy su Raspberry Pi
+
+          Utilizza lo script \`scripts/raspberry-deploy.sh\` per aggiornare
+          automaticamente il Raspberry Pi. Consulta \`docs/DEPLOY.md\` per
+          istruzioni dettagliate di installazione e configurazione cron.
+          NOTES
+
+          gh release create "${VERSION}" \
+            --repo "${{ github.repository }}" \
+            --title "Release ${VERSION}" \
+            --notes-file /tmp/release-notes.md \
+            "${ARCHIVE}"
