@@ -29,7 +29,18 @@ readonly VERSION_FILE="${INSTALL_DIR}/.release-archive"
 readonly GITHUB_REPO="mnossa/finanzamente"
 readonly GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}/releases/latest"
 readonly LOG_TAG="finanzamente-deploy"
-readonly GITHUB_TOKEN="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"
+readonly LOCK_FILE="/tmp/finanzamente-deploy.lock"
+readonly LOCK_MAX_AGE=3600  # secondi: termina forzatamente esecuzioni più vecchie di 1 ora
+
+# Token GitHub — letto dall'ambiente o dal file .env/.env.docker
+# Non hardcodare mai il token nello script (GitHub lo revokerebbe automaticamente)
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env" ]; then
+    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+fi
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env.docker" ]; then
+    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env.docker" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+fi
+GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
 # Numero massimo di tentativi di attesa avvio container (5s per tentativo = 120s totali)
 readonly MAX_RETRIES=24
@@ -41,6 +52,40 @@ log() {
 
 error() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [${LOG_TAG}] ERRORE: $1" >&2
+}
+
+# ── Lock: evita esecuzioni concorrenti ───────────────────────────────────────
+# Se lo script è già in esecuzione, salta. Se gira da più di LOCK_MAX_AGE secondi,
+# lo termina forzatamente (caso di errore/hang) e procede.
+acquire_lock() {
+    if [ -f "${LOCK_FILE}" ]; then
+        local existing_pid
+        existing_pid=$(cat "${LOCK_FILE}" 2>/dev/null || echo "")
+
+        if [ -n "${existing_pid}" ] && kill -0 "${existing_pid}" 2>/dev/null; then
+            local lock_age
+            lock_age=$(( $(date +%s) - $(stat -c %Y "${LOCK_FILE}") ))
+
+            if [ "${lock_age}" -ge "${LOCK_MAX_AGE}" ]; then
+                error "Processo precedente (PID ${existing_pid}) in esecuzione da $((lock_age / 60)) minuti (> 60). Terminazione forzata..."
+                kill -TERM "${existing_pid}" 2>/dev/null || true
+                sleep 3
+                kill -KILL "${existing_pid}" 2>/dev/null || true
+                rm -f "${LOCK_FILE}"
+                log "Processo precedente terminato. Avvio nuova esecuzione."
+            else
+                log "Script già in esecuzione (PID ${existing_pid}, da $((lock_age / 60)) minuti). Uscita."
+                exit 0
+            fi
+        else
+            log "Rimozione lock non valido (PID ${existing_pid:-sconosciuto} non più in esecuzione)."
+            rm -f "${LOCK_FILE}"
+        fi
+    fi
+
+    echo "$$" > "${LOCK_FILE}"
+    # Rimuovi il lock all'uscita in qualsiasi condizione (successo, errore, segnale)
+    trap 'rm -f "${LOCK_FILE}"' EXIT
 }
 
 # ── Verifica prerequisiti ─────────────────────────────────────────────────────
@@ -121,6 +166,7 @@ rollback() {
 main() {
     log "=== Avvio controllo aggiornamenti Finanzamente ==="
 
+    acquire_lock
     check_prerequisites
 
     # ── Recupera info release più recente da GitHub ──────────────────────────
