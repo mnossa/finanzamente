@@ -298,6 +298,18 @@ main() {
         storage/framework/cache/data \
         storage/logs
 
+    # ── Attendi che MySQL sia pronto ──────────────────────────────────────────
+    log "Attesa disponibilità database..."
+    retries=0
+    until docker compose exec -T app php artisan db:show > /dev/null 2>&1; do
+        retries=$((retries + 1))
+        if [ "${retries}" -ge "${MAX_RETRIES}" ]; then
+            error "Timeout: il database non risponde dopo $((MAX_RETRIES * 5)) secondi."
+            exit 1
+        fi
+        sleep 5
+    done
+
     # ── Esegui migrazioni database ────────────────────────────────────────────
     log "Esecuzione migrazioni database..."
     docker compose exec -T app php artisan migrate --force
