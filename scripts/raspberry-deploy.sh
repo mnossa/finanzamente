@@ -347,7 +347,7 @@ main() {
     # ── Attendi che MySQL sia pronto ──────────────────────────────────────────
     log "Attesa disponibilità database..."
     retries=0
-    until docker compose exec -T app php artisan db:show > /dev/null 2>&1; do
+    until docker compose exec -T db mysqladmin ping -h localhost --silent > /dev/null 2>&1; do
         retries=$((retries + 1))
         if [ "${retries}" -ge "${MAX_RETRIES}" ]; then
             error "Timeout: il database non risponde dopo $((MAX_RETRIES * 5)) secondi."

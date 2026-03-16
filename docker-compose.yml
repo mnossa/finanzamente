@@ -35,6 +35,12 @@ services:
       - finanzamente
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
   nginx:
     image: nginx:alpine
     container_name: finanzamente-nginx
