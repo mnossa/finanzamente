@@ -73,10 +73,29 @@ github_headers() {
 }
 
 # ── Recupera info release più recente da GitHub ───────────────────────────────
+# Restituisce il JSON della release e codice HTTP nell'ultima riga
 get_latest_release() {
     local -a headers
     read -ra headers <<< "$(github_headers)"
-    curl -sf "${headers[@]}" "${GITHUB_API}"
+    local response http_code
+    # -s silenzioso, -w aggiunge il codice HTTP come ultima riga
+    response=$(curl -s -w "\n%{http_code}" "${headers[@]}" "${GITHUB_API}" 2>/dev/null) || {
+        return 1
+    }
+    http_code=$(printf '%s' "${response}" | tail -n 1)
+    case "${http_code}" in
+        200)
+            printf '%s\n' "${response}" | head -n -1
+            ;;
+        404)
+            # Nessuna release ancora pubblicata sul repository
+            echo "{}"
+            ;;
+        *)
+            error "GitHub API ha risposto con HTTP ${http_code}."
+            return 1
+            ;;
+    esac
 }
 
 # ── Rollback in caso di errore ────────────────────────────────────────────────
@@ -117,7 +136,7 @@ main() {
     log "Controllo release disponibili su GitHub..."
     local release_json
     if ! release_json=$(get_latest_release); then
-        error "Impossibile contattare GitHub API. Verifica la connessione internet."
+        error "Impossibile contattare GitHub API. Verifica la connessione internet e che il token GITHUB_TOKEN sia valido (se il repo è privato)."
         exit 1
     fi
 

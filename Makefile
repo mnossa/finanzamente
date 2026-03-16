@@ -3,6 +3,8 @@
 
 LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
+CI_APP_WAIT_TIMEOUT ?= 300
+CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
 .PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main
@@ -134,7 +136,20 @@ ci:
 	@echo "[CI] Step 1/4 - Avvio stack Docker..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d --build
 	@echo "[CI] Attesa container app..."
-	@timeout 120 bash -c 'until docker compose exec -T app php --version > /dev/null 2>&1; do sleep 5; echo "  ...attesa"; done'
+	@max_wait=$(CI_APP_WAIT_TIMEOUT); \
+	interval=$(CI_APP_WAIT_INTERVAL); \
+	elapsed=0; \
+	until docker compose exec -T app php --version > /dev/null 2>&1; do \
+		if [ $$elapsed -ge $$max_wait ]; then \
+			echo "[CI] Container app non pronto entro $$max_wait secondi"; \
+			docker compose ps app; \
+			docker compose logs --tail=50 app; \
+			exit 1; \
+		fi; \
+		sleep $$interval; \
+		elapsed=$$((elapsed + interval)); \
+		echo "  ...attesa ($$elapsed/$$max_wait s)"; \
+	done
 	@echo "[CI] Step 2/4 - Installazione dipendenze PHP..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app composer install --optimize-autoloader --no-interaction
 	@echo "[CI] Step 3/4 - Esecuzione suite di test..."
