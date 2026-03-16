@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportSheetsRequest;
 use App\Http\Requests\PreviewImportRequest;
 use App\Http\Requests\StoreImportLayoutRequest;
 use App\Http\Requests\StoreImportTransactionsRequest;
@@ -9,6 +10,7 @@ use App\Models\Account;
 use App\Models\BankImportLayout;
 use App\Models\Category;
 use App\Models\Transaction;
+use App\Services\GoogleDriveService;
 use App\Services\TransactionImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +21,8 @@ use Inertia\Response;
 class TransactionImportController extends Controller
 {
     public function __construct(
-        private readonly TransactionImportService $importService
+        private readonly TransactionImportService $importService,
+        private readonly GoogleDriveService $driveService,
     ) {}
 
     /**
@@ -60,69 +63,133 @@ class TransactionImportController extends Controller
     }
 
     /**
+     * Restituisce la lista dei fogli (sheets) di un file XLSX.
+     * Accetta un file locale o un file da Google Drive.
+     */
+    public function sheets(ImportSheetsRequest $request): \Illuminate\Http\JsonResponse
+    {
+        $tempPath = null;
+
+        try {
+            $tempPath = $this->resolveFilePath($request);
+
+            if ($tempPath === null) {
+                return response()->json(['error' => 'Nessun file ricevuto.'], 422);
+            }
+
+            $extension = strtolower(pathinfo($tempPath, PATHINFO_EXTENSION));
+            if ($extension !== 'xlsx') {
+                return response()->json(['sheets' => []]);
+            }
+
+            $sheets = $this->importService->getXlsxSheets($tempPath);
+            return response()->json(['sheets' => $sheets]);
+        } catch (\RuntimeException|\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } finally {
+            // Rimuovi il file temporaneo Google Drive (non i file locali)
+            if ($tempPath !== null && $request->filled('google_drive_file_id') && file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
+    }
+
+    /**
      * Analizza il file (CSV o XLSX) e restituisce l'anteprima delle righe parsate.
      */
     public function preview(PreviewImportRequest $request): \Illuminate\Http\JsonResponse
     {
-        $file      = $request->file('csv_file');
-        $extension = strtolower($file->getClientOriginalExtension());
-        $isXlsx    = $extension === 'xlsx';
+        $tempPath   = null;
+        $isFromDrive = $request->filled('google_drive_file_id');
 
-        $layout = [
-            'delimiter'      => $request->input('delimiter', ','),
-            'date_format'    => $request->input('date_format'),
-            'has_header'     => $request->boolean('has_header', true),
-            'encoding'       => $request->input('encoding', 'UTF-8'),
-            'column_mapping' => $request->input('column_mapping'),
-        ];
+        try {
+            $filePath  = $this->resolveFilePath($request);
+            $tempPath  = $isFromDrive ? $filePath : null;
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $isXlsx    = $extension === 'xlsx';
+            $sheetIndex = (int) $request->input('sheet_index', 0);
 
-        if ($isXlsx) {
-            $filePath  = $file->getPathname();
-            $rows      = $this->importService->parseXlsx($filePath, $layout);
-            $headers   = $layout['has_header']
-                ? $this->importService->getXlsxHeaders($filePath)
-                : [];
-        } else {
-            $content = file_get_contents($file->getPathname());
-            $rows    = $this->importService->parseCsv($content, $layout);
+            $layout = [
+                'delimiter'      => $request->input('delimiter', ','),
+                'date_format'    => $request->input('date_format'),
+                'has_header'     => $request->boolean('has_header', true),
+                'encoding'       => $request->input('encoding', 'UTF-8'),
+                'column_mapping' => $request->input('column_mapping'),
+            ];
 
-            // Estrai intestazioni dalla prima riga CSV
-            $headers = [];
-            if ($layout['has_header']) {
-                $lines = array_filter(
-                    explode("\n", str_replace(["\r\n", "\r"], "\n", $content)),
-                    fn ($l) => trim($l) !== '',
-                );
-                $lines = array_values($lines);
-                if (!empty($lines)) {
-                    $handle = fopen('php://temp', 'r+');
-                    fwrite($handle, $lines[0]);
-                    rewind($handle);
-                    $row     = fgetcsv($handle, 0, $layout['delimiter'], '"', '\\');
-                    fclose($handle);
-                    $headers = $row !== false ? $row : [];
+            if ($isXlsx) {
+                $rows    = $this->importService->parseXlsx($filePath, $layout, $sheetIndex);
+                $headers = $layout['has_header']
+                    ? $this->importService->getXlsxHeaders($filePath, $sheetIndex)
+                    : [];
+            } else {
+                $content = file_get_contents($filePath);
+                $rows    = $this->importService->parseCsv($content, $layout);
+
+                // Estrai intestazioni dalla prima riga CSV
+                $headers = [];
+                if ($layout['has_header']) {
+                    $lines = array_filter(
+                        explode("\n", str_replace(["\r\n", "\r"], "\n", $content)),
+                        fn ($l) => trim($l) !== '',
+                    );
+                    $lines = array_values($lines);
+                    if (!empty($lines)) {
+                        $handle = fopen('php://temp', 'r+');
+                        fwrite($handle, $lines[0]);
+                        rewind($handle);
+                        $row     = fgetcsv($handle, 0, $layout['delimiter'], '"', '\\');
+                        fclose($handle);
+                        $headers = $row !== false ? $row : [];
+                    }
                 }
             }
+
+            $validated = $this->importService->validateRows($rows);
+
+            $uniqueCategories = collect($validated['valid'])
+                ->pluck('category_name')
+                ->filter(fn ($v) => $v !== null && $v !== '')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            return response()->json([
+                'headers'           => $headers,
+                'valid'             => $validated['valid'],
+                'invalid'           => $validated['invalid'],
+                'total'             => count($rows),
+                'valid_count'       => count($validated['valid']),
+                'invalid_count'     => count($validated['invalid']),
+                'unique_categories' => $uniqueCategories,
+            ]);
+        } catch (\RuntimeException|\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } finally {
+            if ($tempPath !== null && file_exists($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
+    }
+
+    /**
+     * Risolve il percorso del file da elaborare:
+     * - file locale caricato → pathname del file temporaneo PHP
+     * - Google Drive → scarica il file e restituisce il percorso temp
+     *
+     * @throws \RuntimeException|\InvalidArgumentException
+     */
+    private function resolveFilePath(Request $request): string
+    {
+        if ($request->filled('google_drive_file_id')) {
+            return $this->driveService->downloadFile(
+                accessToken: $request->input('google_drive_access_token'),
+                fileId:      $request->input('google_drive_file_id'),
+                mimeType:    $request->input('google_drive_mime_type', 'text/csv'),
+            );
         }
 
-        $validated = $this->importService->validateRows($rows);
-
-        $uniqueCategories = collect($validated['valid'])
-            ->pluck('category_name')
-            ->filter(fn ($v) => $v !== null && $v !== '')
-            ->unique()
-            ->values()
-            ->toArray();
-
-        return response()->json([
-            'headers'           => $headers,
-            'valid'             => $validated['valid'],
-            'invalid'           => $validated['invalid'],
-            'total'             => count($rows),
-            'valid_count'       => count($validated['valid']),
-            'invalid_count'     => count($validated['invalid']),
-            'unique_categories' => $uniqueCategories,
-        ]);
+        return $request->file('csv_file')->getPathname();
     }
 
     /**

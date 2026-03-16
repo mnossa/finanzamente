@@ -207,15 +207,45 @@ class TransactionImportService
     }
 
     /**
-     * Legge la prima riga di un file XLSX come intestazioni di colonna.
+     * Legge i nomi dei fogli presenti in un file XLSX.
+     *
+     * @param string $filePath Percorso assoluto al file .xlsx
+     * @return array<int, array{index: int, name: string}>
      */
-    public function getXlsxHeaders(string $filePath): array
+    public function getXlsxSheets(string $filePath): array
     {
         $reader = new XlsxReader();
         $reader->open($filePath);
 
-        $headers = [];
+        $sheets = [];
+        $index  = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
+            $sheets[] = ['index' => $index, 'name' => $sheet->getName()];
+            $index++;
+        }
+
+        $reader->close();
+        return $sheets;
+    }
+
+    /**
+     * Legge la prima riga di un file XLSX come intestazioni di colonna.
+     *
+     * @param string $filePath   Percorso assoluto al file .xlsx
+     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
+     */
+    public function getXlsxHeaders(string $filePath, int $sheetIndex = 0): array
+    {
+        $reader = new XlsxReader();
+        $reader->open($filePath);
+
+        $headers    = [];
+        $sheetCount = 0;
+        foreach ($reader->getSheetIterator() as $sheet) {
+            if ($sheetCount !== $sheetIndex) {
+                $sheetCount++;
+                continue;
+            }
             foreach ($sheet->getRowIterator() as $row) {
                 $headers = array_map(
                     fn ($cell) => (string) ($cell->getValue() ?? ''),
@@ -223,7 +253,7 @@ class TransactionImportService
                 );
                 break;
             }
-            break; // solo prima scheda
+            break;
         }
 
         $reader->close();
@@ -233,11 +263,12 @@ class TransactionImportService
     /**
      * Legge un file XLSX e restituisce le righe nel formato normalizzato.
      *
-     * @param string $filePath Percorso assoluto al file .xlsx
-     * @param array  $layout   { date_format, has_header, column_mapping }
+     * @param string $filePath   Percorso assoluto al file .xlsx
+     * @param array  $layout     { date_format, has_header, column_mapping }
+     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
      * @return array Array di righe: [{date, amount, description, notes, raw, errors}]
      */
-    public function parseXlsx(string $filePath, array $layout): array
+    public function parseXlsx(string $filePath, array $layout, int $sheetIndex = 0): array
     {
         $dateFormat    = $layout['date_format']    ?? 'd/m/Y';
         $hasHeader     = $layout['has_header']     ?? true;
@@ -248,8 +279,13 @@ class TransactionImportService
 
         $rows       = [];
         $lineNumber = 0;
+        $sheetCount = 0;
 
         foreach ($reader->getSheetIterator() as $sheet) {
+            if ($sheetCount !== $sheetIndex) {
+                $sheetCount++;
+                continue;
+            }
             foreach ($sheet->getRowIterator() as $row) {
                 $lineNumber++;
                 if ($hasHeader && $lineNumber === 1) {
@@ -257,7 +293,7 @@ class TransactionImportService
                 }
                 $rows[] = $this->mapXlsxRow($row->getCells(), $columnMapping, $dateFormat, $lineNumber);
             }
-            break; // solo prima scheda
+            break;
         }
 
         $reader->close();

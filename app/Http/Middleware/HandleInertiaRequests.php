@@ -68,6 +68,10 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'info' => fn () => $request->session()->get('info'),
             ],
+            'googleDrive' => [
+                'clientId' => config('services.google_drive.client_id', ''),
+                'apiKey'   => config('services.google_drive.api_key', ''),
+            ],
         ];
     }
 }

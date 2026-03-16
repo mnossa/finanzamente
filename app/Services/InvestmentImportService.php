@@ -63,11 +63,12 @@ class InvestmentImportService
     /**
      * Parsa un file XLSX in righe investimento normalizzate.
      *
-     * @param string $filePath Percorso assoluto al file .xlsx
-     * @param array  $layout   { date_format, has_header, column_mapping }
+     * @param string $filePath   Percorso assoluto al file .xlsx
+     * @param array  $layout     { date_format, has_header, column_mapping }
+     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
      * @return array<int, array>
      */
-    public function parseXlsx(string $filePath, array $layout): array
+    public function parseXlsx(string $filePath, array $layout, int $sheetIndex = 0): array
     {
         $dateFormat    = $layout['date_format']    ?? 'd/m/Y';
         $hasHeader     = $layout['has_header']     ?? true;
@@ -78,8 +79,13 @@ class InvestmentImportService
 
         $rows       = [];
         $lineNumber = 0;
+        $sheetCount = 0;
 
         foreach ($reader->getSheetIterator() as $sheet) {
+            if ($sheetCount !== $sheetIndex) {
+                $sheetCount++;
+                continue;
+            }
             foreach ($sheet->getRowIterator() as $row) {
                 $lineNumber++;
                 if ($hasHeader && $lineNumber === 1) {
@@ -97,15 +103,22 @@ class InvestmentImportService
     /**
      * Restituisce la prima riga di intestazioni da un file XLSX.
      *
+     * @param string $filePath   Percorso assoluto al file .xlsx
+     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
      * @return string[]
      */
-    public function getXlsxHeaders(string $filePath): array
+    public function getXlsxHeaders(string $filePath, int $sheetIndex = 0): array
     {
         $reader = new \OpenSpout\Reader\XLSX\Reader();
         $reader->open($filePath);
 
-        $headers = [];
+        $headers    = [];
+        $sheetCount = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
+            if ($sheetCount !== $sheetIndex) {
+                $sheetCount++;
+                continue;
+            }
             foreach ($sheet->getRowIterator() as $row) {
                 $headers = array_map(
                     fn ($cell) => (string) ($cell->getValue() ?? ''),
@@ -118,6 +131,28 @@ class InvestmentImportService
 
         $reader->close();
         return $headers;
+    }
+
+    /**
+     * Legge i nomi dei fogli presenti in un file XLSX.
+     *
+     * @param string $filePath Percorso assoluto al file .xlsx
+     * @return array<int, array{index: int, name: string}>
+     */
+    public function getXlsxSheets(string $filePath): array
+    {
+        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader->open($filePath);
+
+        $sheets = [];
+        $index  = 0;
+        foreach ($reader->getSheetIterator() as $sheet) {
+            $sheets[] = ['index' => $index, 'name' => $sheet->getName()];
+            $index++;
+        }
+
+        $reader->close();
+        return $sheets;
     }
 
     /**
