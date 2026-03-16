@@ -9,6 +9,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.tsx',
+        './node_modules/@tremor/**/*.{js,ts,jsx,tsx}',
     ],
 
     theme: {
