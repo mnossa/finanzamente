@@ -15,25 +15,30 @@
 #               >> /home/mnossa/logs/finanzamente-deploy.log 2>&1
 #
 # Variabili d'ambiente opzionali:
-#   GITHUB_TOKEN  Token GitHub (necessario per repo privati; senza token GitHub
-#                 restituisce 404 anche se il repository esiste)
+#   GITHUB_TOKEN  Token GitHub (necessario per repo privati)
 #   INSTALL_DIR   Directory di installazione (default: /home/mnossa/www/finanzamente)
 # =============================================================================
 
 set -euo pipefail
 
 # ── Configurazione ────────────────────────────────────────────────────────────
-INSTALL_DIR="/home/mnossa/finanzamente"
+readonly INSTALL_DIR="${INSTALL_DIR:-/home/mnossa/www/finanzamente}"
 readonly BACKUP_DIR="${INSTALL_DIR}.backup"
 readonly WORK_DIR="/tmp/finanzamente-deploy"
-readonly VERSION_FILE="${INSTALL_DIR}/.release-archive"
+readonly VERSION_FILE="${INSTALL_DIR}/.release-version"
 readonly GITHUB_REPO="mnossa/finanzamente"
-readonly GITHUB_REPO_API="https://api.github.com/repos/${GITHUB_REPO}"
-readonly GITHUB_RELEASE_API="${GITHUB_REPO_API}/releases/latest"
+readonly GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}/releases/latest"
 readonly LOG_TAG="finanzamente-deploy"
 
-# Token GitHub opzionale (necessario solo per repo privati)
-GITHUB_TOKEN=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
+# Token GitHub — caricato dall'ambiente o dal file .env/.env.docker
+# Non hardcodare mai il token nello script (GitHub lo revocerebbe automaticamente)
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env" ]; then
+    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+fi
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env.docker" ]; then
+    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env.docker" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+fi
+GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
 # Numero massimo di tentativi di attesa avvio container (5s per tentativo = 120s totali)
 readonly MAX_RETRIES=24
@@ -65,46 +70,33 @@ check_prerequisites() {
     [ "${missing}" -eq 0 ] || exit 1
 }
 
-# ── Esegue una chiamata GET all'API GitHub ────────────────────────────────────
-# Uso: github_api_get <url>
-# Stampa il body della risposta + \n + codice HTTP sull'ultima riga.
-github_api_get() {
-    local url="$1"
+# ── Costruisce header HTTP opzionali per GitHub API ───────────────────────────
+github_headers() {
+    local -a headers=("-H" "Accept: application/vnd.github.v3+json")
     if [ -n "${GITHUB_TOKEN}" ]; then
-        curl -s -w "\n%{http_code}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "${url}" 2>/dev/null
-    else
-        curl -s -w "\n%{http_code}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "${url}" 2>/dev/null
+        headers+=("-H" "Authorization: Bearer ${GITHUB_TOKEN}")
     fi
+    echo "${headers[@]}"
 }
 
 # ── Recupera info release più recente da GitHub ───────────────────────────────
+# Restituisce il JSON della release e codice HTTP nell'ultima riga
 get_latest_release() {
-    local response http_code body
-    response=$(github_api_get "${GITHUB_RELEASE_API}") || return 1
-
-    http_code=$(printf '%s\n' "${response}" | tail -n 1)
-    body=$(printf '%s\n' "${response}" | head -n -1)
-
+    local -a headers
+    read -ra headers <<< "$(github_headers)"
+    local response http_code
+    # -s silenzioso, -w aggiunge il codice HTTP come ultima riga
+    response=$(curl -s -w "\n%{http_code}" "${headers[@]}" "${GITHUB_API}" 2>/dev/null) || {
+        return 1
+    }
+    http_code=$(printf '%s' "${response}" | tail -n 1)
     case "${http_code}" in
         200)
-            printf '%s\n' "${body}"
+            printf '%s\n' "${response}" | head -n -1
             ;;
         404)
-            # Verifica se il repo esiste ma non ha release, oppure è inaccessibile
-            local repo_response repo_code
-            repo_response=$(github_api_get "${GITHUB_REPO_API}") || return 1
-            repo_code=$(printf '%s\n' "${repo_response}" | tail -n 1)
-            if [ "${repo_code}" = "200" ]; then
-                echo "{}"
-            else
-                error "Repository GitHub non accessibile (HTTP ${repo_code}). Se il repository e' privato, imposta GITHUB_TOKEN con permesso di lettura 'Contents'."
-                return 1
-            fi
+            # Nessuna release ancora pubblicata sul repository
+            echo "{}"
             ;;
         *)
             error "GitHub API ha risposto con HTTP ${http_code}."
@@ -117,12 +109,16 @@ get_latest_release() {
 rollback() {
     error "Deploy fallito. Avvio procedura di rollback..."
 
+    # Torna a una directory sempre esistente (evita getcwd errors)
+    cd /tmp 2>/dev/null || true
+
     if [ -d "${BACKUP_DIR}" ]; then
         log "Ripristino backup da ${BACKUP_DIR}..."
 
         # Ferma i container correnti (ignora errori)
         if [ -d "${INSTALL_DIR}" ]; then
             cd "${INSTALL_DIR}" && docker compose down --timeout 30 2>/dev/null || true
+            cd /tmp
         fi
 
         # Sostituisci l'installazione attuale con il backup
@@ -151,19 +147,17 @@ main() {
     log "Controllo release disponibili su GitHub..."
     local release_json
     if ! release_json=$(get_latest_release); then
-        error "Impossibile recuperare la release piu' recente. Verifica connessione internet, permessi del token GITHUB_TOKEN e presenza di almeno una GitHub Release pubblicata."
+        error "Impossibile contattare GitHub API. Verifica la connessione internet e che il token GITHUB_TOKEN sia valido (se il repo è privato)."
         exit 1
     fi
 
     local latest_version asset_name asset_url
     latest_version=$(echo "${release_json}" | jq -r '.tag_name // empty')
     asset_name=$(echo "${release_json}"     | jq -r '.assets[0].name // empty')
-    # Per repo privati si usa l'API URL (campo .url) con Accept: application/octet-stream.
-    # browser_download_url non funziona con Bearer token su redirect S3.
-    asset_url=$(echo "${release_json}"      | jq -r '.assets[0].url // empty')
+    asset_url=$(echo "${release_json}"      | jq -r '.assets[0].browser_download_url // empty')
 
     if [ -z "${latest_version}" ]; then
-        log "Nessuna GitHub Release pubblicata per ${GITHUB_REPO}. L'endpoint /releases/latest restituisce 404 finche' non esiste almeno una release. Uscita."
+        log "Nessuna release disponibile su GitHub. Uscita."
         exit 0
     fi
 
@@ -192,19 +186,12 @@ main() {
 
     # ── Scarica archivio release ──────────────────────────────────────────────
     local archive_path="${WORK_DIR}/${asset_name}"
-    local dl_ok=0
+    local -a dl_headers=("-H" "Accept: application/octet-stream")
     if [ -n "${GITHUB_TOKEN}" ]; then
-        curl -sfL -o "${archive_path}" \
-            -H "Accept: application/octet-stream" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "${asset_url}" && dl_ok=1
-    else
-        curl -sfL -o "${archive_path}" \
-            -H "Accept: application/octet-stream" \
-            "${asset_url}" && dl_ok=1
+        dl_headers+=("-H" "Authorization: Bearer ${GITHUB_TOKEN}")
     fi
 
-    if [ "${dl_ok}" -eq 0 ]; then
+    if ! curl -sfL -o "${archive_path}" "${dl_headers[@]}" "${asset_url}"; then
         error "Download dell'archivio fallito."
         rm -rf "${WORK_DIR}"
         exit 1
@@ -303,6 +290,13 @@ main() {
         fi
         sleep 5
     done
+
+    # ── Crea directory Laravel necessarie (storage/framework/*) ─────────────
+    docker compose exec -T app mkdir -p \
+        storage/framework/views \
+        storage/framework/sessions \
+        storage/framework/cache/data \
+        storage/logs
 
     # ── Esegui migrazioni database ────────────────────────────────────────────
     log "Esecuzione migrazioni database..."
