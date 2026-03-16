@@ -13,10 +13,6 @@
 # Installazione cron (ogni 6 ore) — sostituisci /home/mnossa con la home dell'utente reale:
 #   0 */6 * * * /home/mnossa/scripts/raspberry-deploy.sh \
 #               >> /home/mnossa/logs/finanzamente-deploy.log 2>&1
-#
-# Variabili d'ambiente opzionali:
-#   GITHUB_TOKEN  Token GitHub (necessario per repo privati)
-#   INSTALL_DIR   Directory di installazione (default: /home/mnossa/www/finanzamente)
 # =============================================================================
 
 set -euo pipefail
@@ -31,16 +27,8 @@ readonly GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}/releases/latest
 readonly LOG_TAG="finanzamente-deploy"
 readonly LOCK_FILE="/tmp/finanzamente-deploy.lock"
 readonly LOCK_MAX_AGE=3600  # secondi: termina forzatamente esecuzioni più vecchie di 1 ora
+readonly GITHUB_TOKEN="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"
 
-# Token GitHub — letto dall'ambiente o dal file .env/.env.docker
-# Non hardcodare mai il token nello script (GitHub lo revokerebbe automaticamente)
-if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env" ]; then
-    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
-fi
-if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env.docker" ]; then
-    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env.docker" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
-fi
-GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
 # Numero massimo di tentativi di attesa avvio container (5s per tentativo = 120s totali)
 readonly MAX_RETRIES=24
