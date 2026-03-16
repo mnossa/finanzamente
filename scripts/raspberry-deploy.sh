@@ -231,6 +231,12 @@ main() {
         log "Configurazione .env.docker salvata."
     fi
 
+    # Preserva il file .env (contiene segreti configurati dall'utente)
+    if [ -f "${INSTALL_DIR}/.env" ]; then
+        cp "${INSTALL_DIR}/.env" "${user_data_dir}/.env"
+        log "Configurazione .env salvata."
+    fi
+
     # Preserva i file caricati dagli utenti (allegati, ricevute, ecc.)
     if [ -d "${INSTALL_DIR}/storage/app" ]; then
         cp -a "${INSTALL_DIR}/storage/app" "${user_data_dir}/storage-app"
@@ -261,6 +267,18 @@ main() {
             log "AZIONE RICHIESTA: configura ${INSTALL_DIR}/.env.docker con i parametri corretti."
         fi
     fi
+    # ── Ripristina file di configurazione utente ──────────────────────────────
+    if [ -f "${user_data_dir}/.env" ]; then
+        cp "${user_data_dir}/.env" "${INSTALL_DIR}/.env"
+        log "Configurazione .env ripristinata."
+    else
+        log "AVVISO: .env non trovato nel backup."
+        if [ -f "${INSTALL_DIR}/.env.example" ]; then
+            cp "${INSTALL_DIR}/.env.example" "${INSTALL_DIR}/.env"
+            log "Template .env.example copiato come .env."
+            log "AZIONE RICHIESTA: configura ${INSTALL_DIR}/.env con i parametri corretti."
+        fi
+    fi
 
     # Ripristina i file caricati dagli utenti
     if [ -d "${user_data_dir}/storage-app" ]; then
@@ -273,6 +291,7 @@ main() {
     chmod -R 775 "${INSTALL_DIR}/storage"
     chmod -R 775 "${INSTALL_DIR}/bootstrap/cache"
     chmod 600 "${INSTALL_DIR}/.env.docker" 2>/dev/null || true
+    chmod 600 "${INSTALL_DIR}/.env" 2>/dev/null || true
 
     # ── Avvia stack Docker con la nuova versione ──────────────────────────────
     cd "${INSTALL_DIR}"
