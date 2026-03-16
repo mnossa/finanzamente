@@ -22,23 +22,14 @@
 set -euo pipefail
 
 # ── Configurazione ────────────────────────────────────────────────────────────
-readonly INSTALL_DIR="${INSTALL_DIR:-/home/mnossa/www/finanzamente}"
+readonly INSTALL_DIR="${INSTALL_DIR:-/home/mnossa/finanzamente}"
 readonly BACKUP_DIR="${INSTALL_DIR}.backup"
 readonly WORK_DIR="/tmp/finanzamente-deploy"
-readonly VERSION_FILE="${INSTALL_DIR}/.release-version"
+readonly VERSION_FILE="${INSTALL_DIR}/.release-archive"
 readonly GITHUB_REPO="mnossa/finanzamente"
 readonly GITHUB_API="https://api.github.com/repos/${GITHUB_REPO}/releases/latest"
 readonly LOG_TAG="finanzamente-deploy"
-
-# Token GitHub — caricato dall'ambiente o dal file .env/.env.docker
-# Non hardcodare mai il token nello script (GitHub lo revocerebbe automaticamente)
-if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env" ]; then
-    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
-fi
-if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${INSTALL_DIR}/.env.docker" ]; then
-    GITHUB_TOKEN=$(grep -E '^GITHUB_TOKEN=' "${INSTALL_DIR}/.env.docker" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
-fi
-GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+readonly GITHUB_TOKEN="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"
 
 # Numero massimo di tentativi di attesa avvio container (5s per tentativo = 120s totali)
 readonly MAX_RETRIES=24
@@ -70,25 +61,14 @@ check_prerequisites() {
     [ "${missing}" -eq 0 ] || exit 1
 }
 
-# ── Costruisce header HTTP opzionali per GitHub API ───────────────────────────
-github_headers() {
-    local -a headers=("-H" "Accept: application/vnd.github.v3+json")
-    if [ -n "${GITHUB_TOKEN}" ]; then
-        headers+=("-H" "Authorization: Bearer ${GITHUB_TOKEN}")
-    fi
-    echo "${headers[@]}"
-}
-
 # ── Recupera info release più recente da GitHub ───────────────────────────────
-# Restituisce il JSON della release e codice HTTP nell'ultima riga
 get_latest_release() {
-    local -a headers
-    read -ra headers <<< "$(github_headers)"
+    local -a curl_opts=(-s -w "\n%{http_code}" -H "Accept: application/vnd.github.v3+json")
+    if [ -n "${GITHUB_TOKEN}" ]; then
+        curl_opts+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+    fi
     local response http_code
-    # -s silenzioso, -w aggiunge il codice HTTP come ultima riga
-    response=$(curl -s -w "\n%{http_code}" "${headers[@]}" "${GITHUB_API}" 2>/dev/null) || {
-        return 1
-    }
+    response=$(curl "${curl_opts[@]}" "${GITHUB_API}" 2>/dev/null) || return 1
     http_code=$(printf '%s' "${response}" | tail -n 1)
     case "${http_code}" in
         200)
@@ -154,7 +134,8 @@ main() {
     local latest_version asset_name asset_url
     latest_version=$(echo "${release_json}" | jq -r '.tag_name // empty')
     asset_name=$(echo "${release_json}"     | jq -r '.assets[0].name // empty')
-    asset_url=$(echo "${release_json}"      | jq -r '.assets[0].browser_download_url // empty')
+    # Usa l'URL API (non browser_download_url) per supportare repo privati con autenticazione
+    asset_url=$(echo "${release_json}"      | jq -r '.assets[0].url // empty')
 
     if [ -z "${latest_version}" ]; then
         log "Nessuna release disponibile su GitHub. Uscita."
@@ -320,6 +301,10 @@ main() {
     # ── Esegui migrazioni database ────────────────────────────────────────────
     log "Esecuzione migrazioni database..."
     docker compose exec -T app php artisan migrate --force
+
+    # ── Esegui comandi di clearing cache (config, route, view) ─────────────────────────────
+    log "Pulizia cache Laravel..."
+    docker compose exec app php artisan config:clear && docker compose exec app php artisan cache:clear
 
     # ── Ottimizza Laravel per la produzione ───────────────────────────────────
     log "Ottimizzazione cache Laravel..."
