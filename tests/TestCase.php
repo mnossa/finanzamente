@@ -25,6 +25,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Evita l'errore "Vite manifest not found" durante i test:
+        // non è necessario compilare gli asset frontend per testare la logica backend.
+        $this->withoutVite();
+
         // Seed currencies per tutti i test che ne hanno bisogno
         $this->seed(CurrencySeeder::class);
     }

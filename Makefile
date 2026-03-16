@@ -3,9 +3,11 @@
 
 LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
+CI_APP_WAIT_TIMEOUT ?= 300
+CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -127,6 +129,39 @@ clean-duplicates:
 
 test:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -e APP_ENV=testing app php artisan test
+
+# Simula la pipeline CI/CD in locale (identica a GitHub Actions)
+ci:
+	@echo "[CI] Simulazione pipeline CI/CD in locale..."
+	@echo "[CI] Step 1/4 - Avvio stack Docker..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d --build
+	@echo "[CI] Attesa container app..."
+	@max_wait=$(CI_APP_WAIT_TIMEOUT); \
+	interval=$(CI_APP_WAIT_INTERVAL); \
+	elapsed=0; \
+	until docker compose exec -T app php --version > /dev/null 2>&1; do \
+		if [ $$elapsed -ge $$max_wait ]; then \
+			echo "[CI] Container app non pronto entro $$max_wait secondi"; \
+			docker compose ps app; \
+			docker compose logs --tail=50 app; \
+			exit 1; \
+		fi; \
+		sleep $$interval; \
+		elapsed=$$((elapsed + interval)); \
+		echo "  ...attesa ($$elapsed/$$max_wait s)"; \
+	done
+	@echo "[CI] Step 2/4 - Installazione dipendenze PHP..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app composer install --optimize-autoloader --no-interaction
+	@echo "[CI] Step 3/4 - Esecuzione suite di test..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T -e APP_ENV=testing app php artisan test; \
+	EXIT_CODE=$$?; \
+	echo "[CI] Step 4/4 - Pulizia..."; \
+	if [ $$EXIT_CODE -eq 0 ]; then \
+		echo "[CI] Pipeline completata con successo!"; \
+	else \
+		echo "[CI] Pipeline fallita con codice $$EXIT_CODE"; \
+	fi; \
+	exit $$EXIT_CODE
 
 # Genera dati demo: 2 utenti, 4 household, 16000 transazioni totali, debiti e ricorrenze
 demo-data:

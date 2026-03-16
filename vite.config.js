@@ -45,16 +45,14 @@ export default defineConfig(({ mode }) => {
                         if (id.includes('@dnd-kit')) {
                             return 'vendor-dnd';
                         }
-                        if (id.includes('@inertiajs')) {
-                            return 'vendor-inertia';
-                        }
                         if (
+                            id.includes('@inertiajs') ||
                             id.includes('react-dom') ||
                             id.includes('node_modules/react/') ||
                             id.includes('node_modules/react-is') ||
                             id.includes('scheduler')
                         ) {
-                            return 'vendor-react';
+                            return 'vendor-inertia';
                         }
                     },
                 },
