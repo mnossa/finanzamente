@@ -24,19 +24,19 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 - **Responsività**: Utilizzare framework CSS (es. Tailwind, Bootstrap) o soluzioni custom per garantire responsività.
 - **Componenti**: Sviluppare componenti riutilizzabili per UI comuni (bottoni, card, modali, ecc.).
 - **Animazioni**: Implementare animazioni leggere e non invasive.
-- **Accessibilità**: Seguire le linee guida WCAG 2.1 per garantire accessibilità a tutti gli utenti.
+- **Accessibilità**: Rispettare le linee guida WCAG 2.1 (dettagli in *Specifiche Avanzate*).
 - **DOM validation**: Assicurarsi che il codice HTML generato sia valido e conforme agli standard W3C.
 
 ## Backend
 - L’intero backend sarà sviluppato in Laravel, adottando le best practice e gli helpers forniti dal framework.
-- **Rotte Web e Controller**: La dashboard autenticata e le funzionalità principali useranno rotte web e controller Laravel tradizionali, sfruttando Blade e Inertia.js per la presentazione. L'autenticazione sarà gestita tramite le sessioni Laravel.
-- **API RESTful**: Da utilizzare solo se necessario per integrazioni esterne o funzionalità future. Per ora, evitare la creazione di API RESTful dedicate.
+- **Rotte Web e Controller**: La dashboard autenticata e le funzionalità principali useranno rotte web e controller Laravel tradizionali, sfruttando Inertia.js (con React/TypeScript) per la presentazione della parte autenticata. Le pagine pubbliche useranno Blade. L'autenticazione sarà gestita tramite le sessioni Laravel.
+- **API RESTful**: Da utilizzare solo se necessario per integrazioni esterne o funzionalità future. Per ora, evitare la creazione di API RESTful dedicate. Tutte le funzionalità attuali passano per rotte web Laravel con autenticazione basata su sessione.
 - **Sicurezza**: Gestire autenticazione, autorizzazione e validazione input tramite i meccanismi standard di Laravel (sessioni, middleware, policy).
 - **Ottimizzazione**: Scrivere query efficienti e utilizzare Eloquent ORM e gli strumenti Laravel dove opportuno.
 
 ## Best Practice
 - **Documentazione**: Commentare il codice dove necessario e mantenere aggiornata la documentazione.
-- **Testing**: Implementare test automatici per le funzionalità principali.
+- **Testing**: Implementare test automatici per le funzionalità principali. Struttura: `tests/Feature/` per test di integrazione (rotte, controller, flussi utente) e `tests/Unit/` per test di logica isolata (modelli, service, helper). Le classi di test usano `PascalCase` con suffisso `Test` (es. `TransactionControllerTest`, `HouseholdTest`). Eseguire sempre con `make test`.
 - **CI/CD**: Integrare pipeline di build, test e deploy.
 - **Sicurezza e GDPR**: Tutti i log di sicurezza e rate limiting devono anonimizzare l’IP tramite hash SHA256 e salt (`ADV_THROTTLE_SALT` in .env). Nessun dato personale viene loggato in chiaro.
 
@@ -68,6 +68,12 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 - `make dev` - Avvia il dev server Vite per hot-reload
 - `make clear-cache` - Pulisce tutte le cache Laravel (config, route, view)
 
+### Dipendenze
+- `make exec cmd="composer install"` - Installa le dipendenze PHP
+- `make exec cmd="composer require vendor/package"` - Aggiunge una dipendenza PHP (oppure `make composer pkg=vendor/package`)
+- `make exec cmd="npm install"` - Installa le dipendenze Node.js (eseguito nel container node via `make node`)
+- `make build` - Compila gli asset frontend (produzione)
+
 ### Utilità
 - `make fix-perms` - Corregge i permessi dei file del progetto
 - `make exec cmd="comando"` - Esegue un comando personalizzato nel container app
@@ -84,18 +90,18 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 - **Logging e Monitoraggio**: Implementare logging centralizzato e strumenti di monitoraggio sia per backend che frontend.
 - **Privacy e GDPR**: Gestire i dati personali secondo il GDPR, con informative, consensi e gestione trasparente dei dati utente.
 - **Backup e Disaster Recovery**: Definire strategie di backup automatico e procedure di ripristino dei dati.
-- **Rate Limiting e Protezione API**: Applicare limiti di richiesta e protezioni contro abusi e attacchi sulle API.
+- **Rate Limiting**: Applicare limiti di richiesta su tutte le rotte web (login, registrazione, form sensibili) tramite il middleware `throttle` di Laravel. In caso di future API RESTful, estendere lo stesso approccio agli endpoint esposti. L'IP deve essere anonimizzato tramite hash SHA256 con salt (`ADV_THROTTLE_SALT`) come definito in *Best Practice*.
 - **Modularità**: Organizzare il codice in moduli e servizi separati per facilitare manutenzione ed estendibilità.
 - **DevOps**: Documentare procedure di deploy, rollback e gestione degli ambienti (dev, staging, produzione).
 - **Analisi e Metriche**: Integrare strumenti di analytics per tracciare l’uso dell’applicazione in modo privacy-friendly.
-- **Supporto PWA**: Valutare la trasformazione in Progressive Web App per migliorare l’esperienza mobile e l’accessibilità offline.
+- **Supporto PWA**: Implementare solo se esplicitamente richiesto. I requisiti minimi per attivarla sono: Service Worker con caching offline delle pagine principali (dashboard, transazioni), manifest con icone e `theme_color`, e installabilità verificata su Chrome/Safari mobile. Non blocca altre funzionalità.
 
 ## Ottimizzazione per Agenti e Qualità del Codice
 - **Revisione del Codice**: Ogni modifica rilevante deve essere sottoposta a code review, anche automatizzata, per individuare errori e migliorare la qualità.
 - **Linting e Formattazione**: Utilizzare strumenti di linting e formatter (es. ESLint, Prettier, PHP_CodeSniffer) per mantenere uno stile di codice uniforme e prevenire errori comuni.
-- **Principi DRY e KISS**: Applicare i principi DRY (Don't Repeat Yourself) e KISS (Keep It Simple, Stupid) per ridurre la complessità e la ridondanza.
+- **Principi DRY e KISS**: Applicare i principi DRY (Don't Repeat Yourself) e KISS (Keep It Simple, Stupid) per ridurre la complessità e la ridondanza. Questi principi si applicano a tutto il codice e devono essere verificati in ogni code review.
 - **Gestione Errori**: Implementare una gestione centralizzata e consistente degli errori sia lato frontend che backend.
-- **Esempi di Naming**: Fornire esempi di nomenclatura per variabili, funzioni, tabelle e componenti per favorire la coerenza (es: `utente_id`, `transazione_annuale`, `getSaldoAttuale`).
+- **Naming**: Applicare le convenzioni definite nella sezione *Convenzioni di Nomenclatura*.
 - **Checklist di Qualità**: Prima di ogni merge, verificare: test superati, assenza di duplicazioni, performance accettabili, documentazione aggiornata, sicurezza rispettata.
 - **React & Tailwind**: Nei componenti React, utilizzare esclusivamente TailwindCSS per lo styling. Per la dashboard e i componenti riutilizzabili (tabelle, bottoni, header, form, select, datepicker, ecc.), adottare la libreria `clsx` per gestire classi condizionali e varianti in modo pulito e scalabile. Ogni componente deve accettare la prop `className` per permettere override e personalizzazioni.
 - **Componenti e Librerie**: Preferire l’uso di componenti e librerie consolidate e ben documentate rispetto a soluzioni custom, salvo necessità specifiche.
@@ -106,6 +112,7 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 ## Stack Tecnologico Consigliato
 - **Backend**: Laravel per autenticazione, sicurezza, rotte web e controller tradizionali, migrazioni, validazione, gestione utenti/household e logiche di business. Utilizzare Eloquent ORM, Service Layer, Policy, Request Validation e tutte le best practice del framework. Le API RESTful sono da implementare solo se richieste da future estensioni o integrazioni esterne.
 - **Frontend pubblico/SSR**: Blade per pagine pubbliche, SEO, SSR e caricamento veloce, con possibilità di integrare componenti React dove necessario.
+- **Frontend autenticato (dashboard)**: React con Inertia.js e TypeScript per tutte le pagine della dashboard. TailwindCSS come unico sistema di styling, `clsx` per classi condizionali. Nessun uso di Blade nella parte autenticata.
 
 ## Best Practice di Architettura
 - Separare chiaramente la parte pubblica (Blade/SSR) da quella autenticata (React/Inertia).
@@ -165,13 +172,62 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
   - File: `financial-report.component.tsx`
 
 ## Funzionalità Future da Considerare
-- Usa i metodi isDebtBalancingMode() e isSharedWalletMode() nelle future funzionalità di calcolo del saldo, per gestire modalità specifiche come il bilanciamento debiti e portafogli condivisi.
+- Prima di implementare nuova logica, cercare metodi o helper già definiti nei modelli, service layer e controller esistenti. Riutilizzare ciò che esiste prima di crearne di nuovi.
+- Esempio: per logiche di calcolo del saldo e distribuzione spese, usare i metodi `isDebtBalancingMode()` e `isSharedWalletMode()` definiti nel modello `app/Models/Household.php`. Questi metodi determinano la modalità operativa dell'household: il primo abilita il bilanciamento debiti tra membri, il secondo indica un portafoglio condiviso. Sono già utilizzati in `FixedExpenseService` e `FixedExpenseController` come riferimento d'uso.
 
 # Pull Request e Code Review
 - Ogni modifica rilevante deve essere sottoposta a pull request e code review, anche automatizzata, per garantire qualità, coerenza e individuare eventuali errori o miglioramenti.
 - Utilizzare strumenti di linting e formatter per mantenere uno stile di codice uniforme e prevenire errori comuni.
-- Applicare i principi DRY (Don't Repeat Yourself) e KISS (Keep It Simple, Stupid) per ridurre la complessità e la ridondanza.
-- Implementare una gestione centralizzata e consistente degli errori sia lato frontend che backend.
-- Fornire esempi di nomenclatura per variabili, funzioni, tabelle e componenti per favorire la coerenza (es: `utente_id`, `transazione_annuale`, `getSaldoAttuale`).
+- Applicare i principi DRY e KISS (definiti in *Ottimizzazione per Agenti e Qualità del Codice*) e rispettare le convenzioni di nomenclatura (definite in *Convenzioni di Nomenclatura*).
 - Prima di ogni merge, verificare: test superati, assenza di duplicazioni, performance accettabili, documentazione aggiornata, sicurezza rispettata.
 - Ogni pull request deve essere fatta verso il branch `staging`
+
+# Orchestratore Workflow
+### 1. Modalità Pianificazione (Predefinita)
+- Entra in modalità pianificazione per QUALSIASI attività non banale (3+ passaggi o decisioni architetturali).
+- Se qualcosa va storto, FERMATI e pianifica di nuovo immediatamente
+- Usa la modalità pianificazione anche per i passaggi di verifica, non solo per la costruzione
+- Scrivi specifiche dettagliate in anticipo per ridurre l'ambiguità
+
+### 2. Strategia dei Subagenti
+- Usa i subagenti liberamente per mantenere pulita la finestra di contesto principale
+- Delega ricerca, esplorazione e analisi parallela ai subagenti
+- Per problemi complessi, usa più risorse computazionali tramite subagenti
+- Un task per subagente per un'esecuzione focalizzata
+
+### 3. Ciclo di Auto-Miglioramento
+- Dopo QUALSIASI correzione da parte dell'utente: aggiorna tasks/lessons.md con il pattern
+- Scrivi regole per te stesso che prevengano lo stesso errore
+- Itera senza pietà su queste lezioni finché il tasso di errore diminuisce significativamente
+- Rivedi le lezioni all'inizio della sessione per il progetto rilevante
+
+### 4. Verifica prima di Considerare un Task Completato
+- Non segnare mai un task come completato senza dimostrare che funziona
+- Confronta il comportamento tra la versione principale e le tue modifiche quando rilevante
+- Chiediti: "Un ingegnere senior approverebbe questo?"
+- Esegui i test, controlla i log, dimostra la correttezza
+
+### 5. Pretendi Eleganza (Bilanciata)
+- Per modifiche non banali: fermati e chiedi "esiste un modo più elegante?"
+- Se una soluzione sembra un hack: "Sapendo tutto ciò che so ora, implementa la soluzione elegante"
+- Salta questo passaggio per fix semplici e ovvi - evita l'over-engineering
+- Metti in discussione il tuo lavoro prima di presentarlo
+
+### 6. Risoluzione Autonoma dei Bug
+- Quando ricevi un bug report: risolvilo e basta. Non chiedere guida passo passo
+- Analizza log, errori, test falliti - poi risolvili
+- Nessun bisogno di far cambiare contesto all'utente
+- Risolvi i test CI falliti senza che ti venga detto come
+
+## Gestione dei Task
+1. Pianifica Prima: Scrivi il piano in tasks/todo.md con elementi verificabili
+2. Verifica il Piano: Fai un check prima di iniziare l'implementazione
+3. Traccia i Progressi: Segna gli elementi come completati man mano
+4. Spiega le Modifiche: Fornisci un riepilogo ad alto livello a ogni step
+5. Documenta i Risultati: Aggiungi una sezione di revisione in tasks/todo.md
+6. Registra le Lezioni: Aggiorna tasks/lessons.md dopo le correzioni
+
+## Principi Fondamentali
+- Prima la Semplicità: Rendi ogni modifica il più semplice possibile. Impatta il minimo il codice.
+- Zero Pigrizia: Trova le cause radice. Niente soluzioni temporanee. Standard da sviluppatore senior.
+- Impatto Minimo: Modifica solo ciò che è necessario. Nessun effetto collaterale o nuovi bug

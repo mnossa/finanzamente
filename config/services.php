@@ -92,4 +92,19 @@ return [
         'api_key' => env('MISTRAL_API_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Drive
+    |--------------------------------------------------------------------------
+    |
+    | Credenziali per l'integrazione con Google Drive (importazione file).
+    | Crea le credenziali su https://console.cloud.google.com/
+    |
+    */
+
+    'google_drive' => [
+        'client_id' => env('GOOGLE_DRIVE_CLIENT_ID', ''),
+        'api_key'   => env('GOOGLE_DRIVE_API_KEY', ''),
+    ],
+
 ];
