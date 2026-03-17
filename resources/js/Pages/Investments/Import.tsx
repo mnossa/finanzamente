@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import GoogleDrivePicker, { type DriveFile } from '@/Components/GoogleDrivePicker';
 import ImportWizardStep from '@/Components/ImportWizardStep';
 import InvestmentColumnMapper, { InvestmentColumnMapping } from '@/Components/InvestmentColumnMapper';
 import InputError from '@/Components/InputError';
@@ -6,6 +7,7 @@ import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SheetSelector, { type SheetInfo } from '@/Components/SheetSelector';
 import { Head, router } from '@inertiajs/react';
 import axios from 'axios';
 import clsx from 'clsx';
@@ -121,6 +123,18 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
     const [encoding, setEncoding] = useState('UTF-8');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // ── Sorgente file ────────────────────────────────────────────────────────
+    /** 'local' = upload dal dispositivo, 'gdrive' = Google Drive */
+    const [fileSource, setFileSource] = useState<'local' | 'gdrive'>('local');
+    const [driveFile, setDriveFile] = useState<DriveFile | null>(null);
+    const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
+    const [driveError, setDriveError] = useState<string | null>(null);
+
+    // ── Multi-sheet ──────────────────────────────────────────────────────────
+    const [xlsxSheets, setXlsxSheets] = useState<SheetInfo[]>([]);
+    const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
+    const [sheetsLoading, setSheetsLoading] = useState(false);
+
     // Column mapping
     const [columnMapping, setColumnMapping] = useState<InvestmentColumnMapping>({
         buy_date:  0,
@@ -156,7 +170,11 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
     const [saveLayoutSuccess, setSaveLayoutSuccess] = useState<string | null>(null);
     const [saveLayoutError, setSaveLayoutError] = useState<string | null>(null);
 
-    const isXlsx = csvFile?.name.toLowerCase().endsWith('.xlsx') ?? false;
+    /** true se il file selezionato è un XLSX (locale o Drive) */
+    const isXlsx = fileSource === 'gdrive'
+        ? driveFile?.mimeType === 'application/vnd.google-apps.spreadsheet' ||
+          driveFile?.name?.toLowerCase().endsWith('.xlsx') === true
+        : csvFile?.name.toLowerCase().endsWith('.xlsx') ?? false;
 
     // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -207,17 +225,92 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
 
     // ─── API Calls ──────────────────────────────────────────────────────────
 
+    /** Rileva i fogli di un file XLSX locale */
+    const detectSheetsFromFile = async (file: File) => {
+        if (!file.name.toLowerCase().endsWith('.xlsx')) {
+            setXlsxSheets([]);
+            return;
+        }
+        setSheetsLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('csv_file', file);
+            const response = await axios.post<{ sheets: SheetInfo[] }>(
+                route('investments.import.sheets'),
+                formData,
+                { headers: { 'Content-Type': 'multipart/form-data' } },
+            );
+            setXlsxSheets(response.data.sheets ?? []);
+            setSelectedSheetIndex(0);
+        } catch {
+            setXlsxSheets([]);
+        } finally {
+            setSheetsLoading(false);
+        }
+    };
+
+    /** Rileva i fogli di un file XLSX da Google Drive */
+    const detectSheetsFromDrive = async (file: DriveFile, token: string) => {
+        const mightBeXlsx = file.mimeType === 'application/vnd.google-apps.spreadsheet' ||
+            file.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+            file.name.toLowerCase().endsWith('.xlsx');
+        if (!mightBeXlsx) {
+            setXlsxSheets([]);
+            return;
+        }
+        setSheetsLoading(true);
+        try {
+            const response = await axios.post<{ sheets: SheetInfo[] }>(
+                route('investments.import.sheets'),
+                {
+                    google_drive_file_id:      file.id,
+                    google_drive_access_token: token,
+                    google_drive_mime_type:    file.mimeType,
+                },
+            );
+            setXlsxSheets(response.data.sheets ?? []);
+            setSelectedSheetIndex(0);
+        } catch {
+            setXlsxSheets([]);
+        } finally {
+            setSheetsLoading(false);
+        }
+    };
+
+    /** Chiamato dal GoogleDrivePicker quando l'utente seleziona un file */
+    const handleDriveFileSelected = (file: DriveFile, token: string) => {
+        setDriveFile(file);
+        setDriveAccessToken(token);
+        setDriveError(null);
+        setPreviewData(null);
+        setXlsxSheets([]);
+        setSelectedSheetIndex(0);
+        void detectSheetsFromDrive(file, token);
+    };
+
     const runPreview = async () => {
-        if (!csvFile) return;
+        const hasLocalFile = fileSource === 'local' && csvFile !== null;
+        const hasDriveFile = fileSource === 'gdrive' && driveFile !== null && driveAccessToken !== null;
+        if (!hasLocalFile && !hasDriveFile) return;
+
         setPreviewLoading(true);
         setPreviewError(null);
 
         const formData = new FormData();
-        formData.append('csv_file', csvFile);
+
+        if (fileSource === 'gdrive' && driveFile && driveAccessToken) {
+            formData.append('google_drive_file_id',      driveFile.id);
+            formData.append('google_drive_access_token', driveAccessToken);
+            formData.append('google_drive_mime_type',    driveFile.mimeType);
+        } else if (csvFile) {
+            formData.append('csv_file', csvFile);
+        }
+
         formData.append('delimiter', isXlsx ? ',' : delimiter);
         formData.append('date_format', dateFormat);
         formData.append('has_header', hasHeader ? '1' : '0');
         formData.append('encoding', encoding);
+        formData.append('sheet_index', String(selectedSheetIndex));
         // Append column_mapping fields
         (Object.entries(columnMapping) as [string, number | null][]).forEach(([k, v]) => {
             if (v !== null) formData.append(`column_mapping[${k}]`, String(v));
@@ -375,40 +468,108 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                 </div>
                             )}
 
-                            {/* File upload */}
-                            <div>
-                                <InputLabel value="File CSV o XLSX *" />
-                                <div
+                            {/* Selezione sorgente */}
+                            <div className="flex gap-2" role="radiogroup" aria-label="Sorgente del file">
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={fileSource === 'local'}
+                                    onClick={() => { setFileSource('local'); setDriveFile(null); setDriveAccessToken(null); setXlsxSheets([]); }}
                                     className={clsx(
-                                        'mt-2 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition',
-                                        csvFile
-                                            ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
-                                            : 'border-gray-300 hover:border-indigo-400',
+                                        'inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500',
+                                        fileSource === 'local'
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
+                                            : 'border-gray-200 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:border-indigo-400',
                                     )}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label="Clicca per selezionare un file"
                                 >
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".csv,.txt,.xlsx"
-                                        className="hidden"
-                                        onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
-                                    />
-                                    {csvFile ? (
-                                        <p className="text-indigo-700 dark:text-indigo-300 font-medium">
-                                            📄 {csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)
-                                        </p>
-                                    ) : (
-                                        <p className="text-gray-500 dark:text-gray-400">
-                                            Clicca o trascina il file CSV / XLSX qui
-                                        </p>
+                                    <span aria-hidden="true">📂</span> Dal dispositivo
+                                </button>
+                                <GoogleDrivePicker
+                                    onFileSelected={handleDriveFileSelected}
+                                    onError={(msg) => setDriveError(msg)}
+                                    disabled={sheetsLoading}
+                                    className={clsx(
+                                        'border-2',
+                                        fileSource === 'gdrive' && driveFile
+                                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                            : '',
                                     )}
-                                </div>
+                                />
                             </div>
+                            {driveError && (
+                                <p className="text-sm text-red-600 dark:text-red-400">{driveError}</p>
+                            )}
+
+                            {/* File locale */}
+                            {fileSource === 'local' && (
+                                <div>
+                                    <InputLabel value="File CSV o XLSX *" />
+                                    <div
+                                        className={clsx(
+                                            'mt-2 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition',
+                                            csvFile
+                                                ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                                                : 'border-gray-300 hover:border-indigo-400',
+                                        )}
+                                        onClick={() => fileInputRef.current?.click()}
+                                        onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label="Clicca per selezionare un file"
+                                    >
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".csv,.txt,.xlsx"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0] ?? null;
+                                                setCsvFile(file);
+                                                setPreviewData(null);
+                                                setXlsxSheets([]);
+                                                setSelectedSheetIndex(0);
+                                                if (file) void detectSheetsFromFile(file);
+                                            }}
+                                        />
+                                        {csvFile ? (
+                                            <p className="text-indigo-700 dark:text-indigo-300 font-medium">
+                                                {isXlsx ? '📊' : '📄'} {csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)
+                                            </p>
+                                        ) : (
+                                            <p className="text-gray-500 dark:text-gray-400">
+                                                Clicca o trascina il file CSV / XLSX qui
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* File Google Drive */}
+                            {fileSource === 'gdrive' && driveFile && (
+                                <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg">
+                                    {driveFile.iconUrl && (
+                                        <img src={driveFile.iconUrl} alt="" className="w-6 h-6 flex-shrink-0" aria-hidden="true" />
+                                    )}
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200 truncate">{driveFile.name}</p>
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400">Google Drive</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Rilevamento fogli in corso */}
+                            {sheetsLoading && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Rilevamento fogli in corso…</p>
+                            )}
+
+                            {/* Selezione foglio (multi-sheet) */}
+                            {!sheetsLoading && xlsxSheets.length > 1 && (
+                                <SheetSelector
+                                    sheets={xlsxSheets}
+                                    selectedIndex={selectedSheetIndex}
+                                    onChange={setSelectedSheetIndex}
+                                />
+                            )}
 
                             {/* Impostazioni CSV */}
                             {!isXlsx && (
@@ -473,7 +634,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                     ← Torna agli investimenti
                                 </LinkButton>
                                 <PrimaryButton
-                                    disabled={!csvFile}
+                                    disabled={sheetsLoading || (fileSource === 'local' ? !csvFile : !driveFile)}
                                     onClick={goNext}
                                 >
                                     Avanti →

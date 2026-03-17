@@ -156,6 +156,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         // Transaction Import
         Route::get('/transactions/import', [TransactionImportController::class, 'create'])->name('transactions.import');
         Route::post('/transactions/import/preview', [TransactionImportController::class, 'preview'])->name('transactions.import.preview');
+        Route::post('/transactions/import/sheets', [TransactionImportController::class, 'sheets'])->name('transactions.import.sheets');
         Route::post('/transactions/import/check-duplicates', [TransactionImportController::class, 'checkDuplicates'])->name('transactions.import.check-duplicates');
         Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
 
@@ -245,6 +246,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         // Investments - modifica
         Route::get('/investments/import', [InvestmentImportController::class, 'create'])->name('investments.import');
         Route::post('/investments/import/preview', [InvestmentImportController::class, 'preview'])->name('investments.import.preview');
+        Route::post('/investments/import/sheets', [InvestmentImportController::class, 'sheets'])->name('investments.import.sheets');
         Route::post('/investments/import', [InvestmentImportController::class, 'store'])->name('investments.import.store');
         Route::get('/investments/import/layouts', [InvestmentImportController::class, 'layouts'])->name('investments.import.layouts');
         Route::post('/investments/import/layouts', [InvestmentImportController::class, 'storeLayout'])->name('investments.import.layouts.store');

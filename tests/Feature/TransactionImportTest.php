@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -163,5 +164,85 @@ class TransactionImportTest extends TestCase
         $response = $this->actingAs($this->user)->delete("/bank-import-layouts/{$layout->id}");
 
         $response->assertStatus(403);
+    }
+
+    #[Test]
+    public function sheets_endpoint_rejects_non_xlsx_file(): void
+    {
+        $csvContent = "Data;Descrizione;Importo\n01/01/2024;Supermercato;-50,00\n";
+        $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
+
+        $response = $this->actingAs($this->user)->postJson('/transactions/import/sheets', [
+            'csv_file' => $file,
+        ]);
+
+        // Il validator rifiuta file non-XLSX con 422
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function sheets_endpoint_requires_file_or_drive_params(): void
+    {
+        $response = $this->actingAs($this->user)->postJson('/transactions/import/sheets', []);
+
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function preview_with_sheet_index_is_accepted(): void
+    {
+        $csvContent = "Data;Descrizione;Importo\n01/01/2024;Supermercato;-50,00\n";
+        $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
+
+        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+            'csv_file'     => $file,
+            'bank_name'    => 'custom',
+            'delimiter'    => ';',
+            'date_format'  => 'd/m/Y',
+            'has_header'   => true,
+            'encoding'     => 'UTF-8',
+            'sheet_index'  => 0,
+            'column_mapping' => [
+                'date'        => 0,
+                'description' => 1,
+                'amount'      => 2,
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['total' => 1, 'valid_count' => 1]);
+    }
+
+    #[Test]
+    public function preview_with_google_drive_missing_token_returns_validation_error(): void
+    {
+        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+            'google_drive_file_id' => 'some-file-id',
+            // google_drive_access_token mancante
+            'date_format'  => 'd/m/Y',
+            'column_mapping' => ['date' => 0, 'amount' => 1, 'description' => 2],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['google_drive_access_token']);
+    }
+
+    #[Test]
+    public function preview_with_google_drive_returns_error_on_failed_download(): void
+    {
+        // Simula una chiamata Google Drive che fallisce (access token non valido)
+        Http::fake([
+            'https://www.googleapis.com/*' => Http::response('Unauthorized', 401),
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+            'google_drive_file_id'      => 'fake-file-id',
+            'google_drive_access_token' => 'fake-token',
+            'google_drive_mime_type'    => 'text/csv',
+            'date_format'               => 'd/m/Y',
+            'column_mapping'            => ['date' => 0, 'amount' => 1, 'description' => 2],
+        ]);
+
+        $response->assertStatus(422);
     }
 }

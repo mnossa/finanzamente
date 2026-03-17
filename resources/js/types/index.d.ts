@@ -85,5 +85,9 @@ export type PageProps<
         error?: string;
         info?: string;
     };
+    googleDrive?: {
+        clientId: string;
+        apiKey: string;
+    };
 };
 
