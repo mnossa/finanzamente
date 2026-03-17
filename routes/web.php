@@ -32,6 +32,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
 use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\LifestyleScoreController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
@@ -90,6 +91,10 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
     Route::get('/charts', [ChartsController::class, 'index'])->name('charts.index');
     Route::get('/simulations', [SimulationController::class, 'index'])->name('simulations.index');
+
+    // Notifiche in-app
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     // Inbox / Staging Area (voci da Telegram o manuali, in attesa di revisione)
     Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');

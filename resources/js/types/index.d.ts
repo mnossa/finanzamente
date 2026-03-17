@@ -85,9 +85,21 @@ export type PageProps<
         error?: string;
         info?: string;
     };
+    notifications: {
+        unread_count: number;
+        items: AppNotification[];
+    };
     googleDrive?: {
         clientId: string;
         apiKey: string;
     };
 };
+
+export interface AppNotification {
+    id: number;
+    title: string;
+    message: string;
+    read: boolean;
+    created_at: string;
+}
 

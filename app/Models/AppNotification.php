@@ -22,7 +22,7 @@ class AppNotification extends Model
     protected $table = 'notifications';
 
     protected $fillable = [
-        'user_id', 'title', 'message', 'read',
+        'user_id', 'title', 'message', 'read', 'notification_key',
     ];
 
     protected $casts = [
