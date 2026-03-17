@@ -21,6 +21,24 @@ interface GoogleDrivePickerProps {
     className?: string;
 }
 
+interface PickerData {
+    action: string;
+    docs?: Array<Record<string, string>>;
+}
+
+interface GoogleDocsViewInstance {
+    setMimeTypes: (types: string) => GoogleDocsViewInstance;
+    setIncludeFolders: (v: boolean) => GoogleDocsViewInstance;
+}
+
+interface GooglePickerBuilderInstance {
+    addView: (view: GoogleDocsViewInstance) => GooglePickerBuilderInstance;
+    setOAuthToken: (token: string) => GooglePickerBuilderInstance;
+    setDeveloperKey: (key: string) => GooglePickerBuilderInstance;
+    setCallback: (cb: (data: PickerData) => void) => GooglePickerBuilderInstance;
+    build: () => { setVisible: (v: boolean) => void };
+}
+
 // Tipi minimi per le Google API (evitano dipendenze npm aggiuntive)
 declare global {
     interface Window {
@@ -39,29 +57,15 @@ declare global {
                 };
             };
             picker?: {
-                PickerBuilder: new () => {
-                    addView: (view: unknown) => unknown;
-                    setOAuthToken: (token: string) => unknown;
-                    setDeveloperKey: (key: string) => unknown;
-                    setCallback: (cb: (data: PickerData) => void) => unknown;
-                    build: () => { setVisible: (v: boolean) => void };
-                };
+                PickerBuilder: new () => GooglePickerBuilderInstance;
                 Action: { PICKED: string; CANCEL: string };
                 ViewId: { SPREADSHEETS: string; DOCS_NOT_FOLDERS: string };
-                DocsView: new (viewId?: string) => {
-                    setMimeTypes: (types: string) => unknown;
-                    setIncludeFolders: (v: boolean) => unknown;
-                };
+                DocsView: new (viewId?: string) => GoogleDocsViewInstance;
                 Response: { DOCUMENTS: string };
                 Document: { ID: string; NAME: string; MIME_TYPE: string; ICON_URL: string; URL: string };
             };
         };
     }
-}
-
-interface PickerData {
-    action: string;
-    docs?: Array<Record<string, string>>;
 }
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
