@@ -838,7 +838,9 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                                             <thead className="bg-gray-50 dark:bg-gray-900">
                                                 <tr>
-                                                    <th className="px-3 py-2 text-left w-8"></th>
+                                                    <th className="px-3 py-2 text-left w-8" aria-label="Seleziona">
+                                                        <span className="sr-only">Seleziona</span>
+                                                    </th>
                                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Riga</th>
                                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data</th>
                                                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Asset</th>
