@@ -97,8 +97,8 @@ export default function PortfolioChart({ data, className }: PortfolioChartProps)
                 </p>
             </div>
 
-            <div className="mt-4 h-64">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-4">
+                <ResponsiveContainer width="99%" height={256}>
                     <PieChart>
                         <Pie
                             data={data}

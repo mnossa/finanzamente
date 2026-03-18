@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main composer-install npm-install prune-logs scheduler-logs
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -86,6 +86,38 @@ prune-logs:
 
 scheduler-logs:
 	docker compose logs -f --tail=100 scheduler
+
+# Registra il webhook Telegram. Uso: make set-telegram-webhook url=https://tuodominio.it
+set-telegram-webhook:
+	@if [ -z "$(url)" ]; then \
+		echo "[ERRORE] Specificare l'URL con: make set-telegram-webhook url=https://tuodominio.it"; \
+		exit 1; \
+	fi; \
+	TOKEN=$$(grep TELEGRAM_BOT_TOKEN .env | cut -d= -f2); \
+	curl -s -X POST "https://api.telegram.org/bot$$TOKEN/setWebhook" \
+		-d "url=$(url)/telegram/webhook" | python3 -m json.tool
+
+# Mostra lo stato attuale del webhook Telegram
+get-telegram-webhook:
+	@TOKEN=$$(grep TELEGRAM_BOT_TOKEN .env | cut -d= -f2); \
+	curl -s "https://api.telegram.org/bot$$TOKEN/getWebhookInfo" | python3 -m json.tool
+
+# Avvia il tunnel ngrok (profilo Docker 'tunnel') — URL disponibile su http://localhost:4040
+ngrok:
+	NGROK_AUTHTOKEN=$$(grep NGROK_AUTHTOKEN .env | cut -d= -f2) \
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) \
+	docker compose --profile tunnel up ngrok -d
+	@echo "[+] ngrok avviato. Controlla l'URL su http://localhost:4040"
+
+# Mostra l'URL pubblico ngrok corrente
+ngrok-url:
+	@curl -s http://localhost:4040/api/tunnels 2>/dev/null \
+		| python3 -c "import sys,json; d=json.load(sys.stdin); print(d['tunnels'][0]['public_url'] if d.get('tunnels') else 'ngrok non attivo')" \
+		|| echo 'ngrok non attivo — esegui: make ngrok'
+
+# Log del container ngrok
+ngrok-logs:
+	docker compose logs -f --tail=100 ngrok
 
 # Installa un pacchetto composer nel container app
 composer:

@@ -98,6 +98,23 @@ services:
     networks:
       - finanzamente
 
+  # Tunnel ngrok — espone nginx su HTTPS pubblico (solo sviluppo locale)
+  # Richiede NGROK_AUTHTOKEN in .env.docker oppure come variabile d'ambiente
+  # Per avviarlo: make ngrok  (oppure docker compose --profile tunnel up ngrok -d)
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: finanzamente-ngrok
+    restart: unless-stopped
+    profiles:
+      - tunnel
+    command: http finanzamente-nginx:80 --log=stdout
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    networks:
+      - finanzamente
+    ports:
+      - "4040:4040"  # Web UI ngrok (stato tunnel e URL pubblico)
+
 volumes:
   dbdata:
 networks:

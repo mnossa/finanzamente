@@ -93,8 +93,8 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                     </div>
                 ))}
             </div>
-            <div className="mt-2 h-72">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-2">
+                <ResponsiveContainer width="99%" height={288}>
                     <ReBarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                         <XAxis

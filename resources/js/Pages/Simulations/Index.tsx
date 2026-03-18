@@ -396,8 +396,8 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
             {/* Grafico */}
             <CardBox>
                 <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">📈 Crescita del capitale nel tempo</h3>
-                <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div>
+                    <ResponsiveContainer width="99%" height={288}>
                         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                             <defs>
                                 <linearGradient id="gradContributed" x1="0" y1="0" x2="0" y2="1">
@@ -613,8 +613,8 @@ function DebtVsInvestmentSimulator() {
 
             <CardBox>
                 <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">📊 Confronto beneficio netto nel tempo</h3>
-                <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div>
+                    <ResponsiveContainer width="99%" height={288}>
                         <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                             <XAxis dataKey="anno" tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }} interval={Math.floor(years / 6)} />
@@ -967,8 +967,8 @@ function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScena
                     <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
                         📉 Andamento portafoglio durante: {selectedCrisis?.name}
                     </h3>
-                    <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div>
+                        <ResponsiveContainer width="99%" height={288}>
                             <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                                 <XAxis

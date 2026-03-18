@@ -66,6 +66,7 @@ class InboxController extends Controller
 
         $validated = $request->validate([
             'amount' => 'nullable|numeric|min:0.01',
+            'type' => 'nullable|in:income,expense',
             'description' => 'nullable|string|max:255',
             'transaction_date' => 'nullable|date',
             'category_id' => 'nullable|exists:categories,id',
@@ -110,7 +111,9 @@ class InboxController extends Controller
             'user_id' => $inboxItem->user_id,
             'account_id' => $accountId,
             'category_id' => $inboxItem->category_id,
-            'amount' => -abs((float) $inboxItem->amount), // Le spese Telegram sono sempre uscite
+            'amount' => $inboxItem->type === 'income'
+                ? abs((float) $inboxItem->amount)   // entrata: positivo
+                : -abs((float) $inboxItem->amount),  // uscita: negativo
             'currency_code' => 'EUR',
             'date' => $inboxItem->transaction_date ?? now()->toDateString(),
             'description' => $inboxItem->description ?? $inboxItem->raw_text,

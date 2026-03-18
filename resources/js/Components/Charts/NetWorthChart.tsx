@@ -104,8 +104,8 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                     </div>
                 )}
             </div>
-            <div className="mt-4 h-72">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-4">
+                <ResponsiveContainer width="99%" height={288}>
                     <ReAreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
                         <defs>
                             <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">

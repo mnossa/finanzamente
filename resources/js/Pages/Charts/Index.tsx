@@ -92,19 +92,19 @@ export default function ChartsIndex({
 
                 {/* Griglia grafici principali */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                    <CashFlowChart data={cashFlowData} />
-                    <NetWorthChart data={netWorthData} />
+                    <CashFlowChart data={cashFlowData} className="min-w-0" />
+                    <NetWorthChart data={netWorthData} className="min-w-0" />
                 </div>
 
                 {/* Riga budget + categorie */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                    <BudgetProgress budgets={activeBudgets} />
-                    <ExpenseTreemap data={expenseCategories} />
+                    <BudgetProgress budgets={activeBudgets} className="min-w-0" />
+                    <ExpenseTreemap data={expenseCategories} className="min-w-0" />
                 </div>
 
                 {/* Portafoglio */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                    <PortfolioChart data={portfolioData} />
+                    <PortfolioChart data={portfolioData} className="min-w-0" />
 
                     {/* Riepilogo statistico */}
                     <CardBox>

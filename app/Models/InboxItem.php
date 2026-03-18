@@ -28,6 +28,7 @@ class InboxItem extends Model
         'household_id',
         'status',
         'source',
+        'type',
         'raw_text',
         'image_path',
         'ai_payload',

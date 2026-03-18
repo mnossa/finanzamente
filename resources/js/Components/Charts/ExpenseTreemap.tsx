@@ -127,8 +127,8 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                 Distribuzione spese del periodo · clicca su una categoria per i dettagli
             </p>
 
-            <div className="mt-4 h-72">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="mt-4">
+                <ResponsiveContainer width="99%" height={288}>
                     <Treemap
                         data={chartData}
                         dataKey="value"

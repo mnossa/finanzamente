@@ -219,7 +219,51 @@ Per garantire stabilità e test approfonditi, il progetto utilizza il branch `st
 Questo garantisce che ogni rilascio passi da test e review, evitando disallineamenti tra `staging` e `main`.
 
 > Per dettagli tecnici e linee guida, consultare `.github/copilot-instructions.md`.
-## Personalizzazione della Dashboard
+
+## Integrazione Telegram Bot
+
+Il bot Telegram permette di registrare spese direttamente dalla chat e di ricevere notifiche.
+
+### Configurazione (sviluppo locale con ngrok)
+
+1. Crea il bot tramite [@BotFather](https://t.me/BotFather) e ottieni il token.
+2. Aggiungi le variabili al `.env`:
+   ```env
+   TELEGRAM_BOT_TOKEN=<token-da-botfather>
+   TELEGRAM_BOT_USERNAME=<username-senza-@>
+   ```
+3. Pulisci la cache: `make clear-cache`
+4. Esponi il server locale con ngrok:
+   ```bash
+   ngrok http 8080
+   ```
+5. Registra il webhook con l'URL ngrok:
+   ```bash
+   make set-telegram-webhook url=https://abc123.ngrok-free.app
+   ```
+6. Verifica che il webhook sia attivo:
+   ```bash
+   make get-telegram-webhook
+   ```
+
+### Configurazione in produzione
+
+In produzione (con dominio HTTPS reale) non serve ngrok. Basta eseguire una volta:
+```bash
+make set-telegram-webhook url=https://tuodominio.it
+```
+Il webhook rimane attivo permanentemente finché non viene rimosso o aggiornato.
+
+> **Nota:** Telegram richiede che l'URL del webhook sia raggiungibile pubblicamente via HTTPS. Su `localhost` non funziona senza un tunnel.
+
+### Comandi Make disponibili
+
+```bash
+make set-telegram-webhook url=https://tuodominio.it  # Registra il webhook
+make get-telegram-webhook                             # Mostra lo stato attuale del webhook
+```
+
+
 
 La dashboard è completamente personalizzabile da ogni utente autenticato. È possibile:
 

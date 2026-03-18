@@ -30,6 +30,7 @@ interface InboxItem {
     id: number;
     status: 'draft' | 'needs_review' | 'confirmed' | 'rejected';
     source: 'telegram_text' | 'telegram_photo' | 'manual';
+    type: 'income' | 'expense';
     raw_text: string | null;
     image_path: string | null;
     ai_payload: { amt: number | null; shop: string | null; dt: string | null } | null;
@@ -105,6 +106,7 @@ interface EditFormProps {
 function EditForm({ item, accounts, categories, onClose }: EditFormProps) {
     const { data, setData, put, processing, errors } = useForm({
         amount: item.amount ?? '',
+        type: item.type ?? 'expense',
         description: item.description ?? '',
         transaction_date: item.transaction_date ?? '',
         category_id: item.category?.id?.toString() ?? '',
@@ -121,6 +123,36 @@ function EditForm({ item, accounts, categories, onClose }: EditFormProps) {
 
     return (
         <form onSubmit={submit} className="mt-4 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
+            {/* Toggle Entrata / Uscita */}
+            <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tipo</label>
+                <div className="flex rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden w-fit">
+                    <button
+                        type="button"
+                        onClick={() => setData('type', 'expense')}
+                        className={clsx(
+                            'px-4 py-1.5 text-sm font-medium transition-colors',
+                            data.type === 'expense'
+                                ? 'bg-rose-600 text-white'
+                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/20'
+                        )}
+                    >
+                        💸 Uscita
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setData('type', 'income')}
+                        className={clsx(
+                            'px-4 py-1.5 text-sm font-medium transition-colors',
+                            data.type === 'income'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                        )}
+                    >
+                        📈 Entrata
+                    </button>
+                </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
                 <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
@@ -274,8 +306,13 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
 
                 <div className="flex items-center gap-2">
                     {item.amount !== null ? (
-                        <span className="text-lg font-bold text-rose-600 dark:text-rose-400">
-                            -{formatCurrency(Math.abs(parseFloat(item.amount)))}
+                        <span className={clsx(
+                            'text-lg font-bold',
+                            item.type === 'income'
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                        )}>
+                            {item.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(parseFloat(item.amount)))}
                         </span>
                     ) : (
                         <span className="text-sm text-amber-600 font-medium">⚠ Importo mancante</span>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppNotification;
 use App\Models\InboxItem;
 use App\Models\TelegramLinkToken;
 use App\Models\User;
@@ -59,6 +60,16 @@ class TelegramWebhookController extends Controller
             return response('OK', 200);
         }
 
+        // Gestione comando /aiuto
+        if (isset($message['text']) && (
+            str_starts_with($message['text'], '/aiuto')
+            || str_starts_with($message['text'], '/help')
+        )) {
+            $this->handleAiutoCommand($chatId);
+
+            return response('OK', 200);
+        }
+
         // Ricerca utente collegato a questo chatId
         $user = User::where('telegram_chat_id', $chatId)->first();
 
@@ -98,7 +109,7 @@ class TelegramWebhookController extends Controller
         if (! $token) {
             $this->telegram->sendMessage(
                 $chatId,
-                "👋 <b>Benvenuto su Finanzamente!</b>\n\nPer collegare il tuo account, genera un token nella WebApp e invialo con:\n<code>/start IL_TUO_TOKEN</code>"
+                "👋 <b>Benvenuto su Finanzamente!</b>\n\nPer collegare il tuo account, genera un token nella WebApp e invialo con:\n<code>/start IL_TUO_TOKEN</code>\n\n💡 Usa /aiuto per vedere tutti i comandi."
             );
 
             return;
@@ -132,7 +143,33 @@ class TelegramWebhookController extends Controller
 
         $this->telegram->sendMessage(
             $chatId,
-            "✅ <b>Account collegato con successo!</b>\n\nOra puoi inviare:\n• Testo (es. <i>15.50 Supermercato</i>)\n• Foto di uno scontrino\n\nLe spese appariranno nella tua Inbox su Finanzamente."
+            "✅ <b>Account collegato con successo!</b>\n\nOra puoi inviare:\n• Testo (es. <i>15.50 Supermercato</i>) → uscita\n• Testo con + (es. <i>+1500 Stipendio</i>) → entrata\n• Foto di uno scontrino → OCR automatico\n\n💡 Usa /aiuto per la guida completa."
+        );
+    }
+
+    /**
+     * Invia la guida comandi.
+     */
+    private function handleAiutoCommand(string $chatId): void
+    {
+        $inboxUrl = config('app.url') . '/inbox';
+
+        $this->telegram->sendMessage(
+            $chatId,
+            "📖 <b>Guida Finanzamente Bot</b>\n\n"
+            . "<b>Registrare un'uscita:</b>\n"
+            . "<code>15.50 Supermercato</code>\n"
+            . "<code>Supermercato 15,50</code>\n"
+            . "<code>15.50</code> (solo importo)\n\n"
+            . "<b>Registrare un'entrata:</b>\n"
+            . "<code>+1500 Stipendio</code>\n"
+            . "<code>+500</code> (solo importo)\n\n"
+            . "<b>Scontrino fotografato:</b>\n"
+            . "Invia direttamente la foto — l'OCR estrae importo e negozio automaticamente.\n\n"
+            . "<b>Comandi:</b>\n"
+            . "/start TOKEN — collega il tuo account\n"
+            . "/aiuto — questa guida\n\n"
+            . "🔍 <a href=\"{$inboxUrl}\">Vai all'Inbox</a> per revisionare le voci."
         );
     }
 
@@ -148,23 +185,38 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        // Parsing basico: prova a estrarre importo e descrizione
-        ['amount' => $amount, 'description' => $description] = $this->parseTextMessage($text);
+        // Parsing: prova a estrarre importo, descrizione e tipo (entrata/uscita)
+        ['amount' => $amount, 'description' => $description, 'type' => $type] = $this->parseTextMessage($text);
 
         $item = InboxItem::create([
             'user_id' => $user->id,
             'household_id' => $user->active_household_id,
             'status' => 'draft',
             'source' => 'telegram_text',
+            'type' => $type,
             'raw_text' => $text,
             'amount' => $amount,
             'description' => $description,
             'transaction_date' => now()->toDateString(),
         ]);
 
-        $preview = $amount !== null
-            ? "💶 <b>€" . number_format((float) $amount, 2, ',', '.') . "</b>" . ($description ? " – {$description}" : '')
-            : "📝 <i>{$text}</i>";
+        AppNotification::create([
+            'user_id' => $user->id,
+            'title' => $type === 'income' ? '📈 Nuova entrata in Inbox' : '💸 Nuova uscita in Inbox',
+            'message' => $amount !== null
+                ? 'Ricevuto da Telegram: ' . ($description ?? $text) . ' — €' . number_format((float) $amount, 2, ',', '.')
+                : 'Messaggio Telegram salvato in Inbox: ' . mb_strimwidth($text, 0, 80, '…'),
+            'notification_key' => 'inbox_telegram_' . $item->id,
+        ]);
+
+        if ($amount !== null) {
+            $amountFormatted = '€' . number_format((float) $amount, 2, ',', '.');
+            $typeEmoji = $type === 'income' ? '📈' : '💸';
+            $typeLabel = $type === 'income' ? 'Entrata' : 'Uscita';
+            $preview = "{$typeEmoji} <b>{$typeLabel}: {$amountFormatted}</b>" . ($description ? " – {$description}" : '');
+        } else {
+            $preview = "📝 <i>{$text}</i>";
+        }
 
         $this->telegram->sendMessage(
             $chatId,
@@ -240,6 +292,15 @@ class TelegramWebhookController extends Controller
             'transaction_date' => isset($aiPayload['dt']) ? $aiPayload['dt'] : now()->toDateString(),
         ]);
 
+        AppNotification::create([
+            'user_id' => $user->id,
+            'title' => '📸 Scontrino in Inbox',
+            'message' => $aiPayload && $amount !== null
+                ? 'Scontrino elaborato: ' . ($description ?? 'negozio sconosciuto') . ' — €' . number_format((float) $amount, 2, ',', '.')
+                : 'Foto scontrino salvata in Inbox. Vai nell\'Inbox per completare i dati.',
+            'notification_key' => 'inbox_telegram_' . $item->id,
+        ]);
+
         // Feedback con risultato OCR
         if ($aiPayload && $amount !== null) {
             $dateFormatted = $item->transaction_date?->format('d/m/Y') ?? '';
@@ -265,19 +326,32 @@ class TelegramWebhookController extends Controller
 
     /**
      * Parsing basilare di un messaggio testuale.
-     * Prova a estrarre un importo numerico e una descrizione.
-     * Esempi: "15 Pizza", "15.50 Supermercato Conad", "Pizza 8,50"
+     * Prova a estrarre un importo numerico, la descrizione e il tipo (income/expense).
      *
-     * @return array{amount: float|null, description: string|null}
+     * Formato:
+     *   "15 Pizza"           → uscita €15
+     *   "Pizza 8,50"         → uscita €8.50
+     *   "+1500 Stipendio"    → entrata €1500
+     *   "+500"               → entrata €500
+     *
+     * @return array{amount: float|null, description: string|null, type: string}
      */
     private function parseTextMessage(string $text): array
     {
+        $type = 'expense';
+
+        // Prefisso + → entrata
+        if (str_starts_with($text, '+')) {
+            $type = 'income';
+            $text = ltrim(substr($text, 1));
+        }
+
         // Pattern: numero (opzionale decimale con . o ,) seguito da testo
         if (preg_match('/^(\d+(?:[.,]\d{1,2})?)\s+(.+)$/u', $text, $matches)) {
             $amount = (float) str_replace(',', '.', $matches[1]);
             $description = trim($matches[2]);
 
-            return ['amount' => $amount, 'description' => $description];
+            return ['amount' => $amount, 'description' => $description, 'type' => $type];
         }
 
         // Pattern: testo seguito da numero
@@ -286,14 +360,14 @@ class TelegramWebhookController extends Controller
             $description = trim($matches[1]);
             $description = $description !== '' ? $description : null;
 
-            return ['amount' => $amount, 'description' => $description];
+            return ['amount' => $amount, 'description' => $description, 'type' => $type];
         }
 
         // Solo numero
         if (preg_match('/^(\d+(?:[.,]\d{1,2})?)$/', trim($text), $matches)) {
-            return ['amount' => (float) str_replace(',', '.', $matches[1]), 'description' => null];
+            return ['amount' => (float) str_replace(',', '.', $matches[1]), 'description' => null, 'type' => $type];
         }
 
-        return ['amount' => null, 'description' => $text !== '' ? $text : null];
+        return ['amount' => null, 'description' => $text !== '' ? $text : null, 'type' => $type];
     }
 }
