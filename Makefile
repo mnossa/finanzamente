@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main composer-install npm-install
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -74,6 +74,12 @@ reset-mysql-root-password-step:
 # Esempio: make exec cmd="php artisan tinker"
 exec:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app $(cmd)
+
+composer-install:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app composer install
+
+npm-install:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec node npm install
 
 # Installa un pacchetto composer nel container app
 composer:
