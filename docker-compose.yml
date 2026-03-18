@@ -70,6 +70,24 @@ services:
     ports:
       - "5174:5174"
 
+  scheduler:
+    image: finanzamente-app
+    container_name: finanzamente-scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file:
+      - .env.docker
+    volumes:
+      - ./:/var/www
+    networks:
+      - finanzamente
+    depends_on:
+      - app
+      - db
+    command: >
+      sh -c "while true; do php artisan schedule:run --verbose; sleep 60; done"
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: finanzamente-mailpit

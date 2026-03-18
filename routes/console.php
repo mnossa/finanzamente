@@ -19,3 +19,8 @@ Schedule::command('recurring:generate')->dailyAt('00:01');
  * Per aggiungere nuove rotte pubbliche, edita GenerateSitemap::handle().
  */
 Schedule::command('sitemap:generate')->weeklyOn(0, '02:00');
+
+/**
+ * Rimuove i file di log più vecchi di 30 giorni ogni notte alle 03:00.
+ */
+Schedule::command('logs:prune')->dailyAt('03:00');
