@@ -148,6 +148,202 @@ class InboxItemTest extends TestCase
         ]);
     }
 
+    #[Test]
+    public function confirming_inbox_item_accepts_account_and_category_from_request()
+    {
+        $category = \App\Models\Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+        ]);
+
+        $item = InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => '15 Pizza',
+            'amount' => 15.00,
+            'description' => 'Pizza',
+            'transaction_date' => '2026-03-09',
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('inbox.confirm', $item->id), [
+            'account_id' => $this->account->id,
+            'category_id' => $category->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $item->refresh();
+        $this->assertEquals('confirmed', $item->status);
+        $this->assertDatabaseHas('transactions', [
+            'id' => $item->transaction_id,
+            'account_id' => $this->account->id,
+            'category_id' => $category->id,
+        ]);
+    }
+
+    #[Test]
+    public function confirming_inbox_item_marks_related_notification_as_read()
+    {
+        $item = InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => '10 Test',
+            'amount' => 10.00,
+            'account_id' => $this->account->id,
+        ]);
+
+        $notification = \App\Models\AppNotification::create([
+            'user_id' => $this->user->id,
+            'title' => '💸 Nuova uscita in Inbox',
+            'message' => 'Test',
+            'read' => false,
+            'notification_key' => 'inbox_telegram_' . $item->id,
+        ]);
+
+        $this->actingAs($this->user)->post(route('inbox.confirm', $item->id));
+
+        $notification->refresh();
+        $this->assertTrue($notification->read);
+    }
+
+    #[Test]
+    public function rejecting_inbox_item_marks_related_notification_as_read()
+    {
+        $item = InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => '10 Test',
+            'amount' => 10.00,
+        ]);
+
+        $notification = \App\Models\AppNotification::create([
+            'user_id' => $this->user->id,
+            'title' => '💸 Nuova uscita in Inbox',
+            'message' => 'Test',
+            'read' => false,
+            'notification_key' => 'inbox_telegram_' . $item->id,
+        ]);
+
+        $this->actingAs($this->user)->post(route('inbox.reject', $item->id));
+
+        $notification->refresh();
+        $this->assertTrue($notification->read);
+    }
+
+    #[Test]
+    public function user_can_confirm_all_pending_inbox_items()
+    {
+        InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => '10 Test1',
+            'amount' => 10.00,
+            'account_id' => $this->account->id,
+        ]);
+        InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'needs_review',
+            'source' => 'telegram_text',
+            'raw_text' => '20 Test2',
+            'amount' => 20.00,
+            'account_id' => $this->account->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('inbox.confirm-all'));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertEquals(
+            0,
+            InboxItem::where('user_id', $this->user->id)->whereIn('status', ['draft', 'needs_review'])->count()
+        );
+        $this->assertEquals(
+            2,
+            InboxItem::where('user_id', $this->user->id)->where('status', 'confirmed')->count()
+        );
+    }
+
+    #[Test]
+    public function user_can_reject_all_pending_inbox_items()
+    {
+        InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => '10 Test1',
+            'amount' => 10.00,
+        ]);
+        InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'needs_review',
+            'source' => 'telegram_text',
+            'raw_text' => '20 Test2',
+            'amount' => 20.00,
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('inbox.reject-all'));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertEquals(
+            0,
+            InboxItem::where('user_id', $this->user->id)->whereIn('status', ['draft', 'needs_review'])->count()
+        );
+        $this->assertEquals(
+            2,
+            InboxItem::where('user_id', $this->user->id)->where('status', 'rejected')->count()
+        );
+    }
+
+    #[Test]
+    public function confirm_all_skips_items_without_amount()
+    {
+        InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => 'Test senza importo',
+            'amount' => null,
+        ]);
+        InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'raw_text' => '15 Test',
+            'amount' => 15.00,
+            'account_id' => $this->account->id,
+        ]);
+
+        $this->actingAs($this->user)->post(route('inbox.confirm-all'));
+
+        // Solo quella con importo deve essere confermata
+        $this->assertEquals(
+            1,
+            InboxItem::where('user_id', $this->user->id)->where('status', 'confirmed')->count()
+        );
+        // Quella senza importo rimane in draft (skipped)
+        $this->assertEquals(
+            1,
+            InboxItem::where('user_id', $this->user->id)->where('status', 'draft')->count()
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Voci non confermate escluse dai report
     // -------------------------------------------------------------------------

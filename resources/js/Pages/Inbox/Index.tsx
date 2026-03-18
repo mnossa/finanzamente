@@ -243,6 +243,129 @@ function EditForm({ item, accounts, categories, onClose }: EditFormProps) {
 }
 
 // -------------------------------------------------------------------------
+// Modal di conferma con selezione conto/categoria
+// -------------------------------------------------------------------------
+
+interface ConfirmModalProps {
+    item: InboxItem;
+    accounts: Account[];
+    categories: Category[];
+    onClose: () => void;
+}
+
+function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps) {
+    const { data, setData, post, processing } = useForm({
+        account_id: item.account?.id?.toString() ?? (accounts.length === 1 ? accounts[0].id.toString() : ''),
+        category_id: item.category?.id?.toString() ?? '',
+    });
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
+        post(route('inbox.confirm', item.id), {
+            preserveScroll: true,
+            onSuccess: onClose,
+        });
+    }
+
+    // Filtra categorie per tipo
+    const filteredCategories = categories.filter(c => c.type === item.type);
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        ✓ Conferma voce
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl leading-none"
+                        aria-label="Chiudi"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                {/* Riepilogo voce */}
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                            {item.description ?? item.raw_text ?? '(nessuna descrizione)'}
+                        </span>
+                        <span className={clsx(
+                            'text-base font-bold',
+                            item.type === 'income'
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                        )}>
+                            {item.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(parseFloat(item.amount!)))}
+                        </span>
+                    </div>
+                    {item.transaction_date && (
+                        <p className="text-xs text-slate-500">{formatDate(item.transaction_date)}</p>
+                    )}
+                </div>
+
+                <form onSubmit={submit} className="space-y-3">
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Conto <span className="text-slate-400">(opzionale — usa il predefinito se vuoto)</span>
+                        </label>
+                        <select
+                            value={data.account_id}
+                            onChange={e => setData('account_id', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm bg-white dark:bg-slate-800 dark:text-white"
+                        >
+                            <option value="">— Predefinito —</option>
+                            {accounts.map(a => (
+                                <option key={a.id} value={a.id}>{a.name} ({a.currency_code})</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Categoria <span className="text-slate-400">(opzionale)</span>
+                        </label>
+                        <select
+                            value={data.category_id}
+                            onChange={e => setData('category_id', e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm bg-white dark:bg-slate-800 dark:text-white"
+                        >
+                            <option value="">— Nessuna —</option>
+                            {filteredCategories.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                            {filteredCategories.length === 0 && categories.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            Annulla
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                        >
+                            {processing ? 'Conferma...' : '✓ Conferma'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// -------------------------------------------------------------------------
 // Riga singola
 // -------------------------------------------------------------------------
 
@@ -257,6 +380,7 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
     // Se amount è null, il form si apre automaticamente (UX guidata)
     const [editing, setEditing] = useState(forceEdit || item.amount === null);
     const [showImage, setShowImage] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const isPending = item.status === 'draft' || item.status === 'needs_review';
 
     // Riaggancia lo stato editing se il server aggiorna amount a null
@@ -265,10 +389,6 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
             setEditing(true);
         }
     }, [item.amount, isPending]);
-
-    function confirmItem() {
-        router.post(route('inbox.confirm', item.id), {}, { preserveScroll: true });
-    }
 
     function reject() {
         if (window.confirm('Scartare questa voce?')) {
@@ -283,132 +403,158 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
     }
 
     return (
-        <div className={clsx(
-            'p-4 rounded-xl border transition-colors',
-            isPending
-                ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-900/10'
-                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
-        )}>
-            {/* Header riga */}
-            <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="flex flex-col gap-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <StatusBadge status={item.status} />
-                        <SourceBadge source={item.source} />
-                    </div>
-                    <p className="text-sm font-medium text-slate-800 dark:text-white truncate">
-                        {item.description ?? item.raw_text ?? '(nessuna descrizione)'}
-                    </p>
-                    {item.transaction_date && (
-                        <p className="text-xs text-slate-500">{formatDate(item.transaction_date)}</p>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {item.amount !== null ? (
-                        <span className={clsx(
-                            'text-lg font-bold',
-                            item.type === 'income'
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-rose-600 dark:text-rose-400'
-                        )}>
-                            {item.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(parseFloat(item.amount)))}
-                        </span>
-                    ) : (
-                        <span className="text-sm text-amber-600 font-medium">⚠ Importo mancante</span>
-                    )}
-                </div>
-            </div>
-
-            {/* Dati AI estratti */}
-            {item.ai_payload && isPending && (
-                <div className="mt-2 p-2 rounded-lg bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 text-xs text-sky-700 dark:text-sky-300">
-                    <span className="font-semibold">🤖 AI ha estratto:</span>{' '}
-                    {item.ai_payload.amt != null && <>€{item.ai_payload.amt}{' '}</>}
-                    {item.ai_payload.shop && <>{item.ai_payload.shop}{' '}</>}
-                    {item.ai_payload.dt && <>{item.ai_payload.dt}</>}
-                </div>
-            )}
-
-            {/* Immagine scontrino */}
-            {item.image_path && (
-                <div className="mt-2">
-                    <button
-                        type="button"
-                        onClick={() => setShowImage(v => !v)}
-                        className="text-xs text-sky-600 dark:text-sky-400 underline"
-                    >
-                        {showImage ? 'Nascondi scontrino' : 'Mostra scontrino'}
-                    </button>
-                    {showImage && (
-                        <img
-                            src={route('inbox.image', item.id)}
-                            alt="Scontrino"
-                            className="mt-2 max-h-64 rounded-lg border border-slate-200 dark:border-slate-600 object-contain"
-                            onError={e => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                        />
-                    )}
-                </div>
-            )}
-
-            {/* Form di modifica */}
-            {editing && (
-                <EditForm
+        <>
+            {showConfirmModal && (
+                <ConfirmModal
                     item={item}
                     accounts={accounts}
                     categories={categories}
-                    onClose={() => setEditing(false)}
+                    onClose={() => setShowConfirmModal(false)}
                 />
             )}
 
-            {/* Azioni */}
-            {isPending && !editing && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setEditing(true)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    >
-                        ✏ Modifica
-                    </button>
-                    <button
-                        type="button"
-                        onClick={confirmItem}
-                        disabled={item.amount === null}
-                        title={item.amount === null ? 'Inserisci l\'importo prima di confermare' : undefined}
-                        className={clsx(
-                            'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                            item.amount !== null
-                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500'
+            <div className={clsx(
+                'p-4 rounded-xl border transition-colors',
+                isPending
+                    ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-900/10'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+            )}>
+                {/* Header riga */}
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge status={item.status} />
+                            <SourceBadge source={item.source} />
+                        </div>
+                        <p className="text-sm font-medium text-slate-800 dark:text-white truncate">
+                            {item.description ?? item.raw_text ?? '(nessuna descrizione)'}
+                        </p>
+                        {item.transaction_date && (
+                            <p className="text-xs text-slate-500">{formatDate(item.transaction_date)}</p>
                         )}
-                    >
-                        ✓ Conferma
-                    </button>
-                    <button
-                        type="button"
-                        onClick={reject}
-                        className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    >
-                        ✕ Scarta
-                    </button>
-                </div>
-            )}
+                        {/* Conto e categoria assegnati */}
+                        {(item.account || item.category) && (
+                            <div className="flex flex-wrap gap-2 mt-0.5">
+                                {item.account && (
+                                    <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                        🏦 {item.account.name}
+                                    </span>
+                                )}
+                                {item.category && (
+                                    <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                        🏷️ {item.category.name}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
-            {item.status === 'confirmed' && (
-                <div className="mt-2 flex justify-end">
-                    <button
-                        type="button"
-                        onClick={destroy}
-                        className="text-xs text-slate-400 hover:text-red-500 transition-colors"
-                    >
-                        Elimina
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {item.amount !== null ? (
+                            <span className={clsx(
+                                'text-lg font-bold',
+                                item.type === 'income'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-rose-600 dark:text-rose-400'
+                            )}>
+                                {item.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(parseFloat(item.amount)))}
+                            </span>
+                        ) : (
+                            <span className="text-sm text-amber-600 font-medium">⚠ Importo mancante</span>
+                        )}
+                    </div>
                 </div>
-            )}
-        </div>
+
+                {/* Dati AI estratti */}
+                {item.ai_payload && isPending && (
+                    <div className="mt-2 p-2 rounded-lg bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 text-xs text-sky-700 dark:text-sky-300">
+                        <span className="font-semibold">🤖 AI ha estratto:</span>{' '}
+                        {item.ai_payload.amt != null && <>€{item.ai_payload.amt}{' '}</>}
+                        {item.ai_payload.shop && <>{item.ai_payload.shop}{' '}</>}
+                        {item.ai_payload.dt && <>{item.ai_payload.dt}</>}
+                    </div>
+                )}
+
+                {/* Immagine scontrino */}
+                {item.image_path && (
+                    <div className="mt-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowImage(v => !v)}
+                            className="text-xs text-sky-600 dark:text-sky-400 underline"
+                        >
+                            {showImage ? 'Nascondi scontrino' : 'Mostra scontrino'}
+                        </button>
+                        {showImage && (
+                            <img
+                                src={route('inbox.image', item.id)}
+                                alt="Scontrino"
+                                className="mt-2 max-h-64 rounded-lg border border-slate-200 dark:border-slate-600 object-contain"
+                                onError={e => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        )}
+                    </div>
+                )}
+
+                {/* Form di modifica */}
+                {editing && (
+                    <EditForm
+                        item={item}
+                        accounts={accounts}
+                        categories={categories}
+                        onClose={() => setEditing(false)}
+                    />
+                )}
+
+                {/* Azioni */}
+                {isPending && !editing && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setEditing(true)}
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            ✏ Modifica
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmModal(true)}
+                            disabled={item.amount === null}
+                            title={item.amount === null ? "Inserisci l'importo prima di confermare" : undefined}
+                            className={clsx(
+                                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                                item.amount !== null
+                                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500'
+                            )}
+                        >
+                            ✓ Conferma
+                        </button>
+                        <button
+                            type="button"
+                            onClick={reject}
+                            className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            ✕ Scarta
+                        </button>
+                    </div>
+                )}
+
+                {item.status === 'confirmed' && (
+                    <div className="mt-2 flex justify-end">
+                        <button
+                            type="button"
+                            onClick={destroy}
+                            className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                            Elimina
+                        </button>
+                    </div>
+                )}
+            </div>
+        </>
     );
 }
 
@@ -417,6 +563,29 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
 // -------------------------------------------------------------------------
 
 export default function InboxIndex({ items, accounts, categories, pendingCount }: Props) {
+    const [confirmingAll, setConfirmingAll] = useState(false);
+    const [rejectingAll, setRejectingAll] = useState(false);
+
+    function confirmAll() {
+        if (window.confirm(`Confermare tutte le ${pendingCount} voci in attesa? Verrà usato il conto predefinito per chi non ne ha uno assegnato.`)) {
+            setConfirmingAll(true);
+            router.post(route('inbox.confirm-all'), {}, {
+                preserveScroll: true,
+                onFinish: () => setConfirmingAll(false),
+            });
+        }
+    }
+
+    function rejectAll() {
+        if (window.confirm(`Scartare tutte le ${pendingCount} voci in attesa? L'operazione non è reversibile.`)) {
+            setRejectingAll(true);
+            router.post(route('inbox.reject-all'), {}, {
+                preserveScroll: true,
+                onFinish: () => setRejectingAll(false),
+            });
+        }
+    }
+
     return (
         <AuthenticatedLayout
             header={
@@ -434,14 +603,34 @@ export default function InboxIndex({ items, accounts, categories, pendingCount }
 
             <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-4">
 
-                {/* Banner se ci sono voci da verificare */}
+                {/* Banner se ci sono voci da verificare, con azioni bulk */}
                 {pendingCount > 0 && (
-                    <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                        <span className="text-amber-500 text-xl">⚠</span>
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
-                            Hai <strong>{pendingCount}</strong> voce{pendingCount !== 1 ? 'i' : ''} in attesa di verifica.
-                            Revisionale prima che vengano conteggiate nei report.
-                        </p>
+                    <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <span className="text-amber-500 text-xl">⚠</span>
+                            <p className="text-sm text-amber-800 dark:text-amber-200 flex-1">
+                                Hai <strong>{pendingCount}</strong> voce{pendingCount !== 1 ? 'i' : ''} in attesa di verifica.
+                                Revisionale prima che vengano conteggiate nei report.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={confirmAll}
+                                disabled={confirmingAll}
+                                className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                            >
+                                {confirmingAll ? 'Conferma...' : '✓ Conferma tutte'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={rejectAll}
+                                disabled={rejectingAll}
+                                className="px-4 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                            >
+                                {rejectingAll ? 'Scarto...' : '✕ Scarta tutte'}
+                            </button>
+                        </div>
                     </div>
                 )}
 

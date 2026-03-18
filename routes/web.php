@@ -101,6 +101,8 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::put('/inbox/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
     Route::post('/inbox/{inboxItem}/confirm', [InboxController::class, 'confirm'])->name('inbox.confirm');
     Route::post('/inbox/{inboxItem}/reject', [InboxController::class, 'reject'])->name('inbox.reject');
+    Route::post('/inbox/confirm-all', [InboxController::class, 'confirmAll'])->name('inbox.confirm-all');
+    Route::post('/inbox/reject-all', [InboxController::class, 'rejectAll'])->name('inbox.reject-all');
     Route::delete('/inbox/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');
     Route::get('/inbox/{inboxItem}/image', [InboxController::class, 'image'])->name('inbox.image');
 

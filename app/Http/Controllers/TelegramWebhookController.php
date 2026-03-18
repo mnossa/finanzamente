@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\AppNotification;
+use App\Models\Category;
 use App\Models\InboxItem;
 use App\Models\TelegramLinkToken;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TelegramService;
 use App\Services\VisionService;
@@ -25,6 +28,15 @@ use Illuminate\Support\Str;
  * 2. Identifica l'utente tramite telegram_chat_id
  * 3. Crea un InboxItem in stato draft/needs_review
  * 4. Invia feedback di ricezione all'utente Telegram
+ *
+ * Sintassi testo avanzata:
+ *   "15 Pizza"                          → uscita €15, descrizione "Pizza"
+ *   "+1500 Stipendio"                   → entrata €1500
+ *   "15 Pizza @Corrente"               → uscita €15 con conto "Corrente"
+ *   "15 Pizza #Alimentari"             → uscita €15 con categoria "Alimentari"
+ *   "15 Pizza @Corrente #Alimentari"   → uscita €15 con conto e categoria
+ *   "15 Pizza 01/03"                   → uscita €15 con data 01/03/anno corrente
+ *   "+50 Rimborso @Corrente 15/03"     → entrata €50 con conto e data
  */
 class TelegramWebhookController extends Controller
 {
@@ -60,7 +72,7 @@ class TelegramWebhookController extends Controller
             return response('OK', 200);
         }
 
-        // Gestione comando /aiuto
+        // Gestione comando /aiuto o /help
         if (isset($message['text']) && (
             str_starts_with($message['text'], '/aiuto')
             || str_starts_with($message['text'], '/help')
@@ -80,6 +92,29 @@ class TelegramWebhookController extends Controller
             );
 
             return response('OK', 200);
+        }
+
+        // Comandi autenticati
+        if (isset($message['text'])) {
+            $text = trim($message['text']);
+
+            if (str_starts_with($text, '/saldo')) {
+                $this->handleSaldoCommand($user, $chatId);
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/ultime')) {
+                $this->handleUltimeCommand($user, $chatId);
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/lista')) {
+                $this->handleListaCommand($user, $chatId);
+
+                return response('OK', 200);
+            }
         }
 
         // Determina il tipo di messaggio e processa
@@ -143,12 +178,12 @@ class TelegramWebhookController extends Controller
 
         $this->telegram->sendMessage(
             $chatId,
-            "✅ <b>Account collegato con successo!</b>\n\nOra puoi inviare:\n• Testo (es. <i>15.50 Supermercato</i>) → uscita\n• Testo con + (es. <i>+1500 Stipendio</i>) → entrata\n• Foto di uno scontrino → OCR automatico\n\n💡 Usa /aiuto per la guida completa."
+            "✅ <b>Account collegato con successo!</b>\n\nOra puoi inviare:\n• <code>15.50 Supermercato</code> → uscita\n• <code>+1500 Stipendio</code> → entrata\n• Foto di uno scontrino → OCR automatico\n\n🔧 <b>Opzionale:</b> aggiungi <code>@Conto</code>, <code>#Categoria</code> o data <code>DD/MM</code>\n\n💡 Usa /aiuto per la guida completa."
         );
     }
 
     /**
-     * Invia la guida comandi.
+     * Invia la guida comandi aggiornata.
      */
     private function handleAiutoCommand(string $chatId): void
     {
@@ -157,20 +192,128 @@ class TelegramWebhookController extends Controller
         $this->telegram->sendMessage(
             $chatId,
             "📖 <b>Guida Finanzamente Bot</b>\n\n"
-            . "<b>Registrare un'uscita:</b>\n"
+            . "<b>📤 Registrare un'uscita:</b>\n"
             . "<code>15.50 Supermercato</code>\n"
             . "<code>Supermercato 15,50</code>\n"
             . "<code>15.50</code> (solo importo)\n\n"
-            . "<b>Registrare un'entrata:</b>\n"
+            . "<b>📥 Registrare un'entrata:</b>\n"
             . "<code>+1500 Stipendio</code>\n"
             . "<code>+500</code> (solo importo)\n\n"
-            . "<b>Scontrino fotografato:</b>\n"
+            . "<b>🔧 Dettagli opzionali (aggiungili al messaggio):</b>\n"
+            . "<code>@NomeConto</code> → specifica il conto (es. <code>@Corrente</code>)\n"
+            . "<code>#Categoria</code> → specifica la categoria (es. <code>#Alimentari</code>)\n"
+            . "<code>DD/MM</code> → specifica la data (es. <code>01/03</code>)\n\n"
+            . "<b>Esempi completi:</b>\n"
+            . "<code>15 Pizza @Corrente #Cibo</code>\n"
+            . "<code>+500 Rimborso @Corrente 15/03</code>\n"
+            . "<code>8.50 Bar #Svago 01/03</code>\n\n"
+            . "<b>📸 Scontrino fotografato:</b>\n"
             . "Invia direttamente la foto — l'OCR estrae importo e negozio automaticamente.\n\n"
-            . "<b>Comandi:</b>\n"
+            . "<b>⌨️ Comandi:</b>\n"
             . "/start TOKEN — collega il tuo account\n"
-            . "/aiuto — questa guida\n\n"
+            . "/aiuto — questa guida\n"
+            . "/saldo — mostra i saldi dei tuoi conti\n"
+            . "/ultime — mostra le ultime 5 transazioni\n"
+            . "/lista — mostra conti e categorie disponibili\n\n"
             . "🔍 <a href=\"{$inboxUrl}\">Vai all'Inbox</a> per revisionare le voci."
         );
+    }
+
+    /**
+     * Mostra i saldi dei conti dell'utente.
+     */
+    private function handleSaldoCommand(User $user, string $chatId): void
+    {
+        $accounts = Account::where('household_id', $user->active_household_id)
+            ->with(['transactions' => fn ($q) => $q->select('account_id', 'amount')])
+            ->get();
+
+        if ($accounts->isEmpty()) {
+            $this->telegram->sendMessage($chatId, '⚠️ Nessun conto disponibile. Crea un conto su Finanzamente.');
+
+            return;
+        }
+
+        $lines = ["💰 <b>Saldi conti:</b>\n"];
+        foreach ($accounts as $account) {
+            $balance = $account->transactions->sum('amount');
+            $sign = $balance >= 0 ? '+' : '';
+            $lines[] = "• <b>{$account->name}</b>: {$sign}" . number_format((float) $balance, 2, ',', '.') . " {$account->currency_code}";
+        }
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines));
+    }
+
+    /**
+     * Mostra le ultime 5 transazioni dell'utente.
+     */
+    private function handleUltimeCommand(User $user, string $chatId): void
+    {
+        $transactions = Transaction::where('user_id', $user->id)
+            ->with(['account:id,name', 'category:id,name'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            $this->telegram->sendMessage($chatId, '📭 Nessuna transazione registrata.');
+
+            return;
+        }
+
+        $lines = ["📋 <b>Ultime 5 transazioni:</b>\n"];
+        foreach ($transactions as $tx) {
+            $amount = (float) $tx->amount;
+            $sign = $amount >= 0 ? '+' : '';
+            $emoji = $amount >= 0 ? '📈' : '💸';
+            $date = $tx->date ? \Carbon\Carbon::parse($tx->date)->format('d/m') : '';
+            $desc = $tx->description ?? ($tx->category?->name ?? '—');
+            $lines[] = "{$emoji} {$date} <b>{$sign}" . number_format(abs($amount), 2, ',', '.') . " €</b> – {$desc}";
+        }
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines));
+    }
+
+    /**
+     * Mostra i conti e le categorie disponibili dell'utente.
+     */
+    private function handleListaCommand(User $user, string $chatId): void
+    {
+        $accounts = Account::where('household_id', $user->active_household_id)
+            ->orderBy('name')
+            ->get();
+
+        $categories = Category::where('household_id', $user->active_household_id)
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+
+        $lines = ["📂 <b>Dati disponibili:</b>\n"];
+
+        if ($accounts->isNotEmpty()) {
+            $lines[] = "<b>🏦 Conti</b> (usa <code>@NomeConto</code>):";
+            foreach ($accounts as $account) {
+                $lines[] = "  • {$account->name}";
+            }
+        }
+
+        $lines[] = '';
+
+        if ($categories->isNotEmpty()) {
+            $lines[] = "<b>🏷️ Categorie</b> (usa <code>#NomeCategoria</code>):";
+            $expenseCategories = $categories->where('type', 'expense');
+            $incomeCategories = $categories->where('type', 'income');
+
+            if ($expenseCategories->isNotEmpty()) {
+                $lines[] = "  <i>Uscite:</i> " . $expenseCategories->pluck('name')->join(', ');
+            }
+            if ($incomeCategories->isNotEmpty()) {
+                $lines[] = "  <i>Entrate:</i> " . $incomeCategories->pluck('name')->join(', ');
+            }
+        }
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines));
     }
 
     // -------------------------------------------------------------------------
@@ -185,8 +328,30 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        // Parsing: prova a estrarre importo, descrizione e tipo (entrata/uscita)
-        ['amount' => $amount, 'description' => $description, 'type' => $type] = $this->parseTextMessage($text);
+        // Parsing avanzato: importo, descrizione, tipo, conto, categoria, data
+        $parsed = $this->parseTextMessage($text);
+        $amount = $parsed['amount'];
+        $description = $parsed['description'];
+        $type = $parsed['type'];
+        $date = $parsed['date'];
+
+        // Risolvi conto per nome (se specificato con @)
+        $accountId = null;
+        if ($parsed['account_name'] !== null) {
+            $account = Account::where('household_id', $user->active_household_id)
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($parsed['account_name'])])
+                ->first();
+            $accountId = $account?->id;
+        }
+
+        // Risolvi categoria per nome (se specificata con #)
+        $categoryId = null;
+        if ($parsed['category_name'] !== null) {
+            $category = Category::where('household_id', $user->active_household_id)
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($parsed['category_name'])])
+                ->first();
+            $categoryId = $category?->id;
+        }
 
         $item = InboxItem::create([
             'user_id' => $user->id,
@@ -197,7 +362,9 @@ class TelegramWebhookController extends Controller
             'raw_text' => $text,
             'amount' => $amount,
             'description' => $description,
-            'transaction_date' => now()->toDateString(),
+            'transaction_date' => $date,
+            'account_id' => $accountId,
+            'category_id' => $categoryId,
         ]);
 
         AppNotification::create([
@@ -214,14 +381,34 @@ class TelegramWebhookController extends Controller
             $typeEmoji = $type === 'income' ? '📈' : '💸';
             $typeLabel = $type === 'income' ? 'Entrata' : 'Uscita';
             $preview = "{$typeEmoji} <b>{$typeLabel}: {$amountFormatted}</b>" . ($description ? " – {$description}" : '');
-        } else {
-            $preview = "📝 <i>{$text}</i>";
-        }
 
-        $this->telegram->sendMessage(
-            $chatId,
-            "✅ <b>Ricevuto!</b>\n\n{$preview}\n\n🔍 <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per revisionare e confermare."
-        );
+            $extras = [];
+            if ($accountId && isset($account)) {
+                $extras[] = "🏦 {$account->name}";
+            } elseif ($parsed['account_name'] !== null) {
+                $extras[] = "⚠️ Conto \"{$parsed['account_name']}\" non trovato";
+            }
+            if ($categoryId && isset($category)) {
+                $extras[] = "🏷️ {$category->name}";
+            } elseif ($parsed['category_name'] !== null) {
+                $extras[] = "⚠️ Categoria \"{$parsed['category_name']}\" non trovata";
+            }
+            if ($date && $date !== now()->toDateString()) {
+                $extras[] = "📅 " . \Carbon\Carbon::parse($date)->format('d/m/Y');
+            }
+
+            $extrasText = ! empty($extras) ? "\n" . implode(' · ', $extras) : '';
+
+            $this->telegram->sendMessage(
+                $chatId,
+                "✅ <b>Ricevuto!</b>\n\n{$preview}{$extrasText}\n\n🔍 <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per revisionare e confermare."
+            );
+        } else {
+            $this->telegram->sendMessage(
+                $chatId,
+                "✅ <b>Ricevuto!</b>\n\n📝 <i>{$text}</i>\n\n⚠️ Nessun importo rilevato. <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per completare i dati."
+            );
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -277,8 +464,28 @@ class TelegramWebhookController extends Controller
             Log::warning('TelegramWebhookController: errore OCR', ['error' => $e->getMessage()]);
         }
 
-        // Crea l'elemento in Inbox
+        // Prova a estrarre dettagli opzionali dalla didascalia
         $caption = trim($message['caption'] ?? '');
+        $captionParsed = $caption ? $this->parseTextMessage($caption) : null;
+
+        $accountId = null;
+        $categoryId = null;
+        if ($captionParsed) {
+            if ($captionParsed['account_name']) {
+                $account = Account::where('household_id', $user->active_household_id)
+                    ->whereRaw('LOWER(name) = ?', [mb_strtolower($captionParsed['account_name'])])
+                    ->first();
+                $accountId = $account?->id;
+            }
+            if ($captionParsed['category_name']) {
+                $category = Category::where('household_id', $user->active_household_id)
+                    ->whereRaw('LOWER(name) = ?', [mb_strtolower($captionParsed['category_name'])])
+                    ->first();
+                $categoryId = $category?->id;
+            }
+        }
+
+        // Crea l'elemento in Inbox
         $item = InboxItem::create([
             'user_id' => $user->id,
             'household_id' => $user->active_household_id,
@@ -290,6 +497,8 @@ class TelegramWebhookController extends Controller
             'amount' => $amount,
             'description' => $description,
             'transaction_date' => isset($aiPayload['dt']) ? $aiPayload['dt'] : now()->toDateString(),
+            'account_id' => $accountId,
+            'category_id' => $categoryId,
         ]);
 
         AppNotification::create([
@@ -315,7 +524,7 @@ class TelegramWebhookController extends Controller
         } else {
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Foto salvata!</b>\n\n⚠️ Non sono riuscito a estrarre tutti i dati. <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per inserire manualmente l'importo."
+                "✅ <b>Foto salvata!</b>\n\n⚠️ Non sono riuscito a estrarre tutti i dati. <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per inserire manualmente l'importo.\n\n💡 <i>Suggerimento: puoi aggiungere <code>@Conto #Categoria</code> come didascalia della foto.</i>"
             );
         }
     }
@@ -325,20 +534,27 @@ class TelegramWebhookController extends Controller
     // -------------------------------------------------------------------------
 
     /**
-     * Parsing basilare di un messaggio testuale.
-     * Prova a estrarre un importo numerico, la descrizione e il tipo (income/expense).
+     * Parsing avanzato di un messaggio testuale.
+     * Estrae importo, descrizione, tipo (income/expense), conto (@), categoria (#) e data (DD/MM).
      *
-     * Formato:
-     *   "15 Pizza"           → uscita €15
-     *   "Pizza 8,50"         → uscita €8.50
-     *   "+1500 Stipendio"    → entrata €1500
-     *   "+500"               → entrata €500
+     * Formato base:
+     *   "15 Pizza"                       → uscita €15, desc "Pizza"
+     *   "Pizza 8,50"                     → uscita €8.50, desc "Pizza"
+     *   "+1500 Stipendio"                → entrata €1500, desc "Stipendio"
+     *   "+500"                           → entrata €500
      *
-     * @return array{amount: float|null, description: string|null, type: string}
+     * Dettagli opzionali (in qualsiasi posizione dopo il testo base):
+     *   "@Corrente"                      → conto "Corrente"
+     *   "#Alimentari"                    → categoria "Alimentari"
+     *   "01/03" o "01/03/2026"          → data
+     *
+     * @return array{amount: float|null, description: string|null, type: string, account_name: string|null, category_name: string|null, date: string}
      */
     private function parseTextMessage(string $text): array
     {
         $type = 'expense';
+        $account_name = null;
+        $category_name = null;
 
         // Prefisso + → entrata
         if (str_starts_with($text, '+')) {
@@ -346,12 +562,41 @@ class TelegramWebhookController extends Controller
             $text = ltrim(substr($text, 1));
         }
 
+        // Estrai @conto (es. @Corrente, @Banca Intesa)
+        if (preg_match('/@([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
+            $account_name = trim($m[1]);
+            $text = trim(str_replace($m[0], '', $text));
+        }
+
+        // Estrai #categoria (es. #Alimentari, #Spesa Casa)
+        if (preg_match('/#([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
+            $category_name = trim($m[1]);
+            $text = trim(str_replace($m[0], '', $text));
+        }
+
+        // Estrai data in formato DD/MM o DD/MM/YYYY (es. 01/03 o 01/03/2026)
+        $date = now()->toDateString();
+        if (preg_match('/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?\b/', $text, $m)) {
+            $day = (int) $m[1];
+            $month = (int) $m[2];
+            $year = isset($m[3]) && $m[3] ? (int) $m[3] : now()->year;
+            try {
+                $parsedDate = \Carbon\Carbon::createFromDate($year, $month, $day);
+                $date = $parsedDate->toDateString();
+                $text = trim(preg_replace('/\b\d{1,2}\/\d{1,2}(?:\/\d{4})?\b/', '', $text));
+            } catch (\Throwable) {
+                // data non valida, usa oggi
+            }
+        }
+
+        $text = trim($text);
+
         // Pattern: numero (opzionale decimale con . o ,) seguito da testo
         if (preg_match('/^(\d+(?:[.,]\d{1,2})?)\s+(.+)$/u', $text, $matches)) {
             $amount = (float) str_replace(',', '.', $matches[1]);
             $description = trim($matches[2]);
 
-            return ['amount' => $amount, 'description' => $description, 'type' => $type];
+            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
         }
 
         // Pattern: testo seguito da numero
@@ -360,14 +605,21 @@ class TelegramWebhookController extends Controller
             $description = trim($matches[1]);
             $description = $description !== '' ? $description : null;
 
-            return ['amount' => $amount, 'description' => $description, 'type' => $type];
+            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
         }
 
         // Solo numero
-        if (preg_match('/^(\d+(?:[.,]\d{1,2})?)$/', trim($text), $matches)) {
-            return ['amount' => (float) str_replace(',', '.', $matches[1]), 'description' => null, 'type' => $type];
+        if (preg_match('/^(\d+(?:[.,]\d{1,2})?)$/', $text, $matches)) {
+            $amount = (float) str_replace(',', '.', $matches[1]);
+            $description = null;
+
+            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
         }
 
-        return ['amount' => null, 'description' => $text !== '' ? $text : null, 'type' => $type];
+        // Nessun importo trovato
+        $amount = null;
+        $description = $text !== '' ? $text : null;
+
+        return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
     }
 }
