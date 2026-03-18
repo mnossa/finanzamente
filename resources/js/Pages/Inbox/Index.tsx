@@ -254,8 +254,12 @@ interface ConfirmModalProps {
 }
 
 function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps) {
+    // Precedence: (1) item's existing account, (2) single account auto-select, (3) empty for manual selection
+    const defaultAccountId = item.account?.id?.toString()
+        ?? (accounts.length === 1 ? accounts[0].id.toString() : '');
+
     const { data, setData, post, processing } = useForm({
-        account_id: item.account?.id?.toString() ?? (accounts.length === 1 ? accounts[0].id.toString() : ''),
+        account_id: defaultAccountId,
         category_id: item.category?.id?.toString() ?? '',
     });
 
@@ -267,7 +271,7 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
         });
     }
 
-    // Filtra categorie per tipo
+    // Filtra categorie per tipo della voce; mostra lista vuota se non ce ne sono di quel tipo
     const filteredCategories = categories.filter(c => c.type === item.type);
 
     return (
@@ -335,9 +339,6 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
                         >
                             <option value="">— Nessuna —</option>
                             {filteredCategories.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                            {filteredCategories.length === 0 && categories.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>

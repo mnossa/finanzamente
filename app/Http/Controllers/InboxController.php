@@ -103,12 +103,12 @@ class InboxController extends Controller
             'category_id' => 'nullable|exists:categories,id',
         ]);
 
-        // Aggiorna account e categoria se forniti nella request
-        if (! empty($validated['account_id'])) {
+        // Aggiorna account e categoria se esplicitamente forniti nella request
+        if (array_key_exists('account_id', $validated) && $validated['account_id'] !== null) {
             $inboxItem->account_id = $validated['account_id'];
         }
         if (array_key_exists('category_id', $validated)) {
-            $inboxItem->category_id = $validated['category_id'] ?? $inboxItem->category_id;
+            $inboxItem->category_id = $validated['category_id'];
         }
 
         // Scegli un account: quello della voce oppure il primo della household

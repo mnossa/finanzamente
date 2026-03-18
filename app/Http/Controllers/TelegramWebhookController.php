@@ -225,7 +225,7 @@ class TelegramWebhookController extends Controller
     private function handleSaldoCommand(User $user, string $chatId): void
     {
         $accounts = Account::where('household_id', $user->active_household_id)
-            ->with(['transactions' => fn ($q) => $q->select('account_id', 'amount')])
+            ->withSum('transactions', 'amount')
             ->get();
 
         if ($accounts->isEmpty()) {
@@ -236,9 +236,9 @@ class TelegramWebhookController extends Controller
 
         $lines = ["💰 <b>Saldi conti:</b>\n"];
         foreach ($accounts as $account) {
-            $balance = $account->transactions->sum('amount');
+            $balance = (float) ($account->transactions_sum_amount ?? 0);
             $sign = $balance >= 0 ? '+' : '';
-            $lines[] = "• <b>{$account->name}</b>: {$sign}" . number_format((float) $balance, 2, ',', '.') . " {$account->currency_code}";
+            $lines[] = "• <b>{$account->name}</b>: {$sign}" . number_format($balance, 2, ',', '.') . " {$account->currency_code}";
         }
 
         $this->telegram->sendMessage($chatId, implode("\n", $lines));
@@ -335,23 +335,9 @@ class TelegramWebhookController extends Controller
         $type = $parsed['type'];
         $date = $parsed['date'];
 
-        // Risolvi conto per nome (se specificato con @)
-        $accountId = null;
-        if ($parsed['account_name'] !== null) {
-            $account = Account::where('household_id', $user->active_household_id)
-                ->whereRaw('LOWER(name) = ?', [mb_strtolower($parsed['account_name'])])
-                ->first();
-            $accountId = $account?->id;
-        }
-
-        // Risolvi categoria per nome (se specificata con #)
-        $categoryId = null;
-        if ($parsed['category_name'] !== null) {
-            $category = Category::where('household_id', $user->active_household_id)
-                ->whereRaw('LOWER(name) = ?', [mb_strtolower($parsed['category_name'])])
-                ->first();
-            $categoryId = $category?->id;
-        }
+        // Risolvi conto e categoria per nome
+        [$accountId, $resolvedAccount] = $this->resolveAccountByName($parsed['account_name'], $user);
+        [$categoryId, $resolvedCategory] = $this->resolveCategoryByName($parsed['category_name'], $user);
 
         $item = InboxItem::create([
             'user_id' => $user->id,
@@ -383,13 +369,13 @@ class TelegramWebhookController extends Controller
             $preview = "{$typeEmoji} <b>{$typeLabel}: {$amountFormatted}</b>" . ($description ? " – {$description}" : '');
 
             $extras = [];
-            if ($accountId && isset($account)) {
-                $extras[] = "🏦 {$account->name}";
+            if ($accountId && $resolvedAccount) {
+                $extras[] = "🏦 {$resolvedAccount->name}";
             } elseif ($parsed['account_name'] !== null) {
                 $extras[] = "⚠️ Conto \"{$parsed['account_name']}\" non trovato";
             }
-            if ($categoryId && isset($category)) {
-                $extras[] = "🏷️ {$category->name}";
+            if ($categoryId && $resolvedCategory) {
+                $extras[] = "🏷️ {$resolvedCategory->name}";
             } elseif ($parsed['category_name'] !== null) {
                 $extras[] = "⚠️ Categoria \"{$parsed['category_name']}\" non trovata";
             }
@@ -471,18 +457,8 @@ class TelegramWebhookController extends Controller
         $accountId = null;
         $categoryId = null;
         if ($captionParsed) {
-            if ($captionParsed['account_name']) {
-                $account = Account::where('household_id', $user->active_household_id)
-                    ->whereRaw('LOWER(name) = ?', [mb_strtolower($captionParsed['account_name'])])
-                    ->first();
-                $accountId = $account?->id;
-            }
-            if ($captionParsed['category_name']) {
-                $category = Category::where('household_id', $user->active_household_id)
-                    ->whereRaw('LOWER(name) = ?', [mb_strtolower($captionParsed['category_name'])])
-                    ->first();
-                $categoryId = $category?->id;
-            }
+            [$accountId] = $this->resolveAccountByName($captionParsed['account_name'], $user);
+            [$categoryId] = $this->resolveCategoryByName($captionParsed['category_name'], $user);
         }
 
         // Crea l'elemento in Inbox
@@ -532,6 +508,42 @@ class TelegramWebhookController extends Controller
     // -------------------------------------------------------------------------
     // Utility
     // -------------------------------------------------------------------------
+
+    /**
+     * Risolve un conto per nome nell'household dell'utente.
+     * Restituisce [id|null, Account|null].
+     *
+     * @return array{int|null, \App\Models\Account|null}
+     */
+    private function resolveAccountByName(?string $name, User $user): array
+    {
+        if ($name === null) {
+            return [null, null];
+        }
+        $account = Account::where('household_id', $user->active_household_id)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        return [$account?->id, $account];
+    }
+
+    /**
+     * Risolve una categoria per nome nell'household dell'utente.
+     * Restituisce [id|null, Category|null].
+     *
+     * @return array{int|null, \App\Models\Category|null}
+     */
+    private function resolveCategoryByName(?string $name, User $user): array
+    {
+        if ($name === null) {
+            return [null, null];
+        }
+        $category = Category::where('household_id', $user->active_household_id)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        return [$category?->id, $category];
+    }
 
     /**
      * Parsing avanzato di un messaggio testuale.
