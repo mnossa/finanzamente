@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\HouseholdPermissionService;
 use App\Services\ModuleAccessService;
+use App\Models\AppNotification;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -68,6 +69,21 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'info' => fn () => $request->session()->get('info'),
             ],
+            'notifications' => fn () => $user ? [
+                'unread_count' => AppNotification::where('user_id', $user->id)->where('read', false)->count(),
+                'items' => AppNotification::where('user_id', $user->id)
+                    ->orderByDesc('created_at')
+                    ->limit(10)
+                    ->get()
+                    ->map(fn ($n) => [
+                        'id'      => $n->id,
+                        'title'   => $n->title,
+                        'message' => $n->message,
+                        'read'    => $n->read,
+                        'created_at' => $n->created_at->diffForHumans(),
+                    ])
+                    ->toArray(),
+            ] : ['unread_count' => 0, 'items' => []],
             'googleDrive' => [
                 'clientId' => config('services.google_drive.client_id', ''),
                 'apiKey'   => config('services.google_drive.api_key', ''),

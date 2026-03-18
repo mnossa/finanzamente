@@ -3,9 +3,9 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { ActiveHousehold, PageProps } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent } from 'react';
+import { ActiveHousehold, AppNotification, PageProps } from '@/types';
+import { Link, router, usePage } from '@inertiajs/react';
+import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent, useRef } from 'react';
 import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import axios from 'axios';
@@ -361,12 +361,14 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { auth, activeHousehold } = usePage<PageProps>().props;
+    const { auth, activeHousehold, notifications } = usePage<PageProps>().props;
     const user = auth.user;
     const { isModuleEnabled } = useModules();
     const initialTheme = (user.preferences?.theme as string | undefined) ?? 'light';
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
 
     const handleLogout = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -395,6 +397,18 @@ export default function Authenticated({
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Chiude il pannello notifiche quando si clicca fuori
+    useEffect(() => {
+        if (!notifOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+                setNotifOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [notifOpen]);
 
     const isRouteActive = (routeMatch: string, altRouteMatch?: string): boolean => {
         return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
@@ -535,10 +549,93 @@ export default function Authenticated({
                             </div>
 
                             {/* Notifications */}
-                            <button className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors">
-                                <Icons.Bell />
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-                            </button>
+                            <div className="relative" ref={notifRef}>
+                                <button
+                                    onClick={() => setNotifOpen((prev) => !prev)}
+                                    className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                    aria-label="Notifiche"
+                                >
+                                    <Icons.Bell />
+                                    {notifications.unread_count > 0 && (
+                                        <span className="absolute top-1.5 right-1.5 min-w-[1rem] h-4 px-0.5 flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-slate-800">
+                                            {notifications.unread_count > 9 ? '9+' : notifications.unread_count}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {notifOpen && (
+                                    <div className="absolute right-0 mt-2 w-80 sm:w-96 z-50 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+                                        {/* Intestazione */}
+                                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                                Notifiche
+                                                {notifications.unread_count > 0 && (
+                                                    <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
+                                                        {notifications.unread_count}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            {notifications.unread_count > 0 && (
+                                                <button
+                                                    onClick={() => {
+                                                        router.post(route('notifications.read-all'), {}, { preserveScroll: true });
+                                                        setNotifOpen(false);
+                                                    }}
+                                                    className="text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+                                                >
+                                                    Segna tutte come lette
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Lista notifiche */}
+                                        <ul className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                                            {notifications.items.length === 0 ? (
+                                                <li className="px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+                                                    Nessuna notifica
+                                                </li>
+                                            ) : (
+                                                notifications.items.map((notif) => (
+                                                    <li
+                                                        key={notif.id}
+                                                        className={clsx(
+                                                            'px-4 py-3 flex items-start gap-3 transition-colors',
+                                                            notif.read
+                                                                ? 'bg-white dark:bg-slate-800'
+                                                                : 'bg-emerald-50 dark:bg-emerald-900/10'
+                                                        )}
+                                                    >
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
+                                                                {notif.title}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                                                                {notif.message}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                                                                {notif.created_at}
+                                                            </p>
+                                                        </div>
+                                                        {!notif.read && (
+                                                            <button
+                                                                onClick={() => router.post(
+                                                                    route('notifications.read', { notification: notif.id }),
+                                                                    {},
+                                                                    { preserveScroll: true }
+                                                                )}
+                                                                className="shrink-0 text-[10px] text-emerald-600 hover:underline dark:text-emerald-400 mt-0.5"
+                                                                title="Segna come letta"
+                                                            >
+                                                                Letta
+                                                            </button>
+                                                        )}
+                                                    </li>
+                                                ))
+                                            )}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Theme Toggle */}
                             <ThemeToggle />

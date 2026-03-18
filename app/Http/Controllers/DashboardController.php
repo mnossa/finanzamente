@@ -9,8 +9,10 @@ use App\Models\DebtCredit;
 use App\Models\Investment;
 use App\Models\Transaction;
 use App\Services\AssetClassificationService;
+use App\Services\BudgetNotificationService;
 use App\Services\FinancialMetricsService;
 use App\Services\RevenueNotificationService;
+use App\Services\TransactionTrendNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +109,16 @@ class DashboardController extends Controller
         $endOfLastMonth = Carbon::now()->subMonth()->endOfMonth();
 
         $lastMonthStats = $this->getMonthlyStats($householdId, $user->id, $startOfLastMonth, $endOfLastMonth);
+
+        // Controlla e crea notifiche per budget e trend di spesa/entrate
+        (new BudgetNotificationService())->checkAndNotify($user, $householdId);
+        (new TransactionTrendNotificationService())->checkAndNotify(
+            $user,
+            $monthlyStats,
+            $lastMonthStats,
+            Carbon::now()->translatedFormat('F Y'),
+            Carbon::now()->subMonth()->translatedFormat('F Y')
+        );
 
         // Budget attivi (con spesa calcolata)
         $activeBudgets = Budget::where('household_id', $householdId)
