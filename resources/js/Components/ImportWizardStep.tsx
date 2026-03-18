@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { Fragment } from 'react';
 
 interface Step {
     label: string;
@@ -15,9 +16,9 @@ export default function ImportWizardStep({ steps, className }: ImportWizardStepP
     return (
         <nav aria-label="Fasi dell'importazione" className={clsx('flex items-start', className)}>
             {steps.map((step, index) => (
-                <>
+                <Fragment key={index}>
                     {/* Step bullet + label */}
-                    <div key={`step-${index}`} className="flex flex-shrink-0 flex-col items-center">
+                    <div className="flex flex-shrink-0 flex-col items-center">
                         <div
                             className={clsx(
                                 'flex items-center justify-center rounded-full font-semibold',
@@ -45,7 +46,6 @@ export default function ImportWizardStep({ steps, className }: ImportWizardStepP
                     {/* Linea connettore */}
                     {index < steps.length - 1 && (
                         <div
-                            key={`line-${index}`}
                             className={clsx(
                                 'flex-1 h-0.5 mt-3 sm:mt-4 mx-1 sm:mx-2',
                                 step.completed ? 'bg-blue-600' : 'bg-gray-200',
@@ -53,7 +53,7 @@ export default function ImportWizardStep({ steps, className }: ImportWizardStepP
                             aria-hidden="true"
                         />
                     )}
-                </>
+                </Fragment>
             ))}
         </nav>
     );
