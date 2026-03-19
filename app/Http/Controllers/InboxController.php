@@ -266,7 +266,7 @@ class InboxController extends Controller
         }
 
         $content = Storage::disk('private')->get($inboxItem->image_path);
-        $mimeType = Storage::disk('private')->mimeType($inboxItem->image_path) ?? 'image/jpeg';
+        $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->buffer($content) ?: 'image/jpeg';
 
         return response($content, 200)->header('Content-Type', $mimeType);
     }

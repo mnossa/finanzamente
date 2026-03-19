@@ -574,19 +574,9 @@ class TelegramWebhookController extends Controller
             $text = ltrim(substr($text, 1));
         }
 
-        // Estrai @conto (es. @Corrente, @Banca Intesa)
-        if (preg_match('/@([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
-            $account_name = trim($m[1]);
-            $text = trim(str_replace($m[0], '', $text));
-        }
-
-        // Estrai #categoria (es. #Alimentari, #Spesa Casa)
-        if (preg_match('/#([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
-            $category_name = trim($m[1]);
-            $text = trim(str_replace($m[0], '', $text));
-        }
-
         // Estrai data in formato DD/MM o DD/MM/YYYY (es. 01/03 o 01/03/2026)
+        // Va estratta PRIMA di @conto e #categoria per evitare che la regex greedy
+        // del tag incorpori la data nella stringa del nome (es. "#Cibo 01/03").
         $date = now()->toDateString();
         if (preg_match('/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?\b/', $text, $m)) {
             $day = (int) $m[1];
@@ -599,6 +589,18 @@ class TelegramWebhookController extends Controller
             } catch (\Throwable) {
                 // data non valida, usa oggi
             }
+        }
+
+        // Estrai @conto (es. @Corrente, @Banca Intesa)
+        if (preg_match('/@([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
+            $account_name = trim($m[1]);
+            $text = trim(str_replace($m[0], '', $text));
+        }
+
+        // Estrai #categoria (es. #Alimentari, #Spesa Casa)
+        if (preg_match('/#([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
+            $category_name = trim($m[1]);
+            $text = trim(str_replace($m[0], '', $text));
         }
 
         $text = trim($text);
