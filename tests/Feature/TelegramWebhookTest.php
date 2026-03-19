@@ -59,6 +59,82 @@ class TelegramWebhookTest extends TestCase
     }
 
     #[Test]
+    public function webhook_parses_account_from_at_syntax()
+    {
+        $account = \App\Models\Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'Corrente',
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '15 Pizza @Corrente');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals($account->id, $item->account_id);
+        $this->assertEquals('Pizza', $item->description);
+        $this->assertEquals(15.0, (float) $item->amount);
+    }
+
+    #[Test]
+    public function webhook_parses_category_from_hash_syntax()
+    {
+        $category = \App\Models\Category::factory()->create([
+            'household_id' => $this->household->id,
+            'name' => 'Alimentari',
+            'type' => 'expense',
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '20 Spesa #Alimentari');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals($category->id, $item->category_id);
+        $this->assertEquals('Spesa', $item->description);
+    }
+
+    #[Test]
+    public function webhook_parses_date_from_dd_mm_syntax()
+    {
+        $payload = $this->buildTextPayload('987654321', '10 Caffè 15/03');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $year = now()->year;
+        $this->assertEquals("{$year}-03-15", $item->transaction_date->toDateString());
+    }
+
+    #[Test]
+    public function webhook_parses_combined_extended_syntax()
+    {
+        $account = \App\Models\Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'Corrente',
+        ]);
+        $category = \App\Models\Category::factory()->create([
+            'household_id' => $this->household->id,
+            'name' => 'Cibo',
+            'type' => 'expense',
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '15 Pizza @Corrente #Cibo 01/03');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals(15.0, (float) $item->amount);
+        $this->assertEquals('Pizza', $item->description);
+        $this->assertEquals($account->id, $item->account_id);
+        $this->assertEquals($category->id, $item->category_id);
+        $year = now()->year;
+        $this->assertEquals("{$year}-03-01", $item->transaction_date->toDateString());
+    }
+
+    #[Test]
     public function webhook_creates_draft_inbox_item_for_unknown_amount()
     {
         $payload = $this->buildTextPayload('987654321', 'Qualcosa da comprare');
