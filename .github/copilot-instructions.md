@@ -21,7 +21,7 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 **Migrazioni**: Le tabelle verranno create tramite le migration di Laravel, seguendo le best practice del framework.
 
 ## Frontend
-- **Responsività**: Utilizzare framework CSS (es. Tailwind, Bootstrap) o soluzioni custom per garantire responsività.
+- **Responsività**: Utilizzare prevalentemente il framework CSS Tailwind per garantire responsività. Solo in rarissime eccezioni, e con motivazione valida, si potrà utilizzare CSS custom.
 - **Componenti**: Sviluppare componenti riutilizzabili per UI comuni (bottoni, card, modali, ecc.).
 - **Animazioni**: Implementare animazioni leggere e non invasive.
 - **Accessibilità**: Rispettare le linee guida WCAG 2.1 (dettagli in *Specifiche Avanzate*).
