@@ -152,8 +152,12 @@ merge-staging-to-main:
 	git pull --ff-only origin staging && \
 	git checkout main && \
 	git pull --ff-only origin main && \
-	echo "[+] Merge di staging in main" && \
-	git merge --no-ff staging && \
+	merge_msg=$$(git log main..staging --no-merges --format=%s -1); \
+	if [ -z "$$merge_msg" ]; then \
+		merge_msg="Merge staging into main"; \
+	fi; \
+	echo "[+] Merge di staging in main: $$merge_msg" && \
+	git merge --no-ff -m "$$merge_msg" staging && \
 	git push origin main
 
 # Rebase di staging sull'ultimo main remoto
