@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -155,6 +155,17 @@ merge-staging-to-main:
 	echo "[+] Merge di staging in main" && \
 	git merge --no-ff staging && \
 	git push origin main
+
+# Rebase di staging sull'ultimo main remoto
+rebase-staging-from-main:
+	@git fetch origin && \
+	git checkout main && \
+	git pull --ff-only origin main && \
+	git checkout staging && \
+	git pull --ff-only origin staging && \
+	echo "[+] Rebase di staging su main" && \
+	git rebase main && \
+	git push --force-with-lease origin staging
 
 
 
