@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
@@ -113,8 +114,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
         >
             <Head title={`${debtCredit.type_label} - ${debtCredit.counterparty}`} />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     {/* Card riepilogo */}
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
@@ -332,8 +332,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             </div>
                         )}
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

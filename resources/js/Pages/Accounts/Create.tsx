@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -50,8 +51,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency }: Cr
         >
             <Head title="Nuovo Conto" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     <CardBox>
                         <form onSubmit={submit} className="space-y-6">
                             {/* Nome */}
@@ -174,8 +174,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency }: Cr
                             </div>
                         </form>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

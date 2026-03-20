@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import EmptyState from '@/Components/EmptyState';
@@ -302,7 +303,7 @@ export default function AssetAllocationIndex({
                 <PositionModal position={selectedPosition} onClose={() => setSelectedPosition(null)} />
             )}
 
-            <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
+            <PageContent>
 
                 {isEmpty ? (
                     <CardBox>
@@ -456,7 +457,7 @@ export default function AssetAllocationIndex({
                         </div>
                     </>
                 )}
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

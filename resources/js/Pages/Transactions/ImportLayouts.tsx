@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import ColumnMapper from '@/Components/ColumnMapper';
 import EmptyState from '@/Components/EmptyState';
 import InputLabel from '@/Components/InputLabel';
@@ -175,7 +176,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                 onCancel={() => setDeleteDialogOpen(false)}
             />
 
-            <div className="py-4 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+            <PageContent maxWidth="4xl">
                 {layouts.length === 0 ? (
                     <EmptyState
                         icon="📄"
@@ -373,7 +374,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

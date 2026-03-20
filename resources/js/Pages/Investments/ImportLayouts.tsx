@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import EmptyState from '@/Components/EmptyState';
 import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
@@ -56,8 +57,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
         <AuthenticatedLayout>
             <Head title="Layout Import Investimenti" />
 
-            <div className="py-6">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="4xl">
                     <PageHeader
                         title="Layout Import Investimenti"
                         subtitle="Gestisci le configurazioni salvate per l'importazione CSV degli investimenti."
@@ -120,8 +120,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                             ))}
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContent>
 
             <ConfirmDeleteDialog
                 open={deleteDialogOpen}

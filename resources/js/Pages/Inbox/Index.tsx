@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import EmptyState from '@/Components/EmptyState';
@@ -602,7 +603,7 @@ export default function InboxIndex({ items, accounts, categories, pendingCount }
         >
             <Head title="Inbox" />
 
-            <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-4">
+            <PageContent>
 
                 {/* Banner se ci sono voci da verificare, con azioni bulk */}
                 {pendingCount > 0 && (
@@ -670,7 +671,7 @@ export default function InboxIndex({ items, accounts, categories, pendingCount }
                         data={items}
                     />
                 )}
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

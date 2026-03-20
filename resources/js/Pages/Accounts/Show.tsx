@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -108,8 +109,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
         >
             <Head title={account.name} />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="5xl">
                     {/* Riepilogo */}
                     <div className="grid gap-4 sm:grid-cols-3">
                         <CardBox className="p-4 shadow-sm">
@@ -161,8 +161,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                             )}
                         </div>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import CategoryPicker from '@/Components/CategoryPicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -102,8 +103,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
         >
             <Head title="Nuova Transazione" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     <CardBox>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">
@@ -423,8 +423,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
                             </form>
                         )}
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

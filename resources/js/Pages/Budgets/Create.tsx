@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -88,8 +89,7 @@ export default function Create({ categories, currencies }: CreateProps) {
         >
             <Head title="Nuovo Budget" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     <CardBox className="overflow-hidden shadow-sm">
                         <form onSubmit={submit} className="p-6">
                             <div className="space-y-6">
@@ -269,8 +269,7 @@ export default function Create({ categories, currencies }: CreateProps) {
                             </div>
                         </form>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

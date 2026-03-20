@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -9,7 +10,6 @@ import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
 import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
 import TradingViewEconomicCalendar from '@/Components/TradingViewEconomicCalendar';
-import PortfolioChart, { PortfolioItem } from '@/Components/Charts/PortfolioChart';
 
 interface Currency {
     code: string;
@@ -80,7 +80,6 @@ interface IndexProps {
     stats: Stats;
     assetTypes: AssetTypes;
     assetTypeIcons: AssetTypeIcons;
-    portfolioData: PortfolioItem[];
 }
 
 // function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -116,68 +115,68 @@ function InvestmentCard({ investment }: { investment: Investment }) {
                 href={route('investments.show', investment.id)}
                 className="block"
             >
-            <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl dark:bg-gray-700">
-                        {investment.asset.type_icon}
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {investment.asset.name}
-                            {investment.asset.symbol && (
-                                <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                                    ({investment.asset.symbol})
-                                </span>
-                            )}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                            <span>{formatNumber(investment.quantity)} unità</span>
-                            {investment.is_private && <span>🔒</span>}
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl dark:bg-gray-700">
+                            {investment.asset.type_icon}
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                                {investment.asset.name}
+                                {investment.asset.symbol && (
+                                    <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">
+                                        ({investment.asset.symbol})
+                                    </span>
+                                )}
+                            </h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <span>{formatNumber(investment.quantity)} unità</span>
+                                {investment.is_private && <span>🔒</span>}
+                            </div>
                         </div>
                     </div>
+                    {investment.is_sold && (
+                        <ProfitBadge profit={investment.net_profit} percentage={investment.profit_percentage} />
+                    )}
                 </div>
-                {investment.is_sold && (
-                    <ProfitBadge profit={investment.net_profit} percentage={investment.profit_percentage} />
-                )}
-            </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Acquisto</p>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(investment.total_buy_value, investment.asset.currency.code)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(investment.buy_date)}
-                    </p>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Acquisto</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                            {formatCurrency(investment.total_buy_value, investment.asset.currency.code)}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatDate(investment.buy_date)}
+                        </p>
+                    </div>
+                    {investment.is_sold ? (
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Vendita</p>
+                            <p className={clsx(
+                                'font-medium',
+                                investment.net_profit !== null && investment.net_profit >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                            )}>
+                                {formatCurrency(investment.total_sell_value!, investment.asset.currency.code)}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatDate(investment.sell_date!)}
+                            </p>
+                        </div>
+                    ) : (
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Stato</p>
+                            <p className="font-medium text-blue-600">
+                                🟢 Aperto
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                @ {formatCurrency(investment.buy_price, investment.asset.currency.code)}/u
+                            </p>
+                        </div>
+                    )}
                 </div>
-                {investment.is_sold ? (
-                    <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Vendita</p>
-                        <p className={clsx(
-                            'font-medium',
-                            investment.net_profit !== null && investment.net_profit >= 0
-                                ? 'text-green-600'
-                                : 'text-red-600'
-                        )}>
-                            {formatCurrency(investment.total_sell_value!, investment.asset.currency.code)}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(investment.sell_date!)}
-                        </p>
-                    </div>
-                ) : (
-                    <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Stato</p>
-                        <p className="font-medium text-blue-600">
-                            🟢 Aperto
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            @ {formatCurrency(investment.buy_price, investment.asset.currency.code)}/u
-                        </p>
-                    </div>
-                )}
-            </div>
             </Link>
         </CardBox>
     );
@@ -190,7 +189,6 @@ export default function Index({
     stats,
     assetTypes,
     assetTypeIcons,
-    portfolioData,
 }: IndexProps) {
     return (
         <AuthenticatedLayout
@@ -215,8 +213,7 @@ export default function Index({
         >
             <Head title="Investimenti" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
 
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -258,23 +255,6 @@ export default function Index({
                         </CardBox>
                     </div>
 
-                    {/* Widget Mercati */}
-                    <div className="grid gap-6 lg:grid-cols-2">
-                        <TradingViewMarketOverview />
-                        <TradingViewEconomicCalendar />
-                    </div>
-
-                    {/* Allocazione Portafoglio */}
-                    {portfolioData.length > 0 && (
-                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                            <div className="border-b border-gray-100 p-4 dark:border-gray-700">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">🍧 Allocazione Portafoglio</h3>
-                            </div>
-                            <div className="p-4">
-                                <PortfolioChart data={portfolioData} />
-                            </div>
-                        </div>
-                    )}
 
                     {/* Investimenti Aperti */}
                     {openInvestments.length > 0 && (
@@ -329,8 +309,14 @@ export default function Index({
                             </EmptyState>
                         </CardBox>
                     )}
-                </div>
-            </div>
+
+                    {/* Widget Mercati */}
+                    <div className="grid gap-6 lg:grid-cols-2">
+                        <TradingViewMarketOverview />
+                        <TradingViewEconomicCalendar />
+                    </div>
+
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

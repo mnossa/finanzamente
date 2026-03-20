@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
@@ -49,7 +50,7 @@ export default function Edit({ currentSettings }: Props) {
         <AuthenticatedLayout>
             <Head title="Modifica Impostazioni Profilo" />
 
-            <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+            <PageContent>
                 <div className="mb-6">
                     <Link
                         href={route('profile.edit')}
@@ -172,6 +173,7 @@ export default function Edit({ currentSettings }: Props) {
                                     <button
                                         type="button"
                                         onClick={() => setData('revenue_tracking_enabled', !data.revenue_tracking_enabled)}
+                                        aria-label='Abilita o disabilita il monitoraggio del fatturato'
                                         className={clsx(
                                             'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
                                             data.revenue_tracking_enabled
@@ -480,7 +482,7 @@ export default function Edit({ currentSettings }: Props) {
                         </div>
                     </form>
                 </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import { Head, Link, router } from '@inertiajs/react';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
@@ -189,8 +190,7 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
         }>
             <Head title="Lifestyle Inflation Score" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
 
                     {/* ── Score + metriche ────────────────────────────────────────────────── */}
                     <div className="grid gap-6 lg:grid-cols-3">
@@ -608,8 +608,7 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                         </div>
                     </CardBox>
 
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

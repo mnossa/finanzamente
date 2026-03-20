@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -234,8 +235,7 @@ export default function Show({ investment }: ShowProps) {
         >
             <Head title={`${investment.asset.name} - Investimento`} />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="4xl">
                     {/* Stato e Azioni */}
                     <CardBox className="overflow-hidden shadow-sm">
                         <div className="p-6">
@@ -504,8 +504,7 @@ export default function Show({ investment }: ShowProps) {
                             </div>
                         </div>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
 
             {/* Sell Modal */}
             {showSellModal && (

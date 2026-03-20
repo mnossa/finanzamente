@@ -94,7 +94,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Portfolio e Asset Allocation</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Traccia ETF, azioni, criptovalute e obbligazioni. Visualizza la tua asset allocation con indice di rischio KIID (scala 1–7) per capire quanto sei esposto.
+                        Traccia ETF, azioni, criptovalute e obbligazioni. Visualizza la tua asset allocation con indice di rischio (scala 1–7) per capire quanto sei esposto.
                     </p>
                 </div>
 
@@ -221,7 +221,7 @@
                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                                 </svg>
                             </div>
-                            <p class="text-sm sm:text-base text-surface-700">Indice di rischio sintetico stile KIID (scala 1–7) calcolato sulla composizione reale del tuo patrimonio</p>
+                            <p class="text-sm sm:text-base text-surface-700">Indice di rischio sintetico (scala 1–7) calcolato sulla composizione reale del tuo patrimonio</p>
                         </div>
                         <div class="flex items-start gap-3">
                             <div class="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
@@ -293,7 +293,7 @@
                             <p class="text-xl font-bold text-surface-900">€ 42.350,00</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xs text-surface-500 mb-1">Rischio KIID</p>
+                            <p class="text-xs text-surface-500 mb-1">Rischio</p>
                             <span class="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">4 / 7 — Moderato</span>
                         </div>
                     </div>
@@ -418,11 +418,11 @@
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Transazioni illimitate</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Conti e portafogli multipli</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Budget per categoria</li>
-                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Investimenti e Asset Allocation KIID</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Investimenti e Asset Allocation</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Debiti, crediti e trasferimenti</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Transazioni ricorrenti</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Detrazioni fiscali 730</li>
-                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Finanze condivise (household)</li>
+                        <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> 1 Household</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Import da banca via CSV</li>
                         <li class="flex items-center gap-2"><span class="text-primary-500 font-bold">✓</span> Sessione rapida di inserimento</li>
                     </ul>
@@ -449,7 +449,8 @@
                         <li class="flex items-center gap-2"><span class="font-bold">✦</span> Obiettivi finanziari con proiezioni</li>
                         <li class="flex items-center gap-2"><span class="font-bold">✦</span> Notifiche intelligenti e avvisi budget</li>
                         <li class="flex items-center gap-2"><span class="font-bold">✦</span> Export dati avanzato (PDF, Excel)</li>
-                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Integrazione con servizi esterni</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> Multi Households</li>
+                        <li class="flex items-center gap-2"><span class="font-bold">✦</span> BOT Telegram</li>
                     </ul>
                     <button disabled class="block w-full text-center py-3 px-6 bg-surface-200 text-surface-400 font-semibold rounded-xl cursor-not-allowed">
                         Coming soon

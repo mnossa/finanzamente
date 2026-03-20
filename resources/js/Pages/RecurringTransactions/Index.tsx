@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -235,8 +236,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                 onCancel={handleCancelDelete}
             />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     {/* Riepilogo frequenze */}
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         {Object.entries(frequencies).map(([key, label]) => {
@@ -304,8 +304,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                             </div>
                         </CardBox>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

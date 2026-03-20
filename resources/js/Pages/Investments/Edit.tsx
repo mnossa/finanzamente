@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -118,8 +119,7 @@ export default function Edit({ investment, accounts, assets, assetTypes }: EditP
         >
             <Head title="Modifica Investimento" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     <form onSubmit={submit}>
                         <CardBox className="overflow-hidden shadow-sm">
                             <div className="p-6">
@@ -360,8 +360,7 @@ export default function Edit({ investment, accounts, assets, assetTypes }: EditP
                             </div>
                         </CardBox>
                     </form>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

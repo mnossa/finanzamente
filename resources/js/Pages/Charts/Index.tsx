@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
 import BudgetProgress, { BudgetItem } from '@/Components/Charts/BudgetProgress';
@@ -42,7 +43,7 @@ export default function ChartsIndex({
         <AuthenticatedLayout header={<PageHeader title="Grafici & Analisi" />}>
             <Head title="Grafici & Analisi" />
 
-            <div className="space-y-6">
+            <PageContent>
                 {/* Filtro periodo */}
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -85,7 +86,7 @@ export default function ChartsIndex({
                     <BudgetProgress budgets={activeBudgets} className="min-w-0" />
                     <ExpenseTreemap data={expenseCategories} className="min-w-0" />
                 </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

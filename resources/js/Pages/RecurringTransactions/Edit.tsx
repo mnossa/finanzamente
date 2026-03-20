@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import CategoryPicker from '@/Components/CategoryPicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -92,8 +93,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
         >
             <Head title="Modifica Transazione Ricorrente" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <form onSubmit={submit} className="space-y-6">
                             {/* Conto */}
@@ -266,8 +266,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                             </div>
                         </form>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

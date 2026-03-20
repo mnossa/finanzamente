@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -138,8 +139,7 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
         >
             <Head title="Nuovo Trasferimento tra Households" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     <CardBox>
                         {sourceAccounts.length === 0 ? (
                             <div className="py-8 text-center">
@@ -428,8 +428,7 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
                             </form>
                         )}
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

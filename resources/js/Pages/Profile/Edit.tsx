@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import { PageProps } from '@/types';
 import { Head } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
@@ -17,8 +18,7 @@ export default function Edit({
         >
             <Head title="Profilo" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+            <PageContent>
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
@@ -38,8 +38,7 @@ export default function Edit({
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
                         <DeleteUserForm className="max-w-xl" />
                     </div>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

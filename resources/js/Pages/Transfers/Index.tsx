@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
@@ -168,8 +169,7 @@ export default function Index({ transfers }: IndexProps) {
                 variant="warning"
             />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     <CardBox className="overflow-hidden shadow-sm">
                         {transfers.data.length > 0 ? (
                             <>
@@ -190,8 +190,7 @@ export default function Index({ transfers }: IndexProps) {
                             />
                         )}
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
@@ -157,8 +158,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
         >
             <Head title="Obiettivi Finanziari" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <CardBox className="p-4 shadow-sm">
@@ -252,8 +252,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             />
                         </CardBox>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }
