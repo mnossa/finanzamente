@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import ColumnMapper from '@/Components/ColumnMapper';
 import GoogleDrivePicker, { type DriveFile } from '@/Components/GoogleDrivePicker';
 import ImportWizardStep from '@/Components/ImportWizardStep';
@@ -562,7 +563,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         >
             <Head title="Importa Transazioni" />
 
-            <div className="py-2 px-3 sm:py-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+            <PageContent maxWidth="4xl">
                 <ImportWizardStep steps={steps} className="mb-3 sm:mb-6" />
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
@@ -1198,7 +1199,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         </div>
                     </div>
                 </div>
-            </div>
+            </PageContent>
 
             {/* Modal risoluzione duplicati */}
             {showDuplicateModal && (

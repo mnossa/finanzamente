@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import { Head, useForm } from '@inertiajs/react';
@@ -63,7 +64,7 @@ export default function TelegramLink({ linked, token, tokenExpiresAt, botUsernam
         >
             <Head title="Collegamento Telegram" />
 
-            <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-xl mx-auto space-y-6">
+            <PageContent maxWidth="xl">
 
                 {/* Stato collegamento */}
                 <CardBox>
@@ -183,7 +184,7 @@ export default function TelegramLink({ linked, token, tokenExpiresAt, botUsernam
                         </li>
                     </ul>
                 </CardBox>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

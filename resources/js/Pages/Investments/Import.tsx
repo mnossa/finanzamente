@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import GoogleDrivePicker, { type DriveFile } from '@/Components/GoogleDrivePicker';
 import ImportWizardStep from '@/Components/ImportWizardStep';
 import InvestmentColumnMapper, { InvestmentColumnMapping } from '@/Components/InvestmentColumnMapper';
@@ -424,8 +425,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
         <AuthenticatedLayout>
             <Head title="Importa Investimenti" />
 
-            <div className="py-6">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="4xl">
                     <PageHeader
                         title="Importa Investimenti da CSV"
                         subtitle="Carica un file CSV o XLSX per importare i tuoi investimenti in blocco."
@@ -1060,8 +1060,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

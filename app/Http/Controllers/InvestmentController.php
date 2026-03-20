@@ -94,7 +94,6 @@ class InvestmentController extends Controller
             'stats' => $stats,
             'assetTypes' => InvestmentAsset::TYPES,
             'assetTypeIcons' => InvestmentAsset::TYPE_ICONS,
-            'portfolioData' => $this->getPortfolioData($householdId, $user->id),
         ]);
     }
 
@@ -373,36 +372,4 @@ class InvestmentController extends Controller
         }
     }
 
-    /**
-     * Calcola l'allocazione del portafoglio per tipologia di asset.
-     * Usato dalla pagina Investimenti per il grafico a torta.
-     */
-    private function getPortfolioData(int $householdId, int $userId): array
-    {
-        $investments = Investment::with('asset')
-            ->where('household_id', $householdId)
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
-            ->whereNull('sell_date')
-            ->get();
-
-        if ($investments->isEmpty()) {
-            return [];
-        }
-
-        $typeLabels = InvestmentAsset::TYPES;
-        $totalValue = $investments->sum(fn($inv) => (float) $inv->quantity * (float) $inv->buy_price);
-
-        return $investments
-            ->groupBy(fn($inv) => $inv->asset?->type ?? array_key_last(InvestmentAsset::TYPES))
-            ->map(function ($group, $type) use ($typeLabels, $totalValue) {
-                $value = $group->sum(fn($inv) => (float) $inv->quantity * (float) $inv->buy_price);
-                return [
-                    'name'       => $typeLabels[$type] ?? ucfirst($type),
-                    'value'      => round($value, 2),
-                    'percentage' => $totalValue > 0 ? round(($value / $totalValue) * 100, 1) : 0,
-                ];
-            })
-            ->values()
-            ->toArray();
-    }
 }

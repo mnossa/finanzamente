@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
@@ -206,8 +207,7 @@ export default function Index({ refunds }: IndexProps) {
                 onCancel={handleCancelDelete}
             />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     {/* Info Box */}
                     <div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
                         <div className="flex">
@@ -246,8 +246,7 @@ export default function Index({ refunds }: IndexProps) {
                             />
                         )}
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

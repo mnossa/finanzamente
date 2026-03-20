@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import clsx from 'clsx';
@@ -1041,7 +1042,7 @@ export default function SimulationsIndex({ presetScenarios, historicalData, cris
         <AuthenticatedLayout header={<PageHeader title="Simulazioni Finanziarie" />}>
             <Head title="Simulazioni Finanziarie" />
 
-            <div className="space-y-6">
+            <PageContent>
                 {/* Intro */}
                 <CardBox>
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -1100,7 +1101,7 @@ export default function SimulationsIndex({ presetScenarios, historicalData, cris
                 <p className="text-center text-xs text-gray-400 dark:text-gray-600">
                     ⚠️ Le simulazioni sono a scopo educativo. Non costituiscono consulenza finanziaria. I rendimenti passati non garantiscono quelli futuri.
                 </p>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

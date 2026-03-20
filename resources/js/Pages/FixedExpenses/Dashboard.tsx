@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, usePage, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import {
     ChartBarIcon,
     UserGroupIcon,
@@ -159,8 +160,7 @@ export default function Dashboard({
             >
                 <Head title={`Contributi Spese Fisse - ${household.name}`} />
 
-                <div className="py-12">
-                    <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <PageContent>
                         <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                             <div className="p-6 text-center">
                                 <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-500 mb-4" />
@@ -176,8 +176,7 @@ export default function Dashboard({
                                 </Link>
                             </div>
                         </div>
-                    </div>
-                </div>
+                </PageContent>
             </AuthenticatedLayout>
         );
     }
@@ -207,8 +206,7 @@ export default function Dashboard({
         >
             <Head title={`Contributi Spese Fisse - ${household.name}`} />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-8">
+            <PageContent>
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -467,8 +465,7 @@ export default function Dashboard({
                         </Link>
                     </div>
 
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

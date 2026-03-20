@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import { Head, Link } from '@inertiajs/react';
 import CardBox from '@/Components/CardBox';
@@ -63,8 +64,7 @@ export default function Show({ transfer }: ShowProps) {
         >
             <Head title="Dettagli Trasferimento" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     {/* Card Principale */}
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="mb-6 flex items-center justify-center">
@@ -180,8 +180,7 @@ export default function Show({ transfer }: ShowProps) {
                             </div>
                         </CardBox>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

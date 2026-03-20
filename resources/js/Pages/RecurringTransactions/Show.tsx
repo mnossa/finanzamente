@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -148,8 +149,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                 onCancel={() => setGenerateDialogOpen(false)}
             />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     {/* Card principale */}
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
@@ -296,8 +296,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                             <TrashIcon size={18} /> Elimina
                         </button>
                     </div>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import EmptyState from '@/Components/EmptyState';
 import { Head, router } from '@inertiajs/react';
@@ -811,7 +812,7 @@ export default function Index({ analyses }: IndexProps) {
         >
             <Head title="Analisi Investimenti" />
 
-            <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                 {analyses.length === 0 ? (
                     <EmptyState
                         icon="📊"
@@ -833,7 +834,7 @@ export default function Index({ analyses }: IndexProps) {
                         ))}
                     </div>
                 )}
-            </div>
+            </PageContent>
 
             {showWizard && <AnalysisWizard onClose={() => setShowWizard(false)} />}
         </AuthenticatedLayout>

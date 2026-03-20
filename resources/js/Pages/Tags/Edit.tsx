@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -60,8 +61,7 @@ export default function Edit({ tag }: EditProps) {
         >
             <Head title="Modifica Tag" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     <CardBox className="overflow-hidden shadow-sm">
                         <form onSubmit={submit} className="p-6">
                             <div className="space-y-6">
@@ -90,6 +90,7 @@ export default function Edit({ tag }: EditProps) {
                                                 key={color}
                                                 type="button"
                                                 onClick={() => setData('color', color)}
+                                                aria-label={`Seleziona il colore ${color}`}
                                                 className={clsx(
                                                     'h-8 w-8 rounded-full transition-transform hover:scale-110',
                                                     data.color === color &&
@@ -146,8 +147,7 @@ export default function Edit({ tag }: EditProps) {
                             </div>
                         </form>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

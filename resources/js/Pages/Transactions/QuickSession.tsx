@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -314,7 +315,7 @@ export default function QuickSession({ accounts, categories, sessionTransactions
         >
             <Head title="Sessione Rapida" />
 
-            <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto space-y-6">
+            <PageContent>
 
                 {/* Istruzione */}
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
@@ -404,7 +405,7 @@ export default function QuickSession({ accounts, categories, sessionTransactions
                         Le transazioni inserite in questa sessione appariranno qui
                     </div>
                 )}
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

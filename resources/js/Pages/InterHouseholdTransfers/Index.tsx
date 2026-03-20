@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
 import PageHeader from '@/Components/PageHeader';
@@ -206,8 +207,7 @@ export default function Index({ transfers, filters }: IndexProps) {
         >
             <Head title="Trasferimenti tra Households" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+            <PageContent>
                     {/* Filtri */}
                     <div className="mb-6 overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
                         <div className="p-6">
@@ -296,8 +296,7 @@ export default function Index({ transfers, filters }: IndexProps) {
                             )}
                         </div>
                     </div>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

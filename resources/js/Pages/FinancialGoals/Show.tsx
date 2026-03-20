@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -217,8 +218,7 @@ export default function Show({ goal, statuses }: ShowProps) {
         >
             <Head title={goal.name} />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="4xl">
                     {/* Progress Card */}
                     <CardBox className="overflow-hidden shadow-sm">
                         <div className="p-6 sm:p-8">
@@ -440,8 +440,7 @@ export default function Show({ goal, statuses }: ShowProps) {
                             </div>
                         </div>
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
 
             {/* Contribute Modal */}
             {showContributeModal && (

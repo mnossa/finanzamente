@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
@@ -129,8 +130,7 @@ export default function Show({ transaction }: ShowProps) {
                 onCancel={() => setDeleteDialogOpen(false)}
             />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-2xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="2xl">
                     {/* Banner trasferimento */}
                     {isTransfer && (
                         <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
@@ -437,8 +437,7 @@ export default function Show({ transaction }: ShowProps) {
                             <TrashIcon size={18} /> Elimina
                         </button>
                     </div>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import { Head, Link, router } from '@inertiajs/react';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
@@ -110,8 +111,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
         >
             <Head title="Detrazioni Fiscali" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     {/* Header con filtri ed export */}
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         {/* Filtro anno */}
@@ -316,8 +316,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                             </Link>
                         </CardBox>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

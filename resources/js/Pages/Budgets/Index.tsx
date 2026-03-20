@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -190,8 +191,7 @@ export default function Index({ budgets }: IndexProps) {
                 onCancel={handleCancelDelete}
             />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent>
                     {budgets.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -280,8 +280,7 @@ export default function Index({ budgets }: IndexProps) {
                             )}
                         </>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

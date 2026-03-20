@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -66,8 +67,7 @@ export default function Show({ budget, transactions }: ShowProps) {
         >
             <Head title={`Budget - ${budget.category.name}`} />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-4xl space-y-6 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="4xl">
                     {/* Card principale */}
                     <CardBox>
                         <div className="mb-6 text-center">
@@ -203,8 +203,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                             </div>
                         )}
                     </CardBox>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

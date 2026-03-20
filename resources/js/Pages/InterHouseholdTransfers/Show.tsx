@@ -1,5 +1,6 @@
 import PageHeader from '@/Components/PageHeader';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -124,8 +125,7 @@ export default function Show({ transfer }: ShowProps) {
         >
             <Head title="Dettagli Trasferimento" />
 
-            <div className="py-6">
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="4xl">
                     <div className="space-y-6">
                         {/* Informazioni principali */}
                         <CardBox>
@@ -271,8 +271,7 @@ export default function Show({ transfer }: ShowProps) {
                             </Link>
                         </div>
                     </div>
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

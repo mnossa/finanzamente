@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageContent from '@/Components/PageContent';
 import { Household, HouseholdMember, PageProps } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
@@ -146,8 +147,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
         >
             <Head title={`Household: ${household.name}`} />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+            <PageContent>
                     {/* Informazioni Household */}
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
                         <section className="max-w-xl">
@@ -659,8 +659,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                             </div>
                         </section>
                     </div>
-                </div>
-            </div>
+            </PageContent>
 
             {/* Modal Invito */}
             <Modal show={showInviteModal} onClose={() => setShowInviteModal(false)}>
