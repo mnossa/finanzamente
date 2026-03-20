@@ -103,6 +103,30 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         requiresModule: 'investments',
         allowedSizes: ALL_SIZES,
     },
+    {
+        id: 'net_worth',
+        title: 'Patrimonio nel Tempo',
+        description: 'Andamento del patrimonio netto negli ultimi 12 mesi.',
+        defaultSize: 'md',
+        defaultVisible: true,
+        allowedSizes: ALL_SIZES,
+    },
+    {
+        id: 'cash_flow',
+        title: 'Panoramica Cashflow',
+        description: 'Entrate, uscite e risparmio mensile degli ultimi 12 mesi.',
+        defaultSize: 'md',
+        defaultVisible: true,
+        allowedSizes: ALL_SIZES,
+    },
+    {
+        id: 'expense_treemap',
+        title: 'Spese per Categoria',
+        description: 'Distribuzione delle uscite per categoria nel mese corrente.',
+        defaultSize: 'md',
+        defaultVisible: true,
+        allowedSizes: ALL_SIZES,
+    },
 ];
 
 /** Mappa per accesso rapido al widget per ID. */

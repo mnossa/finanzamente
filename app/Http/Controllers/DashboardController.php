@@ -202,6 +202,9 @@ class DashboardController extends Controller
             'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
             'dashboardLayout' => $this->getDashboardLayout($user),
             'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
+            'netWorthData' => $this->getNetWorthData($householdId, $user->id),
+            'cashFlowData' => $this->getCashFlowData($householdId, $user->id),
+            'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
         ]);
     }
 
@@ -456,6 +459,8 @@ class DashboardController extends Controller
     /**
      * Recupera la configurazione layout della dashboard per l'utente corrente.
      * Se non esiste una configurazione salvata, restituisce quella di default.
+     * I widget nuovi (non presenti nel layout salvato) vengono aggiunti in coda
+     * in modo che gli utenti esistenti vedano i nuovi widget automaticamente.
      */
     private function getDashboardLayout(\App\Models\User $user): array
     {
@@ -463,7 +468,26 @@ class DashboardController extends Controller
             ->where('household_id', $user->active_household_id)
             ->first();
 
-        return $layout ? $layout->config : DashboardLayout::defaultConfig();
+        if (! $layout) {
+            return DashboardLayout::defaultConfig();
+        }
+
+        $savedConfig  = $layout->config;
+        $defaultWidgets = DashboardLayout::defaultConfig()['widgets'];
+
+        // Ricava gli ID già presenti nel layout salvato
+        $existingIds = array_column($savedConfig['widgets'] ?? [], 'id');
+        $maxPosition = empty($savedConfig['widgets']) ? -1 : max(array_column($savedConfig['widgets'], 'position'));
+
+        // Aggiungi in coda i widget del default che non sono ancora presenti
+        foreach ($defaultWidgets as $defaultWidget) {
+            if (! in_array($defaultWidget['id'], $existingIds, true)) {
+                $maxPosition++;
+                $savedConfig['widgets'][] = array_merge($defaultWidget, ['position' => $maxPosition]);
+            }
+        }
+
+        return $savedConfig;
     }
 
     /**
@@ -547,5 +571,126 @@ class DashboardController extends Controller
             'risk_label'  => AssetClassificationService::getRiskLabel($riskIndex),
             'allocation'  => $allocation,
         ];
+    }
+
+    /**
+     * Andamento mensile del patrimonio netto negli ultimi 12 mesi.
+     * Usato dal widget "Patrimonio nel Tempo" della dashboard.
+     */
+    private function getNetWorthData(int $householdId, int $userId): array
+    {
+        $startDate = Carbon::now()->subYear()->startOfMonth();
+        $endDate   = Carbon::now()->endOfDay();
+
+        $accounts = Account::where('household_id', $householdId)
+            ->where('active', true)
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('owner_user_id', $userId))
+            ->get();
+
+        if ($accounts->isEmpty()) {
+            return [];
+        }
+
+        $initialBalance = $accounts->sum(fn($a) => (float) $a->initial_balance);
+
+        $balanceBeforePeriod = (float) Transaction::whereHas('account', fn($q) => $q->where('household_id', $householdId))
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+            ->where('date', '<', $startDate)
+            ->sum('amount');
+
+        $runningBalance = $initialBalance + $balanceBeforePeriod;
+
+        $isSqlite = DB::getDriverName() === 'sqlite';
+        $yearExpr  = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
+        $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
+
+        $monthlyTransactions = Transaction::whereHas('account', fn($q) => $q->where('household_id', $householdId))
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(amount) as net")
+            ->groupByRaw("{$yearExpr}, {$monthExpr}")
+            ->orderByRaw("{$yearExpr}, {$monthExpr}")
+            ->get()
+            ->keyBy(fn($r) => "{$r->year}-{$r->month}");
+
+        $result  = [];
+        $current = $startDate->copy()->startOfMonth();
+
+        while ($current->lte($endDate)) {
+            $key = $current->year . '-' . $current->month;
+            if (isset($monthlyTransactions[$key])) {
+                $runningBalance += (float) $monthlyTransactions[$key]->net;
+            }
+            $result[] = [
+                'month'            => $current->translatedFormat('M Y'),
+                'Patrimonio Netto' => round($runningBalance, 2),
+            ];
+            $current->addMonth();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Cashflow mensile (entrate / uscite / risparmio) degli ultimi 12 mesi.
+     * Usato dal widget "Panoramica Cashflow" della dashboard.
+     */
+    private function getCashFlowData(int $householdId, int $userId): array
+    {
+        $startDate = Carbon::now()->subYear()->startOfMonth();
+        $endDate   = Carbon::now()->endOfDay();
+
+        $isSqlite  = DB::getDriverName() === 'sqlite';
+        $yearExpr  = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
+        $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
+
+        $transactions = Transaction::whereHas('account', fn($q) => $q->where('household_id', $householdId))
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+            ->whereBetween('date', [$startDate, $endDate])
+            ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income, SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expenses")
+            ->groupByRaw("{$yearExpr}, {$monthExpr}")
+            ->orderByRaw("{$yearExpr}, {$monthExpr}")
+            ->get();
+
+        return $transactions->map(fn($row) => [
+            'month'     => Carbon::createFromDate($row->year, $row->month, 1)->translatedFormat('M Y'),
+            'Entrate'   => round((float) $row->income, 2),
+            'Uscite'    => round((float) $row->expenses, 2),
+            'Risparmio' => round((float) $row->income - (float) $row->expenses, 2),
+        ])->values()->toArray();
+    }
+
+    /**
+     * Calcola le spese per categoria nel mese corrente.
+     */
+    private function getExpenseCategoryData(int $householdId, int $userId): array
+    {
+        $startDate = Carbon::now()->startOfMonth();
+        $endDate   = Carbon::now()->endOfDay();
+
+        $expenses = Transaction::with('category')
+            ->whereHas('account', fn($q) => $q->where('household_id', $householdId))
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+            ->whereBetween('date', [$startDate, $endDate])
+            ->where('amount', '<', 0)
+            ->whereNotNull('category_id')
+            ->selectRaw('category_id, SUM(ABS(amount)) as total')
+            ->groupBy('category_id')
+            ->orderByDesc('total')
+            ->get();
+
+        $grandTotal = $expenses->sum('total');
+
+        return $expenses->map(function ($row) use ($grandTotal) {
+            $category = $row->category;
+            return [
+                'name'        => $category?->name ?? 'Senza categoria',
+                'value'       => round((float) $row->total, 2),
+                'percentage'  => $grandTotal > 0 ? round(((float) $row->total / (float) $grandTotal) * 100, 1) : 0,
+                'color'       => $category?->color ?? '#94a3b8',
+                'icon'        => $category?->icon ?? '📁',
+                'category_id' => $row->category_id,
+            ];
+        })->values()->toArray();
     }
 }

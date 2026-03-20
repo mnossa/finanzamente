@@ -63,9 +63,6 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
     if (!data.length) {
         return (
             <CardBox className={className ?? ''}>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                    📊 Panoramica Cash Flow
-                </h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Entrate vs Uscite mensili
                 </p>
@@ -78,9 +75,6 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
 
     return (
         <CardBox className={className ?? ''}>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                📊 Panoramica Cash Flow
-            </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Entrate vs Uscite mensili
             </p>

@@ -9,6 +9,7 @@ import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
 import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
 import TradingViewEconomicCalendar from '@/Components/TradingViewEconomicCalendar';
+import PortfolioChart, { PortfolioItem } from '@/Components/Charts/PortfolioChart';
 
 interface Currency {
     code: string;
@@ -79,6 +80,7 @@ interface IndexProps {
     stats: Stats;
     assetTypes: AssetTypes;
     assetTypeIcons: AssetTypeIcons;
+    portfolioData: PortfolioItem[];
 }
 
 // function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -187,7 +189,8 @@ export default function Index({
     closedInvestments,
     stats,
     assetTypes,
-    assetTypeIcons
+    assetTypeIcons,
+    portfolioData,
 }: IndexProps) {
     return (
         <AuthenticatedLayout
@@ -260,6 +263,18 @@ export default function Index({
                         <TradingViewMarketOverview />
                         <TradingViewEconomicCalendar />
                     </div>
+
+                    {/* Allocazione Portafoglio */}
+                    {portfolioData.length > 0 && (
+                        <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                            <div className="border-b border-gray-100 p-4 dark:border-gray-700">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">🍧 Allocazione Portafoglio</h3>
+                            </div>
+                            <div className="p-4">
+                                <PortfolioChart data={portfolioData} />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Investimenti Aperti */}
                     {openInvestments.length > 0 && (

@@ -2,20 +2,13 @@ import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageHeader from '@/Components/PageHeader';
-import CashFlowChart, { CashFlowDataPoint } from '@/Components/Charts/CashFlowChart';
 import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
-import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthChart';
 import BudgetProgress, { BudgetItem } from '@/Components/Charts/BudgetProgress';
-import PortfolioChart, { PortfolioItem } from '@/Components/Charts/PortfolioChart';
 import clsx from 'clsx';
-import CardBox from '@/Components/CardBox';
 
 interface ChartsProps {
-    cashFlowData: CashFlowDataPoint[];
     expenseCategories: ExpenseCategory[];
-    netWorthData: NetWorthDataPoint[];
     activeBudgets: BudgetItem[];
-    portfolioData: PortfolioItem[];
     period: string;
 }
 
@@ -27,11 +20,8 @@ const PERIOD_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export default function ChartsIndex({
-    cashFlowData,
     expenseCategories,
-    netWorthData,
     activeBudgets,
-    portfolioData,
     period,
 }: ChartsProps) {
     const [loading, setLoading] = useState(false);
@@ -90,80 +80,12 @@ export default function ChartsIndex({
                     </div>
                 )}
 
-                {/* Griglia grafici principali */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    <CashFlowChart data={cashFlowData} className="min-w-0" />
-                    <NetWorthChart data={netWorthData} className="min-w-0" />
-                </div>
-
                 {/* Riga budget + categorie */}
                 <div className="grid gap-6 lg:grid-cols-2">
                     <BudgetProgress budgets={activeBudgets} className="min-w-0" />
                     <ExpenseTreemap data={expenseCategories} className="min-w-0" />
                 </div>
-
-                {/* Portafoglio */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    <PortfolioChart data={portfolioData} className="min-w-0" />
-
-                    {/* Riepilogo statistico */}
-                    <CardBox>
-                        <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                            📋 Riepilogo Periodo
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Statistiche chiave del periodo selezionato
-                        </p>
-                        <div className="mt-4 grid grid-cols-2 gap-4">
-                            <SummaryCard
-                                label="Totale Entrate"
-                                value={cashFlowData.reduce((s, d) => s + d.Entrate, 0)}
-                                color="text-emerald-600 dark:text-emerald-400"
-                            />
-                            <SummaryCard
-                                label="Totale Uscite"
-                                value={cashFlowData.reduce((s, d) => s + d.Uscite, 0)}
-                                color="text-orange-500"
-                            />
-                            <SummaryCard
-                                label="Risparmio Netto"
-                                value={cashFlowData.reduce((s, d) => s + d.Risparmio, 0)}
-                                color="text-blue-500"
-                            />
-                            <SummaryCard
-                                label="Budget Attivi"
-                                value={activeBudgets.length}
-                                isCount
-                                color="text-violet-500"
-                            />
-                        </div>
-                    </CardBox>
-                    </div>
-                </div>
-            {/* </div> */}
+            </div>
         </AuthenticatedLayout>
-    );
-}
-
-function SummaryCard({
-    label,
-    value,
-    color,
-    isCount = false,
-}: {
-    label: string;
-    value: number;
-    color: string;
-    isCount?: boolean;
-}) {
-    const formatted = isCount
-        ? value.toString()
-        : new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
-
-    return (
-        <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-            <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-            <p className={clsx('mt-1 text-xl font-bold', color)}>{formatted}</p>
-        </div>
     );
 }

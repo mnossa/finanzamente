@@ -49,6 +49,9 @@ class DashboardLayout extends Model
                 ['id' => 'debts_credits',        'visible' => true, 'position' => 8,  'size' => 'md'],
                 ['id' => 'quick_actions',        'visible' => true, 'position' => 9,  'size' => 'xl'],
                 ['id' => 'asset_allocation',     'visible' => true, 'position' => 10, 'size' => 'md'],
+                ['id' => 'net_worth',            'visible' => true, 'position' => 11, 'size' => 'md'],
+                ['id' => 'cash_flow',            'visible' => true, 'position' => 12, 'size' => 'md'],
+                ['id' => 'expense_treemap',       'visible' => true, 'position' => 13, 'size' => 'md'],
             ],
         ];
     }

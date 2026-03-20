@@ -14,7 +14,10 @@ export type WidgetId =
     | 'active_budgets'
     | 'debts_credits'
     | 'quick_actions'
-    | 'asset_allocation';
+    | 'asset_allocation'
+    | 'net_worth'
+    | 'cash_flow'
+    | 'expense_treemap';
 
 /** Dimensioni supportate per ogni widget nella griglia. */
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
