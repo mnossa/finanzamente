@@ -132,6 +132,11 @@ const Icons = {
             <path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" />
         </svg>
     ),
+    Zap: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+        </svg>
+    ),
 };
 
 // Tipo per gli elementi di navigazione
@@ -141,6 +146,7 @@ interface NavigationItem {
     routeMatch: string;
     icon: () => JSX.Element;
     altRouteMatch?: string;
+    excludeRouteMatch?: string;
     hrefParams?: any;
     moduleId?: string; // ID del modulo associato per controllo accesso
 }
@@ -155,48 +161,41 @@ interface NavigationSection {
 // Definizione sezioni menu navigazione
 const navigationSections: NavigationSection[] = [
     {
-        title: 'Dashboard',
+        title: 'Panoramica',
         defaultExpanded: true,
         items: [
             { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard, moduleId: 'dashboard' },
-            { name: 'Grafici & Analisi', href: 'charts.index', routeMatch: 'charts.*', icon: Icons.BarChart2 },
             { name: 'Simulazioni', href: 'simulations.index', routeMatch: 'simulations.*', icon: Icons.Simulation },
         ]
     },
     {
-        title: 'Gestione Base',
+        title: 'Conti & Movimenti',
         defaultExpanded: true,
         items: [
             { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet, moduleId: 'accounts' },
-            { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
-            { name: 'Sessione Rapida', href: 'transactions.quick-session', routeMatch: 'transactions.quick-session', icon: Icons.ArrowLeftRight },
-            { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags },
-            { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
+            { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', excludeRouteMatch: 'transactions.quick-session', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
+            { name: 'Sessione Rapida', href: 'transactions.quick-session', routeMatch: 'transactions.quick-session', icon: Icons.Zap },
             { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer, moduleId: 'transfers' },
+            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight, moduleId: 'inter_household_transfers' },
         ]
     },
     {
-        title: 'Transazioni Speciali',
+        title: 'Organizzazione',
         defaultExpanded: false,
         items: [
-            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight, moduleId: 'inter_household_transfers' },
+            { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags },
+            { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
             { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo, moduleId: 'refunds' },
             { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat, moduleId: 'recurring_transactions' },
         ]
     },
     {
-        title: 'Pianificazione',
+        title: 'Pianificazione & Risparmio',
         defaultExpanded: false,
         items: [
             { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank, moduleId: 'budgets' },
             { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits' },
             { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals' },
-        ]
-    },
-    {
-        title: 'Fiscale',
-        defaultExpanded: false,
-        items: [
             { name: 'Rimborso 730', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730' },
             // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management' }, // Implementazione futura
         ]
@@ -303,17 +302,19 @@ function SidebarNavItem({
 function CollapsibleNavSection({
     section,
     isRouteActive,
-    onClick
+    onClick,
+    forceExpanded = false,
 }: {
     section: NavigationSection;
-    isRouteActive: (routeMatch: string, altRouteMatch?: string) => boolean;
+    isRouteActive: (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string) => boolean;
     onClick?: () => void;
+    forceExpanded?: boolean;
 }) {
     const [isExpanded, setIsExpanded] = useState(section.defaultExpanded ?? false);
 
     // Controlla se qualche elemento della sezione è attivo
     const hasActiveItem = section.items.some(item =>
-        isRouteActive(item.routeMatch, item.altRouteMatch)
+        isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch)
     );
 
     // Espande automaticamente se c'è un elemento attivo nella sezione
@@ -323,32 +324,41 @@ function CollapsibleNavSection({
         }
     }, [hasActiveItem, isExpanded]);
 
+    const effectivelyExpanded = forceExpanded || isExpanded;
+
     return (
         <div className="mb-2">
             {/* Header della sezione */}
             <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center justify-between w-full px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-300 transition-colors uppercase tracking-wider"
+                onClick={() => !forceExpanded && setIsExpanded(!isExpanded)}
+                className={clsx(
+                    'flex items-center justify-between w-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-left',
+                    forceExpanded
+                        ? 'text-slate-500 cursor-default'
+                        : 'text-slate-400 hover:text-slate-300 transition-colors'
+                )}
             >
                 <span>{section.title}</span>
-                <span className={clsx(
-                    'transition-transform duration-200',
-                    isExpanded ? 'rotate-90' : ''
-                )}>
-                    <Icons.ChevronRight />
-                </span>
+                {!forceExpanded && (
+                    <span className={clsx(
+                        'transition-transform duration-200',
+                        effectivelyExpanded ? 'rotate-90' : ''
+                    )}>
+                        <Icons.ChevronRight />
+                    </span>
+                )}
             </button>
 
             {/* Elementi della sezione */}
             <div className={clsx(
                 'overflow-hidden transition-all duration-300 ease-in-out space-y-1',
-                isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                effectivelyExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
             )}>
                 {section.items.map((item) => (
                     <SidebarNavItem
                         key={item.name}
                         item={item}
-                        isActive={isRouteActive(item.routeMatch, item.altRouteMatch)}
+                        isActive={isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch)}
                         onClick={onClick}
                     />
                 ))}
@@ -368,6 +378,7 @@ export default function Authenticated({
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
+    const [navSearch, setNavSearch] = useState('');
     const notifRef = useRef<HTMLDivElement>(null);
 
     const handleLogout = async (e: FormEvent<HTMLFormElement>) => {
@@ -410,7 +421,8 @@ export default function Authenticated({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [notifOpen]);
 
-    const isRouteActive = (routeMatch: string, altRouteMatch?: string): boolean => {
+    const isRouteActive = (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string): boolean => {
+        if (excludeRouteMatch && route().current(excludeRouteMatch)) return false;
         return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
     };
 
@@ -428,6 +440,17 @@ export default function Authenticated({
 
     // Crea le sezioni dinamicamente includendo Household se presente
     const baseNavigationSections = filterSectionsByModules(navigationSections);
+
+    const getFilteredSections = (sections: NavigationSection[]): NavigationSection[] => {
+        if (!navSearch.trim()) return sections;
+        const q = navSearch.toLowerCase();
+        return sections
+            .map(section => ({
+                ...section,
+                items: section.items.filter(item => item.name.toLowerCase().includes(q)),
+            }))
+            .filter(section => section.items.length > 0);
+    };
 
     const allNavigationSections = [
         ...baseNavigationSections,
@@ -451,6 +474,8 @@ export default function Authenticated({
             ]
         }] : [])
     ];
+
+    const filteredNavigationSections = getFilteredSections(allNavigationSections);
 
     return (
         <ThemeProvider initialTheme={initialTheme}>
@@ -490,14 +515,33 @@ export default function Authenticated({
 
                     {/* Navigation */}
                     <nav className="mt-1 p-4 pb-8 space-y-1 overflow-y-auto h-[calc(100vh-162px)]">
-                        {allNavigationSections.map((section) => (
-                            <CollapsibleNavSection
-                                key={section.title}
-                                section={section}
-                                isRouteActive={isRouteActive}
-                                onClick={() => setSidebarOpen(false)}
+                        {/* Ricerca nel menu */}
+                        <div className="relative mb-3">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+                                <Icons.Search />
+                            </span>
+                            <input
+                                type="text"
+                                placeholder="Cerca nel menu..."
+                                value={navSearch}
+                                onChange={e => setNavSearch(e.target.value)}
+                                className="w-full pl-9 pr-3 py-2 bg-slate-800 text-slate-200 placeholder-slate-500 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition"
                             />
-                        ))}
+                        </div>
+
+                        {filteredNavigationSections.length === 0 ? (
+                            <p className="px-4 py-6 text-center text-xs text-slate-500">Nessun risultato</p>
+                        ) : (
+                            filteredNavigationSections.map((section) => (
+                                <CollapsibleNavSection
+                                    key={section.title}
+                                    section={section}
+                                    isRouteActive={isRouteActive}
+                                    onClick={() => setSidebarOpen(false)}
+                                    forceExpanded={!!navSearch.trim()}
+                                />
+                            ))
+                        )}
                     </nav>
 
                     {/* User Profile Bottom */}
