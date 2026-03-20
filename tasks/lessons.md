@@ -3,3 +3,4 @@
 - [2026-03-20] Merge branch 'staging' (e19aa54) — Matteo Nossa
 - [2026-03-20] Merge branch 'staging' (4d8fa7e) — Matteo Nossa
 - [2026-03-20] Merge pull request #25 from mnossa/copilot/update-merge-staging-to-main (afc1b62) — mnossa
+- [2026-03-21] Refactor page layouts to use PageContent component for consistent styling (bc72d22) — Matteo Nossa
