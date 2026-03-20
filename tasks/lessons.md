@@ -1,3 +1,4 @@
 - [2026-03-20] Merge pull request #24 from mnossa/copilot/add-github-actions-workflow (201b941) — mnossa
 - [2026-03-20] feat: add rebase-staging-from-main target to Makefile (ee03679) — Matteo Nossa
 - [2026-03-20] Merge branch 'staging' (e19aa54) — Matteo Nossa
+- [2026-03-20] Merge branch 'staging' (4d8fa7e) — Matteo Nossa
