@@ -69,6 +69,9 @@ class StoreDashboardLayoutRequest extends FormRequest
             'debts_credits',
             'quick_actions',
             'asset_allocation',
+            'net_worth',
+            'cash_flow',
+            'expense_treemap',
         ];
 
         $validator->after(function ($v) use ($allowedIds) {

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AssetAllocationController;
-use App\Http\Controllers\ChartsController;
 use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\RobotsController;
@@ -89,7 +88,6 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
-    Route::get('/charts', [ChartsController::class, 'index'])->name('charts.index');
     Route::get('/simulations', [SimulationController::class, 'index'])->name('simulations.index');
 
     // Notifiche in-app

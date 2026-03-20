@@ -61,9 +61,6 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
     if (!data.length) {
         return (
             <CardBox className={className ?? ''}>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                    📈 Patrimonio Netto
-                </h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Andamento nel tempo
                 </p>
@@ -78,9 +75,6 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
         <CardBox className={className ?? ''}>
             <div className="flex items-start justify-between">
                 <div>
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                        📈 Patrimonio Netto
-                    </h3>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         Andamento nel tempo
                     </p>

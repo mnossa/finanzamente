@@ -105,9 +105,6 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
     if (!data.length) {
         return (
             <CardBox className={className ?? ''}>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                    🗂️ Spese per Categoria
-                </h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Distribuzione spese del periodo
                 </p>
@@ -120,9 +117,6 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
 
     return (
         <CardBox className={className ?? ''}>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                🗂️ Spese per Categoria
-            </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Distribuzione spese del periodo · clicca su una categoria per i dettagli
             </p>

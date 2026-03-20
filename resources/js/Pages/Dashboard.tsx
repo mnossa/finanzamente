@@ -12,6 +12,9 @@ import { useModules } from '@/hooks/useModules';
 import RevenueProgressCard from '@/Components/RevenueProgressCard';
 import TaxThermometer from '@/Components/TaxThermometer';
 import LifestyleWidget, { LifestyleWidgetData } from '@/Components/LifestyleWidget';
+import CashFlowChart, { CashFlowDataPoint } from '@/Components/Charts/CashFlowChart';
+import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthChart';
+import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
@@ -146,6 +149,9 @@ interface DashboardProps {
     lifestyleWidgetData: LifestyleWidgetData;
     dashboardLayout: DashboardLayoutConfig;
     assetAllocationData: AssetAllocationData;
+    netWorthData: NetWorthDataPoint[];
+    cashFlowData: CashFlowDataPoint[];
+    expenseCategories: ExpenseCategory[];
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -350,6 +356,9 @@ export default function Dashboard({
     lifestyleWidgetData,
     dashboardLayout,
     assetAllocationData,
+    netWorthData,
+    cashFlowData,
+    expenseCategories,
 }: DashboardProps) {
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
@@ -441,7 +450,7 @@ export default function Dashboard({
 
             case 'accounts':
                 return (
-                    <CardBox className="overflow-hidden shadow-sm">
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">I tuoi conti</h3>
                             <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
@@ -451,12 +460,12 @@ export default function Dashboard({
                                 ? accounts.map((account) => <AccountCard key={account.id} account={account} />)
                                 : <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />}
                         </div>
-                    </CardBox>
+                    </div>
                 );
 
             case 'recent_transactions':
                 return (
-                    <CardBox className="overflow-hidden shadow-sm">
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">Ultime transazioni</h3>
                             <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutte</Link>
@@ -466,12 +475,12 @@ export default function Dashboard({
                                 ? recentTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
                                 : <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />}
                         </div>
-                    </CardBox>
+                    </div>
                 );
 
             case 'active_budgets':
                 return isModuleEnabled('budgets') ? (
-                    <CardBox className="overflow-hidden shadow-sm">
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">📊 Budget Attivi</h3>
                             <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
@@ -488,12 +497,12 @@ export default function Dashboard({
                                 </div>
                             )}
                         </div>
-                    </CardBox>
+                    </div>
                 ) : <LockedModuleCard moduleId="budgets" />;
 
             case 'debts_credits':
                 return isModuleEnabled('debts_credits') ? (
-                    <CardBox className="overflow-hidden shadow-sm">
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">💸 Debiti e Crediti</h3>
                             <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
@@ -520,13 +529,13 @@ export default function Dashboard({
                                 </div>
                             )}
                         </div>
-                    </CardBox>
+                    </div>
                 ) : <LockedModuleCard moduleId="debts_credits" />;
 
             case 'quick_actions': {
                 const compact = size === 'sm';
                 return (
-                    <CardBox className="overflow-hidden p-4 shadow-sm">
+                    <div className="overflow-hidden rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
                         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Azioni rapide</h3>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
@@ -535,7 +544,7 @@ export default function Dashboard({
                             <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" compact={compact} />
                             <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" compact={compact} />
                         </div>
-                    </CardBox>
+                    </div>
                 );
             }
 
@@ -548,7 +557,7 @@ export default function Dashboard({
                         : 'text-red-600 dark:text-red-400';
 
                 return isModuleEnabled('investments') ? (
-                    <CardBox className="overflow-hidden shadow-sm">
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">📊 Asset Allocation</h3>
                             <Link href={route('asset-allocation.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
@@ -601,9 +610,45 @@ export default function Dashboard({
                                 </div>
                             )}
                         </div>
-                    </CardBox>
+                    </div>
                 ) : <LockedModuleCard moduleId="investments" />;
             }
+
+            case 'net_worth':
+                return (
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">📈 Patrimonio nel Tempo</h3>
+                        </div>
+                        <div className="p-4">
+                            <NetWorthChart data={netWorthData} />
+                        </div>
+                    </div>
+                );
+
+            case 'cash_flow':
+                return (
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">💰 Panoramica Cashflow</h3>
+                        </div>
+                        <div className="p-4">
+                            <CashFlowChart data={cashFlowData} />
+                        </div>
+                    </div>
+                );
+
+            case 'expense_treemap':
+                return (
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">🏷️ Spese per Categoria</h3>
+                        </div>
+                        <div className="p-4">
+                            <ExpenseTreemap data={expenseCategories} />
+                        </div>
+                    </div>
+                );
 
             default:
                 return null;
