@@ -1,0 +1,1 @@
+- [2026-03-20] Merge pull request #24 from mnossa/copilot/add-github-actions-workflow (201b941) — mnossa
