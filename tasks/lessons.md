@@ -2,3 +2,4 @@
 - [2026-03-20] feat: add rebase-staging-from-main target to Makefile (ee03679) — Matteo Nossa
 - [2026-03-20] Merge branch 'staging' (e19aa54) — Matteo Nossa
 - [2026-03-20] Merge branch 'staging' (4d8fa7e) — Matteo Nossa
+- [2026-03-20] Merge pull request #25 from mnossa/copilot/update-merge-staging-to-main (afc1b62) — mnossa
