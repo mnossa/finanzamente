@@ -4,3 +4,4 @@
 - [2026-03-20] Merge branch 'staging' (4d8fa7e) — Matteo Nossa
 - [2026-03-20] Merge pull request #25 from mnossa/copilot/update-merge-staging-to-main (afc1b62) — mnossa
 - [2026-03-21] Refactor page layouts to use PageContent component for consistent styling (bc72d22) — Matteo Nossa
+- [2026-03-22] feat(e2e): add end-to-end tests for authentication and core features (24239ed) — Matteo Nossa
