@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches e2e-seed playwright playwright-ui playwright-report
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -49,6 +49,26 @@ fresh:
 
 seed:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed
+
+# Prepara il database per i test E2E (migrate:fresh + E2ESeeder)
+e2e-seed:
+	@echo "[+] Preparazione database per test E2E..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan migrate:fresh --force
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=E2ESeeder --force
+	@echo "[+] Database E2E pronto (utente: e2e@finanzamente.test)"
+
+# Esegui i test Playwright E2E in modalità headless
+playwright:
+	@echo "[+] Esecuzione test E2E Playwright..."
+	PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test
+
+# Esegui i test Playwright in modalità UI interattiva (solo locale)
+playwright-ui:
+	PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test --ui
+
+# Apri l'ultimo report HTML generato da Playwright
+playwright-report:
+	npx playwright show-report
 
 fix-perms:
 	bash ./fix-permissions.sh

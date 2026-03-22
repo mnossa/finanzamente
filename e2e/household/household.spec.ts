@@ -1,0 +1,47 @@
+import { test, expect } from '@playwright/test';
+
+/**
+ * Test E2E — Household
+ *
+ * Copre: visualizzazione della household corrente, nome, membri,
+ * navigazione alle impostazioni.
+ */
+test.describe('Household', () => {
+    test('carica la pagina della household attiva', async ({ page }) => {
+        await page.goto('/households/1');
+
+        // La pagina può reindirizzare all'ID corretto
+        await expect(page).toHaveURL(/\/households\/\d+/);
+        await expect(page).toHaveTitle(/household/i);
+    });
+
+    test('mostra il nome della household "Casa E2E"', async ({ page }) => {
+        await page.goto('/households/1');
+
+        // Il seeder crea "Casa E2E"
+        await expect(page.getByText('Casa E2E')).toBeVisible({ timeout: 8_000 });
+    });
+
+    test('mostra la sezione dei membri', async ({ page }) => {
+        await page.goto('/households/1');
+
+        // La pagina deve avere una sezione con i membri
+        await expect(
+            page.getByText(/membri|membro|partecipanti/i).first()
+        ).toBeVisible();
+    });
+
+    test('mostra la sezione per invitare nuovi membri', async ({ page }) => {
+        await page.goto('/households/1');
+
+        await expect(
+            page.getByPlaceholder(/email.*invit|inserisci.*email/i)
+                .or(page.getByLabel(/email.*invit/i))
+        ).toBeVisible({ timeout: 8_000 });
+    });
+
+    test('il pannello di selezione household è raggiungibile', async ({ page }) => {
+        await page.goto('/households/select');
+        await expect(page).toHaveURL('/households/select');
+    });
+});

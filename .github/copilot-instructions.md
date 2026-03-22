@@ -61,8 +61,21 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 - `make seed` - Popola il database con i seeder
 
 ### Testing
-- **`make test`** - **Esegue l'intera suite di test** (comando da usare sempre per i test)
+- **`make test`** - **Esegue l'intera suite di test PHPUnit** (comando da usare sempre per i test unitari/feature)
 - I test vengono eseguiti nel container Docker con SQLite in-memory per velocità e isolamento
+
+### Test E2E Playwright
+- **`make e2e-seed`** - Prepara il database con l'utente E2E (migrate:fresh + E2ESeeder)
+- **`make playwright`** - Esegui i test E2E in modalità headless (richiede app attiva su porta 8080)
+- **`make playwright-ui`** - Esegui i test E2E in modalità UI interattiva (solo locale)
+- **`make playwright-report`** - Apri il report HTML dell'ultima esecuzione
+
+**Workflow tipico per test E2E in locale:**
+```bash
+make up          # avvia lo stack Docker
+make e2e-seed    # prepara il database E2E
+make playwright  # esegui i test
+```
 
 ### Sviluppo Frontend
 - `make dev` - Avvia il dev server Vite per hot-reload
@@ -174,6 +187,62 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 ## Funzionalità Future da Considerare
 - Prima di implementare nuova logica, cercare metodi o helper già definiti nei modelli, service layer e controller esistenti. Riutilizzare ciò che esiste prima di crearne di nuovi.
 - Esempio: per logiche di calcolo del saldo e distribuzione spese, usare i metodi `isDebtBalancingMode()` e `isSharedWalletMode()` definiti nel modello `app/Models/Household.php`. Questi metodi determinano la modalità operativa dell'household: il primo abilita il bilanciamento debiti tra membri, il secondo indica un portafoglio condiviso. Sono già utilizzati in `FixedExpenseService` e `FixedExpenseController` come riferimento d'uso.
+
+## Test E2E con Playwright
+
+### Struttura dei test
+I test E2E sono organizzati in `e2e/` con la seguente struttura:
+```
+e2e/
+  auth.setup.ts              # Login e salvataggio sessione (eseguito prima dei test autenticati)
+  .auth/user.json            # Stato sessione (gitignored, generato da auth.setup.ts)
+  public/
+    welcome.spec.ts          # Homepage e pagine pubbliche
+  auth/
+    login.spec.ts            # Flusso di login
+    register.spec.ts         # Flusso di registrazione
+    forgot-password.spec.ts  # Recupero password
+  dashboard/
+    dashboard.spec.ts        # Dashboard autenticata
+  accounts/
+    accounts.spec.ts         # Gestione conti (CRUD)
+  transactions/
+    transactions.spec.ts     # Gestione transazioni
+  categories/
+    categories.spec.ts       # Gestione categorie
+  budgets/
+    budgets.spec.ts          # Gestione budget
+  household/
+    household.spec.ts        # Gestione household
+  profile/
+    profile.spec.ts          # Profilo utente
+```
+
+### Progetti Playwright configurati
+- **`setup`**: esegue `auth.setup.ts`, salva la sessione in `e2e/.auth/user.json`
+- **`pubblico`**: test senza sessione (pagine pubbliche + flussi auth) — Chrome desktop
+- **`autenticato-desktop`**: test con sessione attiva — Chrome desktop (dipende da `setup`)
+- **`autenticato-mobile`**: test con sessione attiva — Pixel 5 / mobile-first (dipende da `setup`)
+
+### Utente E2E e seeder
+Il seeder `E2ESeeder` (`database/seeders/E2ESeeder.php`) crea:
+- Utente verificato: `e2e@finanzamente.test` / `password`
+- Household attiva: "Casa E2E"
+- Categories e currencies di base
+
+**Va eseguito sempre prima dei test E2E con `make e2e-seed`.**
+
+### Regole per la scrittura/aggiornamento dei test E2E
+1. **Quando aggiungere test**: ogni nuova pagina o funzionalità utente visibile deve avere almeno un test E2E che verifica il caricamento corretto e la presenza degli elementi chiave.
+2. **Quando aggiornare test**: se il titolo di una pagina, i testi dei bottoni, gli ID dei campi o la struttura della navigazione cambiano, **aggiornare i test corrispondenti**.
+3. **Dove mettere i nuovi test**: nella cartella `e2e/` che corrisponde alla sezione dell'app (es. nuova funzionalità "Obiettivi" → `e2e/goals/goals.spec.ts`).
+4. **Selettori robusti**: preferire `page.getByRole()`, `page.getByLabel()`, `page.getByText()` rispetto a selettori CSS fragili. Usare `#id` solo quando esiste un id esplicito nel markup.
+5. **Dati univoci**: nei test che creano dati, usare `Date.now()` nel nome per evitare conflitti tra esecuzioni (es. `` `Categoria E2E ${Date.now()}` ``).
+6. **Setup autenticazione**: i test che richiedono autenticazione NON devono eseguire il login manualmente — usano lo `storageState` salvato da `auth.setup.ts`. I file in `e2e/auth/` e `e2e/public/` sono l'eccezione (non autenticati).
+7. **Nessuna dipendenza tra spec**: ogni file di spec deve essere indipendente. Non assumere che un test precedente abbia creato dati.
+8. **Messaggi in italiano**: i testi verificati con `getByText()` o `getByRole()` devono corrispondere ai testi effettivi dell'interfaccia italiana.
+9. **Aggiornare il seeder**: se una nuova funzionalità richiede dati di test aggiuntivi (es. un conto pre-creato), aggiungerli in `E2ESeeder` e aggiornare i test esistenti di conseguenza.
+10. **CI automatico**: i test E2E vengono eseguiti automaticamente su PR verso `staging` tramite `.github/workflows/playwright.yml`.
 
 # Pull Request e Code Review
 - Ogni modifica rilevante deve essere sottoposta a pull request e code review, anche automatizzata, per garantire qualità, coerenza e individuare eventuali errori o miglioramenti.
