@@ -40,6 +40,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
         balance_percentages: household.balance_percentages || {} as Record<string, number>,
         enable_turn_suggestions: household.enable_turn_suggestions || false,
         turn_suggestion_settings: household.turn_suggestion_settings || {} as Record<string, any>,
+        exclude_inter_transfers_from_stats: household.exclude_inter_transfers_from_stats || false,
     });
 
     // Form per invito
@@ -355,6 +356,42 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                             ⚠️ Cambiare questa impostazione può influire sui calcoli e sui report esistenti.
                                         </p>
                                     )}
+                                </div>
+
+                                {/* Trasferimenti inter-household */}
+                                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 flex-shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                id="exclude_inter_transfers_from_stats"
+                                                checked={editForm.data.exclude_inter_transfers_from_stats || false}
+                                                onChange={(e) =>
+                                                    editForm.setData(
+                                                        'exclude_inter_transfers_from_stats',
+                                                        e.target.checked,
+                                                    )
+                                                }
+                                                disabled={!household.is_owner}
+                                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label
+                                                htmlFor="exclude_inter_transfers_from_stats"
+                                                className="block text-sm font-medium text-gray-900 dark:text-gray-100"
+                                            >
+                                                Escludi trasferimenti inter-household dai calcoli per default
+                                            </label>
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Se attivo, i trasferimenti verso o da questa household avranno
+                                                l'opzione "Escludi dai calcoli statistici" pre-selezionata.
+                                                Utile per households che rappresentano proprietà o conti secondari
+                                                (es. seconda casa, conto di risparmio), dove lo spostamento di fondi
+                                                non deve influenzare entrate, uscite e lifestyle score.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {household.is_owner && (

@@ -41,55 +41,64 @@ class InterHouseholdTransferService
         }
 
         return DB::transaction(function () use ($data, $initiator, $sourceAccount, $destAccount) {
-            // Crea la transazione di uscita per la household sorgente
+            $excludeFromStats = (bool) ($data['exclude_from_stats'] ?? false);
+            $transferDate     = $data['transfer_date'] ?? now()->toDateString();
+            $sourceCurrency   = $data['source_currency'] ?? $sourceAccount->currency_code;
+            $destCurrency     = $data['dest_currency'] ?? $destAccount->currency_code;
+
+            // Crea le transazioni con placeholder per la FK (verrà aggiornata dopo)
             $sourceTransaction = Transaction::create([
-                'user_id' => $initiator->id,
-                'account_id' => $data['source_account_id'],
-                'category_id' => null, // Nessuna categoria per trasferimenti inter-household
-                'amount' => -abs($data['source_amount']), // Negativo perché è un'uscita
-                'currency_code' => $data['source_currency'] ?? $sourceAccount->currency_code,
-                'date' => $data['transfer_date'] ?? now()->toDateString(),
-                'description' => $data['description'] ?? "Trasferimento verso {$destAccount->household->name}",
-                'recurring' => false,
-                'is_private' => false,
+                'user_id'      => $initiator->id,
+                'account_id'   => $data['source_account_id'],
+                'category_id'  => null,
+                'amount'       => -abs($data['source_amount']),
+                'currency_code' => $sourceCurrency,
+                'date'         => $transferDate,
+                'description'  => $data['description'] ?? "Trasferimento verso {$destAccount->household->name}",
+                'recurring'    => false,
+                'is_private'   => false,
             ]);
 
-            // Crea la transazione di entrata per la household destinataria
             $destTransaction = Transaction::create([
-                'user_id' => $data['dest_user_id'] ?? $initiator->id,
-                'account_id' => $data['dest_account_id'],
-                'category_id' => null,
-                'amount' => abs($data['dest_amount'] ?? $data['source_amount']), // Positivo perché è un'entrata
-                'currency_code' => $data['dest_currency'] ?? $destAccount->currency_code,
-                'date' => $data['transfer_date'] ?? now()->toDateString(),
-                'description' => $data['description'] ?? "Trasferimento da {$sourceAccount->household->name}",
-                'recurring' => false,
-                'is_private' => false,
+                'user_id'      => $data['dest_user_id'] ?? $initiator->id,
+                'account_id'   => $data['dest_account_id'],
+                'category_id'  => null,
+                'amount'       => abs($data['dest_amount'] ?? $data['source_amount']),
+                'currency_code' => $destCurrency,
+                'date'         => $transferDate,
+                'description'  => $data['description'] ?? "Trasferimento da {$sourceAccount->household->name}",
+                'recurring'    => false,
+                'is_private'   => false,
             ]);
 
             // Crea il trasferimento già approvato con i riferimenti alle transazioni
             $transfer = InterHouseholdTransfer::create([
-                'source_household_id' => $sourceAccount->household_id,
-                'source_account_id' => $data['source_account_id'],
-                'source_user_id' => $initiator->id,
-                'dest_household_id' => $destAccount->household_id,
-                'dest_account_id' => $data['dest_account_id'],
-                'dest_user_id' => $data['dest_user_id'] ?? $initiator->id,
-                'source_amount' => $data['source_amount'],
-                'source_currency' => $data['source_currency'] ?? $sourceAccount->currency_code,
-                'dest_amount' => $data['dest_amount'] ?? $data['source_amount'],
-                'dest_currency' => $data['dest_currency'] ?? $destAccount->currency_code,
-                'exchange_rate' => $data['exchange_rate'] ?? null,
-                'fee' => $data['fee'] ?? null,
-                'description' => $data['description'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'transfer_date' => $data['transfer_date'] ?? now()->toDateString(),
-                'status' => 'approved',
+                'source_household_id'  => $sourceAccount->household_id,
+                'source_account_id'    => $data['source_account_id'],
+                'source_user_id'       => $initiator->id,
+                'dest_household_id'    => $destAccount->household_id,
+                'dest_account_id'      => $data['dest_account_id'],
+                'dest_user_id'         => $data['dest_user_id'] ?? $initiator->id,
+                'source_amount'        => $data['source_amount'],
+                'source_currency'      => $sourceCurrency,
+                'dest_amount'          => $data['dest_amount'] ?? $data['source_amount'],
+                'dest_currency'        => $destCurrency,
+                'exchange_rate'        => $data['exchange_rate'] ?? null,
+                'fee'                  => $data['fee'] ?? null,
+                'description'          => $data['description'] ?? null,
+                'notes'                => $data['notes'] ?? null,
+                'transfer_date'        => $transferDate,
+                'exclude_from_stats'   => $excludeFromStats,
+                'status'               => 'approved',
                 'source_transaction_id' => $sourceTransaction->id,
-                'dest_transaction_id' => $destTransaction->id,
-                'approved_at' => now(),
-                'approved_by' => $initiator->id,
+                'dest_transaction_id'   => $destTransaction->id,
+                'approved_at'          => now(),
+                'approved_by'          => $initiator->id,
             ]);
+
+            // Collega le transazioni al trasferimento tramite la FK bidirezionale
+            $sourceTransaction->update(['inter_household_transfer_id' => $transfer->id]);
+            $destTransaction->update(['inter_household_transfer_id' => $transfer->id]);
 
             // Aggiorna i saldi degli account
             $sourceAccount->recalculateBalance();
