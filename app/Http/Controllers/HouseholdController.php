@@ -142,6 +142,7 @@ class HouseholdController extends Controller
                 'balance_percentages' => $household->balance_percentages ?: $household->calculateEqualPercentages(),
                 'enable_turn_suggestions' => $household->enable_turn_suggestions,
                 'turn_suggestion_settings' => $household->turn_suggestion_settings,
+                'exclude_inter_transfers_from_stats' => $household->exclude_inter_transfers_from_stats,
             ],
             'members' => $members,
             'pendingInvitations' => $pendingInvitations,
@@ -167,6 +168,7 @@ class HouseholdController extends Controller
             'balance_percentages.*' => 'numeric|min:0|max:100',
             'enable_turn_suggestions' => 'sometimes|boolean',
             'turn_suggestion_settings' => 'sometimes|array',
+            'exclude_inter_transfers_from_stats' => 'sometimes|boolean',
         ]);
 
         // dd($data);

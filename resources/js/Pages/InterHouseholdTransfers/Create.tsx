@@ -25,11 +25,13 @@ interface Account {
 interface Household {
     id: number;
     name: string;
+    exclude_inter_transfers_from_stats: boolean;
 }
 
 interface CreateProps {
     sourceAccounts: Account[];
     userHouseholds: Household[];
+    activeHouseholdExcludesDefault: boolean;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -39,7 +41,7 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
     }).format(amount);
 }
 
-export default function Create({ sourceAccounts, userHouseholds }: CreateProps) {
+export default function Create({ sourceAccounts, userHouseholds, activeHouseholdExcludesDefault }: CreateProps) {
     const today = new Date().toISOString().split('T')[0];
     const [destAccounts, setDestAccounts] = useState<Account[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
@@ -58,6 +60,7 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
         transfer_date: today,
         description: '',
         notes: '',
+        exclude_from_stats: activeHouseholdExcludesDefault,
     });
 
     const sourceAccount = useMemo(
@@ -86,6 +89,12 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
                 .finally(() => {
                     setLoadingAccounts(false);
                 });
+
+            // Aggiorna il default di exclude_from_stats in base alle impostazioni delle due households
+            const destHousehold = userHouseholds.find((h) => h.id === Number(data.dest_household_id));
+            const shouldExclude =
+                activeHouseholdExcludesDefault || (destHousehold?.exclude_inter_transfers_from_stats ?? false);
+            setData('exclude_from_stats', shouldExclude);
         } else {
             setDestAccounts([]);
             setData('dest_account_id', '');
@@ -411,6 +420,45 @@ export default function Create({ sourceAccounts, userHouseholds }: CreateProps) 
                                         placeholder="Aggiungi note aggiuntive..."
                                     />
                                     <InputError message={errors.notes} className="mt-2" />
+                                </div>
+
+                                {/* Escludi dai calcoli statistici */}
+                                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                    <label className="flex cursor-pointer items-start gap-3">
+                                        <div className="relative mt-0.5 flex-shrink-0">
+                                            <input
+                                                type="checkbox"
+                                                id="exclude_from_stats"
+                                                checked={data.exclude_from_stats}
+                                                onChange={(e) =>
+                                                    setData('exclude_from_stats', e.target.checked)
+                                                }
+                                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600"
+                                            />
+                                        </div>
+                                        <div>
+                                            <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                Escludi dai calcoli statistici
+                                            </span>
+                                            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                                                Attiva se questo è uno spostamento interno tra tue households (es. casa
+                                                principale ↔ seconda casa). Le transazioni generate non influiranno su
+                                                entrate, uscite e lifestyle score di nessuna delle due households.
+                                            </span>
+                                            {data.exclude_from_stats && (
+                                                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                    Impostato automaticamente per questa coppia di households
+                                                </span>
+                                            )}
+                                        </div>
+                                    </label>
                                 </div>
 
                                 {/* Pulsanti */}

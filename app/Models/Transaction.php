@@ -31,6 +31,7 @@ class Transaction extends Model
         'recurring_transaction_id', 
         'is_private', 
         'transfer_id', 
+        'inter_household_transfer_id',
         'refund_id', 
         'debt_credit_id',
         'is_tax_deductible', 
@@ -84,6 +85,14 @@ class Transaction extends Model
     }
 
     /**
+     * Relazione con il trasferimento inter-household che ha generato questa transazione.
+     */
+    public function interHouseholdTransfer()
+    {
+        return $this->belongsTo(InterHouseholdTransfer::class, 'inter_household_transfer_id');
+    }
+
+    /**
      * Relazione con il rimborso (se questa transazione è parte di un rimborso).
      */
     public function refund()
@@ -113,6 +122,31 @@ class Transaction extends Model
     public function isTransfer(): bool
     {
         return $this->transfer_id !== null;
+    }
+
+    /**
+     * Verifica se la transazione è parte di un trasferimento inter-household.
+     */
+    public function isInterHouseholdTransfer(): bool
+    {
+        return $this->inter_household_transfer_id !== null;
+    }
+
+    /**
+     * Scope che esclude le transazioni generate da trasferimenti inter-household
+     * marcati come exclude_from_stats=true.
+     *
+     * Applica la logica OR: se source o dest household hanno il flag attivo,
+     * la transazione viene esclusa dai calcoli statistici.
+     */
+    public function scopeExcludeInterHouseholdStats($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('inter_household_transfer_id')
+              ->orWhereHas('interHouseholdTransfer', fn ($q) =>
+                  $q->where('exclude_from_stats', false)
+              );
+        });
     }
 
     /**

@@ -57,11 +57,12 @@ class FinancialMetricsService
         $inpsRate = (float) ($settings['inps_rate'] ?? 26.23);
 
         // ── Reddito Lordo ────────────────────────────────────────────────────────
-        // Somma entrate (amount > 0) esclusi i trasferimenti interni
+        // Somma entrate (amount > 0) esclusi i trasferimenti interni e inter-household marcati
         $grossIncome = (float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->where('amount', '>', 0)
             ->whereNull('transfer_id')
+            ->excludeInterHouseholdStats()
             ->whereBetween('date', [$startDate, $endDate])
             ->sum('amount');
 
@@ -80,12 +81,13 @@ class FinancialMetricsService
         $netIncome = max(0.0, $grossIncome - $estimatedTaxes);
 
         // ── Totale Uscite (spese lorde) ──────────────────────────────────────────
-        // Importi negativi, esclusi i trasferimenti interni
+        // Importi negativi, esclusi i trasferimenti interni e inter-household marcati
         $totalExpenses = (float) abs(
             Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
                 ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
                 ->where('amount', '<', 0)
                 ->whereNull('transfer_id')
+                ->excludeInterHouseholdStats()
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount')
         );
@@ -97,6 +99,7 @@ class FinancialMetricsService
                 ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
                 ->where('amount', '<', 0)
                 ->whereNull('transfer_id')
+                ->excludeInterHouseholdStats()
                 ->whereHas('category', fn ($q) => $q->where('exclude_from_lifestyle_score', true))
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount')
@@ -154,6 +157,7 @@ class FinancialMetricsService
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->where('amount', '<', 0)
             ->whereNull('transfer_id')
+            ->excludeInterHouseholdStats()
             ->whereBetween('date', [$startDate, $endDate])
             ->groupBy('category_id')
             ->with('category:id,name,icon,color,exclude_from_lifestyle_score')

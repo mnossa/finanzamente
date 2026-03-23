@@ -96,14 +96,21 @@ class InterHouseholdTransferController extends Controller
             ->get();
 
         // Solo le altre households a cui l'utente appartiene
-        // I trasferimenti sono limitati alle proprie households per semplicità
         $userHouseholds = $user->households()
             ->where('households.id', '!=', $activeHouseholdId)
             ->get();
 
+        // Household attiva (per calcolare il default exclude_from_stats lato frontend)
+        $activeHousehold = $user->households()->find($activeHouseholdId);
+
         return Inertia::render('InterHouseholdTransfers/Create', [
-            'sourceAccounts' => $sourceAccounts,
-            'userHouseholds' => $userHouseholds,
+            'sourceAccounts'   => $sourceAccounts,
+            'userHouseholds'   => $userHouseholds->map(fn ($h) => [
+                'id'                              => $h->id,
+                'name'                            => $h->name,
+                'exclude_inter_transfers_from_stats' => $h->exclude_inter_transfers_from_stats,
+            ]),
+            'activeHouseholdExcludesDefault' => $activeHousehold?->shouldExcludeInterTransfersFromStats() ?? false,
         ]);
     }
 
