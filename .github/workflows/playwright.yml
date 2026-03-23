@@ -56,6 +56,11 @@ jobs:
           timeout 120 bash -c             'until docker compose exec -T app php --version > /dev/null 2>&1; do sleep 5; echo "Attesa container app..."; done'
           docker compose ps
 
+      - name: Attendi che MySQL sia pronto
+        run: |
+          timeout 120 bash -c             'until docker compose exec -T db mysqladmin ping -h localhost --silent 2>/dev/null; do sleep 5; echo "Attesa database MySQL..."; done'
+          echo "MySQL pronto."
+
       - name: Installa dipendenze PHP (Composer)
         run: |
           docker compose exec -T app composer install             --optimize-autoloader             --no-interaction

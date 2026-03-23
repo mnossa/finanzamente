@@ -2,9 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use App\Models\InterHouseholdTransfer;
-use App\Models\Transaction;
 
 return new class extends Migration
 {
@@ -20,21 +19,25 @@ return new class extends Migration
         });
 
         // Backfill: collega le transazioni già esistenti ai rispettivi trasferimenti
-        // Usa Eloquent per compatibilità con MySQL e SQLite (test)
-        InterHouseholdTransfer::query()
+        // Usa DB::table (non Eloquent) per stabilità nelle migration
+        DB::table('inter_household_transfers')
+            ->whereNull('deleted_at')
             ->where(function ($q) {
                 $q->whereNotNull('source_transaction_id')
                   ->orWhereNotNull('dest_transaction_id');
             })
-            ->get(['id', 'source_transaction_id', 'dest_transaction_id'])
-            ->each(function (InterHouseholdTransfer $transfer) {
+            ->select(['id', 'source_transaction_id', 'dest_transaction_id'])
+            ->get()
+            ->each(function ($transfer) {
                 if ($transfer->source_transaction_id) {
-                    Transaction::where('id', $transfer->source_transaction_id)
+                    DB::table('transactions')
+                        ->where('id', $transfer->source_transaction_id)
                         ->whereNull('inter_household_transfer_id')
                         ->update(['inter_household_transfer_id' => $transfer->id]);
                 }
                 if ($transfer->dest_transaction_id) {
-                    Transaction::where('id', $transfer->dest_transaction_id)
+                    DB::table('transactions')
+                        ->where('id', $transfer->dest_transaction_id)
                         ->whereNull('inter_household_transfer_id')
                         ->update(['inter_household_transfer_id' => $transfer->id]);
                 }
