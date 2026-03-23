@@ -80,6 +80,7 @@ interface Filters {
     type?: string;
     from?: string;
     to?: string;
+    tag_id?: string;
 }
 
 interface DebtCredit {
@@ -93,6 +94,7 @@ interface IndexProps {
     accounts: Array<{ id: number; name: string }>;
     categories: Category[];
     debtCredits: DebtCredit[];
+    tags: Array<{ id: number; name: string; color: string | null }>;
     filters: Filters;
 }
 
@@ -451,6 +453,7 @@ export default function Index({
     accounts,
     categories,
     debtCredits,
+    tags,
     filters,
 }: IndexProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -678,6 +681,22 @@ export default function Index({
                                     placeholder="A"
                                 />
                             </div>
+                            {tags.length > 0 && (
+                                <div className="flex-1 min-w-[150px]">
+                                    <select
+                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.tag_id || ''}
+                                        onChange={(e) => handleFilterChange('tag_id', e.target.value)}
+                                    >
+                                        <option value="">Tutti i tag</option>
+                                        {tags.map((tag) => (
+                                            <option key={tag.id} value={tag.id}>
+                                                {tag.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                             {hasFilters && (
                                 <button
                                     onClick={clearFilters}

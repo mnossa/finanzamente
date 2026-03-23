@@ -65,6 +65,11 @@ class TransactionController extends Controller
         if ($request->filled('is_tax_deductible')) {
             $query->where('is_tax_deductible', $request->is_tax_deductible === 'true');
         }
+        if ($request->filled('tag_id')) {
+            $query->whereHas('tags', function ($q) use ($request) {
+                $q->where('tags.id', $request->tag_id);
+            });
+        }
 
         $transactions = $query
             ->orderBy('date', 'desc')
@@ -131,12 +136,17 @@ class TransactionController extends Controller
             ->orderBy('description')
             ->get(['id', 'description', 'type']);
 
+        $tags = Tag::where('household_id', $householdId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'color']);
+
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
             'accounts' => $accounts,
             'categories' => $categories,
             'debtCredits' => $debtCredits,
-            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible']),
+            'tags' => $tags,
+            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id']),
         ]);
     }
 
@@ -347,10 +357,20 @@ class TransactionController extends Controller
             'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? \Carbon\Carbon::parse($validated['date'])->year : null),
         ]);
 
-        // Sincronizza i tag
-        if (isset($validated['tag_ids'])) {
-            $transaction->tags()->sync($validated['tag_ids']);
+        // Sincronizza i tag (esistenti + nuovi da creare)
+        $tagIds = $validated['tag_ids'] ?? [];
+        if (!empty($validated['new_tag_names'])) {
+            foreach ($validated['new_tag_names'] as $tagName) {
+                $tag = Tag::findByNameForHousehold($tagName, $user->active_household_id)
+                    ?? Tag::create([
+                        'household_id' => $user->active_household_id,
+                        'name' => $tagName,
+                        'color' => '#6366f1',
+                    ]);
+                $tagIds[] = $tag->id;
+            }
         }
+        $transaction->tags()->sync(array_unique($tagIds));
 
         // Aggiorna il saldo del conto
         $account->current_balance += $amount;
@@ -501,6 +521,11 @@ class TransactionController extends Controller
                 'tax_deduction_type' => $transaction->tax_deduction_type,
                 'tax_year' => $transaction->tax_year,
                 'tag_ids' => $transaction->tags->pluck('id')->toArray(),
+                'tags' => $transaction->tags->map(fn($tag) => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'color' => $tag->color,
+                ])->toArray(),
                 'debt_credit_id' => $transaction->debt_credit_id,
                 'transfer_id' => $transaction->transfer_id,
                 'is_inter_household_transfer' => $isInterHouseholdTransfer,
@@ -574,8 +599,20 @@ class TransactionController extends Controller
             'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? \Carbon\Carbon::parse($validated['date'])->year : null),
         ]);
 
-        // Sincronizza i tag
-        $transaction->tags()->sync($validated['tag_ids'] ?? []);
+        // Sincronizza i tag (esistenti + nuovi da creare)
+        $tagIds = $validated['tag_ids'] ?? [];
+        if (!empty($validated['new_tag_names'])) {
+            foreach ($validated['new_tag_names'] as $tagName) {
+                $tag = Tag::findByNameForHousehold($tagName, $user->active_household_id)
+                    ?? Tag::create([
+                        'household_id' => $user->active_household_id,
+                        'name' => $tagName,
+                        'color' => '#6366f1',
+                    ]);
+                $tagIds[] = $tag->id;
+            }
+        }
+        $transaction->tags()->sync(array_unique($tagIds));
 
         // Se è un trasferimento, aggiorna anche la transazione collegata
         if ($isTransfer) {

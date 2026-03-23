@@ -307,6 +307,7 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
 
     // Tags - lettura
     Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
+    Route::get('/tags/search', [TagController::class, 'search'])->name('tags.search');
 
     // Budgets - lettura
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
