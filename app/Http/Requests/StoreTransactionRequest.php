@@ -51,6 +51,8 @@ class StoreTransactionRequest extends FormRequest
             'tax_year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
+            'new_tag_names' => ['nullable', 'array'],
+            'new_tag_names.*' => ['string', 'max:50'],
             'debt_credit_id' => [
                 'nullable',
                 'integer',

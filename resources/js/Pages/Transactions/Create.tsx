@@ -6,11 +6,13 @@ import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import TagAutocomplete from '@/Components/TagAutocomplete';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import CardBox from '@/Components/CardBox';
+import { useState } from 'react';
 
 interface Category {
     id: number;
@@ -44,13 +46,12 @@ interface DebtCredit {
 interface CreateProps {
     accounts: Account[];
     categories: Category[];
-    tags: Tag[];
     defaultAccountId?: string;
     defaultDebtCreditId?: string;
     debtsCredits: DebtCredit[];
 }
 
-export default function Create({ accounts, categories, tags, defaultAccountId, defaultDebtCreditId, debtsCredits }: CreateProps) {
+export default function Create({ accounts, categories, defaultAccountId, defaultDebtCreditId, debtsCredits }: CreateProps) {
     const today = new Date().toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors } = useForm({
@@ -65,6 +66,7 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
         tax_deduction_type: '',
         tax_year: new Date().getFullYear(),
         tag_ids: [] as number[],
+        new_tag_names: [] as string[],
         debt_credit_id: defaultDebtCreditId || '',
     });
 
@@ -78,12 +80,27 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
         ? debtsCredits.filter((dc) => (isExpense ? dc.type === 'debt' : dc.type === 'credit'))
         : debtsCredits;
 
-    const toggleTag = (tagId: number) => {
-        const currentTags = data.tag_ids;
-        if (currentTags.includes(tagId)) {
-            setData('tag_ids', currentTags.filter((id) => id !== tagId));
+    const [selectedTagsList, setSelectedTagsList] = useState<Tag[]>([]);
+
+    const handleTagAdd = (tag: Tag) => {
+        const normalized = { ...tag, name: tag.name.toUpperCase() };
+        if (selectedTagsList.some((t) => t.name === normalized.name)) return;
+        setSelectedTagsList((prev) => [...prev, normalized]);
+        if (normalized.id > 0) {
+            setData('tag_ids', [...data.tag_ids, normalized.id]);
         } else {
-            setData('tag_ids', [...currentTags, tagId]);
+            setData('new_tag_names', [...data.new_tag_names, normalized.name]);
+        }
+    };
+
+    const handleTagRemove = (tagName: string) => {
+        const toRemove = selectedTagsList.find((t) => t.name === tagName);
+        if (!toRemove) return;
+        setSelectedTagsList((prev) => prev.filter((t) => t.name !== tagName));
+        if (toRemove.id > 0) {
+            setData('tag_ids', data.tag_ids.filter((id) => id !== toRemove.id));
+        } else {
+            setData('new_tag_names', data.new_tag_names.filter((n) => n !== tagName));
         }
     };
 
@@ -376,37 +393,15 @@ export default function Create({ accounts, categories, tags, defaultAccountId, d
                                 )}
 
                                 {/* Tag */}
-                                {tags.length > 0 && (
-                                    <div>
-                                        <InputLabel value="Tag (opzionale)" />
-                                        <div className="mt-2 flex flex-wrap gap-2">
-                                            {tags.map((tag) => (
-                                                <button
-                                                    key={tag.id}
-                                                    type="button"
-                                                    onClick={() => toggleTag(tag.id)}
-                                                    className={clsx(
-                                                        'inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors',
-                                                        data.tag_ids.includes(tag.id)
-                                                            ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800'
-                                                            : 'opacity-60 hover:opacity-100'
-                                                    )}
-                                                    style={{
-                                                        backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
-                                                        color: tag.color || '#374151',
-                                                        borderColor: tag.color || '#d1d5db',
-                                                        '--tw-ring-color': tag.color || '#6366f1',
-                                                    } as React.CSSProperties}
-                                                >
-                                                    🏷️ {tag.name}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                            Clicca sui tag per aggiungerli o rimuoverli.
-                                        </p>
-                                    </div>
-                                )}
+                                <div>
+                                    <InputLabel value="Tag (opzionale)" />
+                                    <TagAutocomplete
+                                        selectedTags={selectedTagsList}
+                                        onAdd={handleTagAdd}
+                                        onRemove={handleTagRemove}
+                                        className="mt-2"
+                                    />
+                                </div>
 
                                 {/* Azioni */}
                                 <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">

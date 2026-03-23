@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTagRequest;
 use App\Http\Requests\UpdateTagRequest;
 use App\Models\Tag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,14 +49,24 @@ class TagController extends Controller
 
     /**
      * Salva un nuovo tag.
+     * Se un tag con lo stesso nome (case-insensitive) esiste già, reindirizza all'indice con un avviso.
      */
     public function store(StoreTagRequest $request): RedirectResponse
     {
         $user = Auth::user();
         $validated = $request->validated();
+        $householdId = $user->active_household_id;
+
+        $existing = Tag::findByNameForHousehold($validated['name'], $householdId);
+
+        if ($existing) {
+            return redirect()
+                ->route('tags.index')
+                ->with('warning', "Il tag \"{$existing->name}\" esiste già.");
+        }
 
         Tag::create([
-            'household_id' => $user->active_household_id,
+            'household_id' => $householdId,
             'name' => $validated['name'],
             'color' => $validated['color'] ?? '#6366f1',
         ]);
@@ -109,6 +120,25 @@ class TagController extends Controller
         return redirect()
             ->route('tags.index')
             ->with('success', 'Tag eliminato con successo.');
+    }
+
+    /**
+     * Cerca tag per autocomplete durante la digitazione (usato nelle form di transazione).
+     * Restituisce i tag della household che corrispondono alla query.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+        $q = strtoupper(trim($request->get('q', '')));
+
+        $tags = Tag::where('household_id', $householdId)
+            ->when($q !== '', fn($query) => $query->where('name', 'like', $q . '%'))
+            ->orderBy('name')
+            ->limit(15)
+            ->get(['id', 'name', 'color']);
+
+        return response()->json($tags);
     }
 
     /**
