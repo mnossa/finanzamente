@@ -25,7 +25,7 @@ test.describe('Autenticazione — Login', () => {
 
         // L'errore Laravel su credenziali errate
         await expect(
-            page.getByText(/credenziali.*non corrispond|queste credenziali/i)
+            page.getByText(/credenziali.*non sono corrette/i)
         ).toBeVisible({ timeout: 8_000 });
     });
 

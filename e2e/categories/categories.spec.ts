@@ -30,7 +30,10 @@ test.describe('Categorie', () => {
     test('il form di creazione ha i campi obbligatori', async ({ page }) => {
         await page.goto('/categories/create');
         await expect(page.locator('#name')).toBeVisible();
-        await expect(page.locator('#type')).toBeVisible();
+        // Il tipo è selezionato tramite pulsanti (Entrata/Uscita), non un <select id="type">
+        await expect(
+            page.getByRole('button', { name: /entrata|uscita/i }).first()
+        ).toBeVisible();
         await expect(page.getByRole('button', { name: /crea categoria/i })).toBeVisible();
     });
 
