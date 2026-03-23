@@ -44,8 +44,8 @@ export default function TagAutocomplete({ selectedTags, onAdd, onRemove, classNa
         try {
             const response = await axios.get<Tag[]>(route('tags.search'), { params: { q: query } });
             const data = response.data;
-            // Escludi i tag già selezionati
-            const filtered = data.filter((t) => !selectedTags.some((s) => s.id === t.id));
+            // Escludi i tag già selezionati (confronta per nome, poiché i nuovi tag hanno id=0)
+            const filtered = data.filter((t) => !selectedTags.some((s) => s.name === t.name));
             setSuggestions(filtered);
             setIsOpen(filtered.length > 0 || (query.trim().length > 0));
         } catch {
