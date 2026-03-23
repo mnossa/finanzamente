@@ -127,4 +127,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->notify(new \App\Notifications\VerifyEmail);
     }
+
+    /**
+     * Invia la notifica di reimpostazione password in italiano.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPassword($token));
+    }
 }
