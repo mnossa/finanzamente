@@ -89,6 +89,9 @@ class StoreInterHouseholdTransferRequest extends FormRequest
                 'date',
                 'before_or_equal:today',
             ],
+            'exclude_from_stats' => [
+                'boolean',
+            ],
         ];
     }
 

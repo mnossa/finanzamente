@@ -42,6 +42,7 @@ class InterHouseholdTransfer extends Model
         'description',
         'notes',
         'transfer_date',
+        'exclude_from_stats',
         'status',
         'source_transaction_id',
         'dest_transaction_id',
@@ -58,6 +59,7 @@ class InterHouseholdTransfer extends Model
         'exchange_rate' => 'decimal:12',
         'fee' => 'decimal:2',
         'transfer_date' => 'date',
+        'exclude_from_stats' => 'boolean',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
     ];

@@ -31,6 +31,7 @@ class Household extends Model
         'financial_management_type',
         'balance_percentages',
         'enable_turn_suggestions',
+        'exclude_inter_transfers_from_stats',
         'turn_suggestion_settings',
         'last_turn_assignments',
     ];
@@ -39,6 +40,7 @@ class Household extends Model
         'financial_management_type' => 'string',
         'balance_percentages' => 'array',
         'enable_turn_suggestions' => 'boolean',
+        'exclude_inter_transfers_from_stats' => 'boolean',
         'turn_suggestion_settings' => 'array',
         'last_turn_assignments' => 'array',
     ];
@@ -195,6 +197,26 @@ class Household extends Model
     public function budgets()
     {
         return $this->hasMany(Budget::class);
+    }
+
+    /**
+     * Verifica se i trasferimenti inter-household verso/da questa household
+     * devono essere esclusi dai calcoli statistici per impostazione predefinita.
+     */
+    public function shouldExcludeInterTransfersFromStats(): bool
+    {
+        return (bool) $this->exclude_inter_transfers_from_stats;
+    }
+
+    /**
+     * Calcola il valore di default per exclude_from_stats quando si crea
+     * un trasferimento inter-household tra questa household e un'altra.
+     * Ritorna true se ALMENO UNA delle due households ha il flag attivo.
+     */
+    public static function computeExcludeDefault(self $source, self $destination): bool
+    {
+        return $source->shouldExcludeInterTransfersFromStats()
+            || $destination->shouldExcludeInterTransfersFromStats();
     }
 
     /**
