@@ -18,13 +18,14 @@ test.describe('Transazioni', () => {
     });
 
     test('mostra il pulsante "Nuova Transazione"', async ({ page }) => {
+        // .first() perché il link appare sia nell'header che nell'empty state
         await expect(
-            page.getByRole('link', { name: /nuova transazione/i })
+            page.getByRole('link', { name: /nuova transazione/i }).first()
         ).toBeVisible();
     });
 
     test('il pulsante "Nuova Transazione" porta al form di creazione', async ({ page }) => {
-        await page.getByRole('link', { name: /nuova transazione/i }).click();
+        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
         await expect(page).toHaveURL('/transactions/create');
         await expect(page).toHaveTitle(/nuova transazione/i);
     });
@@ -38,9 +39,8 @@ test.describe('Transazioni', () => {
     });
 
     test('i filtri di ricerca sono presenti', async ({ page }) => {
-        // Il form di filtro deve essere presente
-        const filterForm = page.locator('form, [role="search"]').first();
-        await expect(filterForm).toBeVisible();
+        // I filtri sono select element in un CardBox (non wrappati in un form)
+        await expect(page.locator('select').first()).toBeVisible();
     });
 
     test('navigazione paginazione funziona se ci sono più pagine', async ({ page }) => {

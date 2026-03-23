@@ -687,7 +687,10 @@ export default function Authenticated({
                             {/* User Menu */}
                             <Dropdown>
                                 <Dropdown.Trigger>
-                                    <button className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                                    <button
+                                        className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                                        aria-label={`Menu utente: ${user.name}`}
+                                    >
                                         <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
                                             {user.name.charAt(0).toUpperCase()}
                                         </div>

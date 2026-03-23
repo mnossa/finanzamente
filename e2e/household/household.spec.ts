@@ -18,8 +18,8 @@ test.describe('Household', () => {
     test('mostra il nome della household "Casa E2E"', async ({ page }) => {
         await page.goto('/households/1');
 
-        // Il seeder crea "Casa E2E"
-        await expect(page.getByText('Casa E2E')).toBeVisible({ timeout: 8_000 });
+        // Il seeder crea "Casa E2E" — .first() evita strict mode se il testo compare più volte
+        await expect(page.getByText('Casa E2E').first()).toBeVisible({ timeout: 8_000 });
     });
 
     test('mostra la sezione dei membri', async ({ page }) => {
@@ -34,10 +34,11 @@ test.describe('Household', () => {
     test('mostra la sezione per invitare nuovi membri', async ({ page }) => {
         await page.goto('/households/1');
 
-        await expect(
-            page.getByPlaceholder(/email.*invit|inserisci.*email/i)
-                .or(page.getByLabel(/email.*invit/i))
-        ).toBeVisible({ timeout: 8_000 });
+        // Click "Invita Membro" per aprire il modale con il campo email
+        await page.getByRole('button', { name: /invita membro/i }).click();
+
+        // Il campo email appare nel modale
+        await expect(page.locator('#invite_email')).toBeVisible({ timeout: 8_000 });
     });
 
     test('il pannello di selezione household è raggiungibile', async ({ page }) => {

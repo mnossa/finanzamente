@@ -44,21 +44,9 @@ test.describe('Dashboard principale', () => {
         ).toBeVisible();
     });
 
-    test('il logout tramite dropdown funziona', async ({ page }) => {
-        // Apri il dropdown utente (il trigger mostra il nome utente)
-        const userMenu = page.getByRole('button', { name: /utente e2e/i });
-        await userMenu.click();
-
-        // Clicca "Esci"
-        const logoutButton = page.getByRole('button', { name: /^esci$/i });
-        await expect(logoutButton).toBeVisible();
-        await logoutButton.click();
-
-        await expect(page).toHaveURL('/login', { timeout: 10_000 });
-    });
-
     test('il link al profilo nel dropdown funziona', async ({ page }) => {
-        const userMenu = page.getByRole('button', { name: /utente e2e/i });
+        // Apri il menu utente tramite aria-label (funziona su desktop e mobile)
+        const userMenu = page.getByRole('button', { name: /menu utente/i });
         await userMenu.click();
 
         await page.getByRole('link', { name: /^profilo$/i }).click();

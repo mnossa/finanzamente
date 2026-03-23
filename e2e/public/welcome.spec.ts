@@ -19,7 +19,8 @@ test.describe('Homepage pubblica', () => {
 
     test('mostra il link "Inizia gratis ora" che punta a /register', async ({ page }) => {
         await page.goto('/');
-        const cta = page.getByRole('link', { name: /inizia gratis/i });
+        // Prende il primo link corrispondente (possono esisterne più di uno nella pagina)
+        const cta = page.getByRole('link', { name: /inizia gratis/i }).first();
         await expect(cta).toBeVisible();
         await expect(cta).toHaveAttribute('href', /register/);
     });
