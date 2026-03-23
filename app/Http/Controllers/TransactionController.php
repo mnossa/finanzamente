@@ -358,19 +358,12 @@ class TransactionController extends Controller
         ]);
 
         // Sincronizza i tag (esistenti + nuovi da creare)
-        $tagIds = $validated['tag_ids'] ?? [];
-        if (!empty($validated['new_tag_names'])) {
-            foreach ($validated['new_tag_names'] as $tagName) {
-                $tag = Tag::findByNameForHousehold($tagName, $user->active_household_id)
-                    ?? Tag::create([
-                        'household_id' => $user->active_household_id,
-                        'name' => $tagName,
-                        'color' => '#6366f1',
-                    ]);
-                $tagIds[] = $tag->id;
-            }
-        }
-        $transaction->tags()->sync(array_unique($tagIds));
+        $tagIds = $this->resolveTagIds(
+            $validated['tag_ids'] ?? [],
+            $validated['new_tag_names'] ?? [],
+            $user->active_household_id
+        );
+        $transaction->tags()->sync($tagIds);
 
         // Aggiorna il saldo del conto
         $account->current_balance += $amount;
@@ -600,19 +593,12 @@ class TransactionController extends Controller
         ]);
 
         // Sincronizza i tag (esistenti + nuovi da creare)
-        $tagIds = $validated['tag_ids'] ?? [];
-        if (!empty($validated['new_tag_names'])) {
-            foreach ($validated['new_tag_names'] as $tagName) {
-                $tag = Tag::findByNameForHousehold($tagName, $user->active_household_id)
-                    ?? Tag::create([
-                        'household_id' => $user->active_household_id,
-                        'name' => $tagName,
-                        'color' => '#6366f1',
-                    ]);
-                $tagIds[] = $tag->id;
-            }
-        }
-        $transaction->tags()->sync(array_unique($tagIds));
+        $tagIds = $this->resolveTagIds(
+            $validated['tag_ids'] ?? [],
+            $validated['new_tag_names'] ?? [],
+            Auth::user()->active_household_id
+        );
+        $transaction->tags()->sync($tagIds);
 
         // Se è un trasferimento, aggiorna anche la transazione collegata
         if ($isTransfer) {
@@ -866,5 +852,29 @@ class TransactionController extends Controller
         if ($transaction->is_private && $transaction->user_id !== $user->id) {
             abort(403, 'Questa transazione è privata.');
         }
+    }
+
+    /**
+     * Risolve gli ID dei tag da sincronizzare: restituisce gli ID dei tag esistenti
+     * più quelli creati al volo dai nuovi nomi forniti (normalizzati in uppercase,
+     * con riuso del tag esistente se il nome corrisponde case-insensitive).
+     *
+     * @param array $tagIds        ID di tag già esistenti da associare
+     * @param array $newTagNames   Nuovi nomi di tag da creare/trovare
+     * @param int   $householdId   ID della household corrente
+     * @return array               Array unico di ID tag da sincronizzare
+     */
+    private function resolveTagIds(array $tagIds, array $newTagNames, int $householdId): array
+    {
+        foreach ($newTagNames as $tagName) {
+            $tag = Tag::findByNameForHousehold($tagName, $householdId)
+                ?? Tag::create([
+                    'household_id' => $householdId,
+                    'name' => $tagName,
+                    'color' => '#6366f1',
+                ]);
+            $tagIds[] = $tag->id;
+        }
+        return array_unique($tagIds);
     }
 }
