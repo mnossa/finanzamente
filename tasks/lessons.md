@@ -8,3 +8,4 @@
 - [2026-03-23] feat(e2e): add logout test and improve existing tests for consistency (bab5531) — Matteo Nossa
 - [2026-03-23] feat: add exclude from stats functionality for inter-household transfers and households (264783f) — Matteo Nossa
 - [2026-03-23] feat: add MySQL readiness check to Playwright workflow and optimize migration backfill process (ca67835) — Matteo Nossa
+- [2026-03-23] feat: traduzione email di recupero password in italiano (0d135d5) — copilot-swe-agent[bot]
