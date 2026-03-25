@@ -167,7 +167,7 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
                 <div className="flex-1">
                     <form onSubmit={submit} autoComplete="off">
                         {/* Honeypot fields per laravel-honeypot */}
-                        <input type="text" name="my_name" className="hidden" tabIndex={-1} autoComplete="off" />
+                        <input type="text" name="my_name" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
                         <input type="hidden" name="my_time" value={typeof window !== 'undefined' ? Date.now() : ''} />
 
                         {/* Campi nascosti piano selezionato */}

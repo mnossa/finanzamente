@@ -32,11 +32,14 @@ class MollieWebhookController extends Controller
         try {
             $this->processPaymentWebhook($mollieId);
         } catch (\Throwable $e) {
+            // Logghiamo e segnaliamo l'eccezione per il debug, ma restituiamo sempre 200
+            // per evitare che Mollie continui a re-inviare il webhook (best practice Mollie).
+            report($e);
             Log::error('Mollie webhook error', [
                 'mollie_id' => $mollieId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            // Restituiamo sempre 200 per evitare che Mollie continui a reinviare
         }
 
         return response('', 200);

@@ -156,9 +156,19 @@ class MollieService
     }
 
     /**
-     * Genera il link hosted per la modifica del metodo di pagamento (Mollie Dashboard Link).
-     * Mollie non fornisce un portal cliente standalone, ma è possibile creare un nuovo
-     * pagamento con sequenceType=first per aggiornare il mandate.
+     * Genera il link hosted per la modifica del metodo di pagamento.
+     *
+     * Mollie non fornisce un portal cliente standalone equivalente a Stripe Customer Portal.
+     * La soluzione standard è creare un nuovo pagamento con sequenceType=first per un importo
+     * simbolico (0,01 €) che registra un nuovo mandate (autorizzazione addebito futuro).
+     *
+     * Nota sull'addebito di 0,01 €:
+     * - L'importo viene effettivamente addebitato al cliente come verifica del metodo di pagamento.
+     * - Non viene rimborsato automaticamente da Mollie; se si desidera rimborsarlo è necessario
+     *   emettere un refund separato tramite l'API Mollie dopo la verifica.
+     * - La descrizione del pagamento visibile al cliente è "Aggiornamento metodo di pagamento".
+     * - Una volta completato il pagamento, il webhook aggiorna il mollie_mandate_id sulla subscription,
+     *   che verrà usato per i futuri rinnovi ricorrenti.
      */
     public function createUpdatePaymentMethodUrl(
         User $user,
