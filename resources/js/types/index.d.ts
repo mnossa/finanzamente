@@ -94,6 +94,10 @@ export type PageProps<
         clientId: string;
         apiKey: string;
     };
+    plan?: {
+        current: string;
+        pro_enabled: boolean;
+    } | null;
 };
 
 export interface AppNotification {

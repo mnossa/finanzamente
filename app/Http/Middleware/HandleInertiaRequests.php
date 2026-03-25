@@ -88,6 +88,10 @@ class HandleInertiaRequests extends Middleware
                 'clientId' => config('services.google_drive.client_id', ''),
                 'apiKey'   => config('services.google_drive.api_key', ''),
             ],
+            'plan' => fn () => $user ? [
+                'current' => $user->plan ?? 'base',
+                'pro_enabled' => config('plans.pro_enabled', true),
+            ] : null,
         ];
     }
 }

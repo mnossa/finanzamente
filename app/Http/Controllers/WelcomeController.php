@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PlanService;
 use Artesaos\SEOTools\Facades\OpenGraph;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use Artesaos\SEOTools\Facades\TwitterCard;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
  */
 class WelcomeController extends Controller
 {
+    public function __construct(private readonly PlanService $planService) {}
+
     public function index(): View
     {
         SEOMeta::setTitle('FinanzaMente - Gestisci le tue finanze con intelligenza');
@@ -31,6 +34,10 @@ class WelcomeController extends Controller
         TwitterCard::setDescription('Webapp di gestione finanziaria personale per chi vive in Italia.');
         TwitterCard::addValue('card', 'summary_large_image');
 
-        return view('welcome');
+        return view('welcome', [
+            'plans' => $this->planService->getPlansForFrontend(),
+            'proEnabled' => $this->planService->isProEnabled(),
+            'annualDiscountPercent' => $this->planService->getAnnualDiscountPercent(),
+        ]);
     }
 }
