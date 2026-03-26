@@ -55,10 +55,13 @@ e2e-seed:
 	@echo "[+] Preparazione database per test E2E..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan migrate:fresh --force
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=E2ESeeder --force
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
 	@echo "[+] Database E2E pronto (utente: e2e@finanzamente.test)"
 
 # Esegui i test Playwright E2E in modalità headless
 playwright:
+	@echo "[+] Pulizia cache per reset rate limiter..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
 	@echo "[+] Esecuzione test E2E Playwright..."
 	PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test
 

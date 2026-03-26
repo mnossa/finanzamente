@@ -536,8 +536,12 @@
         if (!toggle) return;
 
         var isAnnual = false;
-        var priceMonthly = @json(number_format($proMonthly, 2, ',', '.') . ' €');
-        var priceAnnualMonthly = @json(number_format($proAnnualMonthly, 2, ',', '.') . ' €');
+        @php
+            $priceMonthlyFormatted = number_format($proMonthly, 2, ',', '.') . ' €';
+            $priceAnnualMonthlyFormatted = number_format($proAnnualMonthly, 2, ',', '.') . ' €';
+        @endphp
+        var priceMonthly = @json($priceMonthlyFormatted);
+        var priceAnnualMonthly = @json($priceAnnualMonthlyFormatted);
         var baseSelectUrl = @json(route('plan.select'));
 
         toggle.addEventListener('click', function() {
