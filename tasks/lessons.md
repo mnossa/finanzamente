@@ -11,3 +11,4 @@
 - [2026-03-23] feat: traduzione email di recupero password in italiano (0d135d5) — copilot-swe-agent[bot]
 - [2026-03-23] Fix DRY: extract resolveTagIds helper, fix undefined $user in update(), fix TagAutocomplete filtering (69c808e) — copilot-swe-agent[bot]
 - [2026-03-26] Merge pull request #28 from mnossa/copilot/add-mollie-payment-system (5ce918a) — mnossa
+- [2026-03-26] Enhance Pro plan feature display: update badge style and text for better visibility (b1db33b) — Matteo Nossa
