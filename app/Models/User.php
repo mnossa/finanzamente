@@ -70,6 +70,22 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(InboxItem::class);
     }
 
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Restituisce la sottoscrizione attiva più recente (se presente).
+     */
+    public function activeSubscription(): ?Subscription
+    {
+        return $this->subscriptions()
+            ->whereIn('status', ['active', 'pending'])
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -91,6 +107,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'vat_number',
         'profile_completed',
         'profile_settings',
+        'plan',
+        'mollie_customer_id',
     ];
 
     /**

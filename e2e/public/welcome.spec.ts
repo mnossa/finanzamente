@@ -17,12 +17,12 @@ test.describe('Homepage pubblica', () => {
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     });
 
-    test('mostra il link "Inizia gratis ora" che punta a /register', async ({ page }) => {
+    test('mostra il link "Inizia gratis ora" che punta a /select-plan', async ({ page }) => {
         await page.goto('/');
         // Prende il primo link corrispondente (possono esisterne più di uno nella pagina)
         const cta = page.getByRole('link', { name: /inizia gratis/i }).first();
         await expect(cta).toBeVisible();
-        await expect(cta).toHaveAttribute('href', /register/);
+        await expect(cta).toHaveAttribute('href', /select-plan|register/);
     });
 
     test('il link "Accedi" nella nav porta a /login', async ({ page }) => {

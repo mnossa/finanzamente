@@ -107,4 +107,23 @@ return [
         'api_key'   => env('GOOGLE_DRIVE_API_KEY', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mollie — Sistema di pagamento
+    |--------------------------------------------------------------------------
+    |
+    | API key per Mollie, usata per l'elaborazione dei pagamenti e la gestione
+    | degli abbonamenti ricorrenti (piano Pro).
+    | Registrazione: https://www.mollie.com/it
+    |
+    | MOLLIE_KEY: API key Mollie (test_... in dev, live_... in produzione)
+    | MOLLIE_WEBHOOK_SECRET: segreto opzionale per validare i webhook
+    |
+    */
+
+    'mollie' => [
+        'key' => env('MOLLIE_KEY'),
+        'webhook_secret' => env('MOLLIE_WEBHOOK_SECRET'),
+    ],
+
 ];

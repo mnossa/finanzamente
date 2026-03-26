@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +15,7 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
-    public function __construct()
+    public function __construct(private readonly PlanService $planService)
     {
         // Applica honeypot solo alla registrazione
         $this->middleware(\Spatie\Honeypot\ProtectAgainstSpam::class)->only('store');
@@ -22,10 +23,28 @@ class RegisteredUserController extends Controller
 
     /**
      * Display the registration view.
+     * Accetta un parametro opzionale `plan` (base/pro) e `billing_cycle` (monthly/annual).
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Auth/Register');
+        $selectedPlan = $request->query('plan', 'base');
+        $billingCycle = $request->query('billing_cycle', 'monthly');
+
+        // Validazione dei parametri di piano
+        if (! $this->planService->planExists($selectedPlan)) {
+            $selectedPlan = 'base';
+        }
+
+        if (! in_array($billingCycle, ['monthly', 'annual'])) {
+            $billingCycle = 'monthly';
+        }
+
+        return Inertia::render('Auth/Register', [
+            'selectedPlan' => $selectedPlan,
+            'billingCycle' => $billingCycle,
+            'plans' => $this->planService->getPlansForFrontend(),
+            'proEnabled' => $this->planService->isProEnabled(),
+        ]);
     }
 
     /**
@@ -52,7 +71,16 @@ class RegisteredUserController extends Controller
                 'size:11',
                 'regex:/^[0-9]{11}$/',
             ],
+            'selected_plan' => 'nullable|string|in:base,pro',
+            'billing_cycle' => 'nullable|string|in:monthly,annual',
         ]);
+
+        $selectedPlan = $request->input('selected_plan', 'base');
+
+        // Se il piano Pro non è abilitato, forza al piano base
+        if ($selectedPlan === 'pro' && ! $this->planService->isProEnabled()) {
+            $selectedPlan = 'base';
+        }
 
         $user = User::create([
             'name' => $request->name,
@@ -61,6 +89,7 @@ class RegisteredUserController extends Controller
             'user_type' => $request->user_type,
             'fiscal_code' => $request->user_type === 'persona' && $request->filled('fiscal_code') ? strtoupper($request->fiscal_code) : null,
             'vat_number' => $request->user_type === 'partita_iva' && $request->filled('vat_number') ? $request->vat_number : null,
+            'plan' => 'base', // inizia sempre con il piano base, verrà aggiornato dopo il pagamento
         ]);
 
         // Invia l'email di verifica manualmente invece di usare l'evento Registered
@@ -68,6 +97,13 @@ class RegisteredUserController extends Controller
         $user->sendEmailVerificationNotification();
 
         Auth::login($user);
+
+        // Se l'utente ha scelto il piano Pro, salva in sessione per il checkout post-verifica
+        if ($selectedPlan === 'pro') {
+            $request->session()->put('pending_pro_plan', [
+                'billing_cycle' => $request->input('billing_cycle', 'monthly'),
+            ]);
+        }
 
         return redirect(route('verification.notice', absolute: false));
     }

@@ -20,8 +20,10 @@ use App\Http\Controllers\InvestmentAnalysisController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentImportController;
+use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TelegramLinkController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\ThemePreferenceController;
@@ -59,6 +61,11 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
     ->name('telegram.webhook')
     ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
+// Webhook Mollie — pubblico, escluso da CSRF
+Route::post('/mollie/webhook', [MollieWebhookController::class, 'handle'])
+    ->name('mollie.webhook')
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
 // Rotte pubbliche per inviti household
 Route::get('/invitations/{token}/register', [HouseholdInvitationController::class, 'showRegisterForm'])
     ->name('household-invitations.register');
@@ -80,6 +87,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/households', [HouseholdController::class, 'store'])->name('households.store');
         Route::post('/households/{household}/set-active', [HouseholdController::class, 'setActive'])->name('households.set-active');
     });
+
+    // Abbonamento e fatturazione — accessibili senza household attiva
+    Route::get('/profile/subscription', [SubscriptionController::class, 'show'])->name('profile.subscription');
+    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::get('/subscription/{subscription}/return', [SubscriptionController::class, 'return'])->name('subscription.return');
+    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/subscription/update-payment-method', [SubscriptionController::class, 'updatePaymentMethod'])->name('subscription.update-payment-method');
+    Route::get('/subscription/{subscription}/payment-method/return', [SubscriptionController::class, 'paymentMethodReturn'])->name('subscription.payment-method.return');
+    Route::patch('/subscription/billing', [SubscriptionController::class, 'updateBilling'])->name('subscription.billing.update');
 });
 
 // Rotte che richiedono autenticazione E household attiva
