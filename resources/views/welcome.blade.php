@@ -463,8 +463,8 @@
                 <!-- Piano Pro -->
                 @if($proPlan && $proEnabled)
                 <div class="bg-gradient-to-b from-accent-600 to-accent-700 rounded-2xl p-6 sm:p-8 shadow-accent relative flex flex-col text-white">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span class="bg-white text-accent-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Consigliato</span>
+                    <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                        <span class="bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md">⭐ Consigliato</span>
                     </div>
                     <div class="text-center mb-6">
                         <h3 class="text-xl font-bold text-white mb-1">FinanzaMente Pro</h3>
