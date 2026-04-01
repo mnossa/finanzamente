@@ -54,6 +54,18 @@ class HouseholdController extends Controller
     {
         $user = $request->user();
 
+        // Limite piano Base: massimo 1 household per utente
+        if (!$user->isPro()) {
+            $existingCount = $user->households()->count();
+            $maxHouseholds = config('plans.base_limits.max_households', 1);
+
+            if ($existingCount >= $maxHouseholds) {
+                return redirect()
+                    ->route('households.create')
+                    ->with('error', 'Il piano Base permette una sola household. Passa al piano Pro per crearne altre.');
+            }
+        }
+
         // Crea la household
         $household = Household::create([
             'name' => $request->name,

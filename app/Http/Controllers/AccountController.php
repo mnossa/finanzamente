@@ -72,12 +72,18 @@ class AccountController extends Controller
      */
     public function create(): Response
     {
+        $user = Auth::user();
         $currencies = Currency::orderBy('code')->get(['code', 'name', 'symbol']);
+
+        $accountsCount = Account::where('household_id', $user->active_household_id)->count();
+        $maxAccounts = $user->isPro() ? null : config('plans.base_limits.max_accounts', 3);
 
         return Inertia::render('Accounts/Create', [
             'accountTypes' => Account::TYPES,
             'currencies' => $currencies,
             'defaultCurrency' => 'EUR',
+            'accountsCount' => $accountsCount,
+            'maxAccounts' => $maxAccounts,
         ]);
     }
 
@@ -87,6 +93,19 @@ class AccountController extends Controller
     public function store(StoreAccountRequest $request): RedirectResponse
     {
         $user = Auth::user();
+
+        // Limite piano Base: massimo 3 conti per household
+        if (!$user->isPro()) {
+            $maxAccounts = config('plans.base_limits.max_accounts', 3);
+            $currentCount = Account::where('household_id', $user->active_household_id)->count();
+
+            if ($currentCount >= $maxAccounts) {
+                return redirect()
+                    ->route('accounts.create')
+                    ->with('error', "Il piano Base permette un massimo di {$maxAccounts} conti. Passa al piano Pro per aggiungerne altri.");
+            }
+        }
+
         $validated = $request->validated();
 
         $account = new Account($validated);

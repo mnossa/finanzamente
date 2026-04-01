@@ -104,26 +104,30 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
-    Route::get('/simulations', [SimulationController::class, 'index'])->name('simulations.index');
 
     // Notifiche in-app
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
-    // Inbox / Staging Area (voci da Telegram o manuali, in attesa di revisione)
-    Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
-    Route::put('/inbox/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
-    Route::post('/inbox/{inboxItem}/confirm', [InboxController::class, 'confirm'])->name('inbox.confirm');
-    Route::post('/inbox/{inboxItem}/reject', [InboxController::class, 'reject'])->name('inbox.reject');
-    Route::post('/inbox/confirm-all', [InboxController::class, 'confirmAll'])->name('inbox.confirm-all');
-    Route::post('/inbox/reject-all', [InboxController::class, 'rejectAll'])->name('inbox.reject-all');
-    Route::delete('/inbox/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');
-    Route::get('/inbox/{inboxItem}/image', [InboxController::class, 'image'])->name('inbox.image');
+    // ===== ROTTE PRO — Simulazioni, Inbox, Telegram =====
+    Route::middleware(['requires-pro'])->group(function () {
+        Route::get('/simulations', [SimulationController::class, 'index'])->name('simulations.index');
 
-    // Collegamento account Telegram
-    Route::get('/telegram/link', [TelegramLinkController::class, 'show'])->name('telegram.link.show');
-    Route::post('/telegram/link/generate', [TelegramLinkController::class, 'generate'])->name('telegram.link.generate');
-    Route::delete('/telegram/link', [TelegramLinkController::class, 'unlink'])->name('telegram.link.unlink');
+        // Inbox / Staging Area (voci da Telegram o manuali, in attesa di revisione)
+        Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+        Route::put('/inbox/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
+        Route::post('/inbox/{inboxItem}/confirm', [InboxController::class, 'confirm'])->name('inbox.confirm');
+        Route::post('/inbox/{inboxItem}/reject', [InboxController::class, 'reject'])->name('inbox.reject');
+        Route::post('/inbox/confirm-all', [InboxController::class, 'confirmAll'])->name('inbox.confirm-all');
+        Route::post('/inbox/reject-all', [InboxController::class, 'rejectAll'])->name('inbox.reject-all');
+        Route::delete('/inbox/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');
+        Route::get('/inbox/{inboxItem}/image', [InboxController::class, 'image'])->name('inbox.image');
+
+        // Collegamento account Telegram
+        Route::get('/telegram/link', [TelegramLinkController::class, 'show'])->name('telegram.link.show');
+        Route::post('/telegram/link/generate', [TelegramLinkController::class, 'generate'])->name('telegram.link.generate');
+        Route::delete('/telegram/link', [TelegramLinkController::class, 'unlink'])->name('telegram.link.unlink');
+    });
 
     // Profilo utente
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -142,10 +146,13 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::get('/households/{household}', [HouseholdController::class, 'show'])->name('households.show');
     Route::patch('/households/{household}', [HouseholdController::class, 'update'])->name('households.update');
     Route::delete('/households/{household}', [HouseholdController::class, 'destroy'])->name('households.destroy');
-    Route::post('/households/{household}/invite', [HouseholdController::class, 'invite'])->name('households.invite');
-    Route::delete('/households/{household}/invitations/{invitation}', [HouseholdController::class, 'cancelInvitation'])->name('households.cancel-invitation');
-    Route::post('/households/{household}/invitations/{invitation}/resend', [HouseholdController::class, 'resendInvitation'])->name('households.resend-invitation');
-    Route::delete('/households/{household}/members/{member}', [HouseholdController::class, 'removeMember'])->name('households.remove-member');
+    // Household invite/membri — solo Pro
+    Route::middleware(['requires-pro'])->group(function () {
+        Route::post('/households/{household}/invite', [HouseholdController::class, 'invite'])->name('households.invite');
+        Route::delete('/households/{household}/invitations/{invitation}', [HouseholdController::class, 'cancelInvitation'])->name('households.cancel-invitation');
+        Route::post('/households/{household}/invitations/{invitation}/resend', [HouseholdController::class, 'resendInvitation'])->name('households.resend-invitation');
+        Route::delete('/households/{household}/members/{member}', [HouseholdController::class, 'removeMember'])->name('households.remove-member');
+    });
     Route::post('/households/{household}/leave', [HouseholdController::class, 'leave'])->name('households.leave');
 
     // ===== ROTTE DI MODIFICA (richiedono permessi can-modify, bloccate per ospiti) =====
@@ -200,18 +207,20 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
         Route::delete('/transfers/{transfer}', [TransferController::class, 'destroy'])->name('transfers.destroy');
 
-        // Inter-Household Transfers - modifica
-        Route::get('/inter-household-transfers/create', [InterHouseholdTransferController::class, 'create'])->name('inter-household-transfers.create');
-        Route::post('/inter-household-transfers', [InterHouseholdTransferController::class, 'store'])->name('inter-household-transfers.store');
-        Route::delete('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'destroy'])->name('inter-household-transfers.destroy');
+        // ===== ROTTE PRO (require piano Pro) =====
+        Route::middleware(['requires-pro'])->group(function () {
+            // Inter-Household Transfers - modifica
+            Route::get('/inter-household-transfers/create', [InterHouseholdTransferController::class, 'create'])->name('inter-household-transfers.create');
+            Route::post('/inter-household-transfers', [InterHouseholdTransferController::class, 'store'])->name('inter-household-transfers.store');
+            Route::delete('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'destroy'])->name('inter-household-transfers.destroy');
 
-        // Refunds - modifica
-        Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
-        Route::get('/refunds/search-transactions', [RefundController::class, 'searchTransactions'])->name('refunds.search-transactions');
-        Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
-        Route::get('/refunds/{refund}/edit', [RefundController::class, 'edit'])->name('refunds.edit');
-        Route::patch('/refunds/{refund}', [RefundController::class, 'update'])->name('refunds.update');
-        Route::delete('/refunds/{refund}', [RefundController::class, 'destroy'])->name('refunds.destroy');
+            // Refunds - modifica
+            Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
+            Route::get('/refunds/search-transactions', [RefundController::class, 'searchTransactions'])->name('refunds.search-transactions');
+            Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
+            Route::get('/refunds/{refund}/edit', [RefundController::class, 'edit'])->name('refunds.edit');
+            Route::patch('/refunds/{refund}', [RefundController::class, 'update'])->name('refunds.update');
+            Route::delete('/refunds/{refund}', [RefundController::class, 'destroy'])->name('refunds.destroy');
 
         // Tags - modifica
         Route::get('/tags/create', [TagController::class, 'create'])->name('tags.create');
@@ -227,133 +236,121 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
         Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
         Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
-        // Debts & Credits - modifica
-        Route::get('/debts-credits/create', [DebtCreditController::class, 'create'])->name('debts-credits.create');
-        Route::post('/debts-credits', [DebtCreditController::class, 'store'])->name('debts-credits.store');
-        Route::get('/debts-credits/{debts_credit}/edit', [DebtCreditController::class, 'edit'])->name('debts-credits.edit');
-        Route::put('/debts-credits/{debts_credit}', [DebtCreditController::class, 'update'])->name('debts-credits.update');
-        Route::post('/debts-credits/{debts_credit}/close', [DebtCreditController::class, 'close'])->name('debts-credits.close');
-        Route::post('/debts-credits/{debts_credit}/reopen', [DebtCreditController::class, 'reopen'])->name('debts-credits.reopen');
-        Route::delete('/debts-credits/{debts_credit}', [DebtCreditController::class, 'destroy'])->name('debts-credits.destroy');
+            // Debts & Credits - modifica
+            Route::get('/debts-credits/create', [DebtCreditController::class, 'create'])->name('debts-credits.create');
+            Route::post('/debts-credits', [DebtCreditController::class, 'store'])->name('debts-credits.store');
+            Route::get('/debts-credits/{debts_credit}/edit', [DebtCreditController::class, 'edit'])->name('debts-credits.edit');
+            Route::put('/debts-credits/{debts_credit}', [DebtCreditController::class, 'update'])->name('debts-credits.update');
+            Route::post('/debts-credits/{debts_credit}/close', [DebtCreditController::class, 'close'])->name('debts-credits.close');
+            Route::post('/debts-credits/{debts_credit}/reopen', [DebtCreditController::class, 'reopen'])->name('debts-credits.reopen');
+            Route::delete('/debts-credits/{debts_credit}', [DebtCreditController::class, 'destroy'])->name('debts-credits.destroy');
 
-        // Recurring Transactions - modifica
-        Route::get('/recurring-transactions/create', [RecurringTransactionController::class, 'create'])->name('recurring-transactions.create');
-        Route::post('/recurring-transactions', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');
-        Route::get('/recurring-transactions/{recurringTransaction}/edit', [RecurringTransactionController::class, 'edit'])->name('recurring-transactions.edit');
-        Route::put('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'update'])->name('recurring-transactions.update');
-        Route::post('/recurring-transactions/{recurringTransaction}/generate', [RecurringTransactionController::class, 'generate'])->name('recurring-transactions.generate');
-        Route::delete('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'destroy'])->name('recurring-transactions.destroy');
+            // Recurring Transactions - modifica
+            Route::get('/recurring-transactions/create', [RecurringTransactionController::class, 'create'])->name('recurring-transactions.create');
+            Route::post('/recurring-transactions', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');
+            Route::get('/recurring-transactions/{recurringTransaction}/edit', [RecurringTransactionController::class, 'edit'])->name('recurring-transactions.edit');
+            Route::put('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'update'])->name('recurring-transactions.update');
+            Route::post('/recurring-transactions/{recurringTransaction}/generate', [RecurringTransactionController::class, 'generate'])->name('recurring-transactions.generate');
+            Route::delete('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'destroy'])->name('recurring-transactions.destroy');
 
-        // Financial Goals - modifica
-        Route::get('/financial-goals/create', [FinancialGoalController::class, 'create'])->name('financial-goals.create');
-        Route::post('/financial-goals', [FinancialGoalController::class, 'store'])->name('financial-goals.store');
-        Route::get('/financial-goals/{financialGoal}/edit', [FinancialGoalController::class, 'edit'])->name('financial-goals.edit');
-        Route::put('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'update'])->name('financial-goals.update');
-        Route::post('/financial-goals/{financialGoal}/contribute', [FinancialGoalController::class, 'contribute'])->name('financial-goals.contribute');
-        Route::put('/financial-goals/{financialGoal}/change-status', [FinancialGoalController::class, 'changeStatus'])->name('financial-goals.change-status');
-        Route::delete('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'destroy'])->name('financial-goals.destroy');
+            // Financial Goals - modifica
+            Route::get('/financial-goals/create', [FinancialGoalController::class, 'create'])->name('financial-goals.create');
+            Route::post('/financial-goals', [FinancialGoalController::class, 'store'])->name('financial-goals.store');
+            Route::get('/financial-goals/{financialGoal}/edit', [FinancialGoalController::class, 'edit'])->name('financial-goals.edit');
+            Route::put('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'update'])->name('financial-goals.update');
+            Route::post('/financial-goals/{financialGoal}/contribute', [FinancialGoalController::class, 'contribute'])->name('financial-goals.contribute');
+            Route::put('/financial-goals/{financialGoal}/change-status', [FinancialGoalController::class, 'changeStatus'])->name('financial-goals.change-status');
+            Route::delete('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'destroy'])->name('financial-goals.destroy');
 
-        // Investment Analyses - modifica
-        Route::post('/investment-analyses', [InvestmentAnalysisController::class, 'store'])->name('investment-analyses.store');
-        Route::delete('/investment-analyses/{investmentAnalysis}', [InvestmentAnalysisController::class, 'destroy'])->name('investment-analyses.destroy');
+            // Investment Analyses - modifica
+            Route::post('/investment-analyses', [InvestmentAnalysisController::class, 'store'])->name('investment-analyses.store');
+            Route::delete('/investment-analyses/{investmentAnalysis}', [InvestmentAnalysisController::class, 'destroy'])->name('investment-analyses.destroy');
 
-        // Investment Assets - modifica
-        Route::get('/investment-assets/create', [InvestmentAssetController::class, 'create'])->name('investment-assets.create');
-        Route::post('/investment-assets', [InvestmentAssetController::class, 'store'])->name('investment-assets.store');
-        Route::get('/investment-assets/{investmentAsset}/edit', [InvestmentAssetController::class, 'edit'])->name('investment-assets.edit');
-        Route::put('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'update'])->name('investment-assets.update');
-        Route::delete('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'destroy'])->name('investment-assets.destroy');
+            // Investment Assets - modifica
+            Route::get('/investment-assets/create', [InvestmentAssetController::class, 'create'])->name('investment-assets.create');
+            Route::post('/investment-assets', [InvestmentAssetController::class, 'store'])->name('investment-assets.store');
+            Route::get('/investment-assets/{investmentAsset}/edit', [InvestmentAssetController::class, 'edit'])->name('investment-assets.edit');
+            Route::put('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'update'])->name('investment-assets.update');
+            Route::delete('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'destroy'])->name('investment-assets.destroy');
 
-        // Investments - modifica
-        Route::get('/investments/import', [InvestmentImportController::class, 'create'])->name('investments.import');
-        Route::post('/investments/import/preview', [InvestmentImportController::class, 'preview'])->name('investments.import.preview');
-        Route::post('/investments/import/sheets', [InvestmentImportController::class, 'sheets'])->name('investments.import.sheets');
-        Route::post('/investments/import', [InvestmentImportController::class, 'store'])->name('investments.import.store');
-        Route::get('/investments/import/layouts', [InvestmentImportController::class, 'layouts'])->name('investments.import.layouts');
-        Route::post('/investments/import/layouts', [InvestmentImportController::class, 'storeLayout'])->name('investments.import.layouts.store');
-        Route::patch('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'updateLayout'])->name('investments.import.layouts.update');
-        Route::delete('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'destroyLayout'])->name('investments.import.layouts.destroy');
-        Route::get('/investments/create', [InvestmentController::class, 'create'])->name('investments.create');
-        Route::post('/investments', [InvestmentController::class, 'store'])->name('investments.store');
-        Route::get('/investments/{investment}/edit', [InvestmentController::class, 'edit'])->name('investments.edit');
-        Route::put('/investments/{investment}', [InvestmentController::class, 'update'])->name('investments.update');
-        Route::post('/investments/{investment}/sell', [InvestmentController::class, 'sell'])->name('investments.sell');
-        Route::delete('/investments/{investment}', [InvestmentController::class, 'destroy'])->name('investments.destroy');
-    });
+            // Investments - modifica
+            Route::get('/investments/import', [InvestmentImportController::class, 'create'])->name('investments.import');
+            Route::post('/investments/import/preview', [InvestmentImportController::class, 'preview'])->name('investments.import.preview');
+            Route::post('/investments/import/sheets', [InvestmentImportController::class, 'sheets'])->name('investments.import.sheets');
+            Route::post('/investments/import', [InvestmentImportController::class, 'store'])->name('investments.import.store');
+            Route::get('/investments/import/layouts', [InvestmentImportController::class, 'layouts'])->name('investments.import.layouts');
+            Route::post('/investments/import/layouts', [InvestmentImportController::class, 'storeLayout'])->name('investments.import.layouts.store');
+            Route::patch('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'updateLayout'])->name('investments.import.layouts.update');
+            Route::delete('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'destroyLayout'])->name('investments.import.layouts.destroy');
+            Route::get('/investments/create', [InvestmentController::class, 'create'])->name('investments.create');
+            Route::post('/investments', [InvestmentController::class, 'store'])->name('investments.store');
+            Route::get('/investments/{investment}/edit', [InvestmentController::class, 'edit'])->name('investments.edit');
+            Route::put('/investments/{investment}', [InvestmentController::class, 'update'])->name('investments.update');
+            Route::post('/investments/{investment}/sell', [InvestmentController::class, 'sell'])->name('investments.sell');
+            Route::delete('/investments/{investment}', [InvestmentController::class, 'destroy'])->name('investments.destroy');
+        }); // fine requires-pro
+    }); // fine can-modify
 
-    // ===== ROTTE DI SOLA LETTURA (accessibili anche agli ospiti) =====
+    // ===== ROTTE DI SOLA LETTURA =====
     // NOTA: Queste devono venire DOPO le rotte con /create per evitare conflitti
-    
+
     // Attachments - download (lettura)
     Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
 
-    // Tax Deductions - gestione detrazioni fiscali
-    Route::get('/tax-deductions', [TaxDeductionExportController::class, 'index'])->name('tax-deductions.index');
-    Route::get('/tax-deductions/export-pdf', [TaxDeductionExportController::class, 'exportPdf'])->name('tax-deductions.export-pdf');
-    Route::get('/tax-deductions/export-attachments', [TaxDeductionExportController::class, 'exportAttachments'])->name('tax-deductions.export-attachments');
-
-    // Lifestyle Inflation Score
-    Route::get('/lifestyle-score', [LifestyleScoreController::class, 'index'])->name('lifestyle-score.index');
-    Route::get('/lifestyle-score/export-xls', [LifestyleScoreController::class, 'exportXls'])->name('lifestyle-score.export-xls');
-    Route::get('/lifestyle-score/export-pdf', [LifestyleScoreController::class, 'exportPdf'])->name('lifestyle-score.export-pdf');
-
-    // Accounts - lettura
+    // ===== ROTTE BASE — lettura =====
     Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
     Route::get('/accounts/{account}', [AccountController::class, 'show'])->name('accounts.show');
 
-    // Transactions - lettura
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
 
-    // Categories - lettura
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 
-    // Transfers - lettura
     Route::get('/transfers', [TransferController::class, 'index'])->name('transfers.index');
     Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
 
-    // Inter-Household Transfers - lettura
-    Route::get('/inter-household-transfers', [InterHouseholdTransferController::class, 'index'])->name('inter-household-transfers.index');
-    Route::get('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'show'])->name('inter-household-transfers.show');
-    Route::get('/households/{household}/accounts', [InterHouseholdTransferController::class, 'getHouseholdAccounts'])->name('households.accounts');
-
-    // Refunds - lettura
-    Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
-    Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
-
-    // Tags - lettura
     Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
     Route::get('/tags/search', [TagController::class, 'search'])->name('tags.search');
 
-    // Budgets - lettura
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
     Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
 
-    // Debts & Credits - lettura
-    Route::get('/debts-credits', [DebtCreditController::class, 'index'])->name('debts-credits.index');
-    Route::get('/debts-credits/{debts_credit}', [DebtCreditController::class, 'show'])->name('debts-credits.show');
+    // ===== ROTTE PRO — lettura =====
+    Route::middleware(['requires-pro'])->group(function () {
+        Route::get('/inter-household-transfers', [InterHouseholdTransferController::class, 'index'])->name('inter-household-transfers.index');
+        Route::get('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'show'])->name('inter-household-transfers.show');
+        Route::get('/households/{household}/accounts', [InterHouseholdTransferController::class, 'getHouseholdAccounts'])->name('households.accounts');
 
-    // Recurring Transactions - lettura
-    Route::get('/recurring-transactions', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
-    Route::get('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'show'])->name('recurring-transactions.show');
+        Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
+        Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
 
-    // Financial Goals - lettura
-    Route::get('/financial-goals', [FinancialGoalController::class, 'index'])->name('financial-goals.index');
-    Route::get('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'show'])->name('financial-goals.show');
+        Route::get('/recurring-transactions', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
+        Route::get('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'show'])->name('recurring-transactions.show');
 
-    // Investment Analyses - lettura
-    Route::get('/investment-analyses', [InvestmentAnalysisController::class, 'index'])->name('investment-analyses.index');
+        Route::get('/debts-credits', [DebtCreditController::class, 'index'])->name('debts-credits.index');
+        Route::get('/debts-credits/{debts_credit}', [DebtCreditController::class, 'show'])->name('debts-credits.show');
 
-    // Investment Assets - lettura
-    Route::get('/investment-assets', [InvestmentAssetController::class, 'index'])->name('investment-assets.index');
+        Route::get('/financial-goals', [FinancialGoalController::class, 'index'])->name('financial-goals.index');
+        Route::get('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'show'])->name('financial-goals.show');
 
-    // Investments - lettura
-    Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
-    Route::get('/investments/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
+        Route::get('/tax-deductions', [TaxDeductionExportController::class, 'index'])->name('tax-deductions.index');
+        Route::get('/tax-deductions/export-pdf', [TaxDeductionExportController::class, 'exportPdf'])->name('tax-deductions.export-pdf');
+        Route::get('/tax-deductions/export-attachments', [TaxDeductionExportController::class, 'exportAttachments'])->name('tax-deductions.export-attachments');
 
-    // Asset Allocation
-    Route::get('/asset-allocation', [AssetAllocationController::class, 'index'])->name('asset-allocation.index');
-    Route::get('/asset-allocation/widget', [AssetAllocationController::class, 'widget'])->name('asset-allocation.widget');
+        Route::get('/lifestyle-score', [LifestyleScoreController::class, 'index'])->name('lifestyle-score.index');
+        Route::get('/lifestyle-score/export-xls', [LifestyleScoreController::class, 'exportXls'])->name('lifestyle-score.export-xls');
+        Route::get('/lifestyle-score/export-pdf', [LifestyleScoreController::class, 'exportPdf'])->name('lifestyle-score.export-pdf');
+
+        Route::get('/investment-analyses', [InvestmentAnalysisController::class, 'index'])->name('investment-analyses.index');
+
+        Route::get('/investment-assets', [InvestmentAssetController::class, 'index'])->name('investment-assets.index');
+
+        Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
+        Route::get('/investments/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
+
+        Route::get('/asset-allocation', [AssetAllocationController::class, 'index'])->name('asset-allocation.index');
+        Route::get('/asset-allocation/widget', [AssetAllocationController::class, 'widget'])->name('asset-allocation.widget');
+    }); // fine requires-pro lettura
 
     // Fixed Expenses - lettura (disponibile per tutte le household con bilanciamento debiti)
     Route::get('/households/{household}/fixed-expenses', [FixedExpenseController::class, 'dashboard'])->name('fixed-expenses.dashboard');

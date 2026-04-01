@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import ProBadge from '@/Components/ProBadge';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
@@ -24,9 +25,11 @@ interface CreateProps {
     accountTypes: AccountTypes;
     currencies: Currency[];
     defaultCurrency: string;
+    accountsCount: number;
+    maxAccounts: number | null;
 }
 
-export default function Create({ accountTypes, currencies, defaultCurrency }: CreateProps) {
+export default function Create({ accountTypes, currencies, defaultCurrency, accountsCount, maxAccounts }: CreateProps) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         type: 'bank',
@@ -52,6 +55,33 @@ export default function Create({ accountTypes, currencies, defaultCurrency }: Cr
             <Head title="Nuovo Conto" />
 
             <PageContent maxWidth="2xl">
+                    {/* Banner limite piano Base */}
+                    {maxAccounts !== null && (
+                        <div className={clsx(
+                            'mb-4 flex items-start gap-3 rounded-xl border p-4 text-sm',
+                            accountsCount >= maxAccounts
+                                ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-300'
+                                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'
+                        )}>
+                            <div className="flex-1">
+                                {accountsCount >= maxAccounts ? (
+                                    <>
+                                        <p className="font-semibold">Limite conti raggiunto ({accountsCount}/{maxAccounts})</p>
+                                        <p className="mt-1">Il piano Base permette un massimo di {maxAccounts} conti. Passa al piano Pro per aggiungerne altri.</p>
+                                    </>
+                                ) : (
+                                    <p>
+                                        Stai usando <strong>{accountsCount}/{maxAccounts}</strong> conti disponibili nel piano Base.{' '}
+                                        <Link href={route('profile.subscription')} className="underline font-medium">
+                                            Passa al Pro
+                                        </Link>{' '}
+                                        per conti illimitati.
+                                    </p>
+                                )}
+                            </div>
+                            <ProBadge size="sm" />
+                        </div>
+                    )}
                     <CardBox>
                         <form onSubmit={submit} className="space-y-6">
                             {/* Nome */}

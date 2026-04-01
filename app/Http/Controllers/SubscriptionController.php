@@ -116,8 +116,13 @@ class SubscriptionController extends Controller
         }
 
         try {
+            // Salva la data di scadenza del periodo già pagato PRIMA di cancellare
+            $expiresAt = $subscription->next_payment_at ?? now();
+
             $this->mollieService->cancelSubscription($subscription);
-            $user->update(['plan' => 'base']);
+
+            // Non degradiamo subito: l'utente mantiene il Pro fino a fine periodo
+            $user->update(['plan_expires_at' => $expiresAt]);
         } catch (\Throwable $e) {
             report($e);
 
@@ -126,7 +131,7 @@ class SubscriptionController extends Controller
         }
 
         return redirect()->route('profile.subscription')
-            ->with('success', 'Rinnovo automatico disabilitato. L\'abbonamento rimarrà attivo fino alla scadenza.');
+            ->with('success', 'Rinnovo automatico disabilitato. Il piano Pro resterà attivo fino al ' . $user->plan_expires_at->format('d/m/Y') . '.');
     }
 
     /**

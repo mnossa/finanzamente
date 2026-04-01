@@ -87,6 +87,69 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Verifica se l'utente ha un piano Pro attivo.
+     * Considera anche la data di scadenza: se plan_expires_at è nel passato,
+     * il piano è scaduto anche se il campo plan è ancora 'pro'.
+     */
+    public function isPro(): bool
+    {
+        if ($this->plan !== 'pro') {
+            return false;
+        }
+
+        if ($this->plan_expires_at !== null && $this->plan_expires_at->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Restituisce i giorni rimanenti prima della scadenza del piano Pro.
+     * Null se non c'è una scadenza impostata (abbonamento attivo senza cancellazione).
+     */
+    public function planExpiresInDays(): ?int
+    {
+        if ($this->plan_expires_at === null) {
+            return null;
+        }
+
+        $days = (int) now()->diffInDays($this->plan_expires_at, false);
+        return $days >= 0 ? $days : 0;
+    }
+
+    /**
+     * Restituisce il numero di conti in eccesso rispetto al limite Base.
+     * Zero se l'utente è Pro o non ha conti in eccesso.
+     */
+    public function excessAccountsCount(): int
+    {
+        if ($this->isPro() || ! $this->active_household_id) {
+            return 0;
+        }
+
+        $maxAccounts = config('plans.base_limits.max_accounts', 3);
+        $count = \App\Models\Account::where('household_id', $this->active_household_id)->count();
+
+        return max(0, $count - $maxAccounts);
+    }
+
+    /**
+     * Restituisce il numero di household in eccesso rispetto al limite Base (1).
+     * Zero se l'utente è Pro o non ha household in eccesso.
+     */
+    public function excessHouseholdsCount(): int
+    {
+        if ($this->isPro()) {
+            return 0;
+        }
+
+        $count = $this->households()->count();
+
+        return max(0, $count - config('plans.base_limits.max_households', 1));
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -108,6 +171,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'profile_completed',
         'profile_settings',
         'plan',
+        'plan_expires_at',
         'mollie_customer_id',
     ];
 
@@ -132,6 +196,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'plan_expires_at' => 'datetime',
             'preferences' => 'array',
             'profile_completed' => 'boolean',
             'profile_settings' => 'array',
