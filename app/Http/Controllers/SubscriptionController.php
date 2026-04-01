@@ -33,6 +33,7 @@ class SubscriptionController extends Controller
             'billing_cycle' => 'required|in:monthly,annual',
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $billingCycle = $request->billing_cycle;
         $priceCents = $this->planService->getPriceCents('pro', $billingCycle);
@@ -107,6 +108,7 @@ class SubscriptionController extends Controller
      */
     public function cancel(Request $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
 
@@ -116,8 +118,13 @@ class SubscriptionController extends Controller
         }
 
         try {
+            // Salva la data di scadenza del periodo già pagato PRIMA di cancellare
+            $expiresAt = $subscription->next_payment_at ?? now();
+
             $this->mollieService->cancelSubscription($subscription);
-            $user->update(['plan' => 'base']);
+
+            // Non degradiamo subito: l'utente mantiene il Pro fino a fine periodo
+            $user->update(['plan_expires_at' => $expiresAt]);
         } catch (\Throwable $e) {
             report($e);
 
@@ -126,7 +133,7 @@ class SubscriptionController extends Controller
         }
 
         return redirect()->route('profile.subscription')
-            ->with('success', 'Rinnovo automatico disabilitato. L\'abbonamento rimarrà attivo fino alla scadenza.');
+            ->with('success', 'Rinnovo automatico disabilitato. Il piano Pro resterà attivo fino al ' . $user->plan_expires_at->format('d/m/Y') . '.');
     }
 
     /**
@@ -134,6 +141,7 @@ class SubscriptionController extends Controller
      */
     public function updatePaymentMethod(Request $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
 
@@ -180,6 +188,7 @@ class SubscriptionController extends Controller
      */
     public function updateBilling(Request $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
 
@@ -208,13 +217,15 @@ class SubscriptionController extends Controller
     /**
      * Pagina abbonamento nell'area profilo.
      */
-    public function show(): Response
+    public function show(Request $request): Response
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
         $plans = $this->planService->getPlansForFrontend();
 
         return Inertia::render('Profile/Subscription', [
+            'fromFeature' => $request->query('from'),
             'subscription' => $subscription ? [
                 'id' => $subscription->id,
                 'plan' => $subscription->plan,

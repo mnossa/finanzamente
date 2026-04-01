@@ -99,7 +99,21 @@ class DebtCreditController extends Controller
      */
     public function store(StoreDebtCreditRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // Limite piano Base: massimo 5 debiti/crediti attivi
+        if (!$user->isPro()) {
+            $max = config('plans.base_limits.max_debts_credits', 5);
+            $count = DebtCredit::where('household_id', $user->active_household_id)
+                ->whereIn('status', ['open', 'overdue'])
+                ->count();
+            if ($count >= $max) {
+                return redirect()->route('debts-credits.create')
+                    ->with('error', "Hai raggiunto il limite di {$max} debiti/crediti attivi del piano Base. Passa a Pro per debiti illimitati.");
+            }
+        }
+
         $validated = $request->validated();
 
         // Determina lo stato iniziale

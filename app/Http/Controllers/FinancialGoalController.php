@@ -88,7 +88,21 @@ class FinancialGoalController extends Controller
      */
     public function store(StoreFinancialGoalRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // Limite piano Base: massimo 1 obiettivo finanziario attivo
+        if (!$user->isPro()) {
+            $max = config('plans.base_limits.max_financial_goals', 1);
+            $count = FinancialGoal::where('household_id', $user->active_household_id)
+                ->where('status', 'in_progress')
+                ->count();
+            if ($count >= $max) {
+                return redirect()->route('financial-goals.create')
+                    ->with('error', "Hai raggiunto il limite di {$max} obiettivo finanziario attivo del piano Base. Passa a Pro per obiettivi illimitati.");
+            }
+        }
+
         $validated = $request->validated();
 
         FinancialGoal::create([

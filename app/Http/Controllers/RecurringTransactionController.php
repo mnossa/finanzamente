@@ -151,7 +151,22 @@ class RecurringTransactionController extends Controller
      */
     public function store(StoreRecurringTransactionRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // Limite piano Base: massimo 5 transazioni ricorrenti attive
+        if (!$user->isPro()) {
+            $max = config('plans.base_limits.max_recurring_transactions', 5);
+            $count = RecurringTransaction::where('user_id', $user->id)
+                ->where(function ($q) {
+                    $q->whereNull('end_date')->orWhere('end_date', '>=', now());
+                })->count();
+            if ($count >= $max) {
+                return redirect()->route('recurring-transactions.create')
+                    ->with('error', "Hai raggiunto il limite di {$max} transazioni ricorrenti attive del piano Base. Passa a Pro per aggiunte illimitate.");
+            }
+        }
+
         $validated = $request->validated();
 
         // Determina il segno dell'importo in base al tipo di categoria

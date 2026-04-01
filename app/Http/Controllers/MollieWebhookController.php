@@ -104,8 +104,20 @@ class MollieWebhookController extends Controller
             }
         }
 
-        // Attiva il piano Pro sull'utente
-        $user->update(['plan' => $subscription->plan]);
+        // Per i pagamenti ricorrenti (rinnovo), aggiorna la data del prossimo pagamento
+        if ($payment->sequenceType === 'recurring') {
+            $nextPaymentAt = now()->add(
+                $subscription->billing_cycle === 'annual' ? '12 months' : '1 month'
+            );
+            $subscription->update(['next_payment_at' => $nextPaymentAt]);
+        }
+
+        // Attiva il piano Pro sull'utente e rimuove l'eventuale data di scadenza
+        // (es. se l'utente aveva cancellato e poi ha rinnovato manualmente)
+        $user->update([
+            'plan' => $subscription->plan,
+            'plan_expires_at' => null,
+        ]);
 
         // Aggiorna la subscription come attiva
         $subscription->update(['status' => 'active']);
@@ -114,6 +126,7 @@ class MollieWebhookController extends Controller
             'user_id' => $user->id,
             'subscription_id' => $subscription->id,
             'plan' => $subscription->plan,
+            'sequence_type' => $payment->sequenceType,
         ]);
     }
 

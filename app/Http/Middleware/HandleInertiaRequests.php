@@ -89,8 +89,12 @@ class HandleInertiaRequests extends Middleware
                 'apiKey'   => config('services.google_drive.api_key', ''),
             ],
             'plan' => fn () => $user ? [
-                'current' => $user->plan ?? 'base',
+                'current' => $user->isPro() ? 'pro' : 'base',
                 'pro_enabled' => config('plans.pro_enabled', true),
+                'expires_at' => $user->plan_expires_at?->toISOString(),
+                'days_until_expiry' => $user->planExpiresInDays(),
+                'excess_accounts' => $user->excessAccountsCount(),
+                'excess_households' => $user->excessHouseholdsCount(),
             ] : null,
         ];
     }

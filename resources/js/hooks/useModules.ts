@@ -6,12 +6,16 @@ import { PageProps, Module, ModulesMap } from '@/types';
  * 
  * Fornisce metodi per:
  * - Verificare se un modulo è abilitato
+ * - Verificare se un modulo è bloccato per piano
+ * - Verificare se l'utente è Pro
  * - Ottenere informazioni su un modulo
  * - Filtrare moduli per categoria
  * - Ottenere hint di sblocco per moduli bloccati
  */
 export function useModules() {
-    const { modules } = usePage<PageProps>().props;
+    const { modules, plan } = usePage<PageProps>().props;
+
+    const isPro = plan?.current === 'pro';
 
     /**
      * Verifica se un modulo è abilitato per l'utente corrente.
@@ -25,6 +29,13 @@ export function useModules() {
      */
     const isModuleLocked = (moduleId: string): boolean => {
         return modules[moduleId]?.locked ?? false;
+    };
+
+    /**
+     * Verifica se un modulo è bloccato specificamente per piano.
+     */
+    const isModuleLockedByPlan = (moduleId: string): boolean => {
+        return modules[moduleId]?.locked_by_plan ?? false;
     };
 
     /**
@@ -56,6 +67,13 @@ export function useModules() {
     };
 
     /**
+     * Ottiene tutti i moduli bloccati per piano.
+     */
+    const getLockedByPlanModules = (): Module[] => {
+        return Object.values(modules).filter(m => m.locked_by_plan);
+    };
+
+    /**
      * Ottiene i moduli filtrati per categoria.
      */
     const getModulesByCategory = (
@@ -84,12 +102,15 @@ export function useModules() {
 
     return {
         modules,
+        isPro,
         isModuleEnabled,
         isModuleLocked,
+        isModuleLockedByPlan,
         getModule,
         getUnlockHint,
         getEnabledModules,
         getLockedModules,
+        getLockedByPlanModules,
         getModulesByCategory,
         getEnabledModulesByCategory,
         hasCategoryEnabled,
