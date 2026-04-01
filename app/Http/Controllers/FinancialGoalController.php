@@ -88,6 +88,7 @@ class FinancialGoalController extends Controller
      */
     public function store(StoreFinancialGoalRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 1 obiettivo finanziario attivo

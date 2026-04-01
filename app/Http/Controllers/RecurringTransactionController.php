@@ -151,6 +151,7 @@ class RecurringTransactionController extends Controller
      */
     public function store(StoreRecurringTransactionRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 5 transazioni ricorrenti attive

@@ -88,23 +88,5 @@ return [
             'mollie_plan_id_monthly' => env('MOLLIE_PRO_PLAN_ID_MONTHLY'),
             'mollie_plan_id_annual' => env('MOLLIE_PRO_PLAN_ID_ANNUAL'),
         ],
-        // Piano Business — struttura predisposta per implementazione futura
-        'business' => [
-            'name' => 'Business',
-            'label' => 'Per liberi professionisti e PMI',
-            'price_monthly_cents' => (int) env('BUSINESS_PRICE_MONTHLY_CENTS', 499), // 4,99 €
-            'currency' => 'EUR',
-            'coming_soon' => true,
-            'features' => [
-                'Tutto del piano Pro',
-                'Gestione IVA avanzata (Partita IVA)',
-                'Detrazioni fiscali e 730 avanzate',
-                'Report contabili per commercialista',
-                'Household illimitate',
-                'Supporto prioritario',
-            ],
-            'mollie_plan_id_monthly' => env('MOLLIE_BUSINESS_PLAN_ID_MONTHLY'),
-            'mollie_plan_id_annual' => env('MOLLIE_BUSINESS_PLAN_ID_ANNUAL'),
-        ],
     ],
 ];

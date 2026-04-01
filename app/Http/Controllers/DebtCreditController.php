@@ -99,6 +99,7 @@ class DebtCreditController extends Controller
      */
     public function store(StoreDebtCreditRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 5 debiti/crediti attivi

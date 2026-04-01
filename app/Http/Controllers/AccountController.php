@@ -72,6 +72,7 @@ class AccountController extends Controller
      */
     public function create(): Response
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $currencies = Currency::orderBy('code')->get(['code', 'name', 'symbol']);
 
@@ -92,6 +93,7 @@ class AccountController extends Controller
      */
     public function store(StoreAccountRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 3 conti per household

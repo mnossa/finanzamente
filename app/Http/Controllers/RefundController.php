@@ -275,6 +275,7 @@ class RefundController extends Controller
      */
     public function store(StoreRefundRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 10 rimborsi attivi
