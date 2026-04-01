@@ -213,13 +213,14 @@ class SubscriptionController extends Controller
     /**
      * Pagina abbonamento nell'area profilo.
      */
-    public function show(): Response
+    public function show(Request $request): Response
     {
         $user = Auth::user();
         $subscription = $user->activeSubscription();
         $plans = $this->planService->getPlansForFrontend();
 
         return Inertia::render('Profile/Subscription', [
+            'fromFeature' => $request->query('from'),
             'subscription' => $subscription ? [
                 'id' => $subscription->id,
                 'plan' => $subscription->plan,

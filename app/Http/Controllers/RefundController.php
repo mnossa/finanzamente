@@ -276,6 +276,19 @@ class RefundController extends Controller
     public function store(StoreRefundRequest $request): RedirectResponse
     {
         $user = Auth::user();
+
+        // Limite piano Base: massimo 10 rimborsi attivi
+        if (!$user->isPro()) {
+            $max = config('plans.base_limits.max_refunds', 10);
+            $count = Refund::where('user_id', $user->id)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->count();
+            if ($count >= $max) {
+                return redirect()->route('refunds.create')
+                    ->with('error', "Hai raggiunto il limite di {$max} rimborsi attivi del piano Base. Passa a Pro per rimborsi illimitati.");
+            }
+        }
+
         $validated = $request->validated();
 
         $this->refundService->createRefund([

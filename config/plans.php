@@ -21,9 +21,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'base_limits' => [
-        'max_accounts'    => 3,
-        'max_households'  => 1,
-        'can_invite_members' => false,
+        'max_accounts'               => 5,
+        'max_households'             => 1,
+        'max_recurring_transactions' => 5,
+        'max_refunds'                => 10,
+        'max_debts_credits'          => 5,
+        'max_financial_goals'        => 1,
+        'can_invite_members'         => false,
     ],
 
     /*
@@ -40,13 +44,17 @@ return [
             'currency' => 'EUR',
             'features' => [
                 'Dashboard e panoramica finanziaria',
-                'Fino a 3 conti bancari',
+                'Fino a 5 conti bancari',
                 'Transazioni illimitate',
                 'Categorie personalizzate',
                 'Tag per le transazioni',
                 'Trasferimenti tra conti',
                 'Budget mensile',
                 'Import bancario da CSV/XLS',
+                'Fino a 5 transazioni ricorrenti',
+                'Fino a 10 rimborsi attivi',
+                'Fino a 5 debiti/crediti attivi',
+                '1 obiettivo finanziario',
                 '1 sola household',
             ],
             'mollie_plan_id_monthly' => null,
@@ -54,17 +62,17 @@ return [
         ],
         'pro' => [
             'name' => 'Pro',
-            'label' => 'Tutte le funzionalità',
-            'price_monthly_cents' => (int) env('PRO_PRICE_MONTHLY_CENTS', 990), // 9,90 €
+            'label' => 'Tutto, senza limiti',
+            'price_monthly_cents' => (int) env('PRO_PRICE_MONTHLY_CENTS', 299), // 2,99 €
             'currency' => 'EUR',
             'features' => [
                 'Tutto del piano Base',
                 'Conti bancari illimitati',
                 'Household illimitate con membri',
-                'Transazioni ricorrenti',
-                'Rimborsi',
-                'Debiti e crediti',
-                'Obiettivi finanziari',
+                'Transazioni ricorrenti illimitate',
+                'Rimborsi illimitati',
+                'Debiti e crediti illimitati',
+                'Obiettivi finanziari illimitati',
                 'Investimenti e portafoglio',
                 'Asset allocation',
                 'Analisi investimenti',
@@ -75,10 +83,28 @@ return [
                 'Gestione IVA (Partita IVA)',
                 'Trasferimenti tra household',
                 'Lifestyle Inflation Score',
-                'Export PDF e XLS avanzati',
+                'Export PDF e XLS avanzati (prossimamente)',
             ],
             'mollie_plan_id_monthly' => env('MOLLIE_PRO_PLAN_ID_MONTHLY'),
             'mollie_plan_id_annual' => env('MOLLIE_PRO_PLAN_ID_ANNUAL'),
+        ],
+        // Piano Business — struttura predisposta per implementazione futura
+        'business' => [
+            'name' => 'Business',
+            'label' => 'Per liberi professionisti e PMI',
+            'price_monthly_cents' => (int) env('BUSINESS_PRICE_MONTHLY_CENTS', 499), // 4,99 €
+            'currency' => 'EUR',
+            'coming_soon' => true,
+            'features' => [
+                'Tutto del piano Pro',
+                'Gestione IVA avanzata (Partita IVA)',
+                'Detrazioni fiscali e 730 avanzate',
+                'Report contabili per commercialista',
+                'Household illimitate',
+                'Supporto prioritario',
+            ],
+            'mollie_plan_id_monthly' => env('MOLLIE_BUSINESS_PLAN_ID_MONTHLY'),
+            'mollie_plan_id_annual' => env('MOLLIE_BUSINESS_PLAN_ID_ANNUAL'),
         ],
     ],
 ];

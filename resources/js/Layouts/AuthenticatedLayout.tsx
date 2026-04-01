@@ -187,8 +187,8 @@ const navigationSections: NavigationSection[] = [
         items: [
             { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags, moduleId: 'inbox', requiresPro: true },
             { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
-            { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo, moduleId: 'refunds', requiresPro: true },
-            { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat, moduleId: 'recurring_transactions', requiresPro: true },
+            { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo, moduleId: 'refunds' },
+            { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat, moduleId: 'recurring_transactions' },
         ]
     },
     {
@@ -196,8 +196,8 @@ const navigationSections: NavigationSection[] = [
         defaultExpanded: false,
         items: [
             { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank, moduleId: 'budgets' },
-            { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits', requiresPro: true },
-            { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals', requiresPro: true },
+            { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits' },
+            { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals' },
             { name: 'Rimborso 730', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730', requiresPro: true },
             // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management', requiresPro: true }, // Implementazione futura
         ]
@@ -264,7 +264,7 @@ function PlanAlertBanner() {
                     </span>
                     <span className="flex-1">
                         Il tuo account è stato degradato al piano Base.
-                        {plan.excess_accounts > 0 && ` Hai ${plan.excess_accounts} conto/i in eccesso rispetto al limite (3).`}
+                        {plan.excess_accounts > 0 && ` Hai ${plan.excess_accounts} conto/i in eccesso rispetto al limite (5).`}
                         {plan.excess_households > 0 && ` Hai ${plan.excess_households} household in eccesso rispetto al limite (1).`}
                         {' '}
                         <Link href={route('profile.subscription')} className="font-semibold underline hover:no-underline">
@@ -285,7 +285,7 @@ function PlanAlertBanner() {
     );
 }
 
-
+function FlashMessages() {
     const { flash } = usePage<PageProps>().props;
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
@@ -347,7 +347,10 @@ function SidebarNavItem({
 }) {
     const Icon = item.icon;
     const lockedByPlan = item.requiresPro && !isPro;
-    const href = lockedByPlan ? route('profile.subscription') : (item.hrefParams ? route(item.href, item.hrefParams) : route(item.href));
+    const fromParam = lockedByPlan && item.moduleId ? `?from=${item.moduleId}` : '';
+    const href = lockedByPlan
+        ? route('profile.subscription') + fromParam
+        : (item.hrefParams ? route(item.href, item.hrefParams) : route(item.href));
 
     return (
         <Link

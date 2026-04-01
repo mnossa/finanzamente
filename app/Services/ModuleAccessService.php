@@ -89,14 +89,14 @@ class ModuleAccessService
             'requires_plan' => 'base',
         ],
 
-        // Moduli Pro — Transazioni avanzate
+        // Moduli Base — Transazioni avanzate (con limiti nel piano Base)
         'refunds' => [
             'id' => 'refunds',
             'name' => 'Rimborsi',
             'category' => 'special',
             'routes' => ['refunds.*'],
             'requires' => [],
-            'requires_plan' => 'pro',
+            'requires_plan' => 'base',
         ],
         'recurring_transactions' => [
             'id' => 'recurring_transactions',
@@ -104,7 +104,7 @@ class ModuleAccessService
             'category' => 'special',
             'routes' => ['recurring-transactions.*'],
             'requires' => [],
-            'requires_plan' => 'pro',
+            'requires_plan' => 'base',
         ],
         'inter_household_transfers' => [
             'id' => 'inter_household_transfers',
@@ -115,14 +115,14 @@ class ModuleAccessService
             'requires_plan' => 'pro',
         ],
 
-        // Moduli Pro — Pianificazione
+        // Moduli Base — Pianificazione (con limiti nel piano Base)
         'debts_credits' => [
             'id' => 'debts_credits',
             'name' => 'Debiti e Crediti',
             'category' => 'planning',
             'routes' => ['debts-credits.*'],
             'requires' => [],
-            'requires_plan' => 'pro',
+            'requires_plan' => 'base',
         ],
         'financial_goals' => [
             'id' => 'financial_goals',
@@ -130,7 +130,7 @@ class ModuleAccessService
             'category' => 'planning',
             'routes' => ['financial-goals.*'],
             'requires' => [],
-            'requires_plan' => 'pro',
+            'requires_plan' => 'base',
         ],
 
         // Moduli Pro — Fiscale

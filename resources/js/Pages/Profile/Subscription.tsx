@@ -48,6 +48,7 @@ interface Props extends PageProps {
     currentPlan: string;
     plans: Record<string, PlanData>;
     proEnabled: boolean;
+    fromFeature?: string | null;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -169,7 +170,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
     );
 }
 
-export default function Subscription({ subscription, currentPlan, plans, proEnabled }: Props) {
+export default function Subscription({ subscription, currentPlan, plans, proEnabled, fromFeature }: Props) {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showBillingForm, setShowBillingForm] = useState(false);
     const [isAnnual, setIsAnnual] = useState(false);
@@ -247,6 +248,31 @@ export default function Subscription({ subscription, currentPlan, plans, proEnab
                         </p>
                     )}
                 </div>
+
+                {/* Feature contestuale se l'utente è stato reindirizzato da un modulo Pro */}
+                {!isProUser && fromFeature && (() => {
+                    const featureLabels: Record<string, { name: string; description: string }> = {
+                        simulations: { name: 'Simulazioni finanziarie', description: 'proiezioni e scenari per il tuo futuro finanziario' },
+                        inter_household_transfers: { name: 'Trasferimenti tra Household', description: 'fondi trasferibili tra le tue diverse household' },
+                        inbox: { name: 'Inbox Telegram', description: 'conferma e gestisci transazioni direttamente da Telegram' },
+                        tax_refund_730: { name: 'Detrazioni fiscali / 730', description: 'tracciamento spese detraibili e report per la dichiarazione' },
+                        investments: { name: 'Investimenti e portafoglio', description: 'monitoraggio di azioni, ETF e fondi nel tuo portafoglio' },
+                        asset_allocation: { name: 'Asset Allocation', description: 'analisi della distribuzione del tuo patrimonio' },
+                        investment_assets: { name: 'Gestione Asset', description: 'gestione personalizzata dei tuoi strumenti finanziari' },
+                        investment_analyses: { name: 'Analisi Investimenti', description: 'dashboard avanzata per analizzare le performance' },
+                        lifestyle_score: { name: 'Lifestyle Inflation Score', description: "monitoraggio dell'evoluzione del tuo stile di vita nel tempo" },
+                    };
+                    const feat = featureLabels[fromFeature];
+                    if (!feat) return null;
+                    return (
+                        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+                            <span className="mt-0.5 text-amber-500">🔒</span>
+                            <span className="text-amber-800 dark:text-amber-200">
+                                Stavi cercando <strong>{feat.name}</strong> — {feat.description}. Questa funzionalità è disponibile nel piano Pro.
+                            </span>
+                        </div>
+                    );
+                })()}
 
                 {/* Upgrade a Pro (solo se piano base e Pro è abilitato) */}
                 {!isProUser && proEnabled && proPlan && (
