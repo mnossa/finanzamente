@@ -30,6 +30,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'profile_completed' => true, // Di default completato per i test
+            'plan' => 'pro', // Di default Pro per i test funzionali
             'profile_settings' => [
                 'has_vat' => false,
                 'family_status' => 'single',

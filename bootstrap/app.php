@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'can-modify' => \App\Http\Middleware\EnsureCanModify::class,
             'profile-completed' => \App\Http\Middleware\EnsureProfileCompleted::class,
             'adv-throttle' => \App\Http\Middleware\AdvancedRateLimitWithDelay::class,
+            'requires-pro' => \App\Http\Middleware\RequiresPro::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

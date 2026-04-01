@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
+import ProBadge from '@/Components/ProBadge';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ActiveHousehold, AppNotification, PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -149,6 +150,7 @@ interface NavigationItem {
     excludeRouteMatch?: string;
     hrefParams?: any;
     moduleId?: string; // ID del modulo associato per controllo accesso
+    requiresPro?: boolean; // Esclusivo piano Pro
 }
 
 // Tipo per le sezioni di navigazione
@@ -165,7 +167,7 @@ const navigationSections: NavigationSection[] = [
         defaultExpanded: true,
         items: [
             { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard, moduleId: 'dashboard' },
-            { name: 'Simulazioni', href: 'simulations.index', routeMatch: 'simulations.*', icon: Icons.Simulation },
+            { name: 'Simulazioni', href: 'simulations.index', routeMatch: 'simulations.*', icon: Icons.Simulation, moduleId: 'simulations', requiresPro: true },
         ]
     },
     {
@@ -176,14 +178,14 @@ const navigationSections: NavigationSection[] = [
             { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', excludeRouteMatch: 'transactions.quick-session', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
             { name: 'Sessione Rapida', href: 'transactions.quick-session', routeMatch: 'transactions.quick-session', icon: Icons.Zap },
             { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer, moduleId: 'transfers' },
-            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight, moduleId: 'inter_household_transfers' },
+            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight, moduleId: 'inter_household_transfers', requiresPro: true },
         ]
     },
     {
         title: 'Organizzazione',
         defaultExpanded: false,
         items: [
-            { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags },
+            { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags, moduleId: 'inbox', requiresPro: true },
             { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
             { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo, moduleId: 'refunds' },
             { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat, moduleId: 'recurring_transactions' },
@@ -196,21 +198,92 @@ const navigationSections: NavigationSection[] = [
             { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank, moduleId: 'budgets' },
             { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits' },
             { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals' },
-            { name: 'Rimborso 730', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730' },
-            // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management' }, // Implementazione futura
+            { name: 'Rimborso 730', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730', requiresPro: true },
+            // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management', requiresPro: true }, // Implementazione futura
         ]
     },
     {
         title: 'Investimenti',
         defaultExpanded: false,
         items: [
-            { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments' },
-            { name: 'Asset Allocation', href: 'asset-allocation.index', routeMatch: 'asset-allocation.*', icon: Icons.BarChart2, moduleId: 'investments' },
-            { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets' },
-            { name: 'Analisi Investimenti', href: 'investment-analyses.index', routeMatch: 'investment-analyses.*', icon: Icons.TrendingUp, moduleId: 'investment_analyses' },
+            { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments', requiresPro: true },
+            { name: 'Asset Allocation', href: 'asset-allocation.index', routeMatch: 'asset-allocation.*', icon: Icons.BarChart2, moduleId: 'asset_allocation', requiresPro: true },
+            { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets', requiresPro: true },
+            { name: 'Analisi Investimenti', href: 'investment-analyses.index', routeMatch: 'investment-analyses.*', icon: Icons.TrendingUp, moduleId: 'investment_analyses', requiresPro: true },
         ]
     }
 ];
+
+function PlanAlertBanner() {
+    const { plan } = usePage<PageProps>().props;
+    const [dismissed, setDismissed] = useState(false);
+
+    if (!plan || dismissed) return null;
+
+    const isExpiring = plan.current === 'pro' && plan.expires_at !== null;
+    const hasExcess = plan.current === 'base' && (plan.excess_accounts > 0 || plan.excess_households > 0);
+
+    if (!isExpiring && !hasExcess) return null;
+
+    return (
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
+            {isExpiring && (
+                <div className="relative flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                    <span className="mt-0.5 shrink-0 text-amber-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" />
+                        </svg>
+                    </span>
+                    <span className="flex-1">
+                        {plan.days_until_expiry === 0
+                            ? 'Il tuo piano Pro scade oggi.'
+                            : plan.days_until_expiry === 1
+                                ? 'Il tuo piano Pro scade domani.'
+                                : `Il tuo piano Pro scade tra ${plan.days_until_expiry} giorni.`
+                        }
+                        {' '}
+                        <Link href={route('profile.subscription')} className="font-semibold underline hover:no-underline">
+                            Rinnova ora
+                        </Link>
+                    </span>
+                    <button
+                        onClick={() => setDismissed(true)}
+                        className="shrink-0 hover:opacity-70 transition-opacity"
+                        aria-label="Chiudi avviso"
+                    >
+                        <Icons.X />
+                    </button>
+                </div>
+            )}
+            {hasExcess && (
+                <div className={clsx('relative flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200', isExpiring && 'mt-2')}>
+                    <span className="mt-0.5 shrink-0 text-rose-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" />
+                        </svg>
+                    </span>
+                    <span className="flex-1">
+                        Il tuo account è stato degradato al piano Base.
+                        {plan.excess_accounts > 0 && ` Hai ${plan.excess_accounts} conto/i in eccesso rispetto al limite (5).`}
+                        {plan.excess_households > 0 && ` Hai ${plan.excess_households} household in eccesso rispetto al limite (1).`}
+                        {' '}
+                        <Link href={route('profile.subscription')} className="font-semibold underline hover:no-underline">
+                            Passa a Pro
+                        </Link>
+                        {' '}per riattivare l'accesso completo.
+                    </span>
+                    <button
+                        onClick={() => setDismissed(true)}
+                        className="shrink-0 hover:opacity-70 transition-opacity"
+                        aria-label="Chiudi avviso"
+                    >
+                        <Icons.X />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
 
 function FlashMessages() {
     const { flash } = usePage<PageProps>().props;
@@ -264,34 +337,46 @@ function FlashMessages() {
 function SidebarNavItem({
     item,
     isActive,
+    isPro,
     onClick
 }: {
     item: NavigationItem;
     isActive: boolean;
+    isPro: boolean;
     onClick?: () => void;
 }) {
     const Icon = item.icon;
+    const lockedByPlan = item.requiresPro && !isPro;
+    const fromParam = lockedByPlan && item.moduleId ? `?from=${item.moduleId}` : '';
+    const href = lockedByPlan
+        ? route('profile.subscription') + fromParam
+        : (item.hrefParams ? route(item.href, item.hrefParams) : route(item.href));
 
     return (
         <Link
-            href={item.hrefParams ? route(item.href, item.hrefParams) : route(item.href)}
+            href={href}
             onClick={onClick}
             className={clsx(
                 'flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl',
                 'transition-all duration-200 group',
-                isActive
-                    ? 'bg-emerald-500/10 text-emerald-400'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                lockedByPlan
+                    ? 'text-slate-500 hover:bg-slate-800/50 hover:text-slate-300'
+                    : isActive
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             )}
         >
             <span className={clsx(
-                isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-white',
+                lockedByPlan
+                    ? 'text-slate-600 group-hover:text-slate-400'
+                    : isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-white',
                 'transition-colors duration-200'
             )}>
                 <Icon />
             </span>
-            <span className="ml-3">{item.name}</span>
-            {isActive && (
+            <span className="ml-3 flex-1">{item.name}</span>
+            {lockedByPlan && <ProBadge className="ml-auto" />}
+            {!lockedByPlan && isActive && (
                 <div className="ml-auto indicator-dot" />
             )}
         </Link>
@@ -304,11 +389,13 @@ function CollapsibleNavSection({
     isRouteActive,
     onClick,
     forceExpanded = false,
+    isPro,
 }: {
     section: NavigationSection;
     isRouteActive: (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string) => boolean;
     onClick?: () => void;
     forceExpanded?: boolean;
+    isPro: boolean;
 }) {
     const [isExpanded, setIsExpanded] = useState(section.defaultExpanded ?? false);
 
@@ -359,6 +446,7 @@ function CollapsibleNavSection({
                         key={item.name}
                         item={item}
                         isActive={isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch)}
+                        isPro={isPro}
                         onClick={onClick}
                     />
                 ))}
@@ -373,7 +461,7 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const { auth, activeHousehold, notifications } = usePage<PageProps>().props;
     const user = auth.user;
-    const { isModuleEnabled } = useModules();
+    const { isModuleEnabled, isPro } = useModules();
     const initialTheme = (user.preferences?.theme as string | undefined) ?? 'light';
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -426,16 +514,23 @@ export default function Authenticated({
         return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
     };
 
-    // Filtra le sezioni in base ai moduli disponibili
+    // Filtra le sezioni in base ai moduli disponibili.
+    // Le voci Pro sono sempre incluse (gestite da SidebarNavItem con ProBadge).
+    // Le voci bloccate da impostazioni profilo (non pro) vengono nascoste.
     const filterSectionsByModules = (sections: NavigationSection[]): NavigationSection[] => {
         return sections
             .map(section => ({
                 ...section,
-                items: section.items.filter(item =>
-                    !item.moduleId || isModuleEnabled(item.moduleId)
-                ),
+                items: section.items.filter(item => {
+                    // Le voci Pro sono sempre visibili (badge + redirect)
+                    if (item.requiresPro) return true;
+                    // Le voci senza moduleId sono sempre visibili
+                    if (!item.moduleId) return true;
+                    // Le altre voci si basano sull'abilitazione del modulo (profilo)
+                    return isModuleEnabled(item.moduleId);
+                }),
             }))
-            .filter(section => section.items.length > 0); // Rimuovi sezioni vuote
+            .filter(section => section.items.length > 0);
     };
 
     // Crea le sezioni dinamicamente includendo Household se presente
@@ -539,6 +634,7 @@ export default function Authenticated({
                                     isRouteActive={isRouteActive}
                                     onClick={() => setSidebarOpen(false)}
                                     forceExpanded={!!navSearch.trim()}
+                                    isPro={isPro}
                                 />
                             ))
                         )}
@@ -733,6 +829,9 @@ export default function Authenticated({
 
                     {/* Flash Messages */}
                     <FlashMessages />
+
+                    {/* Alert piano: scadenza Pro o dati in eccesso dopo downgrade */}
+                    <PlanAlertBanner />
 
                     {/* Scrollable Content */}
                     <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">

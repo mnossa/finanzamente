@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches e2e-seed playwright playwright-ui playwright-report
+.PHONY: up down restart logs ps dev build bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches e2e-seed playwright playwright-ui playwright-report set-plan
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -287,4 +287,18 @@ demo-reset:
 		LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=DemoDataSeeder; \
 	else \
 		echo "Operazione annullata."; \
+	fi
+
+# [Solo sviluppo] Imposta il piano di un utente (base o pro)
+# Uso: make set-plan email=utente@email.it plan=pro
+# Opzionale: make set-plan email=utente@email.it plan=pro expires-in=7  (simula scadenza tra 7 giorni)
+set-plan:
+	@if [ -z "$(email)" ] || [ -z "$(plan)" ]; then \
+		echo "Uso: make set-plan email=<email> plan=<base|pro> [expires-in=<giorni>]"; \
+		exit 1; \
+	fi
+	@if [ -n "$(expires-in)" ]; then \
+		LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan dev:set-plan "$(email)" "$(plan)" --expires-in="$(expires-in)"; \
+	else \
+		LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan dev:set-plan "$(email)" "$(plan)"; \
 	fi

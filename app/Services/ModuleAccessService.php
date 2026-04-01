@@ -27,7 +27,8 @@ class ModuleAccessService
      * - name: nome visualizzato
      * - category: categoria di appartenenza
      * - routes: array di pattern di rotte associate
-     * - requires: array di requisiti per l'accesso
+     * - requires: array di requisiti per l'accesso (profilo)
+     * - requires_plan: piano minimo richiesto ('base' | 'pro')
      */
     private const MODULES = [
         // Moduli Base (sempre disponibili)
@@ -37,6 +38,7 @@ class ModuleAccessService
             'category' => 'base',
             'routes' => ['dashboard'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
         'accounts' => [
             'id' => 'accounts',
@@ -44,6 +46,7 @@ class ModuleAccessService
             'category' => 'base',
             'routes' => ['accounts.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
         'transactions' => [
             'id' => 'transactions',
@@ -51,6 +54,7 @@ class ModuleAccessService
             'category' => 'base',
             'routes' => ['transactions.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
         'categories' => [
             'id' => 'categories',
@@ -58,6 +62,15 @@ class ModuleAccessService
             'category' => 'base',
             'routes' => ['categories.*'],
             'requires' => [],
+            'requires_plan' => 'base',
+        ],
+        'tags' => [
+            'id' => 'tags',
+            'name' => 'Tag',
+            'category' => 'base',
+            'routes' => ['tags.*'],
+            'requires' => [],
+            'requires_plan' => 'base',
         ],
         'transfers' => [
             'id' => 'transfers',
@@ -65,22 +78,25 @@ class ModuleAccessService
             'category' => 'base',
             'routes' => ['transfers.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
-        
-        // Transazioni Speciali
-        'inter_household_transfers' => [
-            'id' => 'inter_household_transfers',
-            'name' => 'Trasferimenti tra Household',
-            'category' => 'special',
-            'routes' => ['inter-household-transfers.*'],
+        'budgets' => [
+            'id' => 'budgets',
+            'name' => 'Budget',
+            'category' => 'base',
+            'routes' => ['budgets.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
+
+        // Moduli Base — Transazioni avanzate (con limiti nel piano Base)
         'refunds' => [
             'id' => 'refunds',
             'name' => 'Rimborsi',
             'category' => 'special',
             'routes' => ['refunds.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
         'recurring_transactions' => [
             'id' => 'recurring_transactions',
@@ -88,22 +104,25 @@ class ModuleAccessService
             'category' => 'special',
             'routes' => ['recurring-transactions.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
-        
-        // Pianificazione
-        'budgets' => [
-            'id' => 'budgets',
-            'name' => 'Budget',
-            'category' => 'planning',
-            'routes' => ['budgets.*'],
+        'inter_household_transfers' => [
+            'id' => 'inter_household_transfers',
+            'name' => 'Trasferimenti tra Household',
+            'category' => 'special',
+            'routes' => ['inter-household-transfers.*'],
             'requires' => [],
+            'requires_plan' => 'pro',
         ],
+
+        // Moduli Base — Pianificazione (con limiti nel piano Base)
         'debts_credits' => [
             'id' => 'debts_credits',
             'name' => 'Debiti e Crediti',
             'category' => 'planning',
             'routes' => ['debts-credits.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
         'financial_goals' => [
             'id' => 'financial_goals',
@@ -111,40 +130,35 @@ class ModuleAccessService
             'category' => 'planning',
             'routes' => ['financial-goals.*'],
             'requires' => [],
+            'requires_plan' => 'base',
         ],
-        
-        // Fiscale
+
+        // Moduli Pro — Fiscale
         'tax_refund_730' => [
             'id' => 'tax_refund_730',
-            'name' => 'Rimborso 730',
+            'name' => 'Detrazioni Fiscali / 730',
             'category' => 'fiscal',
-            'routes' => ['tax-deductions.*'], // Temporaneo, poi separare le rotte
+            'routes' => ['tax-deductions.*'],
             'requires' => [],
+            'requires_plan' => 'pro',
         ],
         'vat_management' => [
             'id' => 'vat_management',
             'name' => 'Gestione IVA',
             'category' => 'fiscal',
-            'routes' => ['vat-management.*'], // Implementazione futura
+            'routes' => ['vat-management.*'],
             'requires' => ['has_vat'],
-        ],
-        
-        // Analisi Investimenti (sempre disponibile)
-        'investment_analyses' => [
-            'id' => 'investment_analyses',
-            'name' => 'Analisi Investimenti',
-            'category' => 'investments',
-            'routes' => ['investment-analyses.*'],
-            'requires' => [],
+            'requires_plan' => 'pro',
         ],
 
-        // Investimenti (richiede tracks_investments)
+        // Moduli Pro — Investimenti
         'investments' => [
             'id' => 'investments',
             'name' => 'Investimenti',
             'category' => 'investments',
             'routes' => ['investments.*'],
             'requires' => ['tracks_investments'],
+            'requires_plan' => 'pro',
         ],
         'investment_assets' => [
             'id' => 'investment_assets',
@@ -152,6 +166,59 @@ class ModuleAccessService
             'category' => 'investments',
             'routes' => ['investment-assets.*'],
             'requires' => ['tracks_investments'],
+            'requires_plan' => 'pro',
+        ],
+        'investment_analyses' => [
+            'id' => 'investment_analyses',
+            'name' => 'Analisi Investimenti',
+            'category' => 'investments',
+            'routes' => ['investment-analyses.*'],
+            'requires' => [],
+            'requires_plan' => 'pro',
+        ],
+        'asset_allocation' => [
+            'id' => 'asset_allocation',
+            'name' => 'Asset Allocation',
+            'category' => 'investments',
+            'routes' => ['asset-allocation.*'],
+            'requires' => [],
+            'requires_plan' => 'pro',
+        ],
+
+        // Moduli Pro — Analisi avanzata
+        'simulations' => [
+            'id' => 'simulations',
+            'name' => 'Simulazioni',
+            'category' => 'planning',
+            'routes' => ['simulations.*'],
+            'requires' => [],
+            'requires_plan' => 'pro',
+        ],
+        'lifestyle_score' => [
+            'id' => 'lifestyle_score',
+            'name' => 'Lifestyle Inflation Score',
+            'category' => 'planning',
+            'routes' => ['lifestyle-score.*'],
+            'requires' => [],
+            'requires_plan' => 'pro',
+        ],
+
+        // Moduli Pro — Telegram
+        'telegram' => [
+            'id' => 'telegram',
+            'name' => 'Integrazione Telegram',
+            'category' => 'special',
+            'routes' => ['telegram.*'],
+            'requires' => [],
+            'requires_plan' => 'pro',
+        ],
+        'inbox' => [
+            'id' => 'inbox',
+            'name' => 'Inbox',
+            'category' => 'special',
+            'routes' => ['inbox.*'],
+            'requires' => [],
+            'requires_plan' => 'pro',
         ],
     ];
 
@@ -191,20 +258,23 @@ class ModuleAccessService
         $modules = [];
 
         foreach (self::MODULES as $moduleId => $module) {
-            $canAccess = $this->canAccessModule($user, $module, $profileSettings);
-            $missingRequirements = $this->getMissingRequirements($module, $profileSettings);
-
             // Non mostrare moduli con requisiti non configurabili (come has_vat per utenti persona)
             if (in_array('has_vat', $module['requires']) && $user->user_type !== 'partita_iva') {
                 continue; // Salta questo modulo, non è rilevante per l'utente
             }
 
+            $canAccess = $this->canAccessModule($user, $module, $profileSettings);
+            $missingRequirements = $this->getMissingRequirements($module, $profileSettings);
+            $requiresPro = ($module['requires_plan'] ?? 'base') === 'pro';
+            $lockedByPlan = $requiresPro && !$user->isPro();
+
             $modules[$moduleId] = [
                 ...$module,
                 'enabled' => $canAccess,
                 'locked' => !$canAccess,
+                'locked_by_plan' => $lockedByPlan,
                 'missing_requirements' => $missingRequirements,
-                'unlock_hint' => $this->getUnlockHint($missingRequirements),
+                'unlock_hint' => $this->getUnlockHint($missingRequirements, $lockedByPlan),
             ];
         }
 
@@ -281,6 +351,11 @@ class ModuleAccessService
      */
     private function canAccessModule(User $user, array $module, array $profileSettings): bool
     {
+        // Verifica requisiti dal piano
+        if (($module['requires_plan'] ?? 'base') === 'pro' && !$user->isPro()) {
+            return false;
+        }
+
         // Verifica requisiti dal profilo
         foreach ($module['requires'] as $requirement) {
             // Gestione speciale per has_vat: controlla user_type invece di profile_settings
@@ -295,11 +370,6 @@ class ModuleAccessService
                 return false;
             }
         }
-
-        // TODO: Aggiungere qui la verifica del piano/pacchetto (free/pro)
-        // if (!$this->hasPlanAccess($user, $module)) {
-        //     return false;
-        // }
 
         return true;
     }
@@ -329,8 +399,12 @@ class ModuleAccessService
     /**
      * Genera un suggerimento per sbloccare un modulo.
      */
-    private function getUnlockHint(array $missingRequirements): ?string
+    private function getUnlockHint(array $missingRequirements, bool $lockedByPlan = false): ?string
     {
+        if ($lockedByPlan) {
+            return 'Questa funzionalità è disponibile nel piano Pro. Esegui l\'upgrade per sbloccarla.';
+        }
+
         if (empty($missingRequirements)) {
             return null;
         }

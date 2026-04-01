@@ -151,7 +151,8 @@ class MollieService
 
         $subscription->update([
             'status' => 'cancelled',
-            'ends_at' => now(),
+            // ends_at = fine del periodo già pagato (non immediato)
+            'ends_at' => $subscription->next_payment_at ?? now(),
         ]);
     }
 

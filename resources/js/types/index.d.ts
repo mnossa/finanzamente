@@ -64,8 +64,10 @@ export interface Module {
     category: 'base' | 'special' | 'planning' | 'fiscal' | 'investments';
     routes: string[];
     requires: string[];
+    requires_plan: 'base' | 'pro';
     enabled: boolean;
     locked: boolean;
+    locked_by_plan: boolean;
     missing_requirements: string[];
     unlock_hint: string | null;
 }
@@ -95,8 +97,12 @@ export type PageProps<
         apiKey: string;
     };
     plan?: {
-        current: string;
+        current: 'base' | 'pro';
         pro_enabled: boolean;
+        expires_at: string | null;
+        days_until_expiry: number | null;
+        excess_accounts: number;
+        excess_households: number;
     } | null;
 };
 
