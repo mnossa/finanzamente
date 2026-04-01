@@ -12,6 +12,7 @@
 - [2026-03-23] Fix DRY: extract resolveTagIds helper, fix undefined $user in update(), fix TagAutocomplete filtering (69c808e) — copilot-swe-agent[bot]
 - [2026-03-26] Merge pull request #28 from mnossa/copilot/add-mollie-payment-system (5ce918a) — mnossa
 - [2026-03-26] Enhance Pro plan feature display: update badge style and text for better visibility (b1db33b) — Matteo Nossa
+- [2026-04-02] Add user authentication reference in multiple controllers and update plans configuration (30fe38d) — Matteo Nossa
 
 ## Lezioni Landing Page Conversion (2026-04-02)
 
