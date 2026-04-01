@@ -57,3 +57,4 @@
 4. **Proof Visual**: H2 + paragrafo con frasi in bold + card/mock app contestuale
 5. **Final CTA**: H2 → descrizione feature specifiche → checkmark row (prezzo + garanzie) → button con USP specifica → nessun link che porti altrove
 6. **Footer minimal**: copyright + privacy/termini/home (nessun link alle landing da altri punti del sito)
+- [2026-04-02] Add user authentication reference in multiple controllers and update plans configuration (30fe38d) — Matteo Nossa
