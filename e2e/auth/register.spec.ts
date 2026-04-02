@@ -59,6 +59,6 @@ test.describe('Autenticazione — Registrazione', () => {
 
     test('il link "Hai già un account?" porta a /login', async ({ page }) => {
         await page.getByRole('link', { name: /hai.*account/i }).click();
-        await expect(page).toHaveURL('/login');
+        await expect(page).toHaveURL('/accedi');
     });
 });

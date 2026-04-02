@@ -13,7 +13,7 @@ test.describe('Transazioni', () => {
     });
 
     test('carica la pagina delle transazioni', async ({ page }) => {
-        await expect(page).toHaveURL('/transactions');
+        await expect(page).toHaveURL('/transazioni');
         await expect(page).toHaveTitle(/transazioni/i);
     });
 
@@ -26,16 +26,16 @@ test.describe('Transazioni', () => {
 
     test('il pulsante "Nuova Transazione" porta al form di creazione', async ({ page }) => {
         await page.getByRole('link', { name: /nuova transazione/i }).first().click();
-        await expect(page).toHaveURL('/transactions/create');
+        await expect(page).toHaveURL('/transazioni/crea');
         await expect(page).toHaveTitle(/nuova transazione/i);
     });
 
     test('la lista transazioni mostra messaggio vuoto o righe', async ({ page }) => {
-        // Verifica che la pagina sia in uno stato coerente (empty state o tabella)
-        const hasData = await page.getByRole('table').isVisible().catch(() => false);
-        const hasEmpty = await page.getByText(/nessuna transazione|non ci sono transazioni|inizia aggiungendo/i).isVisible().catch(() => false);
-
-        expect(hasData || hasEmpty).toBeTruthy();
+        // Verifica che la pagina sia in uno stato coerente (empty state o tabella con dati)
+        await expect(
+            page.getByRole('heading', { name: /nessuna transazione trovata/i })
+                .or(page.getByRole('table'))
+        ).toBeVisible({ timeout: 10_000 });
     });
 
     test('i filtri di ricerca sono presenti', async ({ page }) => {

@@ -12,7 +12,7 @@ test.describe('Profilo utente', () => {
     });
 
     test('carica la pagina del profilo', async ({ page }) => {
-        await expect(page).toHaveURL('/profile');
+        await expect(page).toHaveURL('/profilo');
         await expect(page).toHaveTitle(/Profilo/i);
     });
 

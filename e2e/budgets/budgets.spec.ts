@@ -11,7 +11,7 @@ test.describe('Budget', () => {
     });
 
     test('carica la pagina dei budget', async ({ page }) => {
-        await expect(page).toHaveURL('/budgets');
+        await expect(page).toHaveURL('/budget');
         await expect(page).toHaveTitle(/budget/i);
     });
 
@@ -23,7 +23,7 @@ test.describe('Budget', () => {
 
     test('il pulsante "Nuovo Budget" porta al form di creazione', async ({ page }) => {
         await page.getByRole('link', { name: /nuovo budget/i }).click();
-        await expect(page).toHaveURL('/budgets/create');
+        await expect(page).toHaveURL('/budget/crea');
         await expect(page).toHaveTitle(/nuovo budget/i);
     });
 
@@ -33,10 +33,9 @@ test.describe('Budget', () => {
     });
 
     test('la lista budget mostra stato coerente (vuota o con dati)', async ({ page }) => {
-        const hasTable  = await page.getByRole('table').isVisible().catch(() => false);
-        const hasCards  = await page.locator('[class*="card"], [class*="Card"]').first().isVisible().catch(() => false);
-        const hasEmpty  = await page.getByText(/nessun budget|non ci sono budget/i).isVisible().catch(() => false);
-
-        expect(hasTable || hasCards || hasEmpty).toBeTruthy();
+        await expect(
+            page.getByRole('heading', { name: /nessun budget trovato/i })
+                .or(page.getByRole('table'))
+        ).toBeVisible({ timeout: 10_000 });
     });
 });

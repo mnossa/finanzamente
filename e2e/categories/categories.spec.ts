@@ -11,7 +11,7 @@ test.describe('Categorie', () => {
     });
 
     test('carica la pagina delle categorie', async ({ page }) => {
-        await expect(page).toHaveURL('/categories');
+        await expect(page).toHaveURL('/categorie');
         await expect(page).toHaveTitle(/categorie/i);
     });
 
@@ -23,12 +23,12 @@ test.describe('Categorie', () => {
 
     test('il pulsante "Nuova Categoria" porta al form di creazione', async ({ page }) => {
         await page.getByRole('link', { name: /nuova categoria/i }).click();
-        await expect(page).toHaveURL('/categories/create');
+        await expect(page).toHaveURL('/categorie/crea');
         await expect(page).toHaveTitle(/nuova categoria/i);
     });
 
     test('il form di creazione ha i campi obbligatori', async ({ page }) => {
-        await page.goto('/categories/create');
+        await page.goto('/categorie/crea');
         await expect(page.locator('#name')).toBeVisible();
         // Il tipo è selezionato tramite pulsanti (Entrata/Uscita), non un <select id="type">
         await expect(
@@ -40,7 +40,7 @@ test.describe('Categorie', () => {
     test('crea una nuova categoria e la mostra nella lista', async ({ page }) => {
         const nomeCategoria = `Categoria E2E ${Date.now()}`;
 
-        await page.goto('/categories/create');
+        await page.goto('/categorie/crea');
         await page.locator('#name').fill(nomeCategoria);
 
         // Seleziona tipo (default o esplicito)
@@ -52,7 +52,7 @@ test.describe('Categorie', () => {
         await page.getByRole('button', { name: /crea categoria/i }).click();
 
         // Dopo creazione → redirect a lista o dettaglio categoria
-        await expect(page).toHaveURL(/\/categories/, { timeout: 10_000 });
+        await expect(page).toHaveURL(/\/categorie/, { timeout: 10_000 });
         await expect(page.getByText(nomeCategoria)).toBeVisible({ timeout: 8_000 });
     });
 
