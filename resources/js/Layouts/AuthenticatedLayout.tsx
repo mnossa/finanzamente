@@ -256,7 +256,7 @@ function PlanAlertBanner() {
                 </div>
             )}
             {hasExcess && (
-                <div className={clsx('relative flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200', isExpiring && 'mt-2')}>
+                <div className={clsx('relative flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-800 dark:text-rose-200', isExpiring && 'mt-2')}>
                     <span className="mt-0.5 shrink-0 text-rose-400">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" />

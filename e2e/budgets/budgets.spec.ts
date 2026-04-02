@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Budget', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/budgets');
+        await page.goto('/budget');
     });
 
     test('carica la pagina dei budget', async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe('Budget', () => {
     });
 
     test('il form di creazione budget ha i campi obbligatori', async ({ page }) => {
-        await page.goto('/budgets/create');
+        await page.goto('/budget/crea');
         await expect(page.getByRole('button', { name: /crea budget/i })).toBeVisible();
     });
 

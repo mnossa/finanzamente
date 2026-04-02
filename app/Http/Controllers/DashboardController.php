@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Budget;
 use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
+use App\Models\FinancialGoal;
 use App\Models\Investment;
 use App\Models\Transaction;
 use App\Services\AssetClassificationService;
@@ -205,6 +206,7 @@ class DashboardController extends Controller
             'netWorthData' => $this->getNetWorthData($householdId, $user->id),
             'cashFlowData' => $this->getCashFlowData($householdId, $user->id),
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
+            'financialGoals' => $this->getFinancialGoalsData($householdId),
         ]);
     }
 
@@ -692,5 +694,29 @@ class DashboardController extends Controller
                 'category_id' => $row->category_id,
             ];
         })->values()->toArray();
+    }
+
+    private function getFinancialGoalsData(int $householdId): array
+    {
+        return FinancialGoal::where('household_id', $householdId)
+            ->where('status', 'in_progress')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get()
+            ->map(fn($goal) => [
+                'id'             => $goal->id,
+                'name'           => $goal->name,
+                'icon'           => $goal->icon,
+                'color'          => $goal->color,
+                'target_amount'  => (float) $goal->target_amount,
+                'current_amount' => (float) $goal->current_amount,
+                'currency_code'  => $goal->currency_code,
+                'target_date'    => $goal->target_date?->format('Y-m-d'),
+                'percentage'     => $goal->target_amount > 0
+                    ? min(100, round(((float) $goal->current_amount / (float) $goal->target_amount) * 100, 1))
+                    : 0,
+            ])
+            ->values()
+            ->toArray();
     }
 }

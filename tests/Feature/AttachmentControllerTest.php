@@ -59,7 +59,7 @@ class AttachmentControllerTest extends TestCase
     {
         $file = UploadedFile::fake()->create('receipt.pdf', 100, 'application/pdf');
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
             'file' => $file,
@@ -95,7 +95,7 @@ class AttachmentControllerTest extends TestCase
 
         $file = UploadedFile::fake()->image('receipt.jpg')->size(500);
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
             'file' => $file,
@@ -112,7 +112,7 @@ class AttachmentControllerTest extends TestCase
     #[Test]
     public function upload_requires_file()
     {
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
         ]);
@@ -126,7 +126,7 @@ class AttachmentControllerTest extends TestCase
     {
         $file = UploadedFile::fake()->create('receipt.pdf', 100);
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'file' => $file,
         ]);
 
@@ -139,7 +139,7 @@ class AttachmentControllerTest extends TestCase
     {
         $file = UploadedFile::fake()->create('large-file.pdf', 6000); // 6MB
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
             'file' => $file,
@@ -154,7 +154,7 @@ class AttachmentControllerTest extends TestCase
     {
         $file = UploadedFile::fake()->create('script.exe', 100);
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
             'file' => $file,
@@ -179,7 +179,7 @@ class AttachmentControllerTest extends TestCase
 
         $file = UploadedFile::fake()->create('receipt.pdf', 100);
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $otherTransaction->id,
             'file' => $file,
@@ -205,7 +205,7 @@ class AttachmentControllerTest extends TestCase
 
         $file = UploadedFile::fake()->create('receipt.pdf', 100);
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $privateTransaction->id,
             'file' => $file,
@@ -230,7 +230,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->get("/attachments/{$attachment->id}/download");
+        $response = $this->actingAs($this->user)->get("/allegati/{$attachment->id}/scarica");
 
         $response->assertStatus(200);
         $response->assertDownload('receipt.pdf');
@@ -250,7 +250,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->get("/attachments/{$attachment->id}/download");
+        $response = $this->actingAs($this->user)->get("/allegati/{$attachment->id}/scarica");
 
         $response->assertStatus(404);
     }
@@ -281,7 +281,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->get("/attachments/{$attachment->id}/download");
+        $response = $this->actingAs($this->user)->get("/allegati/{$attachment->id}/scarica");
 
         $response->assertStatus(403);
     }
@@ -302,7 +302,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->deleteJson("/attachments/{$attachment->id}");
+        $response = $this->actingAs($this->user)->deleteJson("/allegati/{$attachment->id}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -339,7 +339,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->deleteJson("/attachments/{$attachment->id}");
+        $response = $this->actingAs($this->user)->deleteJson("/allegati/{$attachment->id}");
 
         $response->assertStatus(403);
         $this->assertDatabaseHas('attachments', ['id' => $attachment->id, 'deleted_at' => null]);
@@ -350,7 +350,7 @@ class AttachmentControllerTest extends TestCase
     {
         $file = UploadedFile::fake()->create('receipt.pdf', 100);
 
-        $response = $this->postJson('/attachments', [
+        $response = $this->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
             'file' => $file,
@@ -373,7 +373,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->get("/attachments/{$attachment->id}/download");
+        $response = $this->get("/allegati/{$attachment->id}/scarica");
 
         $response->assertStatus(302); // Redirect to login
     }
@@ -392,7 +392,7 @@ class AttachmentControllerTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->deleteJson("/attachments/{$attachment->id}");
+        $response = $this->deleteJson("/allegati/{$attachment->id}");
 
         $response->assertStatus(401);
     }
@@ -402,7 +402,7 @@ class AttachmentControllerTest extends TestCase
     {
         $file = UploadedFile::fake()->create('Ricevuta Medica 2024.pdf', 100);
 
-        $response = $this->actingAs($this->user)->postJson('/attachments', [
+        $response = $this->actingAs($this->user)->postJson('/allegati', [
             'attachable_type' => 'Transaction',
             'attachable_id' => $this->transaction->id,
             'file' => $file,

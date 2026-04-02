@@ -25,7 +25,7 @@ class ThemePreferenceTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patchJson('/user/preferences/theme', ['theme' => 'dark']);
+            ->patchJson('/utente/preferenze/tema', ['theme' => 'dark']);
 
         $response->assertOk()->assertJson(['theme' => 'dark']);
 
@@ -40,7 +40,7 @@ class ThemePreferenceTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patchJson('/user/preferences/theme', ['theme' => 'light']);
+            ->patchJson('/utente/preferenze/tema', ['theme' => 'light']);
 
         $response->assertOk()->assertJson(['theme' => 'light']);
 
@@ -55,7 +55,7 @@ class ThemePreferenceTest extends TestCase
 
         $this
             ->actingAs($user)
-            ->patchJson('/user/preferences/theme', ['theme' => 'dark']);
+            ->patchJson('/utente/preferenze/tema', ['theme' => 'dark']);
 
         $user->refresh();
         $this->assertSame('dark', $user->preferences['theme']);
@@ -68,14 +68,14 @@ class ThemePreferenceTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patchJson('/user/preferences/theme', ['theme' => 'invalid']);
+            ->patchJson('/utente/preferenze/tema', ['theme' => 'invalid']);
 
         $response->assertUnprocessable();
     }
 
     public function test_unauthenticated_user_cannot_update_theme(): void
     {
-        $response = $this->patchJson('/user/preferences/theme', ['theme' => 'dark']);
+        $response = $this->patchJson('/utente/preferenze/tema', ['theme' => 'dark']);
 
         $response->assertUnauthorized();
     }

@@ -58,7 +58,7 @@ class TransactionBulkDeleteTest extends TestCase
             'ids' => [$transaction->id],
         ]);
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     #[Test]

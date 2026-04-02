@@ -77,35 +77,35 @@ Route::post('/mollie/webhook', [MollieWebhookController::class, 'handle'])
     ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
 // Rotte pubbliche per inviti household
-Route::get('/invitations/{token}/register', [HouseholdInvitationController::class, 'showRegisterForm'])
+Route::get('/inviti/{token}/registrati', [HouseholdInvitationController::class, 'showRegisterForm'])
     ->name('household-invitations.register');
-Route::post('/invitations/{token}/register', [HouseholdInvitationController::class, 'registerAndAccept'])
+Route::post('/inviti/{token}/registrati', [HouseholdInvitationController::class, 'registerAndAccept'])
     ->name('household-invitations.register.store');
-Route::get('/invitations/{token}/accept', [HouseholdInvitationController::class, 'acceptInvitation'])
+Route::get('/inviti/{token}/accetta', [HouseholdInvitationController::class, 'acceptInvitation'])
     ->name('household-invitations.accept');
 
 // Rotte che richiedono autenticazione ma NON household attiva
 Route::middleware(['auth', 'verified'])->group(function () {
     // Quiz di profilazione (deve essere completato prima di accedere alle household)
-    Route::get('/profile-quiz', [ProfileQuizController::class, 'show'])->name('profile-quiz.show');
-    Route::post('/profile-quiz', [ProfileQuizController::class, 'store'])->name('profile-quiz.store');
+    Route::get('/quiz-profilazione', [ProfileQuizController::class, 'show'])->name('profile-quiz.show');
+    Route::post('/quiz-profilazione', [ProfileQuizController::class, 'store'])->name('profile-quiz.store');
     
     // Gestione Household (selezione/creazione) - richiedono il quiz completato
     Route::middleware(['profile-completed'])->group(function () {
-        Route::get('/households/select', [HouseholdController::class, 'select'])->name('households.select');
-        Route::get('/households/create', [HouseholdController::class, 'create'])->name('households.create');
-        Route::post('/households', [HouseholdController::class, 'store'])->name('households.store');
-        Route::post('/households/{household}/set-active', [HouseholdController::class, 'setActive'])->name('households.set-active');
+        Route::get('/nuclei/seleziona', [HouseholdController::class, 'select'])->name('households.select');
+        Route::get('/nuclei/crea', [HouseholdController::class, 'create'])->name('households.create');
+        Route::post('/nuclei', [HouseholdController::class, 'store'])->name('households.store');
+        Route::post('/nuclei/{household}/imposta-attivo', [HouseholdController::class, 'setActive'])->name('households.set-active');
     });
 
     // Abbonamento e fatturazione — accessibili senza household attiva
-    Route::get('/profile/subscription', [SubscriptionController::class, 'show'])->name('profile.subscription');
-    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
-    Route::get('/subscription/{subscription}/return', [SubscriptionController::class, 'return'])->name('subscription.return');
-    Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-    Route::post('/subscription/update-payment-method', [SubscriptionController::class, 'updatePaymentMethod'])->name('subscription.update-payment-method');
-    Route::get('/subscription/{subscription}/payment-method/return', [SubscriptionController::class, 'paymentMethodReturn'])->name('subscription.payment-method.return');
-    Route::patch('/subscription/billing', [SubscriptionController::class, 'updateBilling'])->name('subscription.billing.update');
+    Route::get('/profilo/abbonamento', [SubscriptionController::class, 'show'])->name('profile.subscription');
+    Route::post('/abbonamento/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::get('/abbonamento/{subscription}/ritorno', [SubscriptionController::class, 'return'])->name('subscription.return');
+    Route::post('/abbonamento/annulla', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/abbonamento/aggiorna-metodo-pagamento', [SubscriptionController::class, 'updatePaymentMethod'])->name('subscription.update-payment-method');
+    Route::get('/abbonamento/{subscription}/metodo-pagamento/ritorno', [SubscriptionController::class, 'paymentMethodReturn'])->name('subscription.payment-method.return');
+    Route::patch('/abbonamento/fatturazione', [SubscriptionController::class, 'updateBilling'])->name('subscription.billing.update');
 });
 
 // Rotte che richiedono autenticazione E household attiva
@@ -116,188 +116,188 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
 
     // Notifiche in-app
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::post('/notifiche/{notification}/segna-letto', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifiche/segna-tutte-lette', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     // ===== ROTTE PRO — Simulazioni, Inbox, Telegram =====
     Route::middleware(['requires-pro'])->group(function () {
-        Route::get('/simulations', [SimulationController::class, 'index'])->name('simulations.index');
+        Route::get('/simulazioni', [SimulationController::class, 'index'])->name('simulations.index');
 
         // Inbox / Staging Area (voci da Telegram o manuali, in attesa di revisione)
-        Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
-        Route::put('/inbox/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
-        Route::post('/inbox/{inboxItem}/confirm', [InboxController::class, 'confirm'])->name('inbox.confirm');
-        Route::post('/inbox/{inboxItem}/reject', [InboxController::class, 'reject'])->name('inbox.reject');
-        Route::post('/inbox/confirm-all', [InboxController::class, 'confirmAll'])->name('inbox.confirm-all');
-        Route::post('/inbox/reject-all', [InboxController::class, 'rejectAll'])->name('inbox.reject-all');
-        Route::delete('/inbox/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');
-        Route::get('/inbox/{inboxItem}/image', [InboxController::class, 'image'])->name('inbox.image');
+        Route::get('/posta-in-arrivo', [InboxController::class, 'index'])->name('inbox.index');
+        Route::put('/posta-in-arrivo/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
+        Route::post('/posta-in-arrivo/{inboxItem}/conferma', [InboxController::class, 'confirm'])->name('inbox.confirm');
+        Route::post('/posta-in-arrivo/{inboxItem}/rifiuta', [InboxController::class, 'reject'])->name('inbox.reject');
+        Route::post('/posta-in-arrivo/conferma-tutte', [InboxController::class, 'confirmAll'])->name('inbox.confirm-all');
+        Route::post('/posta-in-arrivo/rifiuta-tutte', [InboxController::class, 'rejectAll'])->name('inbox.reject-all');
+        Route::delete('/posta-in-arrivo/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');
+        Route::get('/posta-in-arrivo/{inboxItem}/immagine', [InboxController::class, 'image'])->name('inbox.image');
 
         // Collegamento account Telegram
-        Route::get('/telegram/link', [TelegramLinkController::class, 'show'])->name('telegram.link.show');
-        Route::post('/telegram/link/generate', [TelegramLinkController::class, 'generate'])->name('telegram.link.generate');
-        Route::delete('/telegram/link', [TelegramLinkController::class, 'unlink'])->name('telegram.link.unlink');
+        Route::get('/telegram/collegamento', [TelegramLinkController::class, 'show'])->name('telegram.link.show');
+        Route::post('/telegram/collegamento/genera', [TelegramLinkController::class, 'generate'])->name('telegram.link.generate');
+        Route::delete('/telegram/collegamento', [TelegramLinkController::class, 'unlink'])->name('telegram.link.unlink');
     });
 
     // Profilo utente
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profilo', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profilo', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profilo', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Preferenze tema utente
-    Route::patch('/user/preferences/theme', [ThemePreferenceController::class, 'update'])->name('user.preferences.theme');
+    Route::patch('/utente/preferenze/tema', [ThemePreferenceController::class, 'update'])->name('user.preferences.theme');
     
     // Modifica impostazioni quiz di profilazione dal profilo
-    Route::get('/profile/quiz-settings', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
-    Route::patch('/profile/quiz-settings', [ProfileQuizController::class, 'update'])->name('profile.quiz-settings.update');
-    Route::post('/profile/revenue-tracking/toggle', [ProfileQuizController::class, 'toggleRevenueTracking'])->name('profile.revenue-tracking.toggle');
+    Route::get('/profilo/impostazioni-quiz', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
+    Route::patch('/profilo/impostazioni-quiz', [ProfileQuizController::class, 'update'])->name('profile.quiz-settings.update');
+    Route::post('/profilo/tracciamento-entrate/attiva', [ProfileQuizController::class, 'toggleRevenueTracking'])->name('profile.revenue-tracking.toggle');
 
     // Gestione Household (dettagli, modifica, membri) - gestisce permessi internamente
-    Route::get('/households/{household}', [HouseholdController::class, 'show'])->name('households.show');
-    Route::patch('/households/{household}', [HouseholdController::class, 'update'])->name('households.update');
-    Route::delete('/households/{household}', [HouseholdController::class, 'destroy'])->name('households.destroy');
+    Route::get('/nuclei/{household}', [HouseholdController::class, 'show'])->name('households.show');
+    Route::patch('/nuclei/{household}', [HouseholdController::class, 'update'])->name('households.update');
+    Route::delete('/nuclei/{household}', [HouseholdController::class, 'destroy'])->name('households.destroy');
     // Household invite/membri — solo Pro
     Route::middleware(['requires-pro'])->group(function () {
-        Route::post('/households/{household}/invite', [HouseholdController::class, 'invite'])->name('households.invite');
-        Route::delete('/households/{household}/invitations/{invitation}', [HouseholdController::class, 'cancelInvitation'])->name('households.cancel-invitation');
-        Route::post('/households/{household}/invitations/{invitation}/resend', [HouseholdController::class, 'resendInvitation'])->name('households.resend-invitation');
-        Route::delete('/households/{household}/members/{member}', [HouseholdController::class, 'removeMember'])->name('households.remove-member');
+        Route::post('/nuclei/{household}/invita', [HouseholdController::class, 'invite'])->name('households.invite');
+        Route::delete('/nuclei/{household}/inviti/{invitation}', [HouseholdController::class, 'cancelInvitation'])->name('households.cancel-invitation');
+        Route::post('/nuclei/{household}/inviti/{invitation}/reinvia', [HouseholdController::class, 'resendInvitation'])->name('households.resend-invitation');
+        Route::delete('/nuclei/{household}/membri/{member}', [HouseholdController::class, 'removeMember'])->name('households.remove-member');
     });
-    Route::post('/households/{household}/leave', [HouseholdController::class, 'leave'])->name('households.leave');
+    Route::post('/nuclei/{household}/abbandona', [HouseholdController::class, 'leave'])->name('households.leave');
 
     // ===== ROTTE DI MODIFICA (richiedono permessi can-modify, bloccate per ospiti) =====
     Route::middleware(['can-modify'])->group(function () {
         // Attachments - gestione upload (modifica)
-        Route::post('/attachments', [AttachmentController::class, 'store'])->name('attachments.store');
-        Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
+        Route::post('/allegati', [AttachmentController::class, 'store'])->name('attachments.store');
+        Route::delete('/allegati/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
         // Accounts - modifica
-        Route::get('/accounts/create', [AccountController::class, 'create'])->name('accounts.create');
-        Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');
-        Route::get('/accounts/{account}/edit', [AccountController::class, 'edit'])->name('accounts.edit');
-        Route::patch('/accounts/{account}', [AccountController::class, 'update'])->name('accounts.update');
-        Route::delete('/accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
-        Route::post('/accounts/{account}/toggle-active', [AccountController::class, 'toggleActive'])->name('accounts.toggle-active');
+        Route::get('/conti/crea', [AccountController::class, 'create'])->name('accounts.create');
+        Route::post('/conti', [AccountController::class, 'store'])->name('accounts.store');
+        Route::get('/conti/{account}/modifica', [AccountController::class, 'edit'])->name('accounts.edit');
+        Route::patch('/conti/{account}', [AccountController::class, 'update'])->name('accounts.update');
+        Route::delete('/conti/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
+        Route::post('/conti/{account}/attiva-disattiva', [AccountController::class, 'toggleActive'])->name('accounts.toggle-active');
 
         // Transactions - modifica
-        Route::get('/transactions/quick-session', [TransactionController::class, 'quickSession'])->name('transactions.quick-session');
-        Route::post('/transactions/quick-session', [TransactionController::class, 'quickStore'])->name('transactions.quick-store');
-        Route::delete('/transactions/quick-session', [TransactionController::class, 'clearQuickSession'])->name('transactions.quick-session.clear');
-        Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
-        Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
-        Route::delete('/transactions/bulk', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
-        Route::patch('/transactions/bulk', [TransactionController::class, 'bulkUpdate'])->name('transactions.bulk-update');
-        Route::get('/transactions/{transaction}/edit', [TransactionController::class, 'edit'])->name('transactions.edit');
-        Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
-        Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
+        Route::get('/transazioni/sessione-rapida', [TransactionController::class, 'quickSession'])->name('transactions.quick-session');
+        Route::post('/transazioni/sessione-rapida', [TransactionController::class, 'quickStore'])->name('transactions.quick-store');
+        Route::delete('/transazioni/sessione-rapida', [TransactionController::class, 'clearQuickSession'])->name('transactions.quick-session.clear');
+        Route::get('/transazioni/crea', [TransactionController::class, 'create'])->name('transactions.create');
+        Route::post('/transazioni', [TransactionController::class, 'store'])->name('transactions.store');
+        Route::delete('/transazioni/in-blocco', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
+        Route::patch('/transazioni/in-blocco', [TransactionController::class, 'bulkUpdate'])->name('transactions.bulk-update');
+        Route::get('/transazioni/{transaction}/modifica', [TransactionController::class, 'edit'])->name('transactions.edit');
+        Route::patch('/transazioni/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
+        Route::delete('/transazioni/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
 
         // Transaction Import
-        Route::get('/transactions/import', [TransactionImportController::class, 'create'])->name('transactions.import');
-        Route::post('/transactions/import/preview', [TransactionImportController::class, 'preview'])->name('transactions.import.preview');
-        Route::post('/transactions/import/sheets', [TransactionImportController::class, 'sheets'])->name('transactions.import.sheets');
-        Route::post('/transactions/import/check-duplicates', [TransactionImportController::class, 'checkDuplicates'])->name('transactions.import.check-duplicates');
-        Route::post('/transactions/import', [TransactionImportController::class, 'store'])->name('transactions.import.store');
+        Route::get('/transazioni/importa', [TransactionImportController::class, 'create'])->name('transactions.import');
+        Route::post('/transazioni/importa/anteprima', [TransactionImportController::class, 'preview'])->name('transactions.import.preview');
+        Route::post('/transazioni/importa/fogli', [TransactionImportController::class, 'sheets'])->name('transactions.import.sheets');
+        Route::post('/transazioni/importa/controlla-duplicati', [TransactionImportController::class, 'checkDuplicates'])->name('transactions.import.check-duplicates');
+        Route::post('/transazioni/importa', [TransactionImportController::class, 'store'])->name('transactions.import.store');
 
         // Bank Import Layouts
-        Route::get('/bank-import-layouts', [TransactionImportController::class, 'layouts'])->name('bank-import-layouts.index');
-        Route::post('/bank-import-layouts', [TransactionImportController::class, 'storeLayout'])->name('bank-import-layouts.store');
-        Route::patch('/bank-import-layouts/{bankImportLayout}', [TransactionImportController::class, 'updateLayout'])->name('bank-import-layouts.update');
-        Route::delete('/bank-import-layouts/{bankImportLayout}', [TransactionImportController::class, 'destroyLayout'])->name('bank-import-layouts.destroy');
+        Route::get('/layout-banca', [TransactionImportController::class, 'layouts'])->name('bank-import-layouts.index');
+        Route::post('/layout-banca', [TransactionImportController::class, 'storeLayout'])->name('bank-import-layouts.store');
+        Route::patch('/layout-banca/{bankImportLayout}', [TransactionImportController::class, 'updateLayout'])->name('bank-import-layouts.update');
+        Route::delete('/layout-banca/{bankImportLayout}', [TransactionImportController::class, 'destroyLayout'])->name('bank-import-layouts.destroy');
 
         // Categories - modifica
-        Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
-        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-        Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-        Route::post('/categories/{category}/toggle-lifestyle-score', [CategoryController::class, 'toggleLifestyleScore'])->name('categories.toggle-lifestyle-score');
+        Route::get('/categorie/crea', [CategoryController::class, 'create'])->name('categories.create');
+        Route::post('/categorie', [CategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categorie/{category}/modifica', [CategoryController::class, 'edit'])->name('categories.edit');
+        Route::patch('/categorie/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categorie/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::post('/categorie/{category}/punteggio-stile-vita', [CategoryController::class, 'toggleLifestyleScore'])->name('categories.toggle-lifestyle-score');
 
         // Transfers - modifica
-        Route::get('/transfers/create', [TransferController::class, 'create'])->name('transfers.create');
-        Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
-        Route::delete('/transfers/{transfer}', [TransferController::class, 'destroy'])->name('transfers.destroy');
+        Route::get('/trasferimenti/crea', [TransferController::class, 'create'])->name('transfers.create');
+        Route::post('/trasferimenti', [TransferController::class, 'store'])->name('transfers.store');
+        Route::delete('/trasferimenti/{transfer}', [TransferController::class, 'destroy'])->name('transfers.destroy');
 
         // Refunds - modifica
-        Route::get('/refunds/create', [RefundController::class, 'create'])->name('refunds.create');
-        Route::get('/refunds/search-transactions', [RefundController::class, 'searchTransactions'])->name('refunds.search-transactions');
-        Route::post('/refunds', [RefundController::class, 'store'])->name('refunds.store');
-        Route::get('/refunds/{refund}/edit', [RefundController::class, 'edit'])->name('refunds.edit');
-        Route::patch('/refunds/{refund}', [RefundController::class, 'update'])->name('refunds.update');
-        Route::delete('/refunds/{refund}', [RefundController::class, 'destroy'])->name('refunds.destroy');
+        Route::get('/rimborsi/crea', [RefundController::class, 'create'])->name('refunds.create');
+        Route::get('/rimborsi/cerca-transazioni', [RefundController::class, 'searchTransactions'])->name('refunds.search-transactions');
+        Route::post('/rimborsi', [RefundController::class, 'store'])->name('refunds.store');
+        Route::get('/rimborsi/{refund}/modifica', [RefundController::class, 'edit'])->name('refunds.edit');
+        Route::patch('/rimborsi/{refund}', [RefundController::class, 'update'])->name('refunds.update');
+        Route::delete('/rimborsi/{refund}', [RefundController::class, 'destroy'])->name('refunds.destroy');
 
         // Tags - modifica
-        Route::get('/tags/create', [TagController::class, 'create'])->name('tags.create');
-        Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
-        Route::get('/tags/{tag}/edit', [TagController::class, 'edit'])->name('tags.edit');
-        Route::put('/tags/{tag}', [TagController::class, 'update'])->name('tags.update');
-        Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+        Route::get('/etichette/crea', [TagController::class, 'create'])->name('tags.create');
+        Route::post('/etichette', [TagController::class, 'store'])->name('tags.store');
+        Route::get('/etichette/{tag}/modifica', [TagController::class, 'edit'])->name('tags.edit');
+        Route::put('/etichette/{tag}', [TagController::class, 'update'])->name('tags.update');
+        Route::delete('/etichette/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
 
         // Budgets - modifica
-        Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
-        Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
-        Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
-        Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
-        Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
+        Route::get('/budget/crea', [BudgetController::class, 'create'])->name('budgets.create');
+        Route::post('/budget', [BudgetController::class, 'store'])->name('budgets.store');
+        Route::get('/budget/{budget}/modifica', [BudgetController::class, 'edit'])->name('budgets.edit');
+        Route::put('/budget/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+        Route::delete('/budget/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
         // Debts & Credits - modifica
-        Route::get('/debts-credits/create', [DebtCreditController::class, 'create'])->name('debts-credits.create');
-        Route::post('/debts-credits', [DebtCreditController::class, 'store'])->name('debts-credits.store');
-        Route::get('/debts-credits/{debts_credit}/edit', [DebtCreditController::class, 'edit'])->name('debts-credits.edit');
-        Route::put('/debts-credits/{debts_credit}', [DebtCreditController::class, 'update'])->name('debts-credits.update');
-        Route::post('/debts-credits/{debts_credit}/close', [DebtCreditController::class, 'close'])->name('debts-credits.close');
-        Route::post('/debts-credits/{debts_credit}/reopen', [DebtCreditController::class, 'reopen'])->name('debts-credits.reopen');
-        Route::delete('/debts-credits/{debts_credit}', [DebtCreditController::class, 'destroy'])->name('debts-credits.destroy');
+        Route::get('/debiti-crediti/crea', [DebtCreditController::class, 'create'])->name('debts-credits.create');
+        Route::post('/debiti-crediti', [DebtCreditController::class, 'store'])->name('debts-credits.store');
+        Route::get('/debiti-crediti/{debts_credit}/modifica', [DebtCreditController::class, 'edit'])->name('debts-credits.edit');
+        Route::put('/debiti-crediti/{debts_credit}', [DebtCreditController::class, 'update'])->name('debts-credits.update');
+        Route::post('/debiti-crediti/{debts_credit}/chiudi', [DebtCreditController::class, 'close'])->name('debts-credits.close');
+        Route::post('/debiti-crediti/{debts_credit}/riapri', [DebtCreditController::class, 'reopen'])->name('debts-credits.reopen');
+        Route::delete('/debiti-crediti/{debts_credit}', [DebtCreditController::class, 'destroy'])->name('debts-credits.destroy');
 
         // Recurring Transactions - modifica
-        Route::get('/recurring-transactions/create', [RecurringTransactionController::class, 'create'])->name('recurring-transactions.create');
-        Route::post('/recurring-transactions', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');
-        Route::get('/recurring-transactions/{recurringTransaction}/edit', [RecurringTransactionController::class, 'edit'])->name('recurring-transactions.edit');
-        Route::put('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'update'])->name('recurring-transactions.update');
-        Route::post('/recurring-transactions/{recurringTransaction}/generate', [RecurringTransactionController::class, 'generate'])->name('recurring-transactions.generate');
-        Route::delete('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'destroy'])->name('recurring-transactions.destroy');
+        Route::get('/transazioni-ricorrenti/crea', [RecurringTransactionController::class, 'create'])->name('recurring-transactions.create');
+        Route::post('/transazioni-ricorrenti', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');
+        Route::get('/transazioni-ricorrenti/{recurringTransaction}/modifica', [RecurringTransactionController::class, 'edit'])->name('recurring-transactions.edit');
+        Route::put('/transazioni-ricorrenti/{recurringTransaction}', [RecurringTransactionController::class, 'update'])->name('recurring-transactions.update');
+        Route::post('/transazioni-ricorrenti/{recurringTransaction}/genera', [RecurringTransactionController::class, 'generate'])->name('recurring-transactions.generate');
+        Route::delete('/transazioni-ricorrenti/{recurringTransaction}', [RecurringTransactionController::class, 'destroy'])->name('recurring-transactions.destroy');
 
         // Financial Goals - modifica
-        Route::get('/financial-goals/create', [FinancialGoalController::class, 'create'])->name('financial-goals.create');
-        Route::post('/financial-goals', [FinancialGoalController::class, 'store'])->name('financial-goals.store');
-        Route::get('/financial-goals/{financialGoal}/edit', [FinancialGoalController::class, 'edit'])->name('financial-goals.edit');
-        Route::put('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'update'])->name('financial-goals.update');
-        Route::post('/financial-goals/{financialGoal}/contribute', [FinancialGoalController::class, 'contribute'])->name('financial-goals.contribute');
-        Route::put('/financial-goals/{financialGoal}/change-status', [FinancialGoalController::class, 'changeStatus'])->name('financial-goals.change-status');
-        Route::delete('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'destroy'])->name('financial-goals.destroy');
+        Route::get('/obiettivi-finanziari/crea', [FinancialGoalController::class, 'create'])->name('financial-goals.create');
+        Route::post('/obiettivi-finanziari', [FinancialGoalController::class, 'store'])->name('financial-goals.store');
+        Route::get('/obiettivi-finanziari/{financialGoal}/modifica', [FinancialGoalController::class, 'edit'])->name('financial-goals.edit');
+        Route::put('/obiettivi-finanziari/{financialGoal}', [FinancialGoalController::class, 'update'])->name('financial-goals.update');
+        Route::post('/obiettivi-finanziari/{financialGoal}/contribuisci', [FinancialGoalController::class, 'contribute'])->name('financial-goals.contribute');
+        Route::put('/obiettivi-finanziari/{financialGoal}/cambia-stato', [FinancialGoalController::class, 'changeStatus'])->name('financial-goals.change-status');
+        Route::delete('/obiettivi-finanziari/{financialGoal}', [FinancialGoalController::class, 'destroy'])->name('financial-goals.destroy');
 
         // ===== ROTTE PRO (require piano Pro) =====
         Route::middleware(['requires-pro'])->group(function () {
             // Inter-Household Transfers - modifica
-            Route::get('/inter-household-transfers/create', [InterHouseholdTransferController::class, 'create'])->name('inter-household-transfers.create');
-            Route::post('/inter-household-transfers', [InterHouseholdTransferController::class, 'store'])->name('inter-household-transfers.store');
-            Route::delete('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'destroy'])->name('inter-household-transfers.destroy');
+            Route::get('/trasferimenti-tra-nuclei/crea', [InterHouseholdTransferController::class, 'create'])->name('inter-household-transfers.create');
+            Route::post('/trasferimenti-tra-nuclei', [InterHouseholdTransferController::class, 'store'])->name('inter-household-transfers.store');
+            Route::delete('/trasferimenti-tra-nuclei/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'destroy'])->name('inter-household-transfers.destroy');
 
             // Investment Analyses - modifica
-            Route::post('/investment-analyses', [InvestmentAnalysisController::class, 'store'])->name('investment-analyses.store');
-            Route::delete('/investment-analyses/{investmentAnalysis}', [InvestmentAnalysisController::class, 'destroy'])->name('investment-analyses.destroy');
+            Route::post('/analisi-investimenti', [InvestmentAnalysisController::class, 'store'])->name('investment-analyses.store');
+            Route::delete('/analisi-investimenti/{investmentAnalysis}', [InvestmentAnalysisController::class, 'destroy'])->name('investment-analyses.destroy');
 
             // Investment Assets - modifica
-            Route::get('/investment-assets/create', [InvestmentAssetController::class, 'create'])->name('investment-assets.create');
-            Route::post('/investment-assets', [InvestmentAssetController::class, 'store'])->name('investment-assets.store');
-            Route::get('/investment-assets/{investmentAsset}/edit', [InvestmentAssetController::class, 'edit'])->name('investment-assets.edit');
-            Route::put('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'update'])->name('investment-assets.update');
-            Route::delete('/investment-assets/{investmentAsset}', [InvestmentAssetController::class, 'destroy'])->name('investment-assets.destroy');
+            Route::get('/asset-investimento/crea', [InvestmentAssetController::class, 'create'])->name('investment-assets.create');
+            Route::post('/asset-investimento', [InvestmentAssetController::class, 'store'])->name('investment-assets.store');
+            Route::get('/asset-investimento/{investmentAsset}/modifica', [InvestmentAssetController::class, 'edit'])->name('investment-assets.edit');
+            Route::put('/asset-investimento/{investmentAsset}', [InvestmentAssetController::class, 'update'])->name('investment-assets.update');
+            Route::delete('/asset-investimento/{investmentAsset}', [InvestmentAssetController::class, 'destroy'])->name('investment-assets.destroy');
 
             // Investments - modifica
-            Route::get('/investments/import', [InvestmentImportController::class, 'create'])->name('investments.import');
-            Route::post('/investments/import/preview', [InvestmentImportController::class, 'preview'])->name('investments.import.preview');
-            Route::post('/investments/import/sheets', [InvestmentImportController::class, 'sheets'])->name('investments.import.sheets');
-            Route::post('/investments/import', [InvestmentImportController::class, 'store'])->name('investments.import.store');
-            Route::get('/investments/import/layouts', [InvestmentImportController::class, 'layouts'])->name('investments.import.layouts');
-            Route::post('/investments/import/layouts', [InvestmentImportController::class, 'storeLayout'])->name('investments.import.layouts.store');
-            Route::patch('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'updateLayout'])->name('investments.import.layouts.update');
-            Route::delete('/investments/import/layouts/{bankImportLayout}', [InvestmentImportController::class, 'destroyLayout'])->name('investments.import.layouts.destroy');
-            Route::get('/investments/create', [InvestmentController::class, 'create'])->name('investments.create');
-            Route::post('/investments', [InvestmentController::class, 'store'])->name('investments.store');
-            Route::get('/investments/{investment}/edit', [InvestmentController::class, 'edit'])->name('investments.edit');
-            Route::put('/investments/{investment}', [InvestmentController::class, 'update'])->name('investments.update');
-            Route::post('/investments/{investment}/sell', [InvestmentController::class, 'sell'])->name('investments.sell');
-            Route::delete('/investments/{investment}', [InvestmentController::class, 'destroy'])->name('investments.destroy');
+            Route::get('/investimenti/importa', [InvestmentImportController::class, 'create'])->name('investments.import');
+            Route::post('/investimenti/importa/anteprima', [InvestmentImportController::class, 'preview'])->name('investments.import.preview');
+            Route::post('/investimenti/importa/fogli', [InvestmentImportController::class, 'sheets'])->name('investments.import.sheets');
+            Route::post('/investimenti/importa', [InvestmentImportController::class, 'store'])->name('investments.import.store');
+            Route::get('/investimenti/importa/layout', [InvestmentImportController::class, 'layouts'])->name('investments.import.layouts');
+            Route::post('/investimenti/importa/layout', [InvestmentImportController::class, 'storeLayout'])->name('investments.import.layouts.store');
+            Route::patch('/investimenti/importa/layout/{bankImportLayout}', [InvestmentImportController::class, 'updateLayout'])->name('investments.import.layouts.update');
+            Route::delete('/investimenti/importa/layout/{bankImportLayout}', [InvestmentImportController::class, 'destroyLayout'])->name('investments.import.layouts.destroy');
+            Route::get('/investimenti/crea', [InvestmentController::class, 'create'])->name('investments.create');
+            Route::post('/investimenti', [InvestmentController::class, 'store'])->name('investments.store');
+            Route::get('/investimenti/{investment}/modifica', [InvestmentController::class, 'edit'])->name('investments.edit');
+            Route::put('/investimenti/{investment}', [InvestmentController::class, 'update'])->name('investments.update');
+            Route::post('/investimenti/{investment}/vendi', [InvestmentController::class, 'sell'])->name('investments.sell');
+            Route::delete('/investimenti/{investment}', [InvestmentController::class, 'destroy'])->name('investments.destroy');
         }); // fine requires-pro
     }); // fine can-modify
 
@@ -305,72 +305,72 @@ Route::middleware(['auth', 'verified', 'household'])->group(function () {
     // NOTA: Queste devono venire DOPO le rotte con /create per evitare conflitti
 
     // Attachments - download (lettura)
-    Route::get('/attachments/{attachment}/download', [AttachmentController::class, 'download'])->name('attachments.download');
+    Route::get('/allegati/{attachment}/scarica', [AttachmentController::class, 'download'])->name('attachments.download');
 
     // ===== ROTTE BASE — lettura =====
-    Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
-    Route::get('/accounts/{account}', [AccountController::class, 'show'])->name('accounts.show');
+    Route::get('/conti', [AccountController::class, 'index'])->name('accounts.index');
+    Route::get('/conti/{account}', [AccountController::class, 'show'])->name('accounts.show');
 
-    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
+    Route::get('/transazioni', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transazioni/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
 
-    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categorie', [CategoryController::class, 'index'])->name('categories.index');
 
-    Route::get('/transfers', [TransferController::class, 'index'])->name('transfers.index');
-    Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
+    Route::get('/trasferimenti', [TransferController::class, 'index'])->name('transfers.index');
+    Route::get('/trasferimenti/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
 
-    Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
-    Route::get('/tags/search', [TagController::class, 'search'])->name('tags.search');
+    Route::get('/etichette', [TagController::class, 'index'])->name('tags.index');
+    Route::get('/etichette/cerca', [TagController::class, 'search'])->name('tags.search');
 
-    Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
-    Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+    Route::get('/budget', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::get('/budget/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
 
-    Route::get('/refunds', [RefundController::class, 'index'])->name('refunds.index');
-    Route::get('/refunds/{refund}', [RefundController::class, 'show'])->name('refunds.show');
+    Route::get('/rimborsi', [RefundController::class, 'index'])->name('refunds.index');
+    Route::get('/rimborsi/{refund}', [RefundController::class, 'show'])->name('refunds.show');
 
-    Route::get('/recurring-transactions', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
-    Route::get('/recurring-transactions/{recurringTransaction}', [RecurringTransactionController::class, 'show'])->name('recurring-transactions.show');
+    Route::get('/transazioni-ricorrenti', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
+    Route::get('/transazioni-ricorrenti/{recurringTransaction}', [RecurringTransactionController::class, 'show'])->name('recurring-transactions.show');
 
-    Route::get('/debts-credits', [DebtCreditController::class, 'index'])->name('debts-credits.index');
-    Route::get('/debts-credits/{debts_credit}', [DebtCreditController::class, 'show'])->name('debts-credits.show');
+    Route::get('/debiti-crediti', [DebtCreditController::class, 'index'])->name('debts-credits.index');
+    Route::get('/debiti-crediti/{debts_credit}', [DebtCreditController::class, 'show'])->name('debts-credits.show');
 
-    Route::get('/financial-goals', [FinancialGoalController::class, 'index'])->name('financial-goals.index');
-    Route::get('/financial-goals/{financialGoal}', [FinancialGoalController::class, 'show'])->name('financial-goals.show');
+    Route::get('/obiettivi-finanziari', [FinancialGoalController::class, 'index'])->name('financial-goals.index');
+    Route::get('/obiettivi-finanziari/{financialGoal}', [FinancialGoalController::class, 'show'])->name('financial-goals.show');
 
     // ===== ROTTE PRO — lettura =====
     Route::middleware(['requires-pro'])->group(function () {
-        Route::get('/inter-household-transfers', [InterHouseholdTransferController::class, 'index'])->name('inter-household-transfers.index');
-        Route::get('/inter-household-transfers/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'show'])->name('inter-household-transfers.show');
-        Route::get('/households/{household}/accounts', [InterHouseholdTransferController::class, 'getHouseholdAccounts'])->name('households.accounts');
+        Route::get('/trasferimenti-tra-nuclei', [InterHouseholdTransferController::class, 'index'])->name('inter-household-transfers.index');
+        Route::get('/trasferimenti-tra-nuclei/{interHouseholdTransfer}', [InterHouseholdTransferController::class, 'show'])->name('inter-household-transfers.show');
+        Route::get('/nuclei/{household}/conti', [InterHouseholdTransferController::class, 'getHouseholdAccounts'])->name('households.accounts');
 
-        Route::get('/tax-deductions', [TaxDeductionExportController::class, 'index'])->name('tax-deductions.index');
-        Route::get('/tax-deductions/export-pdf', [TaxDeductionExportController::class, 'exportPdf'])->name('tax-deductions.export-pdf');
-        Route::get('/tax-deductions/export-attachments', [TaxDeductionExportController::class, 'exportAttachments'])->name('tax-deductions.export-attachments');
+        Route::get('/detrazioni-fiscali', [TaxDeductionExportController::class, 'index'])->name('tax-deductions.index');
+        Route::get('/detrazioni-fiscali/esporta-pdf', [TaxDeductionExportController::class, 'exportPdf'])->name('tax-deductions.export-pdf');
+        Route::get('/detrazioni-fiscali/esporta-allegati', [TaxDeductionExportController::class, 'exportAttachments'])->name('tax-deductions.export-attachments');
 
-        Route::get('/lifestyle-score', [LifestyleScoreController::class, 'index'])->name('lifestyle-score.index');
-        Route::get('/lifestyle-score/export-xls', [LifestyleScoreController::class, 'exportXls'])->name('lifestyle-score.export-xls');
-        Route::get('/lifestyle-score/export-pdf', [LifestyleScoreController::class, 'exportPdf'])->name('lifestyle-score.export-pdf');
+        Route::get('/punteggio-stile-vita', [LifestyleScoreController::class, 'index'])->name('lifestyle-score.index');
+        Route::get('/punteggio-stile-vita/esporta-xls', [LifestyleScoreController::class, 'exportXls'])->name('lifestyle-score.export-xls');
+        Route::get('/punteggio-stile-vita/esporta-pdf', [LifestyleScoreController::class, 'exportPdf'])->name('lifestyle-score.export-pdf');
 
-        Route::get('/investment-analyses', [InvestmentAnalysisController::class, 'index'])->name('investment-analyses.index');
+        Route::get('/analisi-investimenti', [InvestmentAnalysisController::class, 'index'])->name('investment-analyses.index');
 
-        Route::get('/investment-assets', [InvestmentAssetController::class, 'index'])->name('investment-assets.index');
+        Route::get('/asset-investimento', [InvestmentAssetController::class, 'index'])->name('investment-assets.index');
 
-        Route::get('/investments', [InvestmentController::class, 'index'])->name('investments.index');
-        Route::get('/investments/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
+        Route::get('/investimenti', [InvestmentController::class, 'index'])->name('investments.index');
+        Route::get('/investimenti/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
 
-        Route::get('/asset-allocation', [AssetAllocationController::class, 'index'])->name('asset-allocation.index');
-        Route::get('/asset-allocation/widget', [AssetAllocationController::class, 'widget'])->name('asset-allocation.widget');
+        Route::get('/allocazione-asset', [AssetAllocationController::class, 'index'])->name('asset-allocation.index');
+        Route::get('/allocazione-asset/widget', [AssetAllocationController::class, 'widget'])->name('asset-allocation.widget');
     }); // fine requires-pro lettura
 
     // Fixed Expenses - lettura (disponibile per tutte le household con bilanciamento debiti)
-    Route::get('/households/{household}/fixed-expenses', [FixedExpenseController::class, 'dashboard'])->name('fixed-expenses.dashboard');
-    Route::get('/households/{household}/fixed-expenses/contributions', [FixedExpenseController::class, 'getContributions'])->name('fixed-expenses.contributions');
-    Route::get('/households/{household}/categories/{category}/suggest-turn', [FixedExpenseController::class, 'suggestTurn'])->name('fixed-expenses.suggest-turn');
+    Route::get('/nuclei/{household}/spese-fisse', [FixedExpenseController::class, 'dashboard'])->name('fixed-expenses.dashboard');
+    Route::get('/nuclei/{household}/spese-fisse/contributi', [FixedExpenseController::class, 'getContributions'])->name('fixed-expenses.contributions');
+    Route::get('/nuclei/{household}/categorie/{category}/suggerisci-turno', [FixedExpenseController::class, 'suggestTurn'])->name('fixed-expenses.suggest-turn');
     
     // Fixed Expenses - modifica (solo owner può modificare impostazioni turni)
     Route::middleware(['can-modify'])->group(function () {
-        Route::post('/households/{household}/categories/{category}/complete-turn', [FixedExpenseController::class, 'completeTurn'])->name('fixed-expenses.complete-turn');
-        Route::patch('/households/{household}/turn-settings', [FixedExpenseController::class, 'updateTurnSettings'])->name('fixed-expenses.update-turn-settings');
+        Route::post('/nuclei/{household}/categorie/{category}/completa-turno', [FixedExpenseController::class, 'completeTurn'])->name('fixed-expenses.complete-turn');
+        Route::patch('/nuclei/{household}/impostazioni-turni', [FixedExpenseController::class, 'updateTurnSettings'])->name('fixed-expenses.update-turn-settings');
     });
 
     // ===== API INTERNE (per AJAX/fetch dal frontend) =====

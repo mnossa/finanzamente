@@ -17,7 +17,7 @@ export default function Guest({ children }: PropsWithChildren) {
                 </div>
 
                 {/* Card Container */}
-                <div className="w-full overflow-hidden bg-white px-8 py-8 shadow-soft sm:max-w-md sm:rounded-2xl border border-slate-100">
+                <div className="w-full overflow-hidden bg-white px-8 py-8 shadow-soft sm:max-w-6xl sm:rounded-2xl border border-slate-100">
                     {children}
                 </div>
 

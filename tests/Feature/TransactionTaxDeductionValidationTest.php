@@ -44,7 +44,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function transaction_can_be_created_without_tax_deduction_fields()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -62,7 +62,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function transaction_can_be_created_with_tax_deduction_fields()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -87,7 +87,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_rate_is_required_when_is_tax_deductible_is_true()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -104,7 +104,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_type_is_required_when_is_tax_deductible_is_true()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -121,7 +121,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_rate_must_be_numeric()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -138,7 +138,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_rate_must_be_at_least_0_01()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -155,7 +155,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_rate_cannot_exceed_100()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -172,7 +172,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_type_must_be_valid()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -192,7 +192,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
         $validTypes = ['mediche', 'veterinarie', 'istruzione', 'mutuo', 'ristrutturazione', 'assicurazioni', 'previdenza', 'donazioni', 'altro'];
 
         foreach ($validTypes as $type) {
-            $response = $this->actingAs($this->user)->postJson('/transactions', [
+            $response = $this->actingAs($this->user)->postJson('/transazioni', [
                 'account_id' => $this->account->id,
                 'category_id' => $this->category->id,
                 'amount' => 100.00,
@@ -214,7 +214,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_year_is_optional()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -237,7 +237,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_year_must_be_integer()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -255,7 +255,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_year_must_be_at_least_2000()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -273,7 +273,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_year_cannot_exceed_2100()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -291,7 +291,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_rate_allows_decimals()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -311,7 +311,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function validation_errors_have_italian_messages()
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -341,7 +341,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
             'is_tax_deductible' => false,
         ]);
 
-        $response = $this->actingAs($this->user)->patchJson("/transactions/{$transaction->id}", [
+        $response = $this->actingAs($this->user)->patchJson("/transazioni/{$transaction->id}", [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -378,7 +378,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
             'tax_year' => 2024,
         ]);
 
-        $response = $this->actingAs($this->user)->patchJson("/transactions/{$transaction->id}", [
+        $response = $this->actingAs($this->user)->patchJson("/transazioni/{$transaction->id}", [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -397,7 +397,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     public function boundary_values_for_tax_deduction_rate_are_accepted()
     {
         // Test min valore valido
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -410,7 +410,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
         $response->assertStatus(302);
 
         // Test max valore valido
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -427,7 +427,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     public function boundary_values_for_tax_year_are_accepted()
     {
         // Test min valore valido
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,
@@ -441,7 +441,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
         $response->assertStatus(302);
 
         // Test max valore valido
-        $response = $this->actingAs($this->user)->postJson('/transactions', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni', [
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
             'amount' => 100.00,

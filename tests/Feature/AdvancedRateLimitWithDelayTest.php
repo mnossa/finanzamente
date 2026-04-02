@@ -20,7 +20,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
 
     public function test_rate_limit_blocks_after_max_attempts()
     {
-        $route = '/register';
+        $route = '/registrati';
         $now = now()->subMinutes(2)->timestamp;
         for ($i = 0; $i < 5; $i++) {
             $payload = [
@@ -52,7 +52,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
 
     public function test_delay_progressivo_is_applied()
     {
-        $route = '/register';
+        $route = '/registrati';
         $payload = [
             'name' => 'Test User',
             'email' => Str::random(10).'@example.com',
@@ -74,7 +74,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
         Log::shouldReceive('info')->once()->withArgs(function ($msg, $context) {
             return isset($context['ip_hash']) && !isset($context['ip']);
         });
-        $route = '/register';
+        $route = '/registrati';
         $payload = [
             'name' => 'Test User',
             'email' => Str::random(10).'@example.com',

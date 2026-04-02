@@ -151,7 +151,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
             <PageContent>
                     {/* Informazioni Household */}
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-                        <section className="max-w-xl">
+                        <section className="max-w-6xl">
                             <header>
                                 <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                                     Informazioni Household

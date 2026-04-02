@@ -15,64 +15,64 @@ use Spatie\Honeypot\ProtectAgainstSpam;
 
 Route::middleware('guest')->group(function () {
     // Selezione piano prima della registrazione
-    Route::get('select-plan', [PlanSelectionController::class, 'show'])
+    Route::get('scegli-piano', [PlanSelectionController::class, 'show'])
         ->name('plan.select');
 
-    Route::get('register', [RegisteredUserController::class, 'create'])
+    Route::get('registrati', [RegisteredUserController::class, 'create'])
         ->name('register');
 
     // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
-    Route::post('register', [RegisteredUserController::class, 'store'])
+    Route::post('registrati', [RegisteredUserController::class, 'store'])
         ->middleware(['adv-throttle:5,2', ProtectAgainstSpam::class])
         ->name('register.store');
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+    Route::get('accedi', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
     // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
-    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+    Route::post('accedi', [AuthenticatedSessionController::class, 'store'])
         ->middleware(['adv-throttle:5,2'])
         ->name('login.store');
 
-    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+    Route::get('password-dimenticata', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
     // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
-    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+    Route::post('password-dimenticata', [PasswordResetLinkController::class, 'store'])
         ->name('password.email')
         ->middleware(['adv-throttle:5,2']);
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    Route::get('reimposta-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
     // Rate limiting avanzato: max 5 tentativi ogni 2 minuti per IP, delay progressivo, logging GDPR compliant
-    Route::post('reset-password', [NewPasswordController::class, 'store'])
+    Route::post('reimposta-password', [NewPasswordController::class, 'store'])
         ->name('password.store')
         ->middleware(['adv-throttle:5,2']);
 });
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('verify-email', EmailVerificationPromptController::class)
+    Route::get('verifica-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
     // Rate limiting avanzato: max 6 tentativi ogni 1 minuto per IP, delay progressivo, logging GDPR compliant
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+    Route::get('verifica-email/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'adv-throttle:6,1'])
         ->name('verification.verify');
 
     // Rate limiting avanzato: max 6 tentativi ogni 1 minuto per IP, delay progressivo, logging GDPR compliant
-    Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    Route::post('email/notifica-verifica', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('adv-throttle:6,1')
         ->name('verification.send');
 
-    Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+    Route::get('conferma-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+    Route::post('conferma-password', [ConfirmablePasswordController::class, 'store']);
 
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    Route::put('aggiorna-password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+    Route::post('disconnettiti', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });

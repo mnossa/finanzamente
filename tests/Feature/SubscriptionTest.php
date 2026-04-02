@@ -21,25 +21,25 @@ class SubscriptionTest extends TestCase
 
     public function test_plan_selection_page_is_accessible_as_guest(): void
     {
-        $response = $this->get('/select-plan');
+        $response = $this->get('/scegli-piano');
         $response->assertStatus(200);
     }
 
     public function test_register_page_accepts_plan_query_param(): void
     {
-        $response = $this->get('/register?plan=base&billing_cycle=monthly');
+        $response = $this->get('/registrati?plan=base&billing_cycle=monthly');
         $response->assertStatus(200);
     }
 
     public function test_register_page_falls_back_to_base_for_invalid_plan(): void
     {
-        $response = $this->get('/register?plan=nonexistent');
+        $response = $this->get('/registrati?plan=nonexistent');
         $response->assertStatus(200);
     }
 
     public function test_new_user_is_created_with_base_plan_by_default(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
@@ -58,7 +58,7 @@ class SubscriptionTest extends TestCase
 
     public function test_new_user_choosing_pro_stays_on_base_until_payment(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Pro User',
             'email' => 'pro@example.com',
             'password' => 'password',
@@ -78,7 +78,7 @@ class SubscriptionTest extends TestCase
 
     public function test_pro_plan_selection_stores_pending_plan_in_session(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Pro User',
             'email' => 'pro2@example.com',
             'password' => 'password',
@@ -98,14 +98,14 @@ class SubscriptionTest extends TestCase
         $user = User::factory()->create(['plan' => 'base']);
         $this->actingAs($user);
 
-        $response = $this->withoutVite()->get('/profile/subscription');
+        $response = $this->withoutVite()->get('/profilo/abbonamento');
         $response->assertStatus(200);
     }
 
     public function test_subscription_page_is_not_accessible_as_guest(): void
     {
-        $response = $this->get('/profile/subscription');
-        $response->assertRedirect('/login');
+        $response = $this->get('/profilo/abbonamento');
+        $response->assertRedirect('/accedi');
     }
 
     public function test_plan_service_returns_correct_plans(): void
@@ -203,7 +203,7 @@ class SubscriptionTest extends TestCase
         $user = User::factory()->create(['plan' => 'base']);
         $this->actingAs($user);
 
-        $response = $this->post('/subscription/checkout', [
+        $response = $this->post('/abbonamento/checkout', [
             'billing_cycle' => 'monthly',
         ]);
 
@@ -213,12 +213,12 @@ class SubscriptionTest extends TestCase
 
     public function test_billing_update_requires_auth(): void
     {
-        $response = $this->patch('/subscription/billing', [
+        $response = $this->patch('/abbonamento/fatturazione', [
             'billing_name' => 'Test',
             'billing_email' => 'test@example.com',
         ]);
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     public function test_billing_update_is_rejected_without_subscription(): void
@@ -226,7 +226,7 @@ class SubscriptionTest extends TestCase
         $user = User::factory()->create(['plan' => 'base']);
         $this->actingAs($user);
 
-        $response = $this->patch('/subscription/billing', [
+        $response = $this->patch('/abbonamento/fatturazione', [
             'billing_name' => 'Test',
             'billing_email' => 'test@example.com',
         ]);
@@ -251,7 +251,7 @@ class SubscriptionTest extends TestCase
             'billing_email' => 'old@example.com',
         ]);
 
-        $response = $this->patch('/subscription/billing', [
+        $response = $this->patch('/abbonamento/fatturazione', [
             'billing_name' => 'New Name',
             'billing_email' => 'new@example.com',
         ]);

@@ -271,7 +271,7 @@ class TransactionTagTest extends TestCase
     public function unauthenticated_user_cannot_search_tags(): void
     {
         $response = $this->get(route('tags.search'));
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     // ---------------------------------------------------------------

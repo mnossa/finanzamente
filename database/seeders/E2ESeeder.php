@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Household;
+use App\Models\FinancialGoal;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -64,5 +65,21 @@ class E2ESeeder extends Seeder
 
         $this->command->info("Utente E2E pronto: {$email}");
         $this->command->info("Household: {$household->name} (ID: {$household->id})");
+
+        // Crea un obiettivo finanziario di test per il widget dashboard
+        FinancialGoal::firstOrCreate(
+            ['household_id' => $household->id, 'name' => 'Obiettivo E2E Vacanza'],
+            [
+                'user_id'        => $user->id,
+                'description'    => 'Obiettivo creato dal seeder E2E',
+                'target_amount'  => 2000.00,
+                'current_amount' => 500.00,
+                'currency_code'  => 'EUR',
+                'target_date'    => now()->addYear()->format('Y-m-d'),
+                'status'         => 'in_progress',
+                'icon'           => '✈️',
+                'color'          => '#10b981',
+            ]
+        );
     }
 }

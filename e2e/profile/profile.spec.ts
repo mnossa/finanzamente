@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Profilo utente', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/profile');
+        await page.goto('/profilo');
     });
 
     test('carica la pagina del profilo', async ({ page }) => {

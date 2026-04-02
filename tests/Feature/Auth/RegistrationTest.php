@@ -19,7 +19,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_is_blocked_if_honeypot_field_filled(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Bot User',
             'email' => 'bot@example.com',
             'password' => 'password',
@@ -38,7 +38,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_is_blocked_if_honeypot_time_too_short(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Fast Bot',
             'email' => 'fastbot@example.com',
             'password' => 'password',
@@ -57,14 +57,14 @@ class RegistrationTest extends TestCase
 
     public function test_registration_screen_can_be_rendered(): void
     {
-        $response = $this->get('/register');
+        $response = $this->get('/registrati');
 
         $response->assertStatus(200);
     }
 
     public function test_new_users_can_register(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
@@ -85,7 +85,7 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_with_vat_can_register(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test Company',
             'email' => 'company@example.com',
             'password' => 'password',
@@ -106,7 +106,7 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register_without_fiscal_code(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test User',
             'email' => 'test2@example.com',
             'password' => 'password',
@@ -126,7 +126,7 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register_without_vat_number(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test Company',
             'email' => 'company2@example.com',
             'password' => 'password',
@@ -146,7 +146,7 @@ class RegistrationTest extends TestCase
 
     public function test_fiscal_code_format_is_validated(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
@@ -160,7 +160,7 @@ class RegistrationTest extends TestCase
 
     public function test_vat_number_format_is_validated(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->post('/registrati', [
             'name' => 'Test Company',
             'email' => 'company@example.com',
             'password' => 'password',

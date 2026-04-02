@@ -126,6 +126,30 @@ interface AssetAllocationEntry {
     percentage: number;
 }
 
+interface FinancialGoal {
+    id: number;
+    name: string;
+    icon: string | null;
+    color: string | null;
+    target_amount: number;
+    current_amount: number;
+    currency_code: string;
+    target_date: string | null;
+    percentage: number;
+}
+
+interface FinancialGoal {
+    id: number;
+    name: string;
+    icon: string | null;
+    color: string | null;
+    target_amount: number;
+    current_amount: number;
+    currency_code: string;
+    target_date: string | null;
+    percentage: number;
+}
+
 interface AssetAllocationData {
     total_value: number;
     risk_index: number;
@@ -152,6 +176,7 @@ interface DashboardProps {
     netWorthData: NetWorthDataPoint[];
     cashFlowData: CashFlowDataPoint[];
     expenseCategories: ExpenseCategory[];
+    financialGoals: FinancialGoal[];
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -359,6 +384,7 @@ export default function Dashboard({
     netWorthData,
     cashFlowData,
     expenseCategories,
+    financialGoals,
 }: DashboardProps) {
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
@@ -649,6 +675,47 @@ export default function Dashboard({
                         </div>
                     </div>
                 );
+
+            case 'financial_goals':
+                return isModuleEnabled('financial_goals') ? (
+                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">🎯 Obiettivi Finanziari</h3>
+                            <Link href={route('financial-goals.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
+                        </div>
+                        <div className="p-4">
+                            {financialGoals.length > 0 ? (
+                                <div className="space-y-3">
+                                    {financialGoals.map((goal) => (
+                                        <Link
+                                            key={goal.id}
+                                            href={route('financial-goals.show', goal.id)}
+                                            className="block rounded-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700"
+                                        >
+                                            <div className="mb-2 flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <span>{goal.icon || '🎯'}</span>
+                                                    <span className="font-medium text-gray-900 dark:text-white">{goal.name}</span>
+                                                </div>
+                                                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{goal.percentage}%</span>
+                                            </div>
+                                            <ProgressBar percentage={goal.percentage} isExceeded={false} height="0.5rem" />
+                                            <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                                <span>{formatCurrency(goal.current_amount, goal.currency_code)}</span>
+                                                <span>{formatCurrency(goal.target_amount, goal.currency_code)}</span>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-8 text-center">
+                                    <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun obiettivo attivo</p>
+                                    <Link href={route('financial-goals.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Crea il tuo primo obiettivo →</Link>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : <LockedModuleCard moduleId="financial_goals" />;
 
             default:
                 return null;

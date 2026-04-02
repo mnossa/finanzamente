@@ -42,7 +42,7 @@ test.describe('Household', () => {
     });
 
     test('il pannello di selezione household è raggiungibile', async ({ page }) => {
-        await page.goto('/households/select');
+        await page.goto('/nuclei/seleziona');
         await expect(page).toHaveURL('/households/select');
     });
 });
