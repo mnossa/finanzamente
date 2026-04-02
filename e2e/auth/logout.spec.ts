@@ -15,7 +15,7 @@ test('logout esegue il logout e reindirizza alla homepage', async ({ page }) => 
     const password = process.env.E2E_USER_PASSWORD ?? 'password';
 
     // Login manuale
-    await page.goto('/login');
+    await page.goto('/accedi');
     await page.locator('#email').fill(email);
     await page.locator('#password').fill(password);
     await page.getByRole('button', { name: 'Accedi' }).click();

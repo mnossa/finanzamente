@@ -50,7 +50,7 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function user_can_view_tax_deductions_index()
     {
-        $response = $this->actingAs($this->user)->get('/tax-deductions');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali');
 
         $response->assertStatus(200);
     }
@@ -83,7 +83,7 @@ class TaxDeductionExportTest extends TestCase
             'is_tax_deductible' => false,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -122,7 +122,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => 2023,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=2024');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=2024');
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -160,7 +160,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -200,7 +200,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -229,7 +229,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -254,7 +254,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -279,7 +279,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => 2024,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-pdf?year=2024');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-pdf?year=2024');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
@@ -289,7 +289,7 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function pdf_export_requires_year_parameter()
     {
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-pdf');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-pdf');
 
         $response->assertStatus(302); // Redirect con errore di validazione
     }
@@ -297,7 +297,7 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function pdf_export_validates_year_range()
     {
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-pdf?year=1999');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-pdf?year=1999');
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors(['year']);
@@ -357,7 +357,7 @@ class TaxDeductionExportTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-attachments?year=2024');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-allegati?year=2024');
 
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/zip');
@@ -367,7 +367,7 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function zip_export_requires_year_parameter()
     {
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-attachments');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-allegati');
 
         $response->assertStatus(302);
     }
@@ -375,7 +375,7 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function zip_export_validates_year_range()
     {
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-attachments?year=2150');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-allegati?year=2150');
 
         $response->assertStatus(302);
         $response->assertSessionHasErrors(['year']);
@@ -413,7 +413,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -424,28 +424,28 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function guest_cannot_access_tax_deductions()
     {
-        $response = $this->get('/tax-deductions');
+        $response = $this->get('/detrazioni-fiscali');
 
         $response->assertStatus(302);
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     #[Test]
     public function guest_cannot_export_pdf()
     {
-        $response = $this->get('/tax-deductions/export-pdf?year=2024');
+        $response = $this->get('/detrazioni-fiscali/esporta-pdf?year=2024');
 
         $response->assertStatus(302);
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     #[Test]
     public function guest_cannot_export_attachments()
     {
-        $response = $this->get('/tax-deductions/export-attachments?year=2024');
+        $response = $this->get('/detrazioni-fiscali/esporta-allegati?year=2024');
 
         $response->assertStatus(302);
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     #[Test]
@@ -465,7 +465,7 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => 2024,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/tax-deductions/export-pdf?year=2024');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali/esporta-pdf?year=2024');
 
         $response->assertStatus(200);
         $response->assertSee('Visita specialistica');
@@ -476,7 +476,7 @@ class TaxDeductionExportTest extends TestCase
     #[Test]
     public function available_years_includes_current_year()
     {
-        $response = $this->actingAs($this->user)->get('/tax-deductions');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali');
 
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page
@@ -517,12 +517,12 @@ class TaxDeductionExportTest extends TestCase
         ]);
 
         // Cerco transazioni per il 2025
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=2025');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=2025');
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page->has('transactions', 1));
 
         // Cerco transazioni per il 2024
-        $response = $this->actingAs($this->user)->get('/tax-deductions?year=2024');
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=2024');
         $response->assertStatus(200);
         $response->assertInertia(fn($page) => $page->has('transactions', 1));
     }

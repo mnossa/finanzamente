@@ -66,15 +66,15 @@ class LifestyleScoreTest extends TestCase
     #[Test]
     public function unauthenticated_user_cannot_access_lifestyle_score(): void
     {
-        $response = $this->get('/lifestyle-score');
+        $response = $this->get('/punteggio-stile-vita');
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     #[Test]
     public function authenticated_user_can_view_lifestyle_score_page(): void
     {
-        $response = $this->actingAs($this->user)->get('/lifestyle-score');
+        $response = $this->actingAs($this->user)->get('/punteggio-stile-vita');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page->component('LifestyleScore/Index'));
@@ -83,7 +83,7 @@ class LifestyleScoreTest extends TestCase
     #[Test]
     public function lifestyle_score_page_shows_trend_data(): void
     {
-        $response = $this->actingAs($this->user)->get('/lifestyle-score');
+        $response = $this->actingAs($this->user)->get('/punteggio-stile-vita');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -112,7 +112,7 @@ class LifestyleScoreTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/lifestyle-score');
+            ->get('/punteggio-stile-vita');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -159,7 +159,7 @@ class LifestyleScoreTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/lifestyle-score');
+            ->get('/punteggio-stile-vita');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -208,7 +208,7 @@ class LifestyleScoreTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/lifestyle-score');
+            ->get('/punteggio-stile-vita');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -265,7 +265,7 @@ class LifestyleScoreTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get('/lifestyle-score');
+            ->get('/punteggio-stile-vita');
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
@@ -279,7 +279,7 @@ class LifestyleScoreTest extends TestCase
     public function xls_export_returns_xlsx_file(): void
     {
         $response = $this->actingAs($this->user)
-            ->get('/lifestyle-score/export-xls');
+            ->get('/punteggio-stile-vita/esporta-xls');
 
         $response->assertStatus(200);
         $response->assertHeader(
@@ -292,7 +292,7 @@ class LifestyleScoreTest extends TestCase
     public function pdf_export_returns_html_file(): void
     {
         $response = $this->actingAs($this->user)
-            ->get('/lifestyle-score/export-pdf');
+            ->get('/punteggio-stile-vita/esporta-pdf');
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/html', $response->headers->get('Content-Type'));

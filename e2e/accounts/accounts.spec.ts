@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Conti', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/accounts');
+        await page.goto('/conti');
     });
 
     test('carica la pagina dei conti', async ({ page }) => {

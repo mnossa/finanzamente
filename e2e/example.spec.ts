@@ -14,23 +14,23 @@ test.describe('Smoke test — navigazione autenticata', () => {
     });
 
     test('la pagina dei conti è raggiungibile', async ({ page }) => {
-        await page.goto('/accounts');
-        await expect(page).toHaveURL('/accounts');
+        await page.goto('/conti');
+        await expect(page).toHaveURL('/conti');
     });
 
     test('la pagina delle transazioni è raggiungibile', async ({ page }) => {
-        await page.goto('/transactions');
-        await expect(page).toHaveURL('/transactions');
+        await page.goto('/transazioni');
+        await expect(page).toHaveURL('/transazioni');
     });
 
     test('la pagina delle categorie è raggiungibile', async ({ page }) => {
-        await page.goto('/categories');
-        await expect(page).toHaveURL('/categories');
+        await page.goto('/categorie');
+        await expect(page).toHaveURL('/categorie');
     });
 
     test('la pagina del profilo è raggiungibile', async ({ page }) => {
-        await page.goto('/profile');
-        await expect(page).toHaveURL('/profile');
+        await page.goto('/profilo');
+        await expect(page).toHaveURL('/profilo');
     });
 });
 

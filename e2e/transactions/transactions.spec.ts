@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Transazioni', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/transactions');
+        await page.goto('/transazioni');
     });
 
     test('carica la pagina delle transazioni', async ({ page }) => {

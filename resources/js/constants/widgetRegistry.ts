@@ -127,6 +127,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultVisible: true,
         allowedSizes: ALL_SIZES,
     },
+    {
+        id: 'financial_goals',
+        title: 'Obiettivi Finanziari',
+        description: 'Riepilogo degli obiettivi finanziari attivi con avanzamento.',
+        defaultSize: 'md',
+        defaultVisible: true,
+        requiresModule: 'financial_goals',
+        allowedSizes: ALL_SIZES,
+    },
 ];
 
 /** Mappa per accesso rapido al widget per ID. */

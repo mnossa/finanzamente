@@ -18,7 +18,7 @@ setup('autenticazione e salvataggio stato sessione', async ({ page }) => {
     // Assicura che la directory esista
     fs.mkdirSync(path.dirname(authFile), { recursive: true });
 
-    await page.goto('/login');
+    await page.goto('/accedi');
     await expect(page).toHaveTitle(/Accedi/i);
 
     await page.locator('#email').fill(email);

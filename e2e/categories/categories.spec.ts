@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Categorie', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/categories');
+        await page.goto('/categorie');
     });
 
     test('carica la pagina delle categorie', async ({ page }) => {

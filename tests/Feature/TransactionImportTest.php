@@ -42,9 +42,9 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function unauthenticated_user_cannot_access_import_wizard(): void
     {
-        $response = $this->get('/transactions/import');
+        $response = $this->get('/transazioni/importa');
 
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/accedi');
     }
 
     #[Test]
@@ -53,7 +53,7 @@ class TransactionImportTest extends TestCase
         $csvContent = "Data;Descrizione;Importo\n01/01/2024;Supermercato;-50,00\n05/01/2024;Stipendio;1500,00\n";
         $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
 
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
             'csv_file' => $file,
             'bank_name' => 'custom',
             'delimiter' => ';',
@@ -78,7 +78,7 @@ class TransactionImportTest extends TestCase
     {
         $file = UploadedFile::fake()->create('transactions.pdf', 100, 'application/pdf');
 
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
             'csv_file' => $file,
             'bank_name' => 'custom',
             'delimiter' => ';',
@@ -94,7 +94,7 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function user_can_import_transactions(): void
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions/import', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
             'account_id' => $this->account->id,
             'rows' => [
                 ['date' => '2024-01-01', 'amount' => -50.00, 'description' => 'Supermercato', 'notes' => null],
@@ -111,7 +111,7 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function import_requires_valid_account(): void
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions/import', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
             'account_id' => 9999,
             'rows' => [
                 ['date' => '2024-01-01', 'amount' => -50.00, 'description' => 'Test'],
@@ -124,7 +124,7 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function import_requires_at_least_one_row(): void
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions/import', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
             'account_id' => $this->account->id,
             'rows' => [],
         ]);
@@ -135,7 +135,7 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function user_can_save_custom_layout(): void
     {
-        $response = $this->actingAs($this->user)->postJson('/bank-import-layouts', [
+        $response = $this->actingAs($this->user)->postJson('/layout-banca', [
             'name' => 'Il mio layout',
             'bank_name' => 'custom',
             'delimiter' => ';',
@@ -161,7 +161,7 @@ class TransactionImportTest extends TestCase
             'user_id' => $otherUser->id,
         ]);
 
-        $response = $this->actingAs($this->user)->delete("/bank-import-layouts/{$layout->id}");
+        $response = $this->actingAs($this->user)->delete("/layout-banca/{$layout->id}");
 
         $response->assertStatus(403);
     }
@@ -172,7 +172,7 @@ class TransactionImportTest extends TestCase
         $csvContent = "Data;Descrizione;Importo\n01/01/2024;Supermercato;-50,00\n";
         $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
 
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/sheets', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/fogli', [
             'csv_file' => $file,
         ]);
 
@@ -183,7 +183,7 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function sheets_endpoint_requires_file_or_drive_params(): void
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/sheets', []);
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/fogli', []);
 
         $response->assertStatus(422);
     }
@@ -194,7 +194,7 @@ class TransactionImportTest extends TestCase
         $csvContent = "Data;Descrizione;Importo\n01/01/2024;Supermercato;-50,00\n";
         $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
 
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
             'csv_file'     => $file,
             'bank_name'    => 'custom',
             'delimiter'    => ';',
@@ -216,7 +216,7 @@ class TransactionImportTest extends TestCase
     #[Test]
     public function preview_with_google_drive_missing_token_returns_validation_error(): void
     {
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
             'google_drive_file_id' => 'some-file-id',
             // google_drive_access_token mancante
             'date_format'  => 'd/m/Y',
@@ -235,7 +235,7 @@ class TransactionImportTest extends TestCase
             'https://www.googleapis.com/*' => Http::response('Unauthorized', 401),
         ]);
 
-        $response = $this->actingAs($this->user)->postJson('/transactions/import/preview', [
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
             'google_drive_file_id'      => 'fake-file-id',
             'google_drive_access_token' => 'fake-token',
             'google_drive_mime_type'    => 'text/csv',

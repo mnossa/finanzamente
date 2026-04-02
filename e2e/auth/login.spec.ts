@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Autenticazione — Login', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/login');
+        await page.goto('/accedi');
     });
 
     test('mostra il form di login con tutti i campi', async ({ page }) => {
