@@ -26,19 +26,7 @@
                 </ul>
             </div>
 
-            <!-- Per chi -->
-            <div>
-                <h3 class="text-white font-semibold mb-4">Per chi è fatto</h3>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="{{ route('landing.investitori') }}" class="hover:text-white transition-colors">Per investitori</a></li>
-                    <li><a href="{{ route('landing.famiglie') }}" class="hover:text-white transition-colors">Per famiglie e coppie</a></li>
-                    <li><a href="{{ route('landing.freelance') }}" class="hover:text-white transition-colors">Per freelance e P.IVA</a></li>
-                    <li><a href="{{ route('landing.lavoratori') }}" class="hover:text-white transition-colors">Per lavoratori dipendenti</a></li>
-                    <li><a href="{{ route('landing.pianificatori') }}" class="hover:text-white transition-colors">Per pianificatori</a></li>
-                    <li><a href="{{ route('landing.tech-savvy') }}" class="hover:text-white transition-colors">Per tech-savvy</a></li>
-                    <li><a href="{{ route('landing.crescita') }}" class="hover:text-white transition-colors">Per la crescita personale</a></li>
-                </ul>
-            </div>
+
 
             <!-- Legale -->
             <div>

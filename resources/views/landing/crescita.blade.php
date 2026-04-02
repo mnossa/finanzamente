@@ -1,102 +1,100 @@
-@extends('layouts.guest')
+@extends('layouts.landing-minimal')
+@php $landingPage = 'crescita'; @endphp
 
 @section('content')
-    <!-- Hero Section -->
-    <section class="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden" aria-labelledby="hero-title">
-        <div class="absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-indigo-50 opacity-70" aria-hidden="true"></div>
-        <div class="absolute top-0 right-0 -translate-y-12 translate-x-12 w-72 h-72 bg-primary-200 rounded-full blur-3xl opacity-20" aria-hidden="true"></div>
-        <div class="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-72 h-72 bg-indigo-200 rounded-full blur-3xl opacity-20" aria-hidden="true"></div>
+    {{-- HERO --}}
+    <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-gradient-to-br from-primary-50 via-white to-indigo-50" aria-labelledby="hero-title">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-primary-200 rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2" aria-hidden="true"></div>
+        <div class="absolute bottom-0 left-0 w-80 h-80 bg-indigo-200 rounded-full blur-3xl opacity-20 translate-y-1/2 -translate-x-1/2" aria-hidden="true"></div>
 
-        <div class="relative container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-4xl mx-auto text-center">
-                <span class="inline-flex items-center px-4 py-1.5 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold mb-6">
-                    📈 Per chi punta alla crescita personale
+        <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+            <div class="max-w-2xl mx-auto text-center">
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-sm font-semibold mb-6">
+                    📈 Per la crescita personale
                 </span>
-                <h1 id="hero-title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 leading-tight mb-4 sm:mb-6">
+                <h1 id="hero-title" class="text-4xl sm:text-5xl md:text-6xl font-bold text-surface-900 leading-tight mb-5">
                     Stai cadendo nella trappola
-                    <span class="bg-gradient-to-r from-primary-600 to-indigo-700 bg-clip-text text-transparent">dell'inflazione del tenore di vita?</span>
+                    <span class="bg-gradient-to-r from-primary-600 to-indigo-700 bg-clip-text text-transparent">del lifestyle inflation?</span>
                 </h1>
-                <p class="text-base sm:text-lg md:text-xl text-surface-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Il Lifestyle Inflation Score di FinanzaMente Pro è un indicatore unico: misura se le tue spese voluttuarie crescono più velocemente delle entrate. Un segnale d'allarme precoce per chi vuole costruire ricchezza, non solo spenderla.
+                <p class="text-lg sm:text-xl text-surface-600 mb-8 leading-relaxed">
+                    Il Lifestyle Inflation Score di FinanzaMente ti mostra se le tue spese voluttuarie crescono più velocemente delle entrate — settimana per settimana, prima che sia troppo tardi.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12">
-                    @if (Route::has('plan.select'))
-                        <a href="{{ route('plan.select') }}?plan=pro" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 rounded-xl shadow-accent transition-all duration-200">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            Scopri il tuo Score
-                        </a>
-                    @endif
-                    <a href="#funzionalita" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium text-primary-700 bg-white hover:bg-surface-50 rounded-xl border-2 border-primary-200 hover:border-primary-300 transition-all duration-200">
-                        Come funziona
+                @if (Route::has('plan.select'))
+                    <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
+                       class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                       data-umami-event="landing-cta-crescita"
+                       data-umami-event-position="hero">
+                        Abbonati a Pro — scopri il tuo score
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
                     </a>
+                @endif
+                <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-5 text-sm text-surface-500">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        €2,99/mese
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Nessun conto bancario da collegare
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        Disdici quando vuoi
+                    </span>
+                </div>
+                @if (Route::has('login'))
+                    <p class="mt-3 text-sm text-surface-500">
+                        Hai già un account?
+                        <a href="{{ route('login') }}" class="text-primary-600 hover:text-primary-700 font-medium underline">Accedi</a>
+                    </p>
+                @endif
+            </div>
+        </div>
+    </section>
+
+    {{-- 3 BENEFITS --}}
+    <section class="py-12 sm:py-16 bg-white" aria-label="Funzionalità principali">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+                <div class="text-center p-4">
+                    <div class="text-3xl mb-3" aria-hidden="true">📈</div>
+                    <h3 class="text-base font-semibold text-surface-900 mb-1">Lifestyle Inflation Score unico</h3>
+                    <p class="text-sm text-surface-600">Un punteggio da 0 a 100 che misura se le spese voluttuarie crescono più velocemente delle entrate.</p>
+                </div>
+                <div class="text-center p-4">
+                    <div class="text-3xl mb-3" aria-hidden="true">🔍</div>
+                    <h3 class="text-base font-semibold text-surface-900 mb-1">Analisi delle categorie in crescita</h3>
+                    <p class="text-sm text-surface-600">Qual è la voce che accelera di più? Ristoranti, abbigliamento, viaggi: lo sai esattamente.</p>
+                </div>
+                <div class="text-center p-4">
+                    <div class="text-3xl mb-3" aria-hidden="true">🚨</div>
+                    <h3 class="text-base font-semibold text-surface-900 mb-1">Alert proattivi prima che sia tardi</h3>
+                    <p class="text-sm text-surface-600">Ricevi segnali d'allerta quando lo score sale troppo velocemente, non quando è già fuori controllo.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Highlight Lifestyle Score -->
-    <section id="funzionalita" class="py-12 sm:py-20 bg-gradient-to-br from-primary-50 to-indigo-50" aria-labelledby="score-title">
+    {{-- PROOF VISUAL --}}
+    <section class="py-12 sm:py-16 bg-surface-50" aria-label="Esempio Lifestyle Inflation Score">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16 items-center">
+            <div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
                 <div>
-                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-4">
-                        📈 Lifestyle Inflation Score
-                    </span>
-                    <h2 id="score-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-4 sm:mb-6">
-                        Un punteggio che rivela quanto stai scivolando verso il consumismo
+                    <h2 class="text-2xl sm:text-3xl font-bold text-surface-900 mb-4">
+                        Un segnale d'allarme precoce, non un rimpianto tardivo
                     </h2>
-                    <p class="text-base sm:text-lg text-surface-600 mb-6 leading-relaxed">
-                        La lifestyle inflation è la tendenza — spesso inconscia — ad aumentare le spese voluttuarie man mano che crescono le entrate. Il risultato? Lo stipendio aumenta, ma i risparmi restano fermi. FinanzaMente Pro ti mostra subito il segnale d'allarme.
+                    <p class="text-surface-600 leading-relaxed">
+                        La lifestyle inflation è la tendenza inconscia ad aumentare le spese voluttuarie man mano che crescono le entrate. Il risultato: <strong>lo stipendio aumenta, i risparmi restano fermi</strong>. FinanzaMente Pro ti mostra <strong>il pericolo in anticipo</strong> — non a fine anno.
                     </p>
-                    <div class="space-y-4">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-primary-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <p class="text-sm sm:text-base text-surface-700">Confronto automatico tra la crescita delle entrate e la crescita delle spese voluttuarie nel tempo</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-primary-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <p class="text-sm sm:text-base text-surface-700">Score da 0 a 100: più è alto, più le spese voluttuarie stanno crescendo più in fretta delle entrate</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-primary-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <p class="text-sm sm:text-base text-surface-700">Analisi per categoria: qual è la voce di spesa che cresce di più rispetto alle entrate?</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-primary-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                            <p class="text-sm sm:text-base text-surface-700">Feature originale e difficilmente replicabile — disponibile solo su FinanzaMente Pro</p>
-                        </div>
-                    </div>
                 </div>
-
-                <!-- Visual Lifestyle Score mock -->
-                <div class="relative bg-white rounded-2xl p-6 sm:p-8 shadow-soft-lg border border-surface-200">
-                    <p class="text-xs text-surface-500 uppercase font-semibold tracking-wider mb-5">Il tuo Lifestyle Inflation Score</p>
-
-                    <!-- Score gauge mock -->
-                    <div class="flex flex-col items-center mb-6">
-                        <div class="relative w-40 h-24 mb-3">
-                            <svg viewBox="0 0 200 110" class="w-full" aria-hidden="true">
-                                <!-- Background arc -->
+                <div class="bg-white rounded-2xl p-6 shadow-soft-lg border border-surface-200">
+                    <p class="text-xs text-surface-500 uppercase font-semibold tracking-wider mb-4">Il tuo Lifestyle Inflation Score</p>
+                    <div class="flex flex-col items-center mb-5">
+                        <div class="relative w-36 h-20 mb-2">
+                            <svg viewBox="0 0 200 110" class="w-full" aria-label="Gauge score 58 su 100">
                                 <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f1f5f9" stroke-width="18" stroke-linecap="round"/>
-                                <!-- Score arc (58% = warning) -->
                                 <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#scoreGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="105"/>
                                 <defs>
                                     <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -105,13 +103,8 @@
                                         <stop offset="100%" stop-color="#ef4444"/>
                                     </linearGradient>
                                 </defs>
-                                <!-- Needle -->
                                 <line x1="100" y1="100" x2="68" y2="42" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>
                                 <circle cx="100" cy="100" r="5" fill="#0f172a"/>
-                                <!-- Labels -->
-                                <text x="15" y="118" font-size="12" fill="#64748b" text-anchor="middle">0</text>
-                                <text x="100" y="10" font-size="12" fill="#64748b" text-anchor="middle">50</text>
-                                <text x="185" y="118" font-size="12" fill="#64748b" text-anchor="middle">100</text>
                             </svg>
                         </div>
                         <div class="text-center">
@@ -122,9 +115,8 @@
                             ⚠️ Attenzione — In crescita
                         </span>
                     </div>
-
-                    <div class="space-y-3">
-                        <p class="text-xs text-surface-500 font-medium uppercase tracking-wide">Voci in accelerazione</p>
+                    <div class="space-y-2">
+                        <p class="text-xs text-surface-500 font-medium uppercase tracking-wide mb-2">Voci in accelerazione</p>
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-surface-700">Ristoranti & Food delivery</span>
                             <span class="font-bold text-red-600">+34%</span>
@@ -143,113 +135,27 @@
         </div>
     </section>
 
-    <!-- Funzionalità specifiche -->
-    <section class="py-12 sm:py-20 bg-white" aria-labelledby="features-title">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-3xl mx-auto text-center mb-10 sm:mb-16">
-                <h2 id="features-title" class="text-2xl sm:text-3xl md:text-4xl font-bold text-surface-900 mb-3 sm:mb-4">
-                    Per chi vuole crescere finanziariamente, non solo guadagnare di più
-                </h2>
-                <p class="text-base sm:text-lg text-surface-600">
-                    Strumenti Pro per la consapevolezza finanziaria e la crescita personale
-                </p>
+    {{-- FINAL CTA --}}
+    <section class="py-14 sm:py-20 bg-gradient-to-r from-primary-600 to-indigo-700 text-white text-center">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4">Scopri il tuo Lifestyle Inflation Score adesso</h2>
+            <p class="text-primary-100 mb-5">Lifestyle Inflation Score, alert proattivi e analisi delle categorie in crescita.</p>
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-8 text-sm text-primary-200">
+                <span>✓ €2,99/mese</span>
+                <span>✓ Nessun conto bancario da collegare</span>
+                <span>✓ Disdici quando vuoi</span>
             </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                    </div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900">Lifestyle Inflation Score</h3>
-                        <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pro</span>
-                    </div>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Misura se le spese voluttuarie crescono più velocemente delle entrate. Un indicatore originale e unico nel panorama delle finanze personali.
-                    </p>
-                </div>
-
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-violet-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                    </div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900">Simulazioni finanziarie</h3>
-                        <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pro</span>
-                    </div>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Proietta il futuro finanziario con scenari personalizzati. Visualizza quanto risparmeresti ottimizzando le spese voluttuarie.
-                    </p>
-                </div>
-
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-indigo-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                        </svg>
-                    </div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900">Obiettivi illimitati</h3>
-                        <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pro</span>
-                    </div>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Crea quanti obiettivi vuoi e monitora i progressi. Ogni obiettivo raggiunto è la dimostrazione concreta che la consapevolezza funziona.
-                    </p>
-                </div>
-
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-emerald-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Analisi dei trend</h3>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Grafici storici per categoria che mostrano come cambiano le tue abitudini di spesa nel tempo. Identifica le aree di miglioramento.
-                    </p>
-                </div>
-
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-amber-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Budget consapevole</h3>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Imposta budget mensili e ricevi segnali quando ti stai avvicinando ai limiti. La consapevolezza inizia dal budget.
-                    </p>
-                </div>
-
-                <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-blue-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                        </svg>
-                    </div>
-                    <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900">Portafoglio investimenti</h3>
-                        <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pro</span>
-                    </div>
-                    <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Tieni traccia degli investimenti accanto alle spese. Misura il rapporto reale tra quanto spendi e quanto fai crescere il patrimonio.
-                    </p>
-                </div>
-            </div>
+            @if (Route::has('plan.select'))
+                <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
+                   class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-primary-700 bg-white hover:bg-primary-50 rounded-xl shadow-lg transition-all duration-200"
+                   data-umami-event="landing-cta-crescita"
+                   data-umami-event-position="footer">
+                    Attiva Pro — scopri il tuo Score adesso
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                </a>
+            @endif
         </div>
     </section>
-
-    <!-- Sezione prezzi -->
-    @php $targetId = 'crescita'; @endphp
-    @include('partials.landing.pricing')
-
-    <!-- CTA finale -->
-    @include('partials.landing.cta-finale', [
-        'ctaTitle' => 'Scopri il tuo Lifestyle Inflation Score',
-        'ctaSubtitle' => 'Registrati gratis e inizia a tracciare le spese. Passa a Pro per sbloccare il Lifestyle Inflation Score e le simulazioni finanziarie avanzate.',
-    ])
 @endsection
