@@ -17,25 +17,16 @@
             <div>
                 <h3 class="text-white font-semibold mb-4">Prodotto</h3>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="#come-funziona" class="hover:text-white transition-colors">Come funziona</a></li>
-                    <li><a href="#features" class="hover:text-white transition-colors">Funzionalità</a></li>
-                    <li><a href="#pricing" class="hover:text-white transition-colors">Prezzi</a></li>
+                    <li><a href="{{ route('home') }}#come-funziona" class="hover:text-white transition-colors">Come funziona</a></li>
+                    <li><a href="{{ route('home') }}#funzionalita" class="hover:text-white transition-colors">Funzionalità</a></li>
+                    <li><a href="{{ route('home') }}#piani" class="hover:text-white transition-colors">Prezzi</a></li>
                     @if (Route::has('register'))
                     <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Registrati</a></li>
                     @endif
                 </ul>
             </div>
 
-            <!-- Supporto -->
-            <div>
-                <h3 class="text-white font-semibold mb-4">Supporto</h3>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="#" class="hover:text-white transition-colors">Centro assistenza</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Guide</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Contattaci</a></li>
-                </ul>
-            </div>
+
 
             <!-- Legale -->
             <div>

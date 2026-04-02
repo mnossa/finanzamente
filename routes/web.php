@@ -38,11 +38,21 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\Api\AssetPriceController;
+use App\Http\Controllers\LandingController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
+
+// Landing page per target specifici
+Route::get('/per-investitori', [LandingController::class, 'investitori'])->name('landing.investitori');
+Route::get('/per-famiglie', [LandingController::class, 'famiglie'])->name('landing.famiglie');
+Route::get('/per-freelance', [LandingController::class, 'freelance'])->name('landing.freelance');
+Route::get('/per-lavoratori', [LandingController::class, 'lavoratori'])->name('landing.lavoratori');
+Route::get('/per-pianificatori', [LandingController::class, 'pianificatori'])->name('landing.pianificatori');
+Route::get('/per-tech-savvy', [LandingController::class, 'techSavvy'])->name('landing.tech-savvy');
+Route::get('/crescita-personale', [LandingController::class, 'crescita'])->name('landing.crescita');
 
 // robots.txt dinamico con Sitemap URL corretto
 Route::get('/robots.txt', [RobotsController::class, 'index']);
