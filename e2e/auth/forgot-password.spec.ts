@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Autenticazione — Recupero Password', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('/forgot-password');
+        await page.goto('/password-dimenticata');
     });
 
     test('mostra il form di recupero password', async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe('Autenticazione — Recupero Password', () => {
         const loginLink = page.getByRole('link', { name: /torna.*login|accedi/i });
         if (await loginLink.isVisible()) {
             await loginLink.click();
-            await expect(page).toHaveURL('/login');
+            await expect(page).toHaveURL('/accedi');
         }
     });
 });

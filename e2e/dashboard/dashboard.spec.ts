@@ -67,8 +67,7 @@ test.describe('Dashboard principale', () => {
     test('il link Vedi tutti del widget obiettivi porta alla pagina degli obiettivi', async ({ page }) => {
         // Clicca sul link "Vedi tutti" dentro il widget obiettivi
         await page.getByText('Obiettivi Finanziari').waitFor();
-        const widgetSection = page.locator('div', { has: page.getByText('Obiettivi Finanziari') }).first();
-        await widgetSection.getByRole('link', { name: /vedi tutti/i }).click();
+        await page.locator('a[href*="obiettivi-finanziari"]', { hasText: /vedi tutti/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });
 });

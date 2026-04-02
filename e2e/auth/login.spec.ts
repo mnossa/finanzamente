@@ -46,7 +46,7 @@ test.describe('Autenticazione — Login', () => {
 
     test('il link "Password dimenticata?" porta a /forgot-password', async ({ page }) => {
         await page.getByRole('link', { name: /password dimenticata/i }).click();
-        await expect(page).toHaveURL('/forgot-password');
+        await expect(page).toHaveURL('/password-dimenticata');
     });
 
     test('mostra link per la registrazione', async ({ page }) => {
@@ -55,6 +55,6 @@ test.describe('Autenticazione — Login', () => {
 
     test('il link di registrazione porta a /register', async ({ page }) => {
         await page.getByRole('link', { name: /registrat/i }).click();
-        await expect(page).toHaveURL('/register');
+        await expect(page).toHaveURL('/registrati');
     });
 });

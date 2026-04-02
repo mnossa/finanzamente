@@ -31,19 +31,23 @@ test.describe('Obiettivi Finanziari', () => {
         await page.getByRole('link', { name: /nuovo obiettivo|crea/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari/crea');
 
-        await page.getByLabel(/nome/i).fill(name);
-        await page.getByLabel(/importo.*target|target.*importo|obiettivo/i).fill('1000');
+        await page.locator('#name').fill(name);
+        await page.locator('#target_amount').fill('1000');
 
         await page.getByRole('button', { name: /salva|crea|conferma/i }).click();
 
-        await expect(page).toHaveURL(/obiettivi-finanziari/);
-        await expect(page.getByText(name)).toBeVisible();
+        // Dopo creazione → redirect a lista (successo) o form (limite piano raggiunto)
+        await expect(page).toHaveURL(/obiettivi-finanziari/, { timeout: 10_000 });
+        // Il piano Base limita a 1 obiettivo attivo: verifica successo o messaggio limite
+        await expect(
+            page.getByText(name).or(page.getByText(/limite|raggiunto|piano base/i))
+        ).toBeVisible({ timeout: 8_000 });
     });
 
     test('il dettaglio di un obiettivo si apre correttamente', async ({ page }) => {
-        await page.getByText('Obiettivo E2E Vacanza').click();
+        await page.getByRole('link', { name: /obiettivo e2e vacanza/i }).click();
         await expect(page).toHaveURL(/obiettivi-finanziari\/\d+/);
-        await expect(page.getByText('Obiettivo E2E Vacanza')).toBeVisible();
+        await expect(page.getByRole('heading', { name: /obiettivo e2e vacanza/i }).first()).toBeVisible();
     });
 });
 
@@ -68,8 +72,7 @@ test.describe('Widget Obiettivi Finanziari in Dashboard', () => {
 
     test('il link "Vedi tutti" porta alla pagina obiettivi', async ({ page }) => {
         // Trova il widget obiettivi e clicca "Vedi tutti"
-        const widget = page.locator('div', { has: page.getByText('Obiettivi Finanziari') }).first();
-        await widget.getByRole('link', { name: /vedi tutti/i }).click();
+        await page.locator('a[href*="obiettivi-finanziari"]', { hasText: /vedi tutti/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });
 

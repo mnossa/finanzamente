@@ -22,7 +22,7 @@ test.describe('Homepage pubblica', () => {
         // Prende il primo link corrispondente (possono esisterne più di uno nella pagina)
         const cta = page.getByRole('link', { name: /inizia gratis/i }).first();
         await expect(cta).toBeVisible();
-        await expect(cta).toHaveAttribute('href', /select-plan|register/);
+        await expect(cta).toHaveAttribute('href', /scegli-piano|registrati/);
     });
 
     test('il link "Accedi" nella nav porta a /login', async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe('Homepage pubblica', () => {
         const loginLink = page.getByRole('link', { name: /^accedi$/i }).first();
         await expect(loginLink).toBeVisible();
         await loginLink.click();
-        await expect(page).toHaveURL('/login');
+        await expect(page).toHaveURL('/accedi');
     });
 
     test('robots.txt è accessibile e restituisce 200', async ({ page }) => {
@@ -41,6 +41,6 @@ test.describe('Homepage pubblica', () => {
 
     test('un utente non autenticato viene reindirizzato a /login se prova ad accedere alla dashboard', async ({ page }) => {
         await page.goto('/dashboard');
-        await expect(page).toHaveURL('/login');
+        await expect(page).toHaveURL('/accedi');
     });
 });

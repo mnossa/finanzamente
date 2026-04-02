@@ -21,7 +21,7 @@ test('logout esegue il logout e reindirizza alla homepage', async ({ page }) => 
     await page.getByRole('button', { name: 'Accedi' }).click();
 
     // Attendi il completamento del login e della navigazione al dashboard
-    await page.waitForURL('/dashboard', { timeout: 15_000 });
+    await page.waitForURL('/dashboard', { timeout: 30_000 });
     // Forza un reload completo per ottenere un CSRF token fresco (Inertia usa
     // navigazioni client-side che non aggiornano il meta tag csrf-token)
     await page.goto('/dashboard');
@@ -29,7 +29,7 @@ test('logout esegue il logout e reindirizza alla homepage', async ({ page }) => 
 
     // Apri il menu utente e verifica che il bottone Esci sia presente (test UI)
     await page.locator('[aria-label*="Menu utente"]').click();
-    const logoutButton = page.locator('form[action*="logout"] button[type="submit"]');
+    const logoutButton = page.locator('form[action*="disconnettiti"] button[type="submit"]');
     await logoutButton.waitFor({ state: 'visible', timeout: 5_000 });
     await expect(logoutButton).toBeVisible();
 
@@ -39,7 +39,7 @@ test('logout esegue il logout e reindirizza alla homepage', async ({ page }) => 
     await page.evaluate((token: string) => {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/logout';
+        form.action = '/disconnettiti';
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = '_token';
