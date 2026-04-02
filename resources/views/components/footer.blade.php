@@ -17,23 +17,26 @@
             <div>
                 <h3 class="text-white font-semibold mb-4">Prodotto</h3>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="#come-funziona" class="hover:text-white transition-colors">Come funziona</a></li>
-                    <li><a href="#features" class="hover:text-white transition-colors">Funzionalità</a></li>
-                    <li><a href="#pricing" class="hover:text-white transition-colors">Prezzi</a></li>
+                    <li><a href="{{ route('home') }}#come-funziona" class="hover:text-white transition-colors">Come funziona</a></li>
+                    <li><a href="{{ route('home') }}#funzionalita" class="hover:text-white transition-colors">Funzionalità</a></li>
+                    <li><a href="{{ route('home') }}#piani" class="hover:text-white transition-colors">Prezzi</a></li>
                     @if (Route::has('register'))
                     <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Registrati</a></li>
                     @endif
                 </ul>
             </div>
 
-            <!-- Supporto -->
+            <!-- Per chi -->
             <div>
-                <h3 class="text-white font-semibold mb-4">Supporto</h3>
+                <h3 class="text-white font-semibold mb-4">Per chi è fatto</h3>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="#" class="hover:text-white transition-colors">Centro assistenza</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Guide</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Contattaci</a></li>
+                    <li><a href="{{ route('landing.investitori') }}" class="hover:text-white transition-colors">Per investitori</a></li>
+                    <li><a href="{{ route('landing.famiglie') }}" class="hover:text-white transition-colors">Per famiglie e coppie</a></li>
+                    <li><a href="{{ route('landing.freelance') }}" class="hover:text-white transition-colors">Per freelance e P.IVA</a></li>
+                    <li><a href="{{ route('landing.lavoratori') }}" class="hover:text-white transition-colors">Per lavoratori dipendenti</a></li>
+                    <li><a href="{{ route('landing.pianificatori') }}" class="hover:text-white transition-colors">Per pianificatori</a></li>
+                    <li><a href="{{ route('landing.tech-savvy') }}" class="hover:text-white transition-colors">Per tech-savvy</a></li>
+                    <li><a href="{{ route('landing.crescita') }}" class="hover:text-white transition-colors">Per la crescita personale</a></li>
                 </ul>
             </div>
 
