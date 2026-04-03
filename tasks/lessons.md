@@ -1,19 +1,3 @@
-- [2026-03-20] Merge pull request #24 from mnossa/copilot/add-github-actions-workflow (201b941) — mnossa
-- [2026-03-20] feat: add rebase-staging-from-main target to Makefile (ee03679) — Matteo Nossa
-- [2026-03-20] Merge branch 'staging' (e19aa54) — Matteo Nossa
-- [2026-03-20] Merge branch 'staging' (4d8fa7e) — Matteo Nossa
-- [2026-03-20] Merge pull request #25 from mnossa/copilot/update-merge-staging-to-main (afc1b62) — mnossa
-- [2026-03-21] Refactor page layouts to use PageContent component for consistent styling (bc72d22) — Matteo Nossa
-- [2026-03-22] feat(e2e): add end-to-end tests for authentication and core features (24239ed) — Matteo Nossa
-- [2026-03-23] feat(e2e): add logout test and improve existing tests for consistency (bab5531) — Matteo Nossa
-- [2026-03-23] feat: add exclude from stats functionality for inter-household transfers and households (264783f) — Matteo Nossa
-- [2026-03-23] feat: add MySQL readiness check to Playwright workflow and optimize migration backfill process (ca67835) — Matteo Nossa
-- [2026-03-23] feat: traduzione email di recupero password in italiano (0d135d5) — copilot-swe-agent[bot]
-- [2026-03-23] Fix DRY: extract resolveTagIds helper, fix undefined $user in update(), fix TagAutocomplete filtering (69c808e) — copilot-swe-agent[bot]
-- [2026-03-26] Merge pull request #28 from mnossa/copilot/add-mollie-payment-system (5ce918a) — mnossa
-- [2026-03-26] Enhance Pro plan feature display: update badge style and text for better visibility (b1db33b) — Matteo Nossa
-- [2026-04-02] Add user authentication reference in multiple controllers and update plans configuration (30fe38d) — Matteo Nossa
-
 ## Lezioni Landing Page Conversion (2026-04-02)
 
 ### Fonti analizzate
