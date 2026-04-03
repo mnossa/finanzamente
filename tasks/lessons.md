@@ -104,3 +104,4 @@
 5. **Final CTA**: H2 → descrizione feature specifiche → checkmark row (prezzo + garanzie) → button con USP specifica → nessun link che porti altrove
 6. **Footer minimal**: copyright + privacy/termini/home (nessun link alle landing da altri punti del sito)
 - [2026-04-03] feat: update URLs and titles in tests to use Italian translations (eb7242c) — Matteo Nossa
+- [2026-04-03] Merge pull request #30 from mnossa/renovate/configure (99bb196) — mnossa
