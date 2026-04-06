@@ -27,13 +27,17 @@
         {
             "groupName": "Altri pacchetti Laravel",
             "matchManagers": ["composer"],
-            "matchPackagePatterns": ["^laravel/"],
-            "excludePackageNames": ["laravel/framework"]
+            "matchPackageNames": [
+                "/^laravel//",
+                "!laravel/framework"
+            ]
         },
         {
             "groupName": "Spatie",
             "matchManagers": ["composer"],
-            "matchPackagePatterns": ["^spatie/"]
+            "matchPackageNames": [
+                "/^spatie//"
+            ]
         },
         {
             "groupName": "PHP dev tools",
@@ -48,16 +52,19 @@
         {
             "groupName": "Altri pacchetti PHP",
             "matchManagers": ["composer"],
-            "matchPackagePatterns": [
-                "^artesaos/",
-                "^mollie/",
-                "^openspout/",
-                "^tightenco/"
+            "matchPackageNames": [
+                "/^artesaos//",
+                "/^mollie//",
+                "/^openspout//",
+                "/^tightenco//"
             ]
         },
         {
             "groupName": "Inertia.js",
-            "matchPackagePatterns": ["^inertiajs/", "^@inertiajs/"]
+            "matchPackageNames": [
+                "/^inertiajs//",
+                "/^@inertiajs//"
+            ]
         },
         {
             "groupName": "React core",
@@ -77,22 +84,36 @@
         {
             "groupName": "Tailwind CSS",
             "matchManagers": ["npm"],
-            "matchPackagePatterns": ["^tailwindcss$", "^@tailwindcss/", "^autoprefixer$", "^postcss"]
+            "matchPackageNames": [
+                "/^tailwindcss$/",
+                "/^@tailwindcss//",
+                "/^autoprefixer$/",
+                "/^postcss/"
+            ]
         },
         {
             "groupName": "Vite",
             "matchManagers": ["npm"],
-            "matchPackagePatterns": ["^vite$", "^@vitejs/", "^laravel-vite-plugin$"]
+            "matchPackageNames": [
+                "/^vite$/",
+                "/^@vitejs//",
+                "/^laravel-vite-plugin$/"
+            ]
         },
         {
             "groupName": "TypeScript e @types",
             "matchManagers": ["npm"],
-            "matchPackagePatterns": ["^typescript$", "^@types/"]
+            "matchPackageNames": [
+                "/^typescript$/",
+                "/^@types//"
+            ]
         },
         {
             "groupName": "@dnd-kit",
             "matchManagers": ["npm"],
-            "matchPackagePatterns": ["^@dnd-kit/"]
+            "matchPackageNames": [
+                "/^@dnd-kit//"
+            ]
         },
         {
             "groupName": "Playwright",
