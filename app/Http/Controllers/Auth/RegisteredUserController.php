@@ -143,14 +143,15 @@ class RegisteredUserController extends Controller
 
     /**
      * Determina se l'utente è un early bird verificando la firma HMAC nella URL.
-     * La firma è valida se corrisponde all'HMAC dell'email con APP_KEY.
+     * La firma è valida se è una stringa esadecimale di 64 caratteri (SHA256 hex)
+     * e corrisponde all'HMAC dell'email con APP_KEY.
      */
     private function resolveEarlyBird(Request $request): bool
     {
         $email = strtolower(trim($request->input('email', '') ?: $request->query('email', '')));
         $sig = $request->input('sig', '') ?: $request->query('sig', '');
 
-        if (empty($email) || empty($sig) || strlen($sig) !== 64) {
+        if (empty($email) || empty($sig) || strlen($sig) !== 64 || ! ctype_xdigit($sig)) {
             return false;
         }
 

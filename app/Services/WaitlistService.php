@@ -74,6 +74,9 @@ class WaitlistService
             'includeListIds'     => [$listId],
             'templateId'         => $templateId,
             'redirectionUrl'     => $redirectUrl ?: null,
+            // NOTA: l'attributo personalizzato SIGNATURE deve essere creato manualmente
+            // nel pannello Brevo prima di usare questa funzionalità.
+            // Percorso: Contacts > Configuration > Contact Attributes > Create attribute (type: Text, name: SIGNATURE)
             'attributes'         => (object) ['SIGNATURE' => $signature],
         ]);
 
