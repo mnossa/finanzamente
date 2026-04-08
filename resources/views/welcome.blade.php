@@ -399,7 +399,11 @@
                     Semplice e trasparente
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Inizia gratis. Passa a Pro quando sei pronto.
+                    @if($waitlistEnabled)
+                        Inizia gratis. Iscriviti alla waitlist per accedere a Pro al lancio.
+                    @else
+                        Inizia gratis. Passa a Pro quando sei pronto.
+                    @endif
                 </p>
             </div>
 
@@ -412,8 +416,8 @@
                 $discount = $annualDiscountPercent;
             @endphp
 
-            {{-- Toggle mensile/annuale (solo se Pro è disponibile) --}}
-            @if($proEnabled && $proPlan)
+            {{-- Toggle mensile/annuale (solo se Pro è disponibile e non è in modalità waitlist) --}}
+            @if($proEnabled && $proPlan && !$waitlistEnabled)
             <div class="flex justify-center mb-10">
                 <div class="inline-flex items-center gap-4 bg-surface-50 rounded-full px-6 py-3 border border-surface-200">
                     <span id="label-monthly" class="text-sm font-medium text-surface-900">Mensile</span>
@@ -461,7 +465,59 @@
                 @endif
 
                 <!-- Piano Pro -->
-                @if($proPlan && $proEnabled)
+                @if($proPlan && $waitlistEnabled)
+                <!-- Piano Pro — Modalità waitlist pre-lancio -->
+                <div class="bg-gradient-to-b from-accent-600 to-accent-700 rounded-2xl p-6 sm:p-8 shadow-accent relative flex flex-col text-white">
+                    <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                        <span class="bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md">🚀 In arrivo</span>
+                    </div>
+                    <div class="text-center mb-6">
+                        <h3 class="text-xl font-bold text-white mb-1">FinanzaMente Pro</h3>
+                        <div class="my-3">
+                            <div class="flex items-baseline justify-center gap-1">
+                                <span class="text-4xl font-extrabold text-white">
+                                    {{ number_format($proMonthly, 2, ',', '.') }} €
+                                </span>
+                                <span class="text-accent-200 text-sm">/mese</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-accent-100">{{ $proPlan['label'] }}</p>
+                    </div>
+                    <ul class="space-y-3 mb-8 text-sm flex-1">
+                        @foreach($proPlan['features'] as $feature)
+                        <li class="flex items-center gap-2 text-white"><span class="font-bold">✓</span> {{ $feature }}</li>
+                        @endforeach
+                    </ul>
+                    {{-- Form iscrizione waitlist --}}
+                    @if(session('waitlist_success'))
+                    <div class="rounded-xl bg-white/20 border border-white/30 px-4 py-3 text-center text-sm text-white font-medium">
+                        ✅ Iscrizione confermata! Controlla la tua email per confermare.
+                    </div>
+                    @else
+                    <form action="{{ route('waitlist.store') }}" method="POST" class="space-y-3" aria-label="Iscriviti alla waitlist Pro">
+                        @csrf
+                        <label for="waitlist-email" class="sr-only">La tua email</label>
+                        <input
+                            id="waitlist-email"
+                            type="email"
+                            name="email"
+                            required
+                            placeholder="La tua email"
+                            class="block w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/30 text-white placeholder-accent-200 focus:outline-none focus:ring-2 focus:ring-white/60 text-sm"
+                            value="{{ old('email') }}"
+                            autocomplete="email"
+                        >
+                        @error('email')
+                        <p class="text-xs text-amber-300">{{ $message }}</p>
+                        @enderror
+                        <button type="submit" class="block w-full text-center py-3 px-6 bg-white hover:bg-accent-50 text-accent-700 font-semibold rounded-xl transition-colors duration-200">
+                            Avvisami al lancio 🔔
+                        </button>
+                        <p class="text-xs text-accent-200 text-center">Nessuno spam. Puoi annullare in qualsiasi momento.</p>
+                    </form>
+                    @endif
+                </div>
+                @elseif($proPlan && $proEnabled)
                 <div class="bg-gradient-to-b from-accent-600 to-accent-700 rounded-2xl p-6 sm:p-8 shadow-accent relative flex flex-col text-white">
                     <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
                         <span class="bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md">⭐ Consigliato</span>
@@ -521,7 +577,7 @@
         </div>
     </section>
 
-    @if($proEnabled && $proPlan)
+    @if($proEnabled && $proPlan && !$waitlistEnabled)
     @push('scripts')
     <script>
     (function() {

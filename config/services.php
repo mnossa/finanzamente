@@ -126,4 +126,25 @@ return [
         'webhook_secret' => env('MOLLIE_WEBHOOK_SECRET'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Brevo (ex Sendinblue) — Email Marketing & Waitlist
+    |--------------------------------------------------------------------------
+    |
+    | API key per Brevo, usata per la gestione della waitlist Pro con double opt-in.
+    | Registrazione: https://www.brevo.com/
+    |
+    | BREVO_API_KEY: API key ottenuta dal pannello Brevo
+    | BREVO_WAITLIST_LIST_ID: ID della lista Brevo per la waitlist Pro
+    | BREVO_DOUBLE_OPTIN_TEMPLATE_ID: ID del template email per il double opt-in
+    | BREVO_DOUBLE_OPTIN_REDIRECT_URL: URL di redirect dopo conferma double opt-in
+    |
+    */
+    'brevo' => [
+        'api_key'                  => env('BREVO_API_KEY'),
+        'waitlist_list_id'         => (int) env('BREVO_WAITLIST_LIST_ID', 0),
+        'double_optin_template_id' => (int) env('BREVO_DOUBLE_OPTIN_TEMPLATE_ID', 0),
+        'double_optin_redirect_url' => env('BREVO_DOUBLE_OPTIN_REDIRECT_URL', ''),
+    ],
+
 ];

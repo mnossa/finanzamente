@@ -96,6 +96,7 @@ class HandleInertiaRequests extends Middleware
                 'excess_accounts' => $user->excessAccountsCount(),
                 'excess_households' => $user->excessHouseholdsCount(),
             ] : null,
+            'isEarlyBird' => fn () => $user ? (bool) $user->is_early_bird : false,
         ];
     }
 }

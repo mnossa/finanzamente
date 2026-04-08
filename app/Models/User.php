@@ -173,6 +173,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'plan',
         'plan_expires_at',
         'mollie_customer_id',
+        'is_early_bird',
     ];
 
     /**
@@ -200,6 +201,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'preferences' => 'array',
             'profile_completed' => 'boolean',
             'profile_settings' => 'array',
+            'is_early_bird' => 'boolean',
         ];
     }
 

@@ -39,6 +39,7 @@ use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\Api\AssetPriceController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\WaitlistController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -84,8 +85,13 @@ Route::post('/inviti/{token}/registrati', [HouseholdInvitationController::class,
 Route::get('/inviti/{token}/accetta', [HouseholdInvitationController::class, 'acceptInvitation'])
     ->name('household-invitations.accept');
 
+// Waitlist Pro — iscrizione pubblica (pre-lancio)
+Route::post('/waitlist', [WaitlistController::class, 'store'])
+    ->middleware(['adv-throttle:3,5'])
+    ->name('waitlist.store');
+
 // Rotte che richiedono autenticazione ma NON household attiva
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'pre-launch'])->group(function () {
     // Quiz di profilazione (deve essere completato prima di accedere alle household)
     Route::get('/quiz-profilazione', [ProfileQuizController::class, 'show'])->name('profile-quiz.show');
     Route::post('/quiz-profilazione', [ProfileQuizController::class, 'store'])->name('profile-quiz.store');
@@ -109,7 +115,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Rotte che richiedono autenticazione E household attiva
-Route::middleware(['auth', 'verified', 'household'])->group(function () {
+Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');

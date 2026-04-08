@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'profile-completed' => \App\Http\Middleware\EnsureProfileCompleted::class,
             'adv-throttle' => \App\Http\Middleware\AdvancedRateLimitWithDelay::class,
             'requires-pro' => \App\Http\Middleware\RequiresPro::class,
+            'pre-launch' => \App\Http\Middleware\PreLaunchMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -38,6 +38,7 @@ class WelcomeController extends Controller
             'plans' => $this->planService->getPlansForFrontend(),
             'proEnabled' => $this->planService->isProEnabled(),
             'annualDiscountPercent' => $this->planService->getAnnualDiscountPercent(),
+            'waitlistEnabled' => config('prelaunch.waitlist_enabled', false),
         ]);
     }
 }
