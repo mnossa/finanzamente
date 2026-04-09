@@ -146,7 +146,7 @@ jobs:
           echo "Archivio creato: $(du -sh "${ARCHIVE}" | cut -f1)"
 
       - name: Carica artefatto CI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-archive
           path: ${{ steps.calcola-versione.outputs.archive-name }}
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Scarica artefatto dal job build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-archive
 
