@@ -50,7 +50,7 @@
     "call-bind-apply-helpers": "^1.0.2",
     "caniuse-lite": "^1.0.30001751",
     "chalk": "^5.0.0",
-    "cliui": "^8.0.1",
+    "cliui": "^9.0.0",
     "clsx": "^2.1.1",
     "color-convert": "^2.0.1",
     "color-name": "^1.1.4",
