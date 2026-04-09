@@ -101,7 +101,7 @@
     "shell-quote": "^1.8.3",
     "source-map-js": "^1.2.1",
     "string-width": "^8.0.0",
-    "strip-ansi": "^6.0.1",
+    "strip-ansi": "^7.0.0",
     "supports-color": "^10.0.0",
     "tapable": "^2.3.0",
     "tinyglobby": "^0.2.15",
