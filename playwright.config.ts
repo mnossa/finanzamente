@@ -7,6 +7,24 @@ import { defineConfig, devices } from "@playwright/test";
  */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:8080";
 
+/**
+ * Modalità operativa dell'applicazione sotto test.
+ *
+ * La variabile deve corrispondere alla configurazione reale del server (.env).
+ * I test in e2e/public/modes.spec.ts si attivano/disattivano in base a questo valore.
+ *
+ * Valori possibili:
+ *   normal    (default) — registrazione aperta, nessuna waitlist
+ *   prelaunch           — solo il proprietario può registrarsi e accedere
+ *   waitlist            — form di iscrizione waitlist Pro visibile
+ *
+ * Comandi Makefile:
+ *   make playwright                                      # modalità normale
+ *   make playwright-prelaunch                            # modalità pre-lancio
+ *   make playwright-waitlist                             # modalità waitlist
+ */
+const appMode = process.env.E2E_APP_MODE ?? "normal";
+
 export default defineConfig({
   testDir: "./e2e",
 
@@ -20,7 +38,7 @@ export default defineConfig({
   /* Riprova in caso di flakiness (solo in CI) */
   retries: process.env.CI ? 2 : 0,
 
-  reporter: [["html"], ["list"]],
+  reporter: [["html", { open: "never" }], ["list"]],
 
   use: {
     baseURL,

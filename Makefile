@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches e2e-seed playwright playwright-ui playwright-report set-plan waitlist-check
+.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -61,12 +61,57 @@ e2e-seed:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
 	@echo "[+] Database E2E pronto (utente: e2e@finanzamente.test)"
 
-# Esegui i test Playwright E2E in modalità headless
+# Esegui i test Playwright E2E in modalità headless (modalità normale)
+# Se PRE_LAUNCH_MODE o PRO_WAITLIST_ENABLED sono attivi nel .env, vengono
+# temporaneamente disabilitati per i test e ripristinati automaticamente dopo.
 playwright:
+	@echo "[+] Compilazione config E2E (normal: pre-lancio=off, waitlist=off, mail=log)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
+		-e PRE_LAUNCH_MODE=false \
+		-e PRO_WAITLIST_ENABLED=false \
+		-e MAIL_MAILER=log \
+		app php artisan config:cache
 	@echo "[+] Pulizia cache per reset rate limiter..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
-	@echo "[+] Esecuzione test E2E Playwright..."
-	PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test
+	@echo "[+] Esecuzione test E2E Playwright (modalità: normal)..."
+	@E2E_APP_MODE=normal PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test; PLAYWRIGHT_STATUS=$$?; \
+	echo "[+] Ripristino config cache dai valori .env originali..."; \
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan config:cache; \
+	exit $$PLAYWRIGHT_STATUS
+
+# Esegui i test E2E simulando la modalità PRE-LANCIO
+# Legge PRE_LAUNCH_OWNER_EMAIL da .env — non modifica .env
+playwright-prelaunch:
+	@echo "[+] Compilazione config E2E (pre-lancio=on, mail=log)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
+		-e PRE_LAUNCH_MODE=true \
+		-e PRO_WAITLIST_ENABLED=false \
+		-e MAIL_MAILER=log \
+		app php artisan config:cache
+	@echo "[+] Pulizia cache..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
+	@echo "[+] Esecuzione test E2E Playwright (modalità: prelaunch)..."
+	@E2E_APP_MODE=prelaunch PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test e2e/public/modes.spec.ts; PLAYWRIGHT_STATUS=$$?; \
+	echo "[+] Ripristino config cache dai valori .env originali..."; \
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan config:cache; \
+	exit $$PLAYWRIGHT_STATUS
+
+# Esegui i test E2E simulando la modalità WAITLIST (PRO_WAITLIST_ENABLED=true, PRE_LAUNCH_MODE=false)
+# Non modifica .env — passa i valori direttamente alla compilazione della config.
+playwright-waitlist:
+	@echo "[+] Compilazione config E2E (waitlist=on, pre-lancio=off, mail=log)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
+		-e PRE_LAUNCH_MODE=false \
+		-e PRO_WAITLIST_ENABLED=true \
+		-e MAIL_MAILER=log \
+		app php artisan config:cache
+	@echo "[+] Pulizia cache..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
+	@echo "[+] Esecuzione test E2E Playwright (modalità: waitlist)..."
+	@E2E_APP_MODE=waitlist PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test e2e/public/modes.spec.ts; PLAYWRIGHT_STATUS=$$?; \
+	echo "[+] Ripristino config cache dai valori .env originali..."; \
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan config:cache; \
+	exit $$PLAYWRIGHT_STATUS
 
 # Esegui i test Playwright in modalità UI interattiva (solo locale)
 playwright-ui:
