@@ -87,7 +87,7 @@
     "math-intrinsics": "^1.1.0",
     "mime-db": "^1.52.0",
     "mime-types": "^2.1.35",
-    "nanoid": "^3.3.11",
+    "nanoid": "^5.0.0",
     "node-releases": "^2.0.26",
     "normalize-range": "^0.1.2",
     "picocolors": "^1.1.1",
