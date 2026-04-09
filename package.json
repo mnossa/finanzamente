@@ -43,7 +43,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@heroicons/react": "^2.2.0",
     "@tremor/react": "^3.18.7",
-    "ansi-regex": "^5.0.1",
+    "ansi-regex": "^6.0.0",
     "ansi-styles": "^4.3.0",
     "asynckit": "^0.4.0",
     "browserslist": "^4.27.0",
