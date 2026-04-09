@@ -27,7 +27,7 @@ export default function AssetSearch({ onSelect, className, disabled }: AssetSear
     const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
     
     const containerRef = useRef<HTMLDivElement>(null);
-    const debounceRef = useRef<NodeJS.Timeout>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Verifica se l'API è configurata
     useEffect(() => {

@@ -26,7 +26,7 @@ export default function TagAutocomplete({ selectedTags, onAdd, onRemove, classNa
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Chiudi dropdown quando si clicca fuori
     useEffect(() => {

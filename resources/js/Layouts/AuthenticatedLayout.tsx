@@ -6,7 +6,7 @@ import ProBadge from '@/Components/ProBadge';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ActiveHousehold, AppNotification, PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState, useEffect, FormEvent, useRef } from 'react';
+import React, { PropsWithChildren, ReactNode, useState, useEffect, FormEvent, useRef } from 'react';
 import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import axios from 'axios';
@@ -145,7 +145,7 @@ interface NavigationItem {
     name: string;
     href: string;
     routeMatch: string;
-    icon: () => JSX.Element;
+    icon: () => React.JSX.Element;
     altRouteMatch?: string;
     excludeRouteMatch?: string;
     hrefParams?: any;
