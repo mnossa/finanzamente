@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Homepage pubblica', () => {
     test('carica la homepage con titolo corretto', async ({ page }) => {
         await page.goto('/');
-        await expect(page).toHaveTitle(/FinanzaMente/i);
+        await expect(page).toHaveTitle(/Finanzamente/i);
     });
 
     test('mostra il titolo principale (H1)', async ({ page }) => {

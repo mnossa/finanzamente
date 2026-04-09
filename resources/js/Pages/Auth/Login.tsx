@@ -10,9 +10,11 @@ import { FormEventHandler } from 'react';
 export default function Login({
     status,
     canResetPassword,
+    canRegister,
 }: {
     status?: string;
     canResetPassword: boolean;
+    canRegister: boolean;
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -103,15 +105,17 @@ export default function Login({
                 </div>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-                Non hai ancora un account?{' '}
-                <Link
-                    href={route('register')}
-                    className="font-medium text-emerald-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:text-emerald-400 dark:hover:text-emerald-300"
-                >
-                    Registrati
-                </Link>
-            </div>
+            {canRegister && (
+                <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                    Non hai ancora un account?{' '}
+                    <Link
+                        href={route('register')}
+                        className="font-medium text-emerald-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:text-emerald-400 dark:hover:text-emerald-300"
+                    >
+                        Registrati
+                    </Link>
+                </div>
+            )}
         </GuestLayout>
     );
 }

@@ -91,6 +91,7 @@ class HandleInertiaRequests extends Middleware
             'plan' => fn () => $user ? [
                 'current' => $user->isPro() ? 'pro' : 'base',
                 'pro_enabled' => config('plans.pro_enabled', true),
+                'waitlist_enabled' => config('prelaunch.waitlist_enabled', false),
                 'expires_at' => $user->plan_expires_at?->toISOString(),
                 'days_until_expiry' => $user->planExpiresInDays(),
                 'excess_accounts' => $user->excessAccountsCount(),

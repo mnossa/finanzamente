@@ -136,7 +136,7 @@ class ModuleAccessService
         // Moduli Pro — Fiscale
         'tax_refund_730' => [
             'id' => 'tax_refund_730',
-            'name' => 'Detrazioni Fiscali / 730',
+            'name' => 'Spese detraibili',
             'category' => 'fiscal',
             'routes' => ['tax-deductions.*'],
             'requires' => [],

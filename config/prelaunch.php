@@ -28,4 +28,18 @@ return [
     |
     */
     'waitlist_enabled' => env('PRO_WAITLIST_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tally.so — Micro-sondaggio interesse
+    |--------------------------------------------------------------------------
+    |
+    | ID del form Tally.so da mostrare nella card Pro (modalità waitlist).
+    | Viene mostrato un link "Dimmi cosa ti serve" che apre il popup Tally.
+    | Lascia vuoto per non mostrare il link al sondaggio.
+    |
+    | Es: TALLY_SURVEY_FORM_ID=wMeXYZ
+    |
+    */
+    'tally_form_id' => env('TALLY_SURVEY_FORM_ID', ''),
 ];

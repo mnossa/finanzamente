@@ -186,7 +186,7 @@ class MollieService
                 'currency' => 'EUR',
                 'value' => '0.01',
             ],
-            'description' => 'Aggiornamento metodo di pagamento - FinanzaMente',
+            'description' => 'Aggiornamento metodo di pagamento - Finanzamente',
             'redirectUrl' => $redirectUrl,
             'webhookUrl' => $webhookUrl,
             'locale' => 'it_IT',
@@ -215,6 +215,6 @@ class MollieService
         $planName = $planConfig['name'] ?? $subscription->plan;
         $cycle = $subscription->billing_cycle === 'annual' ? 'annuale' : 'mensile';
 
-        return "FinanzaMente {$planName} - Abbonamento {$cycle}";
+        return "Finanzamente {$planName} - Abbonamento {$cycle}";
     }
 }

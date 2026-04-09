@@ -99,6 +99,7 @@ export type PageProps<
     plan?: {
         current: 'base' | 'pro';
         pro_enabled: boolean;
+        waitlist_enabled: boolean;
         expires_at: string | null;
         days_until_expiry: number | null;
         excess_accounts: number;

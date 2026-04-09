@@ -198,7 +198,7 @@ const navigationSections: NavigationSection[] = [
             { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank, moduleId: 'budgets' },
             { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits' },
             { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals' },
-            { name: 'Rimborso 730', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730', requiresPro: true },
+            { name: 'Spese detraibili', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730', requiresPro: true },
             // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management', requiresPro: true }, // Implementazione futura
         ]
     },
@@ -459,7 +459,7 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { auth, activeHousehold, notifications } = usePage<PageProps>().props;
+    const { auth, activeHousehold, notifications, plan: planData } = usePage<PageProps>().props;
     const user = auth.user;
     const { isModuleEnabled, isPro } = useModules();
     const initialTheme = (user.preferences?.theme as string | undefined) ?? 'light';
@@ -639,6 +639,19 @@ export default function Authenticated({
                             ))
                         )}
                     </nav>
+
+                    {/* CTA Passa a Pro per utenti base */}
+                    {planData?.current === 'base' && (
+                        <div className="px-4 pb-3">
+                            <Link
+                                href={route('profile.subscription')}
+                                className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors"
+                            >
+                                <span>⭐</span>
+                                <span>{planData.waitlist_enabled ? 'Scopri Pro' : 'Passa a Pro'}</span>
+                            </Link>
+                        </div>
+                    )}
 
                     {/* User Profile Bottom */}
                     <div className="absolute bottom-0 w-full p-4 bg-slate-950 border-t border-slate-700">

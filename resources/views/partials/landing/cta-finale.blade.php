@@ -11,7 +11,7 @@
                 {{ $ctaSubtitle ?? 'Registrati in 30 secondi. Nessuna carta di credito, nessun abbonamento, nessuna connessione bancaria richiesta.' }}
             </p>
             <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-                @if (Route::has('register'))
+                @if (!config('prelaunch.enabled') && Route::has('register'))
                     <a href="{{ route('register') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold text-primary-700 bg-white hover:bg-surface-50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
                         Crea il tuo account gratis
                         <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

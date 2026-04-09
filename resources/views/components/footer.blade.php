@@ -5,8 +5,8 @@
             <!-- Brand -->
             <div>
                 <div class="flex items-center space-x-2 mb-4">
-                    <img src="{{ asset('images/finanzamente-logo.webp') }}" alt="Logo FinanzaMente" class="w-8 h-8">
-                    <span class="text-xl font-bold text-white">FinanzaMente</span>
+                    <img src="{{ asset('images/finanzamente-logo.webp') }}" alt="Logo Finanzamente" class="w-8 h-8">
+                    <span class="text-xl font-bold text-white">Finanzamente</span>
                 </div>
                 <p class="text-sm text-surface-400 leading-relaxed">
                     Gestisci le tue finanze personali con consapevolezza e privacy totale.
@@ -20,7 +20,7 @@
                     <li><a href="{{ route('home') }}#come-funziona" class="hover:text-white transition-colors">Come funziona</a></li>
                     <li><a href="{{ route('home') }}#funzionalita" class="hover:text-white transition-colors">Funzionalità</a></li>
                     <li><a href="{{ route('home') }}#piani" class="hover:text-white transition-colors">Prezzi</a></li>
-                    @if (Route::has('register'))
+                    @if (!config('prelaunch.enabled') && Route::has('register'))
                     <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Registrati</a></li>
                     @endif
                 </ul>
@@ -42,7 +42,7 @@
         <!-- Bottom bar -->
         <div class="pt-8 border-t border-surface-800 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p class="text-sm text-surface-400">
-                &copy; {{ date('Y') }} FinanzaMente. Tutti i diritti riservati.
+                &copy; {{ date('Y') }} Finanzamente. Tutti i diritti riservati.
             </p>
             <div class="flex items-center space-x-6 text-sm">
                 <a href="#" class="hover:text-white transition-colors" aria-label="Facebook">

@@ -147,4 +147,15 @@ return [
         'double_optin_redirect_url' => env('BREVO_DOUBLE_OPTIN_REDIRECT_URL', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tally.so — Webhook
+    |--------------------------------------------------------------------------
+    | TALLY_WEBHOOK_SECRET: copialo da Tally → Integrations → Webhooks → Signing secret.
+    | Se vuoto, il webhook è disabilitato (ritorna 501).
+    */
+    'tally' => [
+        'webhook_secret' => env('TALLY_WEBHOOK_SECRET', ''),
+    ],
+
 ];

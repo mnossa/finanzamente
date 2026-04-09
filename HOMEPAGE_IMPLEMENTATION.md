@@ -1,4 +1,4 @@
-# Implementazione Homepage FinanzaMente.it
+# Implementazione Homepage Finanzamente.it
 
 ## Panoramica
 Implementazione completa della homepage pubblica del progetto finanzamente.it secondo le linee guida specificate in `.github/copilot-instructions.md`.
@@ -38,7 +38,7 @@ Template Blade per la homepage pubblica. Caratteristiche:
 #### Sezioni della Homepage
 
 ##### Header / Navigation
-- Logo FinanzaMente con icona
+- Logo Finanzamente con icona
 - Menu responsive con link "Accedi" e "Registrati gratis"
 - Sticky header con backdrop-blur
 - Supporto per utenti autenticati (link Dashboard)

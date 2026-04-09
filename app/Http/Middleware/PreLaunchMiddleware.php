@@ -40,6 +40,6 @@ class PreLaunchMiddleware
         }
 
         return redirect()->route('home')
-            ->with('info', 'FinanzaMente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
+            ->with('info', 'Finanzamente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
     }
 }

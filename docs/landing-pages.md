@@ -20,7 +20,7 @@ Queste pagine sono destinate esclusivamente al traffico proveniente da annunci p
 - [ ] Hero: H1 chiaro, sottotitolo breve, **una sola CTA** → `plan.select?plan=pro&billing_cycle=monthly`
 - [ ] 3 benefit in riga
 - [ ] Proof visual (mockup specifico per il target)
-- [ ] Footer CTA: stesso link Pro, testo "Abbonati a FinanzaMente Pro"
+- [ ] Footer CTA: stesso link Pro, testo "Abbonati a Finanzamente Pro"
 - [ ] Footer: copyright + 3 link legali (nessun menu espanso)
 - [ ] Tracking Umami: ogni CTA ha `data-umami-event` con nome del target e posizione (`hero` / `footer`)
 - [ ] Link "Hai già un account? Accedi" presente sotto la CTA hero (per utenti esistenti)

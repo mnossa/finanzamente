@@ -36,7 +36,7 @@ Non sono presenti testimonianze social o recensioni, in quanto il progetto è nu
 - ✅ Accessibilità WCAG 2.1 Level AA
 - ✅ SEO ottimizzato con meta tags e Open Graph
 - ✅ 100% in lingua italiana
-- ✅ Design system FinanzaMente (primary, accent, surface colors)
+- ✅ Design system Finanzamente (primary, accent, surface colors)
 - ✅ 6 sezioni principali (Hero, Features, How it works, Benefits, CTA, Footer)
 - ✅ Performance ottimizzate (minimal JS, CSS gradients, Vite, lazy loading)
 - ✅ Nessun errore di code review o security

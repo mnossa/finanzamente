@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PlanService;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\View\View;
 
 class PlanSelectionController extends Controller
 {
@@ -13,12 +12,13 @@ class PlanSelectionController extends Controller
     /**
      * Mostra la pagina di selezione piano (prima della registrazione).
      */
-    public function show(): Response
+    public function show(): View
     {
-        return Inertia::render('Auth/SelectPlan', [
+        return view('auth.select-plan', [
             'plans' => $this->planService->getPlansForFrontend(),
             'proEnabled' => $this->planService->isProEnabled(),
             'annualDiscountPercent' => $this->planService->getAnnualDiscountPercent(),
+            'waitlistEnabled' => config('prelaunch.waitlist_enabled', false),
         ]);
     }
 }

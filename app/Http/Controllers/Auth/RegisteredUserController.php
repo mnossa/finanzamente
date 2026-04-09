@@ -37,7 +37,7 @@ class RegisteredUserController extends Controller
             $incomingEmail = strtolower(trim($request->query('email', '')));
             if (empty($ownerEmail) || $incomingEmail !== $ownerEmail) {
                 return redirect()->route('home')
-                    ->with('info', 'FinanzaMente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
+                    ->with('info', 'Finanzamente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
             }
         }
 
@@ -78,7 +78,7 @@ class RegisteredUserController extends Controller
             $incomingEmail = strtolower(trim($request->input('email', '')));
             if (empty($ownerEmail) || $incomingEmail !== $ownerEmail) {
                 return redirect()->route('home')
-                    ->with('info', 'FinanzaMente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
+                    ->with('info', 'Finanzamente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
             }
         }
 

@@ -1,8 +1,8 @@
 @props([
-    'title' => 'FinanzaMente - Gestisci le tue finanze con intelligenza',
-    'description' => 'FinanzaMente è l\'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.',
+    'title' => 'Finanzamente - Gestisci le tue finanze con intelligenza',
+    'description' => 'Finanzamente è l\'app di gestione finanziaria personale pensata per te. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.',
     'keywords' => 'gestione finanze, budget personale, risparmio, spese, finanza personale, Italia',
-    'author' => 'FinanzaMente',
+    'author' => 'Finanzamente',
     'ogImage' => null,
 ])
 

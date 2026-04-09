@@ -104,12 +104,12 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title="Detrazioni Fiscali (730)"
+                    title="Spese detraibili"
                     backLink={route('dashboard')}
                 />
             }
         >
-            <Head title="Detrazioni Fiscali" />
+            <Head title="Spese detraibili" />
 
             <PageContent>
                     {/* Header con filtri ed export */}

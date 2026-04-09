@@ -248,6 +248,7 @@ class SubscriptionController extends Controller
             'currentPlan' => $user->plan,
             'plans' => $plans,
             'proEnabled' => $this->planService->isProEnabled(),
+            'waitlistEnabled' => config('prelaunch.waitlist_enabled', false),
         ]);
     }
 }

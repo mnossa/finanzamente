@@ -48,6 +48,7 @@ interface Props extends PageProps {
     currentPlan: string;
     plans: Record<string, PlanData>;
     proEnabled: boolean;
+    waitlistEnabled: boolean;
     fromFeature?: string | null;
 }
 
@@ -170,7 +171,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
     );
 }
 
-export default function Subscription({ subscription, currentPlan, plans, proEnabled, fromFeature }: Props) {
+export default function Subscription({ subscription, currentPlan, plans, proEnabled, waitlistEnabled, fromFeature }: Props) {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showBillingForm, setShowBillingForm] = useState(false);
     const [isAnnual, setIsAnnual] = useState(false);
@@ -274,14 +275,37 @@ export default function Subscription({ subscription, currentPlan, plans, proEnab
                     );
                 })()}
 
-                {/* Upgrade a Pro (solo se piano base e Pro è abilitato) */}
-                {!isProUser && proEnabled && proPlan && (
+                {/* Upgrade a Pro — modalità waitlist */}
+                {!isProUser && waitlistEnabled && proPlan && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 shadow sm:rounded-lg border border-amber-200">
+                        <div className="flex items-start gap-3">
+                            <span className="text-2xl">🚀</span>
+                            <div className="flex-1">
+                                <h2 className="text-lg font-semibold text-amber-900 mb-1">
+                                    Piano Pro — In arrivo
+                                </h2>
+                                <p className="text-amber-800 text-sm mb-4">
+                                    Stiamo lavorando per rendere disponibile il piano Pro. Iscriviti alla waitlist per essere tra i primi a scoprirlo e accedere a condizioni speciali early bird.
+                                </p>
+                                <a
+                                    href="/#piani"
+                                    className="inline-flex items-center px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                                >
+                                    🔔 Iscriviti alla waitlist
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Upgrade a Pro (solo se piano base, Pro abilitato e non in modalità waitlist) */}
+                {!isProUser && proEnabled && !waitlistEnabled && proPlan && (
                     <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 p-6 shadow sm:rounded-lg border border-emerald-200">
                         <h2 className="text-lg font-semibold text-emerald-900 mb-2">
                             Passa a Pro
                         </h2>
                         <p className="text-emerald-800 text-sm mb-4">
-                            Sblocca tutte le funzionalità avanzate di FinanzaMente.
+                            Sblocca tutte le funzionalità avanzate di Finanzamente.
                         </p>
 
                         {/* Toggle mensile/annuale */}
@@ -481,7 +505,7 @@ export default function Subscription({ subscription, currentPlan, plans, proEnab
                         <a href="https://www.mollie.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-700">
                             Mollie
                         </a>
-                        . FinanzaMente non conserva i dati della tua carta di credito.
+                        . Finanzamente non conserva i dati della tua carta di credito.
                         La modifica del metodo di pagamento avviene tramite il portale sicuro di Mollie.
                     </p>
                 </div>

@@ -1,4 +1,4 @@
-# Pre-Launch Features — FinanzaMente
+# Pre-Launch Features — Finanzamente
 
 ## Piano
 

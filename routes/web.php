@@ -90,6 +90,18 @@ Route::post('/waitlist', [WaitlistController::class, 'store'])
     ->middleware(['adv-throttle:3,5'])
     ->name('waitlist.store');
 
+// Webhook Tally → Brevo (escluso da CSRF manualmente in bootstrap/app.php)
+Route::post('/webhooks/tally', [WaitlistController::class, 'tallyWebhook'])
+    ->name('webhooks.tally');
+
+// Pagina di conferma dopo double opt-in Brevo
+Route::get('/waitlist/confermata', fn () => view('waitlist.confirmed'))
+    ->name('waitlist.confirmed');
+
+// Pagina "in arrivo" — CTA Base in modalità pre-lancio
+Route::get('/in-arrivo', fn () => view('prelaunch.coming-soon'))
+    ->name('prelaunch.coming-soon');
+
 // Rotte che richiedono autenticazione ma NON household attiva
 Route::middleware(['auth', 'verified', 'pre-launch'])->group(function () {
     // Quiz di profilazione (deve essere completato prima di accedere alle household)

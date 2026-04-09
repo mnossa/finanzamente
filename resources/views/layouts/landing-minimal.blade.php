@@ -33,9 +33,9 @@
     <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-surface-100" role="banner">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-14 sm:h-16">
-                <a href="{{ url('/') }}" class="flex items-center space-x-2" aria-label="FinanzaMente — torna alla home">
+                <a href="{{ url('/') }}" class="flex items-center space-x-2" aria-label="Finanzamente — torna alla home">
                     <img src="{{ asset('images/finanzamente-logo.webp') }}" alt="" class="w-7 h-7 sm:w-8 sm:h-8" loading="eager" aria-hidden="true">
-                    <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary-700 to-primary-900 bg-clip-text text-transparent">FinanzaMente</span>
+                    <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary-700 to-primary-900 bg-clip-text text-transparent">Finanzamente</span>
                 </a>
                 @if (Route::has('plan.select'))
                     <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
@@ -55,7 +55,7 @@
 
     <footer class="py-6 border-t border-surface-100 bg-white" role="contentinfo">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-surface-500">
-            <span>© {{ date('Y') }} FinanzaMente</span>
+            <span>© {{ date('Y') }} Finanzamente</span>
             <nav aria-label="Link legali" class="flex gap-4">
                 <a href="{{ url('/privacy') }}" class="hover:text-surface-700 transition-colors">Privacy</a>
                 <a href="{{ url('/termini') }}" class="hover:text-surface-700 transition-colors">Termini</a>

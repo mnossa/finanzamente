@@ -17,19 +17,14 @@
                     <span class="bg-gradient-to-r from-primary-600 to-indigo-700 bg-clip-text text-transparent">del lifestyle inflation?</span>
                 </h1>
                 <p class="text-lg sm:text-xl text-surface-600 mb-8 leading-relaxed">
-                    Il Lifestyle Inflation Score di FinanzaMente ti mostra se le tue spese voluttuarie crescono più velocemente delle entrate — settimana per settimana, prima che sia troppo tardi.
+                    Il Lifestyle Inflation Score di Finanzamente ti mostra se le tue spese voluttuarie crescono più velocemente delle entrate — settimana per settimana, prima che sia troppo tardi.
                 </p>
-                @if (Route::has('plan.select'))
-                    <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                       class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                       data-umami-event="landing-cta-crescita"
-                       data-umami-event-position="hero">
-                        Abbonati a Pro — scopri il tuo score
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                @endif
+                @include('partials.landing.pro-cta-button', [
+                    'label'         => 'Abbonati a Pro — scopri il tuo score',
+                    'umamiEvent'    => 'landing-cta-crescita',
+                    'umamiPosition' => 'hero',
+                    'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200',
+                ])
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-5 text-sm text-surface-500">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -86,7 +81,7 @@
                         Un segnale d'allarme precoce, non un rimpianto tardivo
                     </h2>
                     <p class="text-surface-600 leading-relaxed">
-                        La lifestyle inflation è la tendenza inconscia ad aumentare le spese voluttuarie man mano che crescono le entrate. Il risultato: <strong>lo stipendio aumenta, i risparmi restano fermi</strong>. FinanzaMente Pro ti mostra <strong>il pericolo in anticipo</strong> — non a fine anno.
+                        La lifestyle inflation è la tendenza inconscia ad aumentare le spese voluttuarie man mano che crescono le entrate. Il risultato: <strong>lo stipendio aumenta, i risparmi restano fermi</strong>. Finanzamente Pro ti mostra <strong>il pericolo in anticipo</strong> — non a fine anno.
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-soft-lg border border-surface-200">
@@ -145,17 +140,12 @@
                 <span>✓ Nessun conto bancario da collegare</span>
                 <span>✓ Disdici quando vuoi</span>
             </div>
-            @if (Route::has('plan.select'))
-                <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                   class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-primary-700 bg-white hover:bg-primary-50 rounded-xl shadow-lg transition-all duration-200"
-                   data-umami-event="landing-cta-crescita"
-                   data-umami-event-position="footer">
-                    Attiva Pro — scopri il tuo Score adesso
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </a>
-            @endif
+            @include('partials.landing.pro-cta-button', [
+                'label'         => 'Attiva Pro — scopri il tuo Score adesso',
+                'umamiEvent'    => 'landing-cta-crescita',
+                'umamiPosition' => 'footer',
+                'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-primary-700 bg-white hover:bg-primary-50 rounded-xl shadow-lg transition-all duration-200',
+            ])
         </div>
     </section>
 @endsection

@@ -19,17 +19,12 @@
                 <p class="text-lg sm:text-xl text-surface-600 mb-8 leading-relaxed">
                     Marca ogni spesa come deducibile durante l'anno. Al momento della liquidazione IVA o del 730, hai già tutto pronto — senza sorprese e senza rincorrere il commercialista.
                 </p>
-                @if (Route::has('plan.select'))
-                    <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                       class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                       data-umami-event="landing-cta-freelance"
-                       data-umami-event-position="hero">
-                        Abbonati a Pro — gestisci IVA e deducibili
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                @endif
+                @include('partials.landing.pro-cta-button', [
+                    'label'         => 'Abbonati a Pro — gestisci IVA e deducibili',
+                    'umamiEvent'    => 'landing-cta-freelance',
+                    'umamiPosition' => 'hero',
+                    'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200',
+                ])
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-5 text-sm text-surface-500">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -86,7 +81,7 @@
                         Il tuo commercialista ti ringrazierà
                     </h2>
                     <p class="text-surface-600 leading-relaxed">
-                        <strong>Niente più fogli Excel o scontrini in una scatola.</strong> Con FinanzaMente Pro ogni spesa professionale è taggata, ogni aliquota IVA registrata. Al momento della liquidazione, <strong>esporti il PDF e via</strong> — il commercialista ha già tutto.
+                        <strong>Niente più fogli Excel o scontrini in una scatola.</strong> Con Finanzamente Pro ogni spesa professionale è taggata, ogni aliquota IVA registrata. Al momento della liquidazione, <strong>esporti il PDF e via</strong> — il commercialista ha già tutto.
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-soft-lg border border-surface-200">
@@ -133,17 +128,12 @@
                 <span>✓ Nessun conto bancario da collegare</span>
                 <span>✓ Disdici quando vuoi</span>
             </div>
-            @if (Route::has('plan.select'))
-                <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                   class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-orange-700 bg-white hover:bg-orange-50 rounded-xl shadow-lg transition-all duration-200"
-                   data-umami-event="landing-cta-freelance"
-                   data-umami-event-position="footer">
-                    Attiva Pro — tieni l’IVA sotto controllo
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </a>
-            @endif
+            @include('partials.landing.pro-cta-button', [
+                'label'         => "Attiva Pro — tieni l'IVA sotto controllo",
+                'umamiEvent'    => 'landing-cta-freelance',
+                'umamiPosition' => 'footer',
+                'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-orange-700 bg-white hover:bg-orange-50 rounded-xl shadow-lg transition-all duration-200',
+            ])
         </div>
     </section>
 @endsection

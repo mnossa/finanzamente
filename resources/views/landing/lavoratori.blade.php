@@ -19,17 +19,12 @@
                 <p class="text-lg sm:text-xl text-surface-600 mb-8 leading-relaxed">
                     Marca le spese durante l'anno: mediche, scolastiche, ristrutturazioni, mutuo. Quando arriva il 730, hai tutto pronto in PDF per il CAF — senza frenetiche ricerche di scontrini.
                 </p>
-                @if (Route::has('plan.select'))
-                    <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                       class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                       data-umami-event="landing-cta-lavoratori"
-                       data-umami-event-position="hero">
-                        Abbonati a Pro — pronto per il 730
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                @endif
+                @include('partials.landing.pro-cta-button', [
+                    'label'         => 'Abbonati a Pro — traccia le spese detraibili',
+                    'umamiEvent'    => 'landing-cta-lavoratori',
+                    'umamiPosition' => 'hero',
+                    'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200',
+                ])
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-5 text-sm text-surface-500">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -83,10 +78,10 @@
             <div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-bold text-surface-900 mb-4">
-                        Il 730 preparato durante l'anno, non ad aprile
+                        Le spese detraibili organizzate durante l'anno, non ad aprile
                     </h2>
                     <p class="text-surface-600 leading-relaxed">
-                        Ogni volta che fai una visita medica, paghi la retta scolastica o sostieni una spesa per la casa, la marchi su FinanzaMente. <strong>A fine anno hai già tutto il materiale pronto</strong> — un <strong>export PDF chiaro e completo per il CAF</strong>.
+                        Ogni volta che fai una visita medica, paghi la retta scolastica o sostieni una spesa per la casa, la marchi su Finanzamente. <strong>A fine anno hai già tutto il materiale pronto</strong> — un <strong>export PDF chiaro e completo per il CAF</strong>.
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-soft-lg border border-surface-200">
@@ -135,24 +130,19 @@
     {{-- FINAL CTA --}}
     <section class="py-14 sm:py-20 bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-center">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
-            <h2 class="text-2xl sm:text-3xl font-bold mb-4">Inizia a preparare il 730 adesso, non ad aprile</h2>
-            <p class="text-teal-100 mb-5">Detrazioni, rimborsi e modello 730: tutto pronto quando serve.</p>
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4">Organizza le spese detraibili adesso, non ad aprile</h2>
+            <p class="text-teal-100 mb-5">Detrazioni, rimborsi: tutto tracciato e pronto quando serve.</p>
             <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-8 text-sm text-teal-200">
                 <span>✓ €2,99/mese</span>
                 <span>✓ Nessun conto bancario da collegare</span>
                 <span>✓ Disdici quando vuoi</span>
             </div>
-            @if (Route::has('plan.select'))
-                <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                   class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-teal-700 bg-white hover:bg-teal-50 rounded-xl shadow-lg transition-all duration-200"
-                   data-umami-event="landing-cta-lavoratori"
-                   data-umami-event-position="footer">
-                    Attiva Pro — prepara il 730 senza stress
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </a>
-            @endif
+            @include('partials.landing.pro-cta-button', [
+                    'label'         => 'Attiva Pro — zero spese dimenticate',
+                'umamiEvent'    => 'landing-cta-lavoratori',
+                'umamiPosition' => 'footer',
+                'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-teal-700 bg-white hover:bg-teal-50 rounded-xl shadow-lg transition-all duration-200',
+            ])
         </div>
     </section>
 @endsection

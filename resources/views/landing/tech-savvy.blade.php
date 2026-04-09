@@ -19,17 +19,12 @@
                 <p class="text-lg sm:text-xl text-surface-600 mb-8 leading-relaxed">
                     Un bot Telegram per registrare le spese al volo. L'inbox intelligente le raccoglie, le categorizza e le aggiunge al tuo registro — tutto senza aprire l'app una volta sola.
                 </p>
-                @if (Route::has('plan.select'))
-                    <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                       class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                       data-umami-event="landing-cta-tech-savvy"
-                       data-umami-event-position="hero">
-                        Abbonati a Pro — attiva il bot Telegram
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                @endif
+                @include('partials.landing.pro-cta-button', [
+                    'label'         => 'Abbonati a Pro — attiva il bot Telegram',
+                    'umamiEvent'    => 'landing-cta-tech-savvy',
+                    'umamiPosition' => 'hero',
+                    'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-accent-600 hover:bg-accent-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200',
+                ])
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-5 text-sm text-surface-500">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -86,7 +81,7 @@
                         La tua contabilità personale in una chat Telegram
                     </h2>
                     <p class="text-surface-600 leading-relaxed">
-                        Collega il tuo account FinanzaMente Pro al bot Telegram. Da quel momento, <strong>registrare una spesa è più veloce che farlo a mano</strong>: scrivi in linguaggio naturale, il bot capisce e conferma. Puoi anche <strong>inviare la foto dello scontrino con la caption</strong>.
+                        Collega il tuo account Finanzamente Pro al bot Telegram. Da quel momento, <strong>registrare una spesa è più veloce che farlo a mano</strong>: scrivi in linguaggio naturale, il bot capisce e conferma. Puoi anche <strong>inviare la foto dello scontrino con la caption</strong>.
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-soft-lg border border-surface-200">
@@ -97,7 +92,7 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm font-semibold text-surface-900">FinanzaMente Bot</p>
+                            <p class="text-sm font-semibold text-surface-900">Finanzamente Bot</p>
                             <p class="text-xs text-sky-600">● online</p>
                         </div>
                     </div>
@@ -140,17 +135,12 @@
                 <span>✓ Nessun conto bancario da collegare</span>
                 <span>✓ Disdici quando vuoi</span>
             </div>
-            @if (Route::has('plan.select'))
-                <a href="{{ route('plan.select') }}?plan=pro&billing_cycle=monthly"
-                   class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-sky-700 bg-white hover:bg-sky-50 rounded-xl shadow-lg transition-all duration-200"
-                   data-umami-event="landing-cta-tech-savvy"
-                   data-umami-event-position="footer">
-                    Attiva Pro — collega il bot Telegram
-                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                </a>
-            @endif
+            @include('partials.landing.pro-cta-button', [
+                'label'         => 'Attiva Pro — collega il bot Telegram',
+                'umamiEvent'    => 'landing-cta-tech-savvy',
+                'umamiPosition' => 'footer',
+                'classes'       => 'inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-sky-700 bg-white hover:bg-sky-50 rounded-xl shadow-lg transition-all duration-200',
+            ])
         </div>
     </section>
 @endsection
