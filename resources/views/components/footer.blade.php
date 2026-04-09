@@ -32,9 +32,9 @@
             <div>
                 <h3 class="text-white font-semibold mb-4">Legale</h3>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Termini di servizio</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
+                    <li><a href="{{ route('legal.privacy') }}" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    <li><a href="{{ route('legal.terms') }}" class="hover:text-white transition-colors">Termini di servizio</a></li>
+                    <li><a href="{{ route('legal.cookies') }}" class="hover:text-white transition-colors">Cookie Policy</a></li>
                 </ul>
             </div>
         </div>

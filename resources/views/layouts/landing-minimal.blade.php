@@ -57,8 +57,9 @@
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-surface-500">
             <span>© {{ date('Y') }} Finanzamente</span>
             <nav aria-label="Link legali" class="flex gap-4">
-                <a href="{{ url('/privacy') }}" class="hover:text-surface-700 transition-colors">Privacy</a>
-                <a href="{{ url('/termini') }}" class="hover:text-surface-700 transition-colors">Termini</a>
+                <a href="{{ route('legal.privacy') }}" class="hover:text-surface-700 transition-colors">Privacy</a>
+                <a href="{{ route('legal.terms') }}" class="hover:text-surface-700 transition-colors">Termini</a>
+                <a href="{{ route('legal.cookies') }}" class="hover:text-surface-700 transition-colors">Cookie</a>
                 <a href="{{ url('/') }}" class="hover:text-surface-700 transition-colors">Home</a>
             </nav>
         </div>

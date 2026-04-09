@@ -46,6 +46,10 @@ use Inertia\Inertia;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
+Route::view('/cookie', 'legal.cookies')->name('legal.cookies');
+Route::view('/termini', 'legal.terms')->name('legal.terms');
+
 // Landing page per target specifici
 Route::get('/per-investitori', [LandingController::class, 'investitori'])->name('landing.investitori');
 Route::get('/per-famiglie', [LandingController::class, 'famiglie'])->name('landing.famiglie');
