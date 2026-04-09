@@ -73,7 +73,7 @@ jobs:
       - name: Configura Node.js per Playwright
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Installa dipendenze Node.js
