@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout del codice sorgente
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Imposta UID/GID per Docker Compose
         run: |
@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - name: Checkout del codice sorgente
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Calcola versione release
         id: calcola-versione
