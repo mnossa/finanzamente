@@ -93,7 +93,7 @@
     "picocolors": "^1.1.1",
     "picomatch": "^4.0.3",
     "postcss-value-parser": "^4.2.0",
-    "proxy-from-env": "^1.1.0",
+    "proxy-from-env": "^2.0.0",
     "recharts": "^3.7.0",
     "require-directory": "^2.1.1",
     "rollup": "^4.52.5",
