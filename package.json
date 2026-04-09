@@ -77,7 +77,7 @@
     "get-proto": "^1.0.1",
     "gopd": "^1.2.0",
     "graceful-fs": "^4.2.11",
-    "has-flag": "^4.0.0",
+    "has-flag": "^5.0.0",
     "has-symbols": "^1.1.0",
     "has-tostringtag": "^1.0.2",
     "hasown": "^2.0.2",
