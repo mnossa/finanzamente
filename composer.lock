@@ -61,26 +61,26 @@
         },
         {
             "name": "artesaos/seotools",
-            "version": "v1.3.2",
+            "version": "v1.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/artesaos/seotools.git",
-                "reference": "f22bc0b0ff1bcb683ff72589d11fa80d10706597"
+                "reference": "c92d09f0ad4491181863850a3ab2e1534361409b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/artesaos/seotools/zipball/f22bc0b0ff1bcb683ff72589d11fa80d10706597",
-                "reference": "f22bc0b0ff1bcb683ff72589d11fa80d10706597",
+                "url": "https://api.github.com/repos/artesaos/seotools/zipball/c92d09f0ad4491181863850a3ab2e1534361409b",
+                "reference": "c92d09f0ad4491181863850a3ab2e1534361409b",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
-                "illuminate/config": "^10.0 || ^11.0 || ^12.0",
-                "illuminate/support": "^10.0 || ^11.0 || ^12.0",
+                "illuminate/config": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
                 "php": "^8.1"
             },
             "require-dev": {
-                "orchestra/testbench": "^8.0 || ^9.0 || ^10.0",
+                "orchestra/testbench": "^8.0 || ^9.0 || ^10.0 || ^11.0",
                 "phpunit/phpunit": "^9.0 || ^10.0 || ^11.5.3"
             },
             "type": "library",
@@ -128,7 +128,7 @@
                 "issues": "https://github.com/artesaos/seotools/issues",
                 "source": "https://github.com/artesaos/seotools"
             },
-            "time": "2025-03-07T14:44:43+00:00"
+            "time": "2026-03-28T12:37:33+00:00"
         },
         {
             "name": "brick/math",
@@ -5042,16 +5042,16 @@
         },
         {
             "name": "openspout/openspout",
-            "version": "v4.28.5",
+            "version": "v4.32.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/openspout/openspout.git",
-                "reference": "ab05a09fe6fce57c90338f83280648a9786ce36b"
+                "reference": "41f045c1f632e1474e15d4c7bc3abcb4a153563d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/openspout/openspout/zipball/ab05a09fe6fce57c90338f83280648a9786ce36b",
-                "reference": "ab05a09fe6fce57c90338f83280648a9786ce36b",
+                "url": "https://api.github.com/repos/openspout/openspout/zipball/41f045c1f632e1474e15d4c7bc3abcb4a153563d",
+                "reference": "41f045c1f632e1474e15d4c7bc3abcb4a153563d",
                 "shasum": ""
             },
             "require": {
@@ -5061,17 +5061,17 @@
                 "ext-libxml": "*",
                 "ext-xmlreader": "*",
                 "ext-zip": "*",
-                "php": "~8.2.0 || ~8.3.0 || ~8.4.0"
+                "php": "~8.3.0 || ~8.4.0 || ~8.5.0"
             },
             "require-dev": {
                 "ext-zlib": "*",
-                "friendsofphp/php-cs-fixer": "^3.68.3",
-                "infection/infection": "^0.29.10",
-                "phpbench/phpbench": "^1.4.0",
-                "phpstan/phpstan": "^2.1.2",
-                "phpstan/phpstan-phpunit": "^2.0.4",
-                "phpstan/phpstan-strict-rules": "^2",
-                "phpunit/phpunit": "^11.5.4"
+                "friendsofphp/php-cs-fixer": "^3.86.0",
+                "infection/infection": "^0.31.2",
+                "phpbench/phpbench": "^1.4.1",
+                "phpstan/phpstan": "^2.1.22",
+                "phpstan/phpstan-phpunit": "^2.0.7",
+                "phpstan/phpstan-strict-rules": "^2.0.6",
+                "phpunit/phpunit": "^12.3.7"
             },
             "suggest": {
                 "ext-iconv": "To handle non UTF-8 CSV files (if \"php-mbstring\" is not already installed or is too limited)",
@@ -5119,7 +5119,7 @@
             ],
             "support": {
                 "issues": "https://github.com/openspout/openspout/issues",
-                "source": "https://github.com/openspout/openspout/tree/v4.28.5"
+                "source": "https://github.com/openspout/openspout/tree/v4.32.0"
             },
             "funding": [
                 {
@@ -5131,7 +5131,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-01-30T13:51:11+00:00"
+            "time": "2025-09-03T16:03:54+00:00"
         },
         {
             "name": "phpoption/phpoption",
@@ -9004,16 +9004,16 @@
         },
         {
             "name": "tightenco/ziggy",
-            "version": "v2.6.0",
+            "version": "v2.6.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tighten/ziggy.git",
-                "reference": "cccc6035c109daab03a33926b3a8499bedbed01f"
+                "reference": "8a0b645921623f77dceaf543d61ecd51a391d96e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tighten/ziggy/zipball/cccc6035c109daab03a33926b3a8499bedbed01f",
-                "reference": "cccc6035c109daab03a33926b3a8499bedbed01f",
+                "url": "https://api.github.com/repos/tighten/ziggy/zipball/8a0b645921623f77dceaf543d61ecd51a391d96e",
+                "reference": "8a0b645921623f77dceaf543d61ecd51a391d96e",
                 "shasum": ""
             },
             "require": {
@@ -9023,9 +9023,9 @@
             },
             "require-dev": {
                 "laravel/folio": "^1.1",
-                "orchestra/testbench": "^7.0 || ^8.0 || ^9.0 || ^10.0",
-                "pestphp/pest": "^2.26|^3.0",
-                "pestphp/pest-plugin-laravel": "^2.4|^3.0"
+                "orchestra/testbench": "^8.0 || ^9.0 || ^10.0",
+                "pestphp/pest": "^2.0 || ^3.0 || ^4.0",
+                "pestphp/pest-plugin-laravel": "^2.0 || ^3.0 || ^4.0"
             },
             "type": "library",
             "extra": {
@@ -9068,9 +9068,9 @@
             ],
             "support": {
                 "issues": "https://github.com/tighten/ziggy/issues",
-                "source": "https://github.com/tighten/ziggy/tree/v2.6.0"
+                "source": "https://github.com/tighten/ziggy/tree/v2.6.2"
             },
-            "time": "2025-09-15T00:00:26+00:00"
+            "time": "2026-03-05T14:41:19+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -11714,12 +11714,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
 }
