@@ -81,7 +81,7 @@
     "has-symbols": "^1.1.0",
     "has-tostringtag": "^1.0.2",
     "hasown": "^2.0.2",
-    "is-fullwidth-code-point": "^3.0.0",
+    "is-fullwidth-code-point": "^5.0.0",
     "jiti": "^2.6.1",
     "magic-string": "^0.30.21",
     "math-intrinsics": "^1.1.0",
