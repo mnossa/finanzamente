@@ -242,14 +242,13 @@ Il seeder `E2ESeeder` (`database/seeders/E2ESeeder.php`) crea:
 7. **Nessuna dipendenza tra spec**: ogni file di spec deve essere indipendente. Non assumere che un test precedente abbia creato dati.
 8. **Messaggi in italiano**: i testi verificati con `getByText()` o `getByRole()` devono corrispondere ai testi effettivi dell'interfaccia italiana.
 9. **Aggiornare il seeder**: se una nuova funzionalità richiede dati di test aggiuntivi (es. un conto pre-creato), aggiungerli in `E2ESeeder` e aggiornare i test esistenti di conseguenza.
-10. **CI automatico**: i test E2E vengono eseguiti automaticamente su PR verso `staging` tramite `.github/workflows/playwright.yml`.
+10. **CI automatico**: i test E2E vengono eseguiti automaticamente tramite `.github/workflows/playwright.yml`.
 
 # Pull Request e Code Review
 - Ogni modifica rilevante deve essere sottoposta a pull request e code review, anche automatizzata, per garantire qualità, coerenza e individuare eventuali errori o miglioramenti.
 - Utilizzare strumenti di linting e formatter per mantenere uno stile di codice uniforme e prevenire errori comuni.
 - Applicare i principi DRY e KISS (definiti in *Ottimizzazione per Agenti e Qualità del Codice*) e rispettare le convenzioni di nomenclatura (definite in *Convenzioni di Nomenclatura*).
 - Prima di ogni merge, verificare: test superati, assenza di duplicazioni, performance accettabili, documentazione aggiornata, sicurezza rispettata.
-- Ogni pull request deve essere fatta verso il branch `staging`
 
 # Orchestratore Workflow
 ### 1. Modalità Pianificazione (Predefinita)
