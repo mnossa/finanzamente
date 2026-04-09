@@ -17,7 +17,7 @@
         "openspout/openspout": "^4",
         "sendinblue/api-v3-sdk": "^8.4",
         "spatie/laravel-honeypot": "^4.7",
-        "spatie/laravel-sitemap": "^7.4",
+        "spatie/laravel-sitemap": "^8.0",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
