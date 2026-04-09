@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\PlanService;
+use App\Services\WaitlistService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,8 +16,10 @@ use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
-    public function __construct(private readonly PlanService $planService)
-    {
+    public function __construct(
+        private readonly PlanService $planService,
+        private readonly WaitlistService $waitlistService,
+    ) {
         // Applica honeypot solo alla registrazione
         $this->middleware(\Spatie\Honeypot\ProtectAgainstSpam::class)->only('store');
     }
@@ -24,9 +27,20 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      * Accetta un parametro opzionale `plan` (base/pro) e `billing_cycle` (monthly/annual).
+     * In modalità pre-lancio, solo il proprietario può accedere alla registrazione.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        // Blocca la registrazione in modalità pre-lancio per utenti non autorizzati
+        if (config('prelaunch.enabled', false)) {
+            $ownerEmail = strtolower(config('prelaunch.owner_email', ''));
+            $incomingEmail = strtolower(trim($request->query('email', '')));
+            if (empty($ownerEmail) || $incomingEmail !== $ownerEmail) {
+                return redirect()->route('home')
+                    ->with('info', 'FinanzaMente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
+            }
+        }
+
         $selectedPlan = $request->query('plan', 'base');
         $billingCycle = $request->query('billing_cycle', 'monthly');
 
@@ -39,11 +53,15 @@ class RegisteredUserController extends Controller
             $billingCycle = 'monthly';
         }
 
+        // Determina se l'utente è un early bird (ha una firma HMAC valida nella URL)
+        $isEarlyBird = $this->resolveEarlyBird($request);
+
         return Inertia::render('Auth/Register', [
             'selectedPlan' => $selectedPlan,
             'billingCycle' => $billingCycle,
             'plans' => $this->planService->getPlansForFrontend(),
             'proEnabled' => $this->planService->isProEnabled(),
+            'isEarlyBird' => $isEarlyBird,
         ]);
     }
 
@@ -54,6 +72,16 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Blocca la registrazione in modalità pre-lancio per utenti non autorizzati
+        if (config('prelaunch.enabled', false)) {
+            $ownerEmail = strtolower(config('prelaunch.owner_email', ''));
+            $incomingEmail = strtolower(trim($request->input('email', '')));
+            if (empty($ownerEmail) || $incomingEmail !== $ownerEmail) {
+                return redirect()->route('home')
+                    ->with('info', 'FinanzaMente è in fase di pre-lancio. Iscriviti alla waitlist per essere avvisato al lancio!');
+            }
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
@@ -73,6 +101,7 @@ class RegisteredUserController extends Controller
             ],
             'selected_plan' => 'nullable|string|in:base,pro',
             'billing_cycle' => 'nullable|string|in:monthly,annual',
+            'sig' => 'nullable|string|size:64',
         ]);
 
         $selectedPlan = $request->input('selected_plan', 'base');
@@ -82,6 +111,9 @@ class RegisteredUserController extends Controller
             $selectedPlan = 'base';
         }
 
+        // Determina se l'utente è un early bird e salva il flag
+        $isEarlyBird = $this->resolveEarlyBird($request);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -90,6 +122,7 @@ class RegisteredUserController extends Controller
             'fiscal_code' => $request->user_type === 'persona' && $request->filled('fiscal_code') ? strtoupper($request->fiscal_code) : null,
             'vat_number' => $request->user_type === 'partita_iva' && $request->filled('vat_number') ? $request->vat_number : null,
             'plan' => 'base', // inizia sempre con il piano base, verrà aggiornato dopo il pagamento
+            'is_early_bird' => $isEarlyBird,
         ]);
 
         // Invia l'email di verifica manualmente invece di usare l'evento Registered
@@ -106,5 +139,22 @@ class RegisteredUserController extends Controller
         }
 
         return redirect(route('verification.notice', absolute: false));
+    }
+
+    /**
+     * Determina se l'utente è un early bird verificando la firma HMAC nella URL.
+     * La firma è valida se è una stringa esadecimale di 64 caratteri (SHA256 hex)
+     * e corrisponde all'HMAC dell'email con APP_KEY.
+     */
+    private function resolveEarlyBird(Request $request): bool
+    {
+        $email = strtolower(trim($request->input('email', '') ?: $request->query('email', '')));
+        $sig = $request->input('sig', '') ?: $request->query('sig', '');
+
+        if (empty($email) || empty($sig) || strlen($sig) !== 64 || ! ctype_xdigit($sig)) {
+            return false;
+        }
+
+        return $this->waitlistService->verifySignature($email, $sig);
     }
 }

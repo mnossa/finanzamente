@@ -104,6 +104,7 @@ export type PageProps<
         excess_accounts: number;
         excess_households: number;
     } | null;
+    isEarlyBird?: boolean;
 };
 
 export interface AppNotification {
