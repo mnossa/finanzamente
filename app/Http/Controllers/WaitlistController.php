@@ -82,7 +82,14 @@ class WaitlistController extends Controller
             return response()->json(['ok' => true, 'subscribed' => false]);
         }
 
-        $this->waitlistService->subscribe($email);
+        try {
+            $this->waitlistService->subscribe($email);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Brevo waitlist webhook: eccezione non gestita.', [
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json(['ok' => true, 'subscribed' => true]);
     }

@@ -84,11 +84,12 @@ class WaitlistService
             $contactsApi->createDoiContact($doiContact);
 
             return true;
-        } catch (\SendinBlue\Client\ApiException $e) {
+        } catch (\Throwable $e) {
             // Log senza email in chiaro (GDPR compliant): loghiamo solo codice e messaggio
-            Log::error('Brevo waitlist: errore API durante iscrizione.', [
+            Log::error('Brevo waitlist: errore durante iscrizione.', [
                 'code'    => $e->getCode(),
                 'message' => $e->getMessage(),
+                'class'   => get_class($e),
             ]);
 
             return false;
