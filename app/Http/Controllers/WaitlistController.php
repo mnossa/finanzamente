@@ -62,6 +62,15 @@ class WaitlistController extends Controller
         $rawBody   = $request->getContent();
         $expected  = base64_encode(hash_hmac('sha256', $rawBody, $secret, true));
 
+        // DEBUG TEMPORANEO: loga firma per ogni richiesta (anche 401)
+        Log::info('Tally webhook sig debug', [
+            'match'        => $signature === $expected,
+            'received_sig' => $signature,
+            'expected_sig' => $expected,
+            'body_length'  => strlen($rawBody),
+            'secret_length'=> strlen($secret),
+        ]);
+
         if (!hash_equals($expected, $signature)) {
             return response()->json(['ok' => false, 'error' => 'invalid signature'], 401);
         }
