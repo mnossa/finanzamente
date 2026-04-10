@@ -117,9 +117,13 @@ Route::post('/webhooks/tally', [WaitlistController::class, 'tallyWebhook'])
     ])
     ->name('webhooks.tally');
 
-// Pagina di conferma dopo double opt-in Brevo
+// Pagina di conferma dopo double opt-in
 Route::get('/waitlist/confermata', fn () => view('waitlist.confirmed'))
     ->name('waitlist.confirmed');
+
+// Link di conferma iscrizione waitlist (DOI manuale via URL firmato)
+Route::get('/waitlist/conferma', [\App\Http\Controllers\WaitlistController::class, 'confirm'])
+    ->name('waitlist.confirm');
 
 // Pagina "in arrivo" — CTA Base in modalità pre-lancio
 Route::get('/in-arrivo', fn () => view('prelaunch.coming-soon'))

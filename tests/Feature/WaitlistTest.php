@@ -240,4 +240,65 @@ class WaitlistTest extends TestCase
             'is_early_bird' => false,
         ]);
     }
+
+    // ─── DOI Conferma ──────────────────────────────────────────────
+
+    public function test_waitlist_confirm_with_valid_signature_calls_confirm_subscription(): void
+    {
+        $this->mock(WaitlistService::class, function ($mock) {
+            $mock->shouldReceive('confirmSubscription')
+                ->once()
+                ->with('test@example.com')
+                ->andReturn(true);
+        });
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'waitlist.confirm',
+            now()->addDays(7),
+            ['email' => 'test@example.com']
+        );
+
+        $response = $this->get($url);
+
+        $response->assertRedirect(route('waitlist.confirmed'));
+    }
+
+    public function test_waitlist_confirm_with_expired_signature_returns_403(): void
+    {
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'waitlist.confirm',
+            now()->subSecond(), // scaduto
+            ['email' => 'test@example.com']
+        );
+
+        $response = $this->get($url);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_waitlist_confirm_without_signature_returns_403(): void
+    {
+        $response = $this->get(route('waitlist.confirm', ['email' => 'test@example.com']));
+
+        $response->assertStatus(403);
+    }
+
+    public function test_waitlist_confirm_redirects_to_confirmed_even_when_brevo_fails(): void
+    {
+        $this->mock(WaitlistService::class, function ($mock) {
+            $mock->shouldReceive('confirmSubscription')
+                ->once()
+                ->andReturn(false);
+        });
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'waitlist.confirm',
+            now()->addDays(7),
+            ['email' => 'test@example.com']
+        );
+
+        $response = $this->get($url);
+
+        $response->assertRedirect(route('waitlist.confirmed'));
+    }
 }

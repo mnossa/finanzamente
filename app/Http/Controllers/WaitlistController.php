@@ -102,4 +102,25 @@ class WaitlistController extends Controller
 
         return response()->json(['ok' => true, 'subscribed' => true]);
     }
+
+    /**
+     * Conferma l'iscrizione alla waitlist tramite link firmato ricevuto via email.
+     * Aggiunge il contatto alla lista Brevo e reindirizza alla pagina di conferma.
+     */
+    public function confirm(Request $request): RedirectResponse
+    {
+        if (!$request->hasValidSignature()) {
+            abort(403, 'Link di conferma non valido o scaduto.');
+        }
+
+        $email = strtolower(trim($request->query('email', '')));
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            abort(400);
+        }
+
+        $this->waitlistService->confirmSubscription($email);
+
+        return redirect()->route('waitlist.confirmed');
+    }
 }
