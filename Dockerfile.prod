@@ -38,7 +38,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
 # ─── Stage 3: Immagine di produzione ─────────────────────────────────────────
-FROM php:8.2-fpm-alpine AS production
+FROM php:8.3-fpm-alpine AS production
 
 ARG BUILD_DATE
 ARG GIT_SHA
