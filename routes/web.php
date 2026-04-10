@@ -78,6 +78,8 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
         \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\HandleInertiaRequests::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
     ]);
 
 // Webhook Mollie — chiamata server-to-server, senza CSRF né sessione
@@ -87,6 +89,8 @@ Route::post('/mollie/webhook', [MollieWebhookController::class, 'handle'])
         \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\HandleInertiaRequests::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
     ]);
 
 // Rotte pubbliche per inviti household
@@ -107,6 +111,8 @@ Route::post('/webhooks/tally', [WaitlistController::class, 'tallyWebhook'])
     ->withoutMiddleware([
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\HandleInertiaRequests::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
     ])
     ->name('webhooks.tally');
 
