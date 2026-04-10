@@ -77,6 +77,7 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
     ->withoutMiddleware([
         \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
     ]);
 
 // Webhook Mollie — chiamata server-to-server, senza CSRF né sessione
@@ -85,6 +86,7 @@ Route::post('/mollie/webhook', [MollieWebhookController::class, 'handle'])
     ->withoutMiddleware([
         \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
     ]);
 
 // Rotte pubbliche per inviti household
@@ -102,7 +104,10 @@ Route::post('/waitlist', [WaitlistController::class, 'store'])
 
 // Webhook Tally → Brevo (escluso da CSRF e sessione: chiamata server-to-server)
 Route::post('/webhooks/tally', [WaitlistController::class, 'tallyWebhook'])
-    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class])
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    ])
     ->name('webhooks.tally');
 
 // Pagina di conferma dopo double opt-in Brevo
