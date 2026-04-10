@@ -33,3 +33,4 @@ node_modules
 /playwright/.cache/
 /playwright/.auth/
 /e2e/.auth/
+public/sitemap.xml
