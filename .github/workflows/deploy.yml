@@ -1,0 +1,171 @@
+name: Deploy to Production — Finanzamente
+
+# Attivazione: ad ogni push sul branch main
+on:
+  push:
+    branches:
+      - main
+
+# Permessi minimi: solo lettura del codice
+permissions:
+  contents: read
+
+jobs:
+
+  # ── Job 1: Esegui la suite di test ────────────────────────────────────────────
+  test:
+    name: Esegui Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codice sorgente
+        uses: actions/checkout@v6
+
+      - name: Imposta UID/GID per Docker Compose
+        run: |
+          echo "LOCAL_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "LOCAL_GID=$(id -g)" >> "$GITHUB_ENV"
+
+      - name: Crea .env.docker per l'ambiente CI
+        run: |
+          {
+            echo "APP_NAME=Finanzamente"
+            echo "APP_ENV=testing"
+            echo "APP_KEY=base64:$(openssl rand -base64 32)"
+            echo "APP_DEBUG=false"
+            echo "APP_URL=http://localhost"
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=db"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=finanzamente"
+            echo "DB_USERNAME=finanzamente"
+            echo "DB_PASSWORD=finanzamente"
+            echo "SESSION_DRIVER=database"
+            echo "CACHE_STORE=database"
+            echo "QUEUE_CONNECTION=database"
+            echo "MAIL_MAILER=log"
+            echo "ADV_THROTTLE_SALT=ci-salt-$(openssl rand -hex 8)"
+          } > .env.docker
+
+      - name: Avvia stack Docker Compose (sviluppo)
+        run: docker compose up -d --build
+
+      - name: Attendi che il container PHP sia pronto
+        run: |
+          timeout 120 bash -c \
+            'until docker compose exec -T app php --version > /dev/null 2>&1; do sleep 5; echo "Attesa container app..."; done'
+
+      - name: Installa dipendenze PHP nel container
+        run: |
+          docker compose exec -T app composer install \
+            --optimize-autoloader \
+            --no-interaction
+
+      - name: Esegui suite di test (SQLite in-memory)
+        run: make test
+
+      - name: Ferma stack Docker Compose
+        if: always()
+        run: docker compose down --volumes
+
+  # ── Job 2: Build immagine Docker e push su Docker Hub ─────────────────────────
+  build:
+    name: Build e Push Immagine Docker
+    runs-on: ubuntu-latest
+    needs: test
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout del codice sorgente
+        uses: actions/checkout@v6
+
+      - name: Configura Docker Buildx (multi-platform + cache)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Calcola tag immagine
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: mnossa/finanzamente
+          tags: |
+            # Tag con SHA breve (es. sha-abc1234)
+            type=sha,format=short
+            # Tag "latest" solo su main
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build e push immagine multi-stage
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Cache GitHub Actions (gratis, riduce i tempi di build)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_SHA=${{ github.sha }}
+
+  # ── Job 3: Deploy su Hetzner via SSH ──────────────────────────────────────────
+  deploy:
+    name: Deploy su Hetzner
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+
+    steps:
+      - name: Checkout del codice sorgente
+        uses: actions/checkout@v6
+
+      - name: Deploy via SSH su Hetzner
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key:      ${{ secrets.HETZNER_SSH_KEY }}
+          port:     ${{ secrets.HETZNER_PORT || 22 }}
+          script: |
+            set -e
+
+            DEPLOY_DIR="/opt/finanzamente"
+            IMAGE_TAG="sha-$(echo '${{ github.sha }}' | cut -c1-7)"
+
+            echo "==> [deploy] Versione: ${IMAGE_TAG}"
+            cd "${DEPLOY_DIR}"
+
+            # Pull la nuova immagine da Docker Hub
+            echo "==> [deploy] Pull immagine Docker Hub..."
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler
+
+            # Aggiorna IMAGE_TAG nel file .env del server
+            if grep -q "^IMAGE_TAG=" .env; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env
+            else
+              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+            fi
+
+            # Riavvia i container con la nuova immagine
+            echo "==> [deploy] Riavvio container..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Attendi che l'app sia disponibile (max 60s)
+            echo "==> [deploy] Attesa health check..."
+            timeout 60 bash -c \
+              'until docker compose -f docker-compose.prod.yml exec -T app curl -sf http://localhost/up > /dev/null 2>&1; do sleep 5; echo "Attesa..."; done'
+
+            # Pulizia immagini obsolete (libera spazio su disco)
+            echo "==> [deploy] Pulizia immagini vecchie..."
+            docker image prune -f
+
+            echo "==> [deploy] Deploy completato! Versione attiva: ${IMAGE_TAG}"

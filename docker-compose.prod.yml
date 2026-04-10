@@ -1,0 +1,108 @@
+# =============================================================================
+# docker-compose.prod.yml — Stack di produzione per Hetzner
+#
+# USO:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# VARIABILI d'ambiente richieste nel file .env (sul server):
+#   APP_KEY, APP_URL, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
+#   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, IMAGE_TAG
+# =============================================================================
+
+services:
+
+  # ── Applicazione (PHP-FPM + Nginx via supervisord) ─────────────────────────
+  app:
+    image: mnossa/finanzamente:${IMAGE_TAG:-latest}
+    container_name: finanzamente-app
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+    volumes:
+      # Storage persistente (upload, cache sessioni, log)
+      - storage:/var/www/storage
+      # bootstrap/cache persistente per ottimizzare i restart
+      - bootstrap_cache:/var/www/bootstrap/cache
+    networks:
+      - finanzamente
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Scheduler Laravel (cron job) ───────────────────────────────────────────
+  scheduler:
+    image: mnossa/finanzamente:${IMAGE_TAG:-latest}
+    container_name: finanzamente-scheduler
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Non rieseguire migrate/optimize: già fatto dal container app
+      SKIP_INIT: "true"
+    volumes:
+      - storage:/var/www/storage
+      - bootstrap_cache:/var/www/bootstrap/cache
+    networks:
+      - finanzamente
+    depends_on:
+      app:
+        condition: service_healthy
+    # schedule:work polling nativo Laravel (ogni minuto)
+    command: ["php", "artisan", "schedule:work", "--no-interaction"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ── Database MySQL ──────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: finanzamente-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE:      ${DB_DATABASE}
+      MYSQL_USER:          ${DB_USERNAME}
+      MYSQL_PASSWORD:      ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - finanzamente
+    # NON esporre la porta al di fuori del container in produzione
+    # ports:
+    #   - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  finanzamente:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
+  storage:
+    driver: local
+  bootstrap_cache:
+    driver: local

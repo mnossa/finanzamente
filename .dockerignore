@@ -14,3 +14,23 @@ public/hot
 public/storage
 npm-debug.log
 yarn-error.log
+
+# File non necessari nell'immagine di produzione
+.github/
+tests/
+e2e/
+playwright-report/
+test-results/
+tasks/
+pulls/
+docs/
+docker-compose*.yml
+Makefile
+*.md
+!README.md
+phpunit.xml
+playwright.config.ts
+axe-linter.yml
+renovate.json
+check_transfers.php
+.vite/

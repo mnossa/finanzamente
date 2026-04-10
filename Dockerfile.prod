@@ -1,0 +1,132 @@
+# =============================================================================
+# Dockerfile.prod — Multi-stage build per produzione
+# =============================================================================
+# Stage 1: Compilazione asset frontend (Node.js)
+# Stage 2: Installazione dipendenze PHP (Composer)
+# Stage 3: Immagine finale di produzione (PHP-FPM + Nginx via supervisord)
+# =============================================================================
+
+# ─── Stage 1: Build asset frontend ───────────────────────────────────────────
+FROM node:24-alpine AS node-builder
+
+WORKDIR /app
+
+# Copia manifest prima del codice sorgente (ottimizza la cache dei layer)
+COPY package*.json ./
+RUN npm ci --frozen-lockfile
+
+# Copia tutto il codice sorgente e compila
+COPY . .
+RUN npm run build
+
+# ─── Stage 2: Dipendenze PHP di produzione ────────────────────────────────────
+FROM composer:2.9 AS composer-builder
+
+WORKDIR /app
+
+# Copia solo i file Composer per la cache dei layer
+COPY composer.json composer.lock ./
+RUN composer install \
+    --optimize-autoloader \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --prefer-dist
+
+# Copia il codice per i post-install scripts e rigenera l'autoloader
+COPY . .
+RUN composer dump-autoload --optimize --no-dev
+
+# ─── Stage 3: Immagine di produzione ─────────────────────────────────────────
+FROM php:8.2-fpm-alpine AS production
+
+ARG BUILD_DATE
+ARG GIT_SHA
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_SHA}"
+LABEL org.opencontainers.image.source="https://github.com/mnossa/finanzamente"
+
+# Installa dipendenze di sistema, nginx, supervisor e estensioni PHP
+RUN apk add --no-cache \
+        nginx \
+        supervisor \
+        curl \
+        # Librerie per GD
+        libpng \
+        libpng-dev \
+        libjpeg-turbo \
+        libjpeg-turbo-dev \
+        freetype \
+        freetype-dev \
+        # Altre librerie
+        oniguruma-dev \
+        libxml2-dev \
+        libzip-dev \
+        zip \
+        unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        pdo_mysql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+        zip \
+        intl \
+    # Pulizia librerie di sviluppo (riduce dimensione immagine)
+    && apk del \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        oniguruma-dev \
+        libxml2-dev \
+        libzip-dev \
+    && rm -rf /var/cache/apk/*
+
+# Usa la configurazione PHP ottimizzata per produzione
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+WORKDIR /var/www
+
+# Copia il codice sorgente dell'applicazione
+COPY --chown=www-data:www-data . .
+
+# Copia gli asset compilati dallo stage Node.js
+COPY --from=node-builder --chown=www-data:www-data /app/public/build ./public/build
+
+# Copia le dipendenze PHP dallo stage Composer
+COPY --from=composer-builder --chown=www-data:www-data /app/vendor ./vendor
+
+# Copia le configurazioni Docker
+COPY docker/nginx.prod.conf /etc/nginx/http.d/default.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-finanzamente.conf
+COPY docker/php.prod.ini "$PHP_INI_DIR/conf.d/99-finanzamente.ini"
+COPY docker/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+# Crea directory necessarie e imposta permessi
+RUN mkdir -p \
+        storage/app/public \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/framework/testing \
+        storage/logs \
+        bootstrap/cache \
+        /run/php \
+        /run/nginx \
+    && chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage \
+    && chmod -R 755 /var/www/bootstrap/cache \
+    && chown -R nginx:nginx /run/nginx
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+    CMD curl -sf http://localhost/up || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
