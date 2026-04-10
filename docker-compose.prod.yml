@@ -34,7 +34,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 45s
+      start_period: 90s
     logging:
       driver: "json-file"
       options:
@@ -57,7 +57,7 @@ services:
       - finanzamente
     depends_on:
       app:
-        condition: service_healthy
+        condition: service_started
     # schedule:work polling nativo Laravel (ogni minuto)
     command: ["php", "artisan", "schedule:work", "--no-interaction"]
     logging:
