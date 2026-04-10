@@ -6,6 +6,7 @@ use App\Services\WaitlistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controller per la gestione della waitlist Pro (pre-lancio).
@@ -60,6 +61,14 @@ class WaitlistController extends Controller
         $signature = $request->header('X-Tally-Signature', '');
         $rawBody   = $request->getContent();
         $expected  = base64_encode(hash_hmac('sha256', $rawBody, $secret, true));
+
+        Log::info('Tally webhook debug', [
+            'received_sig'  => $signature,
+            'expected_sig'  => $expected,
+            'body_length'   => strlen($rawBody),
+            'secret_length' => strlen($secret),
+            'all_headers'   => array_keys($request->headers->all()),
+        ]);
 
         if (!hash_equals($expected, $signature)) {
             return response()->json(['ok' => false, 'error' => 'invalid signature'], 401);
