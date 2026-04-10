@@ -26,22 +26,20 @@ WORKDIR /app
 
 # Copia solo i file Composer per la cache dei layer
 COPY composer.json composer.lock ./
-# --ignore-platform-req=ext-*: l'immagine composer:2.9 non include le
-# estensioni PHP del progetto (gd, zip, bcmath, ecc.); vengono installate
-# solo nello stage production. Le requirements vengono verificate a runtime.
+# --ignore-platform-reqs: l'immagine composer:2.9 usa PHP 8.5 mentre alcune
+# dipendenze (es. openspout) richiedono ~8.2/8.3/8.4. Le platform requirements
+# vengono soddisfatte nello stage production (php:8.2-fpm-alpine).
 RUN composer install \
     --optimize-autoloader \
     --no-dev \
     --no-interaction \
     --no-scripts \
     --prefer-dist \
-    --ignore-platform-req=ext-*
+    --ignore-platform-reqs
 
 # Copia il codice per i post-install scripts e rigenera l'autoloader
 COPY . .
-# --ignore-platform-req=ext-*: composer:2.9 non ha tutte le estensioni PHP;
-# le estensioni ci sono nello stage production finale.
-RUN composer dump-autoload --optimize --no-dev --ignore-platform-req=ext-*
+RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
 
 # ─── Stage 3: Immagine di produzione ─────────────────────────────────────────
 FROM php:8.2-fpm-alpine AS production
