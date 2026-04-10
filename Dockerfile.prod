@@ -55,17 +55,21 @@ RUN apk add --no-cache \
         nginx \
         supervisor \
         curl \
-        # Librerie per GD
+        # Librerie runtime
         libpng \
-        libpng-dev \
         libjpeg-turbo \
-        libjpeg-turbo-dev \
         freetype \
+        icu-libs \
+        libzip \
+        libxml2 \
+        # Librerie di sviluppo (solo build, rimosse dopo)
+        libpng-dev \
+        libjpeg-turbo-dev \
         freetype-dev \
-        # Altre librerie
         oniguruma-dev \
         libxml2-dev \
         libzip-dev \
+        icu-dev \
         zip \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -86,6 +90,7 @@ RUN apk add --no-cache \
         oniguruma-dev \
         libxml2-dev \
         libzip-dev \
+        icu-dev \
     && rm -rf /var/cache/apk/*
 
 # Usa la configurazione PHP ottimizzata per produzione
