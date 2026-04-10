@@ -109,6 +109,7 @@ Route::post('/waitlist', [WaitlistController::class, 'store'])
 // Webhook Tally → Brevo (escluso da CSRF e sessione: chiamata server-to-server)
 Route::post('/webhooks/tally', [WaitlistController::class, 'tallyWebhook'])
     ->withoutMiddleware([
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \App\Http\Middleware\HandleInertiaRequests::class,
