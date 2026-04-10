@@ -61,6 +61,12 @@ services:
         condition: service_started
     # schedule:work polling nativo Laravel (ogni minuto)
     command: ["php", "artisan", "schedule:work", "--no-interaction"]
+    healthcheck:
+      test: ["CMD", "php", "artisan", "--version"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     logging:
       driver: "json-file"
       options:
