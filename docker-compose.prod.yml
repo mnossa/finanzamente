@@ -17,8 +17,9 @@ services:
     container_name: finanzamente-app
     restart: unless-stopped
     env_file: .env
-    ports:
-      - "80:80"
+    # Porta 80 gestita da Caddy: il container è raggiungibile solo internamente
+    # ports:
+    #   - "80:80"
     volumes:
       # Storage persistente (upload, cache sessioni, log)
       - storage:/var/www/storage
@@ -95,6 +96,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ── Caddy (reverse proxy + TLS automatico Let's Encrypt) ─────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: finanzamente-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - finanzamente
+    depends_on:
+      - app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
 networks:
   finanzamente:
     driver: bridge
@@ -105,4 +129,8 @@ volumes:
   storage:
     driver: local
   bootstrap_cache:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local
