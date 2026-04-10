@@ -71,15 +71,21 @@ Route::get('/sitemap.xml', function () {
     return response()->file($path, ['Content-Type' => 'application/xml']);
 })->name('sitemap');
 
-// Webhook Telegram — pubblico, escluso da CSRF (gestito in bootstrap/app.php o VerifyCsrfToken)
+// Webhook Telegram — chiamata server-to-server, senza CSRF né sessione
 Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
     ->name('telegram.webhook')
-    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+    ->withoutMiddleware([
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+    ]);
 
-// Webhook Mollie — pubblico, escluso da CSRF
+// Webhook Mollie — chiamata server-to-server, senza CSRF né sessione
 Route::post('/mollie/webhook', [MollieWebhookController::class, 'handle'])
     ->name('mollie.webhook')
-    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+    ->withoutMiddleware([
+        \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        \Illuminate\Session\Middleware\StartSession::class,
+    ]);
 
 // Rotte pubbliche per inviti household
 Route::get('/inviti/{token}/registrati', [HouseholdInvitationController::class, 'showRegisterForm'])
@@ -94,8 +100,9 @@ Route::post('/waitlist', [WaitlistController::class, 'store'])
     ->middleware(['adv-throttle:3,5'])
     ->name('waitlist.store');
 
-// Webhook Tally → Brevo (escluso da CSRF manualmente in bootstrap/app.php)
+// Webhook Tally → Brevo (escluso da CSRF e sessione: chiamata server-to-server)
 Route::post('/webhooks/tally', [WaitlistController::class, 'tallyWebhook'])
+    ->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class])
     ->name('webhooks.tally');
 
 // Pagina di conferma dopo double opt-in Brevo
