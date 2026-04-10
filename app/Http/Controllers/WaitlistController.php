@@ -6,7 +6,6 @@ use App\Services\WaitlistService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Controller per la gestione della waitlist Pro (pre-lancio).
@@ -58,25 +57,15 @@ class WaitlistController extends Controller
         }
 
         // Verifica firma Tally (HMAC-SHA256 del raw body)
-        $signature = $request->header('X-Tally-Signature', '');
+        // Tally invia 'X-Tally-Signature' (form embed) o 'Tally-Signature' (survey)
+        $signature = $request->header('X-Tally-Signature')
+            ?? $request->header('Tally-Signature', '');
         $rawBody   = $request->getContent();
         $expected  = base64_encode(hash_hmac('sha256', $rawBody, $secret, true));
-
-        // DEBUG TEMPORANEO: loga firma per ogni richiesta (anche 401)
-        Log::info('Tally webhook sig debug', [
-            'match'        => $signature === $expected,
-            'received_sig' => $signature,
-            'expected_sig' => $expected,
-            'body_length'  => strlen($rawBody),
-            'secret_length'=> strlen($secret),
-        ]);
 
         if (!hash_equals($expected, $signature)) {
             return response()->json(['ok' => false, 'error' => 'invalid signature'], 401);
         }
-
-        // DEBUG TEMPORANEO: loga il payload raw per diagnosticare la struttura Tally
-        Log::info('Tally webhook payload', ['raw' => $request->getContent()]);
 
         // Estrae l'email dal payload Tally
         // Struttura attesa: { "data": { "fields": [ { "type": "INPUT_EMAIL", "value": "..." } ] } }

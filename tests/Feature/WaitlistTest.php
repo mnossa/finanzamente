@@ -241,6 +241,80 @@ class WaitlistTest extends TestCase
         ]);
     }
 
+    // ─── Tally Webhook ─────────────────────────────────────────────
+
+    private function tallyPayload(string $email): string
+    {
+        return json_encode([
+            'eventType' => 'FORM_RESPONSE',
+            'data'      => [
+                'fields' => [
+                    ['type' => 'INPUT_EMAIL', 'value' => $email],
+                ],
+            ],
+        ]);
+    }
+
+    public function test_tally_webhook_accepts_x_tally_signature_header(): void
+    {
+        config(['services.tally.webhook_secret' => 'test-secret']);
+
+        $this->mock(WaitlistService::class, function ($mock) {
+            $mock->shouldReceive('subscribe')->once()->andReturn(true);
+        });
+
+        $body = $this->tallyPayload('survey@example.com');
+        $sig  = base64_encode(hash_hmac('sha256', $body, 'test-secret', true));
+
+        $response = $this->postJson('/webhooks/tally', json_decode($body, true), [
+            'X-Tally-Signature' => $sig,
+        ]);
+
+        $response->assertStatus(200)->assertJson(['ok' => true]);
+    }
+
+    public function test_tally_webhook_accepts_tally_signature_header_without_x_prefix(): void
+    {
+        config(['services.tally.webhook_secret' => 'test-secret']);
+
+        $this->mock(WaitlistService::class, function ($mock) {
+            $mock->shouldReceive('subscribe')->once()->andReturn(true);
+        });
+
+        $body = $this->tallyPayload('survey2@example.com');
+        $sig  = base64_encode(hash_hmac('sha256', $body, 'test-secret', true));
+
+        $response = $this->postJson('/webhooks/tally', json_decode($body, true), [
+            'Tally-Signature' => $sig,
+        ]);
+
+        $response->assertStatus(200)->assertJson(['ok' => true]);
+    }
+
+    public function test_tally_webhook_returns_401_with_invalid_signature(): void
+    {
+        config(['services.tally.webhook_secret' => 'test-secret']);
+
+        $body = $this->tallyPayload('bad@example.com');
+
+        $response = $this->postJson('/webhooks/tally', json_decode($body, true), [
+            'X-Tally-Signature' => 'invalidsignature',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_tally_webhook_returns_501_when_secret_not_configured(): void
+    {
+        config(['services.tally.webhook_secret' => '']);
+
+        $body = $this->tallyPayload('no@example.com');
+
+        $response = $this->postJson('/webhooks/tally', json_decode($body, true));
+
+        $response->assertStatus(501);
+    }
+
     // ─── DOI Conferma ──────────────────────────────────────────────
 
     public function test_waitlist_confirm_with_valid_signature_calls_confirm_subscription(): void
