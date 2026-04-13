@@ -45,6 +45,8 @@ jobs:
             echo "ADV_THROTTLE_SALT=ci-e2e-salt-$(openssl rand -hex 8)"
             echo "E2E_USER_EMAIL=e2e@finanzamente.test"
             echo "E2E_USER_PASSWORD=password"
+            echo "PRE_LAUNCH_MODE=false"
+            echo "PRO_WAITLIST_ENABLED=false"
           } > .env.docker
 
       - name: Avvia stack Docker Compose (build + up)
