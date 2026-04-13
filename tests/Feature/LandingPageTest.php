@@ -20,15 +20,28 @@ class LandingPageTest extends TestCase
         $mockPlanService = Mockery::mock(PlanService::class);
         $mockPlanService->shouldReceive('getPlansForFrontend')->andReturn([
             'base' => [
+                'key'      => 'base',
+                'name'     => 'Base',
+                'label'    => 'Piano Base',
                 'features' => ['Dashboard', 'Budget'],
                 'price_monthly' => 0,
+                'price_annual_monthly' => 0,
+                'price_annual_total' => 0,
+                'annual_discount_percent' => 20,
+                'currency' => 'EUR',
+                'available' => true,
             ],
             'pro' => [
+                'key'      => 'pro',
+                'name'     => 'Pro',
+                'label'    => 'Piano Pro',
                 'features' => ['Investimenti', 'Asset Allocation'],
                 'price_monthly' => 2.99,
                 'price_annual_monthly' => 2.39,
                 'price_annual_total' => 28.69,
-                'label' => 'Piano Pro',
+                'annual_discount_percent' => 20,
+                'currency' => 'EUR',
+                'available' => false,
             ],
         ]);
         $mockPlanService->shouldReceive('isProEnabled')->andReturn(false);

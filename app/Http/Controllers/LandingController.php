@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PlanService;
+use App\Services\StructuredDataService;
 use Artesaos\SEOTools\Facades\OpenGraph;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use Artesaos\SEOTools\Facades\TwitterCard;
@@ -10,11 +11,14 @@ use Illuminate\View\View;
 
 /**
  * Controller per le landing page dedicate ai diversi target di utenti.
- * Ogni metodo imposta i meta tag SEO specifici e restituisce la vista corrispondente.
+ * Ogni metodo imposta i meta tag SEO e i dati strutturati JSON-LD specifici per ogni target.
  */
 class LandingController extends Controller
 {
-    public function __construct(private readonly PlanService $planService) {}
+    public function __construct(
+        private readonly PlanService $planService,
+        private readonly StructuredDataService $structuredDataService,
+    ) {}
 
     private function planData(): array
     {
@@ -41,6 +45,8 @@ class LandingController extends Controller
         TwitterCard::setDescription('Portafoglio, asset allocation e finanze personali. Tutto in un unico posto.');
         TwitterCard::addValue('card', 'summary_large_image');
 
+        $this->structuredDataService->forLandingPage(url('/per-investitori'), 'Per Investitori');
+
         return view('landing.investitori', $this->planData());
     }
 
@@ -57,6 +63,8 @@ class LandingController extends Controller
         TwitterCard::setTitle('Finanzamente Pro per Famiglie');
         TwitterCard::setDescription('Gestisci le finanze di famiglia con trasparenza e senza stress.');
         TwitterCard::addValue('card', 'summary_large_image');
+
+        $this->structuredDataService->forLandingPage(url('/per-famiglie'), 'Per Famiglie e Coppie');
 
         return view('landing.famiglie', $this->planData());
     }
@@ -75,6 +83,8 @@ class LandingController extends Controller
         TwitterCard::setDescription('IVA e spese deducibili sotto controllo, senza stress.');
         TwitterCard::addValue('card', 'summary_large_image');
 
+        $this->structuredDataService->forLandingPage(url('/per-freelance'), 'Per Freelance e Partita IVA');
+
         return view('landing.freelance', $this->planData());
     }
 
@@ -91,6 +101,8 @@ class LandingController extends Controller
         TwitterCard::setTitle('Finanzamente Pro per Lavoratori Dipendenti');
         TwitterCard::setDescription('Non dimenticare più una spesa detraibile. Pronto per il 730.');
         TwitterCard::addValue('card', 'summary_large_image');
+
+        $this->structuredDataService->forLandingPage(url('/per-lavoratori'), 'Per Lavoratori Dipendenti');
 
         return view('landing.lavoratori', $this->planData());
     }
@@ -109,6 +121,8 @@ class LandingController extends Controller
         TwitterCard::setDescription('Simula il tuo futuro finanziario con scenari reali.');
         TwitterCard::addValue('card', 'summary_large_image');
 
+        $this->structuredDataService->forLandingPage(url('/per-pianificatori'), 'Per Pianificatori');
+
         return view('landing.pianificatori', $this->planData());
     }
 
@@ -126,6 +140,8 @@ class LandingController extends Controller
         TwitterCard::setDescription('Gestisci le finanze dal tuo Telegram. Veloce, automatico, pro.');
         TwitterCard::addValue('card', 'summary_large_image');
 
+        $this->structuredDataService->forLandingPage(url('/per-tech-savvy'), 'Per Tech-Savvy');
+
         return view('landing.tech-savvy', $this->planData());
     }
 
@@ -142,6 +158,8 @@ class LandingController extends Controller
         TwitterCard::setTitle('Finanzamente — Lifestyle Inflation Score');
         TwitterCard::setDescription('Scopri se stai cadendo nella trappola dell\'inflazione del tenore di vita.');
         TwitterCard::addValue('card', 'summary_large_image');
+
+        $this->structuredDataService->forLandingPage(url('/crescita-personale'), 'Crescita Personale');
 
         return view('landing.crescita', $this->planData());
     }

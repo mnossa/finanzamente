@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PlanService;
+use App\Services\StructuredDataService;
 use Artesaos\SEOTools\Facades\OpenGraph;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use Artesaos\SEOTools\Facades\TwitterCard;
@@ -10,11 +11,14 @@ use Illuminate\View\View;
 
 /**
  * Controller per la homepage pubblica.
- * Imposta i meta tag SEO tramite artesaos/seotools prima di restituire la vista.
+ * Imposta i meta tag SEO e i dati strutturati JSON-LD tramite artesaos/seotools.
  */
 class WelcomeController extends Controller
 {
-    public function __construct(private readonly PlanService $planService) {}
+    public function __construct(
+        private readonly PlanService $planService,
+        private readonly StructuredDataService $structuredDataService,
+    ) {}
 
     public function index(): View
     {
@@ -33,6 +37,8 @@ class WelcomeController extends Controller
         TwitterCard::setTitle('Finanzamente - Gestisci le tue finanze');
         TwitterCard::setDescription('Webapp di gestione finanziaria personale per chi vive in Italia.');
         TwitterCard::addValue('card', 'summary_large_image');
+
+        $this->structuredDataService->forHomepage();
 
         return view('welcome', [
             'plans' => $this->planService->getPlansForFrontend(),

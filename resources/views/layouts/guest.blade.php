@@ -10,7 +10,7 @@
     {!! SEOMeta::generate() !!}
     {!! OpenGraph::generate() !!}
     {!! Twitter::generate() !!}
-    {!! JsonLd::generate() !!}
+    {!! JsonLdMulti::generate() !!}
 
     {{-- Slot opzionale per override manuali nelle singole viste --}}
     @yield('meta-tags')
