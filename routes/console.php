@@ -15,10 +15,10 @@ Artisan::command('inspire', function () {
 Schedule::command('recurring:generate')->dailyAt('00:01');
 
 /**
- * Rigenera la sitemap.xml ogni domenica alle 02:00.
+ * Rigenera la sitemap.xml ogni notte alle 02:00.
  * Per aggiungere nuove rotte pubbliche, edita GenerateSitemap::handle().
  */
-Schedule::command('sitemap:generate')->weeklyOn(0, '02:00');
+Schedule::command('sitemap:generate')->dailyAt('02:00');
 
 /**
  * Rimuove i file di log più vecchi di 30 giorni ogni notte alle 03:00.

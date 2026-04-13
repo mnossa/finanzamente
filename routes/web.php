@@ -46,9 +46,27 @@ use Inertia\Inertia;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 
-Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
-Route::view('/cookie', 'legal.cookies')->name('legal.cookies');
-Route::view('/termini', 'legal.terms')->name('legal.terms');
+// Pagine legali — visibili solo al proprietario durante il pre-lancio
+Route::get('/privacy', function () {
+    if (config('prelaunch.enabled') && strtolower(optional(request()->user())->email ?? '') !== strtolower(config('prelaunch.owner_email', ''))) {
+        abort(404);
+    }
+    return view('legal.privacy');
+})->name('legal.privacy');
+
+Route::get('/cookie', function () {
+    if (config('prelaunch.enabled') && strtolower(optional(request()->user())->email ?? '') !== strtolower(config('prelaunch.owner_email', ''))) {
+        abort(404);
+    }
+    return view('legal.cookies');
+})->name('legal.cookies');
+
+Route::get('/termini', function () {
+    if (config('prelaunch.enabled') && strtolower(optional(request()->user())->email ?? '') !== strtolower(config('prelaunch.owner_email', ''))) {
+        abort(404);
+    }
+    return view('legal.terms');
+})->name('legal.terms');
 
 // Landing page per target specifici
 Route::get('/per-investitori', [LandingController::class, 'investitori'])->name('landing.investitori');
