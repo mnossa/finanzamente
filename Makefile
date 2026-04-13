@@ -65,6 +65,9 @@ e2e-seed:
 # Se PRE_LAUNCH_MODE o PRO_WAITLIST_ENABLED sono attivi nel .env, vengono
 # temporaneamente disabilitati per i test e ripristinati automaticamente dopo.
 playwright:
+	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
+	@rm -f public/hot
+	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright'" && exit 1)
 	@echo "[+] Compilazione config E2E (normal: pre-lancio=off, waitlist=off, mail=log)..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
 		-e PRE_LAUNCH_MODE=false \
@@ -82,6 +85,9 @@ playwright:
 # Esegui i test E2E simulando la modalità PRE-LANCIO
 # Legge PRE_LAUNCH_OWNER_EMAIL da .env — non modifica .env
 playwright-prelaunch:
+	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
+	@rm -f public/hot
+	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright-prelaunch'" && exit 1)
 	@echo "[+] Compilazione config E2E (pre-lancio=on, mail=log)..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
 		-e PRE_LAUNCH_MODE=true \
@@ -99,6 +105,9 @@ playwright-prelaunch:
 # Esegui i test E2E simulando la modalità WAITLIST (PRO_WAITLIST_ENABLED=true, PRE_LAUNCH_MODE=false)
 # Non modifica .env — passa i valori direttamente alla compilazione della config.
 playwright-waitlist:
+	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
+	@rm -f public/hot
+	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright-waitlist'" && exit 1)
 	@echo "[+] Compilazione config E2E (waitlist=on, pre-lancio=off, mail=log)..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
 		-e PRE_LAUNCH_MODE=false \

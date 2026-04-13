@@ -19,40 +19,57 @@ class GenerateSitemap extends Command
 
     protected $description = 'Genera il file public/sitemap.xml con le rotte pubbliche';
 
+    /**
+     * Rotte pubbliche sempre incluse nella sitemap.
+     * Formato: [ 'nome_rotta' => [changefreq, priority] ]
+     *
+     * Per aggiungere una nuova pagina pubblica, aggiungere una voce qui.
+     */
+    private array $routes = [
+        // Core
+        'home'                  => [Url::CHANGE_FREQUENCY_WEEKLY,  1.0],
+        'login'                 => [Url::CHANGE_FREQUENCY_MONTHLY, 0.7],
+        // Landing page
+        'landing.investitori'   => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.famiglie'      => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.freelance'     => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.lavoratori'    => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.pianificatori' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.tech-savvy'    => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.crescita'      => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+    ];
+
+    /**
+     * Rotte aggiunte solo a pre-lancio disattivo.
+     */
+    private array $postLaunchRoutes = [
+        'register'      => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'legal.privacy' => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
+        'legal.cookies' => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
+        'legal.terms'   => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
+    ];
+
     public function handle(): int
     {
         $this->info('Generazione sitemap in corso…');
 
-        Sitemap::create()
-            // Homepage
-            ->add(
-                Url::create('/')
-                    ->setLastModificationDate(Carbon::now())
-                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
-                    ->setPriority(1.0)
-            )
-            // Login
-            ->add(
-                Url::create('/login')
-                    ->setLastModificationDate(Carbon::now())
-                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY)
-                    ->setPriority(0.7)
-            )
-            // Registrazione
-            ->add(
-                Url::create('/register')
-                    ->setLastModificationDate(Carbon::now())
-                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY)
-                    ->setPriority(0.8)
-            )
-            // Password dimenticata
-            ->add(
-                Url::create('/forgot-password')
-                    ->setLastModificationDate(Carbon::now())
-                    ->setChangeFrequency(Url::CHANGE_FREQUENCY_YEARLY)
-                    ->setPriority(0.3)
-            )
-            ->writeToFile(public_path('sitemap.xml'));
+        $now = Carbon::now();
+        $sitemap = Sitemap::create();
+
+        $activeRoutes = config('prelaunch.enabled')
+            ? $this->routes
+            : array_merge($this->routes, $this->postLaunchRoutes);
+
+        foreach ($activeRoutes as $name => [$changefreq, $priority]) {
+            $sitemap->add(
+                Url::create(route($name))
+                    ->setLastModificationDate($now)
+                    ->setChangeFrequency($changefreq)
+                    ->setPriority($priority)
+            );
+        }
+
+        $sitemap->writeToFile(public_path('sitemap.xml'));
 
         $this->info('sitemap.xml generato correttamente in ' . public_path('sitemap.xml'));
 
