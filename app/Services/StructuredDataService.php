@@ -35,6 +35,7 @@ class StructuredDataService
         JsonLdMulti::setType('SoftwareApplication');
         JsonLdMulti::setTitle('Finanzamente');
         JsonLdMulti::addValue('url', url('/'));
+        JsonLdMulti::addValue('description', 'Webapp di gestione finanziaria personale per chi vive in Italia. Controlla le tue spese, pianifica il budget e raggiungi i tuoi obiettivi finanziari.');
         JsonLdMulti::addValue('applicationCategory', 'FinanceApplication');
         JsonLdMulti::addValue('operatingSystem', 'Web');
         JsonLdMulti::addValue('inLanguage', 'it-IT');
@@ -53,6 +54,7 @@ class StructuredDataService
         JsonLdMulti::setType('SoftwareApplication');
         JsonLdMulti::setTitle('Finanzamente');
         JsonLdMulti::addValue('url', url('/'));
+        JsonLdMulti::addValue('description', 'Webapp di gestione finanziaria personale per chi vive in Italia. Controlla le tue spese, pianifica il budget e raggiungi i tuoi obiettivi finanziari.');
         JsonLdMulti::addValue('applicationCategory', 'FinanceApplication');
         JsonLdMulti::addValue('operatingSystem', 'Web');
         JsonLdMulti::addValue('inLanguage', 'it-IT');
