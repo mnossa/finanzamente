@@ -103,7 +103,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build e push immagine multi-stage
-        uses: docker/build-push-action@v6.19.2
+        uses: docker/build-push-action@v7.0.0
         with:
           context: .
           file: Dockerfile.prod
