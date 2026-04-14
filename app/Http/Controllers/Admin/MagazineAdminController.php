@@ -47,6 +47,8 @@ class MagazineAdminController extends Controller
 
         MagazineArticle::create($data);
 
+        cache()->forget('magazine_has_published');
+
         return redirect()->route('admin.magazine.index')
             ->with('success', 'Articolo creato con successo.');
     }
@@ -77,6 +79,8 @@ class MagazineAdminController extends Controller
 
         $article->update($data);
 
+        cache()->forget('magazine_has_published');
+
         return redirect()->route('admin.magazine.index')
             ->with('success', 'Articolo aggiornato con successo.');
     }
@@ -89,6 +93,8 @@ class MagazineAdminController extends Controller
         }
 
         $article->delete();
+
+        cache()->forget('magazine_has_published');
 
         return redirect()->route('admin.magazine.index')
             ->with('success', 'Articolo eliminato.');

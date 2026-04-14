@@ -647,6 +647,8 @@ docker system df
 | `MAIL_FROM_ADDRESS` | ✅ | Email mittente |
 | `ADV_THROTTLE_SALT` | ✅ | Salt SHA256 rate limiting (min 32 char) |
 | `BACKUP_ENCRYPTION_KEY` | ✅ | Chiave AES-256 per dump cifrati (`openssl rand -base64 32`) |
+| `PRE_LAUNCH_OWNER_EMAIL` | — | Email owner per bypass waitlist pre-lancio |
+| `MAGAZINE_ADMIN_EMAIL` | — | Email admin magazine (CRUD articoli). Se vuota, usa `PRE_LAUNCH_OWNER_EMAIL` come fallback |
 | `IMAGE_TAG` | ✅ | Tag immagine Docker (gestito da CI/CD) |
 | `SKIP_INIT` | — | `true` nel container scheduler |
 

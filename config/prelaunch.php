@@ -18,6 +18,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Magazine
+    |--------------------------------------------------------------------------
+    |
+    | Email dell'utente autorizzato a creare, modificare e cancellare articoli
+    | del magazine. Separata da PRE_LAUNCH_OWNER_EMAIL per chiarezza semantica:
+    | la modalità pre-lancio e la gestione editoriale sono concetti distinti.
+    |
+    | Se non impostata, ricade su PRE_LAUNCH_OWNER_EMAIL come fallback
+    | per garantire compatibilità con installazioni esistenti.
+    |
+    | MAGAZINE_ADMIN_EMAIL=tua@email.com
+    |
+    */
+    'magazine_admin_email' => env('MAGAZINE_ADMIN_EMAIL', env('PRE_LAUNCH_OWNER_EMAIL', '')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Waitlist Pro
     |--------------------------------------------------------------------------
     |

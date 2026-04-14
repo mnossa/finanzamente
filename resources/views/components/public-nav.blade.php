@@ -1,4 +1,9 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-surface-200 transition-all duration-300" role="banner">
+    @php
+        $hasMagazineArticles = cache()->remember('magazine_has_published', 3600, fn() =>
+            \App\Models\MagazineArticle::published()->exists()
+        );
+    @endphp
     <nav class="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Menu principale">
         <div class="flex justify-between items-center h-16 sm:h-20">
             <!-- Logo -->
@@ -9,10 +14,12 @@
             
             <!-- Navigation Links -->
             <div class="flex items-center space-x-2 sm:space-x-4">
+                @if($hasMagazineArticles)
                 <a href="{{ route('magazine.index') }}"
                    class="hidden sm:inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-surface-700 hover:text-primary-700 transition-colors {{ request()->routeIs('magazine.*') ? 'text-primary-700 font-semibold' : '' }}">
                     Magazine
                 </a>
+                @endif
                 @if (Route::has('login'))
                     @auth
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-primary-700 hover:text-primary-900 transition-colors">

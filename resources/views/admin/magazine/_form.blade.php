@@ -1,4 +1,32 @@
 {{-- Partial condiviso tra create e edit --}}
+@push('styles')
+<style>
+    /* Fullscreen: porta il container sopra la navbar fixed (z-50 = 50) */
+    .EasyMDEContainer.fullscreen {
+        z-index: 100 !important;
+    }
+
+    /* Toolbar sticky sotto la navbar quando si scrolla (non in fullscreen) */
+    .EasyMDEContainer:not(.fullscreen) .editor-toolbar {
+        position: sticky;
+        top: 4rem; /* h-16 = 64px */
+        z-index: 40;
+        background: #ffffff;
+    }
+    @media (min-width: 640px) {
+        .EasyMDEContainer:not(.fullscreen) .editor-toolbar {
+            top: 5rem; /* h-20 = 80px */
+        }
+    }
+
+    /* In fullscreen la toolbar è già in cima al container fixed */
+    .EasyMDEContainer.fullscreen .editor-toolbar {
+        position: sticky;
+        top: 0;
+    }
+</style>
+@endpush
+
 <div class="grid lg:grid-cols-3 gap-8">
 
     <!-- Colonna principale -->
@@ -35,15 +63,10 @@
         <div>
             <label for="content" class="block text-sm font-medium text-surface-700 mb-1.5">
                 Contenuto <span class="text-red-500" aria-hidden="true">*</span>
-                <span class="text-surface-400 font-normal">(Markdown supportato)</span>
             </label>
-            <textarea id="content" name="content" rows="24"
-                      class="w-full rounded-xl border border-surface-300 px-4 py-2.5 text-sm font-mono focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition"
+            <textarea id="content" name="content"
                       required
-                      placeholder="## Introduzione&#10;&#10;Scrivi qui il corpo dell'articolo in formato Markdown...">{{ old('content', $article->content ?? '') }}</textarea>
-            <p class="mt-1 text-xs text-surface-400">
-                Supporta **grassetto**, *corsivo*, `codice`, ## Titoli, [link](url), ![alt](url immagine), > citazioni, elenchi.
-            </p>
+                      placeholder="## Introduzione&#10;&#10;Scrivi qui il corpo dell'articolo...">{{ old('content', $article->content ?? '') }}</textarea>
             @error('content')
                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
             @enderror
