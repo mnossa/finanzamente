@@ -61,7 +61,7 @@
             <div class="mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary-50 to-accent-50 border border-primary-100 text-center">
                 <h2 class="text-xl font-bold text-surface-900 mb-2">Gestisci il tuo denaro con Finanzamente</h2>
                 <p class="text-surface-600 mb-4 text-sm">Dashboard personale, conti, budget e molto altro — gratis, senza compromessi sulla privacy.</p>
-                <a href="{{ route('home') }}"
+                <a href="{{ route('home') }}?utm_source=magazine&utm_medium=article_cta&utm_campaign={{ $article->slug }}"
                    class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
                     Scopri Finanzamente
                 </a>
