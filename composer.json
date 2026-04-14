@@ -14,7 +14,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "mollie/mollie-api-php": "^3.9",
-        "openspout/openspout": "^4",
+        "openspout/openspout": "^5",
         "sendinblue/api-v3-sdk": "^8.4",
         "spatie/laravel-honeypot": "^4.7",
         "spatie/laravel-sitemap": "^7.4",
