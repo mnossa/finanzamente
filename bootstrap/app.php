@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'adv-throttle' => \App\Http\Middleware\AdvancedRateLimitWithDelay::class,
             'requires-pro' => \App\Http\Middleware\RequiresPro::class,
             'pre-launch' => \App\Http\Middleware\PreLaunchMiddleware::class,
+            'owner'      => \App\Http\Middleware\OwnerMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

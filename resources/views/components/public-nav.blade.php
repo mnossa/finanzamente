@@ -9,6 +9,10 @@
             
             <!-- Navigation Links -->
             <div class="flex items-center space-x-2 sm:space-x-4">
+                <a href="{{ route('magazine.index') }}"
+                   class="hidden sm:inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-surface-700 hover:text-primary-700 transition-colors {{ request()->routeIs('magazine.*') ? 'text-primary-700 font-semibold' : '' }}">
+                    Magazine
+                </a>
                 @if (Route::has('login'))
                     @auth
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-primary-700 hover:text-primary-900 transition-colors">

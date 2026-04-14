@@ -38,6 +38,8 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\Api\AssetPriceController;
+use App\Http\Controllers\Admin\MagazineAdminController;
+use App\Http\Controllers\MagazineController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\WaitlistController;
 use Illuminate\Foundation\Application;
@@ -445,6 +447,24 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::get('/ticker-to-isin/{ticker}', [AssetPriceController::class, 'tickerToIsin'])->name('ticker-to-isin');
         Route::get('/isin-to-ticker/{isin}', [AssetPriceController::class, 'isinToTicker'])->name('isin-to-ticker');
     });
+});
+
+// ── Magazine (pubblico) ────────────────────────────────────────────────────
+// throttle:60,1 → max 60 req/min per IP (limita scraping e write spam sul view counter)
+Route::prefix('magazine')->name('magazine.')->middleware('throttle:60,1')->group(function () {
+    Route::get('/', [MagazineController::class, 'index'])->name('index');
+    Route::get('/categoria/{categorySlug}', [MagazineController::class, 'category'])->name('category');
+    Route::get('/{slug}', [MagazineController::class, 'show'])->name('show');
+});
+
+// ── Magazine Admin (solo proprietario) ────────────────────────────────────
+Route::prefix('admin/magazine')->name('admin.magazine.')->middleware(['auth', 'verified', 'owner'])->group(function () {
+    Route::get('/', [MagazineAdminController::class, 'index'])->name('index');
+    Route::get('/crea', [MagazineAdminController::class, 'create'])->name('create');
+    Route::post('/', [MagazineAdminController::class, 'store'])->name('store');
+    Route::get('/{article}/modifica', [MagazineAdminController::class, 'edit'])->name('edit');
+    Route::put('/{article}', [MagazineAdminController::class, 'update'])->name('update');
+    Route::delete('/{article}', [MagazineAdminController::class, 'destroy'])->name('destroy');
 });
 
 require __DIR__.'/auth.php';

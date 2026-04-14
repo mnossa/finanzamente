@@ -56,11 +56,11 @@ GitHub Actions con il permesso `contents: write` per creare la release.
 ### Raspberry Pi — `.env.docker`
 
 Sul Raspberry Pi, prima di avviare la webapp, crea il file
-`/home/mnossa/www/finanzamente/.env.docker` a partire dal template:
+`/home/<utente>/www/finanzamente/.env.docker` a partire dal template:
 
 ```bash
-cp /home/mnossa/www/finanzamente/.env.example \
-   /home/mnossa/www/finanzamente/.env.docker
+cp /home/<utente>/www/finanzamente/.env.example \
+   /home/<utente>/www/finanzamente/.env.docker
 ```
 
 Configura obbligatoriamente le seguenti variabili:
@@ -79,7 +79,7 @@ Configura obbligatoriamente le seguenti variabili:
 Per generare `APP_KEY` al primo avvio:
 
 ```bash
-cd /home/mnossa/www/finanzamente
+cd /home/<utente>/www/finanzamente
 docker compose exec app php artisan key:generate --show
 ```
 
@@ -113,30 +113,30 @@ Aggiungi questa riga al file `~/.bashrc` o direttamente nel crontab (vedi sezion
 1. **Crea le directory necessarie:**
 
    ```bash
-   mkdir -p /home/mnossa/www
-   mkdir -p /home/mnossa/scripts
-   mkdir -p /home/mnossa/logs
+   mkdir -p /home/<utente>/www
+   mkdir -p /home/<utente>/scripts
+   mkdir -p /home/<utente>/logs
    ```
 
 2. **Scarica manualmente la prima release** dalla pagina
-   [Releases](https://github.com/mnossa/finanzamente/releases) del repository,
+   [Releases](https://github.com/<owner>/finanzamente/releases) del repository,
    oppure tramite CLI:
 
-   Nota: l'endpoint `https://api.github.com/repos/mnossa/finanzamente/releases/latest`
+   Nota: l'endpoint `https://api.github.com/repos/<owner>/finanzamente/releases/latest`
    restituisce `404 Not Found` in due casi distinti:
    - il repository e' privato e la richiesta non include un `GITHUB_TOKEN` valido;
    - non esiste ancora nessuna GitHub Release pubblicata.
 
    ```bash
    # Per repository pubblico
-   RELEASE_URL=$(curl -s https://api.github.com/repos/mnossa/finanzamente/releases/latest \
+   RELEASE_URL=$(curl -s https://api.github.com/repos/<owner>/finanzamente/releases/latest \
      | jq -r '.assets[0].browser_download_url')
    curl -L -o /tmp/finanzamente-release.tar.gz "${RELEASE_URL}"
 
    # Per repository privato (usa GITHUB_TOKEN con permesso repo:read)
    RELEASE_URL=$(curl -s \
      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-     https://api.github.com/repos/mnossa/finanzamente/releases/latest \
+     https://api.github.com/repos/<owner>/finanzamente/releases/latest \
      | jq -r '.assets[0].browser_download_url')
    curl -L -o /tmp/finanzamente-release.tar.gz \
      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
@@ -146,32 +146,32 @@ Aggiungi questa riga al file `~/.bashrc` o direttamente nel crontab (vedi sezion
 3. **Estrai l'archivio:**
 
    ```bash
-   mkdir -p /home/mnossa/www/finanzamente
-   tar -xzf /tmp/finanzamente-release.tar.gz -C /home/mnossa/www/finanzamente
+   mkdir -p /home/<utente>/www/finanzamente
+   tar -xzf /tmp/finanzamente-release.tar.gz -C /home/<utente>/www/finanzamente
    ```
 
 4. **Configura le variabili d'ambiente:**
 
    ```bash
-   cp /home/mnossa/www/finanzamente/.env.example \
-      /home/mnossa/www/finanzamente/.env.docker
+   cp /home/<utente>/www/finanzamente/.env.example \
+      /home/<utente>/www/finanzamente/.env.docker
 
-   nano /home/mnossa/www/finanzamente/.env.docker
+   nano /home/<utente>/www/finanzamente/.env.docker
    # Compila APP_KEY, APP_URL, DB_PASSWORD, ADV_THROTTLE_SALT, ecc.
    ```
 
 5. **Imposta i permessi corretti:**
 
    ```bash
-   chmod -R 775 /home/mnossa/www/finanzamente/storage
-   chmod -R 775 /home/mnossa/www/finanzamente/bootstrap/cache
-   chmod 600    /home/mnossa/www/finanzamente/.env.docker
+   chmod -R 775 /home/<utente>/www/finanzamente/storage
+   chmod -R 775 /home/<utente>/www/finanzamente/bootstrap/cache
+   chmod 600    /home/<utente>/www/finanzamente/.env.docker
    ```
 
 6. **Avvia lo stack Docker:**
 
    ```bash
-   cd /home/mnossa/www/finanzamente
+   cd /home/<utente>/www/finanzamente
    docker compose up -d --build
    ```
 
@@ -199,15 +199,15 @@ Aggiungi questa riga al file `~/.bashrc` o direttamente nel crontab (vedi sezion
 
     ```bash
     # Sostituisci <versione> con il tag della release scaricata (es. v20240315-abc1234f)
-    echo "<versione>" > /home/mnossa/www/finanzamente/.release-version
+    echo "<versione>" > /home/<utente>/www/finanzamente/.release-version
     ```
 
 11. **Copia lo script di deploy:**
 
     ```bash
-    cp /home/mnossa/www/finanzamente/scripts/raspberry-deploy.sh \
-       /home/mnossa/scripts/raspberry-deploy.sh
-    chmod +x /home/mnossa/scripts/raspberry-deploy.sh
+    cp /home/<utente>/www/finanzamente/scripts/raspberry-deploy.sh \
+       /home/<utente>/scripts/raspberry-deploy.sh
+    chmod +x /home/<utente>/scripts/raspberry-deploy.sh
     ```
 
 ---
@@ -228,13 +228,13 @@ crontab -e
 Aggiungi la riga per eseguire lo script ogni 6 ore:
 
 ```cron
-0 */6 * * * /home/mnossa/scripts/raspberry-deploy.sh >> /home/mnossa/logs/finanzamente-deploy.log 2>&1
+0 */6 * * * /home/<utente>/scripts/raspberry-deploy.sh >> /home/<utente>/logs/finanzamente-deploy.log 2>&1
 ```
 
 Per repo privato, usa:
 
 ```cron
-0 */6 * * * GITHUB_TOKEN=ghp_xxxx /home/mnossa/scripts/raspberry-deploy.sh >> /home/mnossa/logs/finanzamente-deploy.log 2>&1
+0 */6 * * * GITHUB_TOKEN=ghp_xxxx /home/<utente>/scripts/raspberry-deploy.sh >> /home/<utente>/logs/finanzamente-deploy.log 2>&1
 ```
 
 ### Verifica manuale
@@ -242,15 +242,15 @@ Per repo privato, usa:
 Per verificare che lo script funzioni correttamente:
 
 ```bash
-/home/mnossa/scripts/raspberry-deploy.sh
+/home/<utente>/scripts/raspberry-deploy.sh
 # oppure
-bash /home/mnossa/www/finanzamente/scripts/raspberry-deploy.sh
+bash /home/<utente>/www/finanzamente/scripts/raspberry-deploy.sh
 ```
 
 ### Visualizza i log
 
 ```bash
-tail -f /home/mnossa/logs/finanzamente-deploy.log
+tail -f /home/<utente>/logs/finanzamente-deploy.log
 ```
 
 ### Comportamento dello script
@@ -334,8 +334,8 @@ finanzamente-vYYYYMMDD-xxxxxxx.tar.gz
   Dopo il deploy, aggiorna manualmente la copia usata da cron:
 
   ```bash
-  cp /home/mnossa/www/finanzamente/scripts/raspberry-deploy.sh \
-     /home/mnossa/scripts/raspberry-deploy.sh
+  cp /home/<utente>/www/finanzamente/scripts/raspberry-deploy.sh \
+     /home/<utente>/scripts/raspberry-deploy.sh
   ```
 
 ---
@@ -345,7 +345,7 @@ finanzamente-vYYYYMMDD-xxxxxxx.tar.gz
 ### I container non si avviano
 
 ```bash
-cd /home/mnossa/www/finanzamente
+cd /home/<utente>/www/finanzamente
 docker compose logs app
 docker compose logs db
 docker compose ps
@@ -362,8 +362,8 @@ docker compose exec app php artisan key:generate --show
 ### Permessi su storage/
 
 ```bash
-chmod -R 775 /home/mnossa/www/finanzamente/storage
-chmod -R 775 /home/mnossa/www/finanzamente/bootstrap/cache
+chmod -R 775 /home/<utente>/www/finanzamente/storage
+chmod -R 775 /home/<utente>/www/finanzamente/bootstrap/cache
 ```
 
 ### Il deploy automatico non si attiva
@@ -371,7 +371,7 @@ chmod -R 775 /home/mnossa/www/finanzamente/bootstrap/cache
 Verifica i log cron:
 
 ```bash
-tail -50 /home/mnossa/logs/finanzamente-deploy.log
+tail -50 /home/<utente>/logs/finanzamente-deploy.log
 # oppure
 grep finanzamente /var/log/syslog | tail -20
 ```
@@ -379,28 +379,28 @@ grep finanzamente /var/log/syslog | tail -20
 Controlla che lo script sia eseguibile:
 
 ```bash
-ls -la /home/mnossa/scripts/raspberry-deploy.sh
-chmod +x /home/mnossa/scripts/raspberry-deploy.sh
+ls -la /home/<utente>/scripts/raspberry-deploy.sh
+chmod +x /home/<utente>/scripts/raspberry-deploy.sh
 ```
 
 ### Rollback manuale
 
 ```bash
 # Ferma i container
-cd /home/mnossa/www/finanzamente
+cd /home/<utente>/www/finanzamente
 docker compose down
 
 # Ripristina backup
-rm -rf /home/mnossa/www/finanzamente
-mv /home/mnossa/www/finanzamente.backup /home/mnossa/www/finanzamente
+rm -rf /home/<utente>/www/finanzamente
+mv /home/<utente>/www/finanzamente.backup /home/<utente>/www/finanzamente
 
 # Riavvia
-cd /home/mnossa/www/finanzamente
+cd /home/<utente>/www/finanzamente
 docker compose up -d
 ```
 
 ### Visualizza la versione installata
 
 ```bash
-cat /home/mnossa/www/finanzamente/.release-version
+cat /home/<utente>/www/finanzamente/.release-version
 ```

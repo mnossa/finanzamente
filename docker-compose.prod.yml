@@ -6,7 +6,7 @@
 #
 # VARIABILI d'ambiente richieste nel file .env (sul server):
 #   APP_KEY, APP_URL, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
-#   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, IMAGE_TAG
+#   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, BACKUP_ENCRYPTION_KEY, IMAGE_TAG
 # =============================================================================
 
 services:
@@ -102,6 +102,50 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ── Backup automatico MySQL ────────────────────────────────────────────────
+  # Esegue mysqldump ogni 24h e mantiene gli ultimi 7 giorni.
+  # I dump sono cifrati con AES-256-CBC tramite openssl prima di essere scritti
+  # su disco: anche se il volume venisse copiato, i dati restano illeggibili
+  # senza la chiave BACKUP_ENCRYPTION_KEY (da aggiungere in .env).
+  #
+  # Per ripristinare un dump:
+  #   openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"$BACKUP_ENCRYPTION_KEY" \
+  #     -in /backups/finanzamente_20260414_020000.sql.gz.enc \
+  #     | gunzip \
+  #     | docker compose exec -T db mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE"
+  db-backup:
+    image: mysql:9.6
+    container_name: finanzamente-db-backup
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_HOST: db
+    volumes:
+      - backups:/backups
+    networks:
+      - finanzamente
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: >
+      sh -c '
+        while true; do
+          sleep 86400;
+          FILENAME="/backups/finanzamente_$$(date +%Y%m%d_%H%M%S).sql.gz.enc";
+          mysqldump -h db -u"$$DB_USERNAME" --password="$$DB_PASSWORD" "$$DB_DATABASE" \
+            | gzip \
+            | openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$$BACKUP_ENCRYPTION_KEY" \
+            > "$$FILENAME";
+          echo "[backup] $$(date): $$FILENAME creato";
+          find /backups -name "finanzamente_*.sql.gz.enc" -mtime +7 -delete;
+        done
+      '
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"
+        max-file: "2"
+
   # ── Caddy (reverse proxy + TLS automatico Let's Encrypt) ─────────────────
   caddy:
     image: caddy:2-alpine
@@ -135,6 +179,8 @@ volumes:
   storage:
     driver: local
   bootstrap_cache:
+    driver: local
+  backups:
     driver: local
   caddy_data:
     driver: local

@@ -1,0 +1,93 @@
+@extends('layouts.guest')
+
+@section('content')
+    <!-- Cover -->
+    @if($article->cover_image_url)
+        <div class="w-full aspect-video sm:aspect-[21/7] overflow-hidden bg-surface-200">
+            <img src="{{ $article->cover_image_url }}"
+                 alt="{{ $article->title }}"
+                 class="w-full h-full object-cover"
+                 loading="eager">
+        </div>
+    @else
+        <div class="w-full h-32 sm:h-48 bg-gradient-to-br from-primary-100 to-primary-200"></div>
+    @endif
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+
+            <!-- Breadcrumb + meta -->
+            <div class="pt-8 pb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-surface-500">
+                <a href="{{ route('magazine.index') }}" class="hover:text-primary-600 transition-colors">Magazine</a>
+                <span aria-hidden="true">/</span>
+                <a href="{{ route('magazine.category', $article->category->slug) }}"
+                   class="inline-flex items-center gap-1.5 hover:text-primary-600 transition-colors">
+                    <span class="w-2 h-2 rounded-full" style="background-color: {{ $article->category->color }}"></span>
+                    {{ $article->category->name }}
+                </a>
+            </div>
+
+            <!-- Titolo -->
+            <h1 class="text-3xl sm:text-4xl font-bold text-surface-900 leading-tight mb-4">
+                {{ $article->title }}
+            </h1>
+
+            <!-- Autore e data -->
+            <div class="flex flex-wrap items-center gap-4 pb-6 border-b border-surface-200 text-sm text-surface-500">
+                <span class="font-medium text-surface-700">{{ $article->author_name }}</span>
+                <time datetime="{{ $article->published_at->toDateString() }}">
+                    {{ $article->published_at->locale('it')->isoFormat('D MMMM YYYY') }}
+                </time>
+                <span>{{ $article->reading_time_minutes }} min di lettura</span>
+                <span>{{ number_format($article->views_count) }} letture</span>
+            </div>
+
+            <!-- Excerpt -->
+            <p class="mt-6 text-lg text-surface-600 leading-relaxed font-medium">
+                {{ $article->excerpt }}
+            </p>
+
+            <!-- Contenuto Markdown → HTML -->
+            <div class="mt-6 prose prose-surface prose-lg max-w-none
+                        prose-headings:font-bold prose-headings:text-surface-900
+                        prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-surface-900
+                        prose-code:text-primary-700 prose-code:bg-primary-50 prose-code:px-1 prose-code:rounded
+                        prose-blockquote:border-l-primary-400 prose-blockquote:text-surface-600">
+                {!! $article->content_html !!}
+            </div>
+
+            <!-- CTA -->
+            <div class="mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary-50 to-accent-50 border border-primary-100 text-center">
+                <h2 class="text-xl font-bold text-surface-900 mb-2">Gestisci il tuo denaro con Finanzamente</h2>
+                <p class="text-surface-600 mb-4 text-sm">Dashboard personale, conti, budget e molto altro — gratis, senza compromessi sulla privacy.</p>
+                <a href="{{ route('home') }}"
+                   class="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
+                    Scopri Finanzamente
+                </a>
+            </div>
+
+            <!-- Articoli correlati -->
+            @if($related->isNotEmpty())
+                <div class="mt-14">
+                    <h3 class="text-xl font-bold text-surface-900 mb-6">Leggi anche</h3>
+                    <div class="grid sm:grid-cols-3 gap-4">
+                        @foreach($related as $rel)
+                            @include('magazine._article-card', ['article' => $rel])
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            <div class="mt-12 mb-8">
+                <a href="{{ route('magazine.index') }}"
+                   class="inline-flex items-center text-sm text-surface-500 hover:text-primary-600 transition-colors">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Tutti gli articoli
+                </a>
+            </div>
+        </div>
+    </div>
+@endsection
