@@ -98,6 +98,7 @@ class HandleInertiaRequests extends Middleware
                 'excess_households' => $user->excessHouseholdsCount(),
             ] : null,
             'isEarlyBird' => fn () => $user ? (bool) $user->is_early_bird : false,
+            'isAdmin' => fn () => $user ? strtolower($user->email) === strtolower(config('prelaunch.magazine_admin_email', '')) : false,
         ];
     }
 }

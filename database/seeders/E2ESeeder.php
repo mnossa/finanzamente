@@ -147,3 +147,4 @@ class E2ESeeder extends Seeder
 
         $this->command->info('Articoli magazine E2E creati: ' . count($articles));
     }
+}
