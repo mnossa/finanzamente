@@ -1773,16 +1773,16 @@
         },
         {
             "name": "inertiajs/inertia-laravel",
-            "version": "v2.0.22",
+            "version": "v2.0.23",
             "source": {
                 "type": "git",
                 "url": "https://github.com/inertiajs/inertia-laravel.git",
-                "reference": "4d5849328d4c64231f886d1422fdc945882f9094"
+                "reference": "20438dc5a0f3008965ccaa96e990d03116102d80"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/4d5849328d4c64231f886d1422fdc945882f9094",
-                "reference": "4d5849328d4c64231f886d1422fdc945882f9094",
+                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/20438dc5a0f3008965ccaa96e990d03116102d80",
+                "reference": "20438dc5a0f3008965ccaa96e990d03116102d80",
                 "shasum": ""
             },
             "require": {
@@ -1840,9 +1840,9 @@
             ],
             "support": {
                 "issues": "https://github.com/inertiajs/inertia-laravel/issues",
-                "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.22"
+                "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.23"
             },
-            "time": "2026-03-11T15:51:16+00:00"
+            "time": "2026-04-07T14:01:31+00:00"
         },
         {
             "name": "laravel-lang/actions",
