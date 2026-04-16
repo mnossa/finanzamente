@@ -113,6 +113,7 @@ class MagazineAdminController extends Controller
             'author_name'      => ['required', 'string', 'max:100'],
             'published_at'     => ['nullable', 'date'],
             'is_featured'      => ['boolean'],
+            'is_ai_assisted'   => ['boolean'],
             'meta_title'       => ['nullable', 'string', 'max:70'],
             'meta_description' => ['nullable', 'string', 'max:160'],
         ]);

@@ -33,7 +33,7 @@
             </h1>
 
             <!-- Autore e data -->
-            <div class="flex flex-wrap items-center gap-4 pb-6 border-b border-surface-200 text-sm text-surface-500">
+            <div class="flex flex-wrap items-center gap-4 pb-4 border-b border-surface-200 text-sm text-surface-500">
                 <span class="font-medium text-surface-700">{{ $article->author_name }}</span>
                 <time datetime="{{ $article->published_at->toDateString() }}">
                     {{ $article->published_at->locale('it')->isoFormat('D MMMM YYYY') }}
@@ -42,8 +42,14 @@
                 <span>{{ number_format($article->views_count) }} letture</span>
             </div>
 
+            <!-- Disclaimer finanziario (sempre presente) -->
+            <div class="mt-4 mb-6 px-3 py-2.5 rounded-lg bg-surface-50 border border-surface-200 text-xs text-surface-400 leading-relaxed">
+                <span class="font-semibold text-surface-500">Disclaimer:</span>
+                Il presente articolo ha finalità puramente informative ed educative. Non costituisce consulenza finanziaria, sollecitazione al pubblico risparmio o consulenza fiscale. Le informazioni descritte devono essere adattate alla propria situazione personale, possibilmente con il supporto di professionisti abilitati.
+            </div>
+
             <!-- Excerpt -->
-            <p class="mt-6 text-lg text-surface-600 leading-relaxed font-medium">
+            <p class="text-lg text-surface-600 leading-relaxed font-medium">
                 {{ $article->excerpt }}
             </p>
 
@@ -56,6 +62,19 @@
                         prose-blockquote:border-l-primary-400 prose-blockquote:text-surface-600">
                 {!! $article->content_html !!}
             </div>
+
+            <!-- Disclaimer finanziario — rimosso dal fondo, ora posizionato sopra il contenuto -->
+
+            @if($article->is_ai_assisted)
+            <!-- Nota AI -->
+            <div class="mt-8 flex items-start gap-2 text-surface-400 leading-relaxed" style="font-size: 0.6875rem;">
+                <svg class="flex-shrink-0 text-surface-300" style="width: 12px; height: 12px; margin-top: 1px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <span>Testo redatto con il supporto di tecnologie di intelligenza artificiale sotto la supervisione e revisione editoriale dell'autore.</span>
+            </div>
+            @endif
 
             <!-- CTA -->
             <div class="mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary-50 to-accent-50 border border-primary-100 text-center">

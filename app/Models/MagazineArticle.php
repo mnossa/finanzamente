@@ -21,14 +21,16 @@ class MagazineArticle extends Model
         'reading_time_minutes',
         'published_at',
         'is_featured',
+        'is_ai_assisted',
         'views_count',
         'meta_title',
         'meta_description',
     ];
 
     protected $casts = [
-        'published_at' => 'datetime',
-        'is_featured'  => 'boolean',
+        'published_at'    => 'datetime',
+        'is_featured'    => 'boolean',
+        'is_ai_assisted' => 'boolean',
     ];
 
     // ── Scopes ────────────────────────────────────────────────────────────────

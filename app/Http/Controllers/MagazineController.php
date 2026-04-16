@@ -90,7 +90,7 @@ class MagazineController extends Controller
         $metaTitle = $article->meta_title ?: $article->title . ' — Finanzamente';
         $metaDescription = $article->meta_description ?: $article->excerpt;
 
-        SEOMeta::setTitle($metaTitle);
+        SEOMeta::setTitle($metaTitle, false);
         SEOMeta::setDescription($metaDescription);
         SEOMeta::addMeta('article:published_time', $article->published_at->toIso8601String(), 'property');
         SEOMeta::addMeta('article:section', $article->category->name, 'property');

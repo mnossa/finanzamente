@@ -34,9 +34,20 @@
                             <tr class="hover:bg-surface-50 transition-colors">
                                 <td class="px-5 py-4">
                                     <div class="font-medium text-surface-900 line-clamp-1">{{ $article->title }}</div>
-                                    @if($article->is_featured)
-                                        <span class="inline-block mt-0.5 text-xs text-accent-600 font-medium">★ In evidenza</span>
-                                    @endif
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        @if($article->is_featured)
+                                            <span class="text-xs text-accent-600 font-medium">★ In evidenza</span>
+                                        @endif
+                                        @if($article->is_ai_assisted)
+                                            <span class="inline-flex items-center gap-0.5 text-xs text-violet-600 font-medium">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                </svg>
+                                                AI
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-5 py-4 hidden sm:table-cell">
                                     <span class="inline-flex items-center gap-1.5 text-surface-600">
