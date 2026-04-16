@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MagazineArticle;
 use App\Models\MagazineCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -41,9 +43,12 @@ class MagazineAdminController extends Controller
     {
         $data = $this->validateArticle($request);
 
-        $data['cover_image_path'] = $this->handleCoverImage($request);
-        $data['reading_time_minutes'] = MagazineArticle::estimateReadingTime($data['content']);
-        $data['slug'] = $this->uniqueSlug($data['title']);
+        [$coverPath, $credit, $creditUrl] = $this->handleCoverImage($request);
+        $data['cover_image_path']       = $coverPath;
+        $data['cover_image_credit']     = $credit;
+        $data['cover_image_credit_url'] = $creditUrl;
+        $data['reading_time_minutes']   = MagazineArticle::estimateReadingTime($data['content']);
+        $data['slug']                   = $this->uniqueSlug($data['title']);
 
         MagazineArticle::create($data);
 
@@ -66,13 +71,14 @@ class MagazineAdminController extends Controller
     {
         $data = $this->validateArticle($request, $article->id);
 
-        $newCoverPath = $this->handleCoverImage($request);
+        [$newCoverPath, $credit, $creditUrl] = $this->handleCoverImage($request);
         if ($newCoverPath !== null) {
-            // Elimina la vecchia immagine dal volume storage
             if ($article->cover_image_path) {
                 Storage::disk('public')->delete($article->cover_image_path);
             }
-            $data['cover_image_path'] = $newCoverPath;
+            $data['cover_image_path']       = $newCoverPath;
+            $data['cover_image_credit']     = $credit;
+            $data['cover_image_credit_url'] = $creditUrl;
         }
 
         $data['reading_time_minutes'] = MagazineArticle::estimateReadingTime($data['content']);
@@ -100,48 +106,139 @@ class MagazineAdminController extends Controller
             ->with('success', 'Articolo eliminato.');
     }
 
+    /**
+     * Proxy per la ricerca immagini su Unsplash.
+     * La chiave API non viene mai esposta al frontend.
+     */
+    public function unsplashSearch(Request $request): JsonResponse
+    {
+        $request->validate([
+            'q' => ['required', 'string', 'max:100'],
+        ]);
+
+        $key = config('services.unsplash.access_key');
+
+        if (! $key) {
+            return response()->json(['error' => 'Unsplash non configurato. Vedi tasks/unsplash-setup.md'], 503);
+        }
+
+        $response = Http::timeout(10)
+            ->get('https://api.unsplash.com/search/photos', [
+                'query'       => $request->q,
+                'per_page'    => 12,
+                'orientation' => 'landscape',
+                'client_id'   => $key,
+            ]);
+
+        if (! $response->ok()) {
+            return response()->json(['error' => 'Errore nella ricerca Unsplash'], 502);
+        }
+
+        $results = collect($response->json('results', []))->map(fn ($photo) => [
+            'id'          => $photo['id'],
+            'thumb'       => $photo['urls']['small'],
+            'full'        => $photo['urls']['full'],
+            'description' => $photo['alt_description'] ?? $photo['description'] ?? '',
+            'author_name' => $photo['user']['name'],
+            'author_url'  => $photo['user']['links']['html'] . '?utm_source=finanzamente&utm_medium=referral',
+            'credit'      => 'Photo by ' . $photo['user']['name'] . ' on Unsplash',
+        ]);
+
+        return response()->json(['results' => $results]);
+    }
+
     // ── Helpers privati ───────────────────────────────────────────────────────
 
     private function validateArticle(Request $request, ?int $articleId = null): array
     {
         return $request->validate([
-            'category_id'      => ['required', 'exists:magazine_categories,id'],
-            'title'            => ['required', 'string', 'max:255'],
-            'excerpt'          => ['required', 'string', 'max:500'],
-            'content'          => ['required', 'string'],
-            'cover_image'      => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
-            'author_name'      => ['required', 'string', 'max:100'],
-            'published_at'     => ['nullable', 'date'],
-            'is_featured'      => ['boolean'],
-            'is_ai_assisted'   => ['boolean'],
-            'meta_title'       => ['nullable', 'string', 'max:70'],
-            'meta_description' => ['nullable', 'string', 'max:160'],
+            'category_id'           => ['required', 'exists:magazine_categories,id'],
+            'title'                 => ['required', 'string', 'max:255'],
+            'excerpt'               => ['required', 'string', 'max:500'],
+            'content'               => ['required', 'string'],
+            'cover_image'           => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'unsplash_photo_url'    => ['nullable', 'url'],
+            'unsplash_photo_credit' => ['nullable', 'string', 'max:255'],
+            'unsplash_author_url'   => ['nullable', 'url'],
+            'author_name'           => ['required', 'string', 'max:100'],
+            'published_at'          => ['nullable', 'date'],
+            'is_featured'           => ['boolean'],
+            'is_ai_assisted'        => ['boolean'],
+            'meta_title'            => ['nullable', 'string', 'max:70'],
+            'meta_description'      => ['nullable', 'string', 'max:160'],
         ]);
     }
 
     /**
-     * Salva l'immagine di copertina nel volume storage (persiste tra i deploy).
-     * Restituisce il path relativo a storage/app/public, oppure null se nessuna immagine.
+     * Gestisce l'immagine di copertina: da upload diretto o da URL Unsplash.
+     * Restituisce [$path, $credit, $creditUrl] — $path è null se nessuna immagine.
+     *
+     * @return array{0: string|null, 1: string|null, 2: string|null}
      */
-    private function handleCoverImage(Request $request): ?string
+    private function handleCoverImage(Request $request): array
     {
-        if (! $request->hasFile('cover_image')) {
-            return null;
+        // Priorità 1: file caricato direttamente
+        if ($request->hasFile('cover_image')) {
+            $file     = $request->file('cover_image');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $path     = $file->storeAs('magazine/covers', $filename, 'public');
+
+            return [$path, null, null];
         }
 
-        $file = $request->file('cover_image');
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        // Priorità 2: immagine Unsplash da scaricare
+        if ($request->filled('unsplash_photo_url')) {
+            $path = $this->downloadRemoteImage($request->unsplash_photo_url);
 
-        // Salva in storage/app/public/magazine/covers/
-        // → accessibile via asset('storage/magazine/covers/<filename>')
-        return $file->storeAs('magazine/covers', $filename, 'public');
+            if ($path) {
+                return [
+                    $path,
+                    $request->input('unsplash_photo_credit'),
+                    $request->input('unsplash_author_url'),
+                ];
+            }
+        }
+
+        return [null, null, null];
+    }
+
+    /**
+     * Scarica un'immagine remota e la salva nel volume storage.
+     * Restituisce il path relativo o null in caso di errore.
+     */
+    private function downloadRemoteImage(string $url): ?string
+    {
+        try {
+            $response = Http::timeout(20)->get($url);
+
+            if (! $response->ok()) {
+                return null;
+            }
+
+            $contentType = $response->header('Content-Type');
+            $extension   = match (true) {
+                str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
+                str_contains($contentType, 'png')  => 'png',
+                str_contains($contentType, 'webp') => 'webp',
+                default                            => 'jpg',
+            };
+
+            $filename = Str::uuid() . '.' . $extension;
+            $path     = 'magazine/covers/' . $filename;
+
+            Storage::disk('public')->put($path, $response->body());
+
+            return $path;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function uniqueSlug(string $title): string
     {
-        $slug = Str::slug($title);
+        $slug     = Str::slug($title);
         $original = $slug;
-        $i = 1;
+        $i        = 1;
 
         while (MagazineArticle::where('slug', $slug)->exists()) {
             $slug = $original . '-' . $i++;
@@ -150,3 +247,4 @@ class MagazineAdminController extends Controller
         return $slug;
     }
 }
+

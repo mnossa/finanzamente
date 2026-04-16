@@ -17,6 +17,8 @@ class MagazineArticle extends Model
         'excerpt',
         'content',
         'cover_image_path',
+        'cover_image_credit',
+        'cover_image_credit_url',
         'author_name',
         'reading_time_minutes',
         'published_at',

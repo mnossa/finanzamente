@@ -238,22 +238,71 @@
                 <h3 class="font-semibold text-surface-800 text-sm uppercase tracking-wide">Copertina</h3>
             </div>
 
-            @if(isset($article) && $article->cover_image_url)
+            {{-- Anteprima immagine corrente --}}
+            <div id="cover-preview-wrap" class="{{ (isset($article) && $article->cover_image_url) ? '' : 'hidden' }}">
                 <div class="aspect-video rounded-xl overflow-hidden bg-surface-100 border border-surface-200">
-                    <img src="{{ $article->cover_image_url }}" alt="Copertina attuale" class="w-full h-full object-cover">
+                    <img id="cover-preview-img"
+                         src="{{ isset($article) ? ($article->cover_image_url ?? '') : '' }}"
+                         alt="Anteprima copertina"
+                         class="w-full h-full object-cover">
                 </div>
-                <p class="text-xs text-surface-400">Carica una nuova immagine per sostituire quella attuale.</p>
-            @endif
+                <p id="cover-preview-credit" class="mt-1 text-xs text-surface-400 italic">
+                    {{ isset($article) ? $article->cover_image_credit : '' }}
+                </p>
+            </div>
 
-            <div>
+            {{-- Campi nascosti per immagine Unsplash selezionata --}}
+            <input type="hidden" name="unsplash_photo_url"    id="unsplash_photo_url"    value="">
+            <input type="hidden" name="unsplash_photo_credit" id="unsplash_photo_credit" value="">
+            <input type="hidden" name="unsplash_author_url"   id="unsplash_author_url"   value="">
+
+            {{-- Tab switcher --}}
+            <div class="flex rounded-lg border border-surface-200 overflow-hidden text-xs font-medium" role="tablist">
+                <button type="button" id="tab-upload" role="tab" aria-selected="true" aria-controls="panel-upload"
+                        class="flex-1 py-1.5 bg-primary-50 text-primary-700 transition-colors"
+                        onclick="switchCoverTab('upload')">
+                    Carica file
+                </button>
+                <button type="button" id="tab-unsplash" role="tab" aria-selected="false" aria-controls="panel-unsplash"
+                        class="flex-1 py-1.5 text-surface-500 hover:bg-surface-50 transition-colors"
+                        onclick="switchCoverTab('unsplash')">
+                    Cerca su Unsplash
+                </button>
+            </div>
+
+            {{-- Panel: Upload --}}
+            <div id="panel-upload" role="tabpanel">
                 <label for="cover_image" class="sr-only">Immagine di copertina</label>
                 <input type="file" id="cover_image" name="cover_image"
                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                       class="w-full text-sm text-surface-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition">
+                       class="w-full text-sm text-surface-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition"
+                       onchange="onFileSelected(this)">
                 <p class="mt-1.5 text-xs text-surface-400">JPG, PNG o WebP — max 2 MB</p>
                 @error('cover_image')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                 @enderror
+            </div>
+
+            {{-- Panel: Unsplash search --}}
+            <div id="panel-unsplash" role="tabpanel" class="hidden space-y-3">
+                <div class="flex gap-2">
+                    <input type="text" id="unsplash-query" placeholder="Es. risparmio, investimenti, budget…"
+                           class="flex-1 rounded-xl border border-surface-300 px-3 py-2 text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();searchUnsplash();}">
+                    <button type="button" onclick="searchUnsplash()"
+                            class="px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold rounded-xl transition-colors whitespace-nowrap">
+                        Cerca
+                    </button>
+                </div>
+
+                <div id="unsplash-status" class="text-xs text-surface-400 hidden"></div>
+
+                <div id="unsplash-grid" class="grid grid-cols-3 gap-1.5 hidden"></div>
+
+                <p class="text-[10px] text-surface-300 leading-relaxed">
+                    Immagini fornite da <a href="https://unsplash.com/?utm_source=finanzamente&utm_medium=referral" target="_blank" rel="noopener" class="underline hover:text-surface-400">Unsplash</a>.
+                    Selezionando un'immagine accetti i <a href="https://unsplash.com/license" target="_blank" rel="noopener" class="underline hover:text-surface-400">termini di licenza</a>.
+                </p>
             </div>
         </div>
 
@@ -312,6 +361,7 @@
 
 @push('scripts')
 <script>
+    // ── Character counters ──────────────────────────────────────────────────
     function updateCounter(fieldId, max) {
         const field = document.getElementById(fieldId);
         const counter = document.getElementById(fieldId + '-counter');
@@ -329,6 +379,123 @@
             if (field) updateCounter(id, parseInt(field.getAttribute('maxlength')));
         });
     });
+
+    // ── Cover image tabs ────────────────────────────────────────────────────
+    function switchCoverTab(tab) {
+        const isUpload = tab === 'upload';
+
+        document.getElementById('panel-upload').classList.toggle('hidden', !isUpload);
+        document.getElementById('panel-unsplash').classList.toggle('hidden', isUpload);
+
+        const btnUpload   = document.getElementById('tab-upload');
+        const btnUnsplash = document.getElementById('tab-unsplash');
+
+        btnUpload.classList.toggle('bg-primary-50',   isUpload);
+        btnUpload.classList.toggle('text-primary-700', isUpload);
+        btnUpload.classList.toggle('text-surface-500', !isUpload);
+        btnUpload.setAttribute('aria-selected', isUpload ? 'true' : 'false');
+
+        btnUnsplash.classList.toggle('bg-primary-50',   !isUpload);
+        btnUnsplash.classList.toggle('text-primary-700', !isUpload);
+        btnUnsplash.classList.toggle('text-surface-500', isUpload);
+        btnUnsplash.setAttribute('aria-selected', isUpload ? 'false' : 'true');
+
+        // Se torno all'upload, pulisco la selezione Unsplash
+        if (isUpload) clearUnsplashSelection();
+    }
+
+    function onFileSelected(input) {
+        if (input.files && input.files[0]) {
+            const url = URL.createObjectURL(input.files[0]);
+            showCoverPreview(url, '');
+        }
+        clearUnsplashSelection();
+    }
+
+    // ── Unsplash search ─────────────────────────────────────────────────────
+    function searchUnsplash() {
+        const q = document.getElementById('unsplash-query').value.trim();
+        if (!q) return;
+
+        const status = document.getElementById('unsplash-status');
+        const grid   = document.getElementById('unsplash-grid');
+
+        status.textContent = 'Ricerca in corso…';
+        status.classList.remove('hidden');
+        grid.classList.add('hidden');
+        grid.innerHTML = '';
+
+        fetch('{{ route('admin.magazine.unsplash-search') }}?q=' + encodeURIComponent(q), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                status.textContent = data.error;
+                return;
+            }
+            if (!data.results || data.results.length === 0) {
+                status.textContent = 'Nessun risultato. Prova con un termine diverso.';
+                return;
+            }
+
+            status.classList.add('hidden');
+            grid.classList.remove('hidden');
+
+            data.results.forEach(photo => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'relative aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-primary-400 transition focus:outline-none focus:border-primary-500';
+                btn.setAttribute('aria-label', photo.description || photo.credit);
+                btn.innerHTML = `<img src="${photo.thumb}" alt="${photo.description || ''}" class="w-full h-full object-cover">`;
+                btn.onclick = () => selectUnsplashPhoto(photo, btn);
+                grid.appendChild(btn);
+            });
+        })
+        .catch(() => {
+            status.classList.remove('hidden');
+            status.textContent = 'Errore di rete. Riprova.';
+        });
+    }
+
+    function selectUnsplashPhoto(photo, btn) {
+        // Deseleziona eventuali precedenti
+        document.querySelectorAll('#unsplash-grid button').forEach(b => {
+            b.classList.remove('border-primary-500', 'ring-2', 'ring-primary-300');
+            b.classList.add('border-transparent');
+        });
+        btn.classList.remove('border-transparent');
+        btn.classList.add('border-primary-500', 'ring-2', 'ring-primary-300');
+
+        document.getElementById('unsplash_photo_url').value    = photo.full;
+        document.getElementById('unsplash_photo_credit').value = photo.credit;
+        document.getElementById('unsplash_author_url').value   = photo.author_url;
+
+        // Svuota il file input per evitare conflitti
+        const fileInput = document.getElementById('cover_image');
+        if (fileInput) fileInput.value = '';
+
+        showCoverPreview(photo.thumb, photo.credit);
+    }
+
+    function clearUnsplashSelection() {
+        document.getElementById('unsplash_photo_url').value    = '';
+        document.getElementById('unsplash_photo_credit').value = '';
+        document.getElementById('unsplash_author_url').value   = '';
+        document.querySelectorAll('#unsplash-grid button').forEach(b => {
+            b.classList.remove('border-primary-500', 'ring-2', 'ring-primary-300');
+            b.classList.add('border-transparent');
+        });
+    }
+
+    function showCoverPreview(src, credit) {
+        const wrap = document.getElementById('cover-preview-wrap');
+        const img  = document.getElementById('cover-preview-img');
+        const cred = document.getElementById('cover-preview-credit');
+        img.src = src;
+        cred.textContent = credit;
+        wrap.classList.remove('hidden');
+    }
 </script>
 @endpush
 </div>

@@ -3,11 +3,22 @@
 @section('content')
     <!-- Cover -->
     @if($article->cover_image_url)
-        <div class="w-full aspect-video sm:aspect-[21/7] overflow-hidden bg-surface-200">
+        <div class="w-full aspect-video sm:aspect-[21/7] overflow-hidden bg-surface-200 relative">
             <img src="{{ $article->cover_image_url }}"
                  alt="{{ $article->title }}"
                  class="w-full h-full object-cover"
                  loading="eager">
+            @if($article->cover_image_credit)
+                <p class="absolute bottom-1.5 right-2 text-white/60 hover:text-white/90 transition-colors"
+                   style="font-size: 0.625rem; text-shadow: 0 1px 2px rgba(0,0,0,.6);">
+                    @if($article->cover_image_credit_url)
+                        <a href="{{ $article->cover_image_credit_url }}" target="_blank" rel="noopener nofollow"
+                           class="underline decoration-dotted">{{ $article->cover_image_credit }}</a>
+                    @else
+                        {{ $article->cover_image_credit }}
+                    @endif
+                </p>
+            @endif
         </div>
     @else
         <div class="w-full h-32 sm:h-48 bg-gradient-to-br from-primary-100 to-primary-200"></div>
