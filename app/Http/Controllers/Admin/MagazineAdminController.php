@@ -113,7 +113,8 @@ class MagazineAdminController extends Controller
     public function unsplashSearch(Request $request): JsonResponse
     {
         $request->validate([
-            'q' => ['required', 'string', 'max:100'],
+            'q'    => ['required', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
         $key = config('services.unsplash.access_key');
@@ -125,7 +126,8 @@ class MagazineAdminController extends Controller
         $response = Http::timeout(10)
             ->get('https://api.unsplash.com/search/photos', [
                 'query'       => $request->q,
-                'per_page'    => 12,
+                'per_page'    => 20,
+                'page'        => $request->integer('page', 1),
                 'orientation' => 'landscape',
                 'client_id'   => $key,
             ]);
@@ -134,7 +136,11 @@ class MagazineAdminController extends Controller
             return response()->json(['error' => 'Errore nella ricerca Unsplash'], 502);
         }
 
-        $results = collect($response->json('results', []))->map(fn ($photo) => [
+        $data        = $response->json();
+        $totalPages  = $data['total_pages'] ?? 1;
+        $currentPage = $request->integer('page', 1);
+
+        $results = collect($data['results'] ?? [])->map(fn ($photo) => [
             'id'          => $photo['id'],
             'thumb'       => $photo['urls']['small'],
             'full'        => $photo['urls']['full'],
@@ -144,7 +150,11 @@ class MagazineAdminController extends Controller
             'credit'      => 'Photo by ' . $photo['user']['name'] . ' on Unsplash',
         ]);
 
-        return response()->json(['results' => $results]);
+        return response()->json([
+            'results'      => $results,
+            'current_page' => $currentPage,
+            'has_more'     => $currentPage < $totalPages,
+        ]);
     }
 
     // ── Helpers privati ───────────────────────────────────────────────────────

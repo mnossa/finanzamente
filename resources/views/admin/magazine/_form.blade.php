@@ -413,19 +413,30 @@
     }
 
     // ── Unsplash search ─────────────────────────────────────────────────────
-    function searchUnsplash() {
+    let unsplashCurrentPage = 1;
+    let unsplashCurrentQuery = '';
+
+    function searchUnsplash(page) {
         const q = document.getElementById('unsplash-query').value.trim();
         if (!q) return;
 
-        const status = document.getElementById('unsplash-status');
-        const grid   = document.getElementById('unsplash-grid');
+        const isNewSearch = !page || q !== unsplashCurrentQuery;
+        const targetPage  = isNewSearch ? 1 : page;
+
+        const status  = document.getElementById('unsplash-status');
+        const grid    = document.getElementById('unsplash-grid');
+        const loadBtn = document.getElementById('unsplash-load-more');
 
         status.textContent = 'Ricerca in corso…';
         status.classList.remove('hidden');
-        grid.classList.add('hidden');
-        grid.innerHTML = '';
 
-        fetch('{{ route('admin.magazine.unsplash-search') }}?q=' + encodeURIComponent(q), {
+        if (isNewSearch) {
+            grid.innerHTML = '';
+            grid.classList.add('hidden');
+            if (loadBtn) loadBtn.remove();
+        }
+
+        fetch('{{ route('admin.magazine.unsplash-search') }}?q=' + encodeURIComponent(q) + '&page=' + targetPage, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(r => r.json())
@@ -442,15 +453,32 @@
             status.classList.add('hidden');
             grid.classList.remove('hidden');
 
+            unsplashCurrentQuery = q;
+            unsplashCurrentPage  = data.current_page;
+
             data.results.forEach(photo => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'relative aspect-video rounded-lg overflow-hidden border-2 border-transparent hover:border-primary-400 transition focus:outline-none focus:border-primary-500';
                 btn.setAttribute('aria-label', photo.description || photo.credit);
-                btn.innerHTML = `<img src="${photo.thumb}" alt="${photo.description || ''}" class="w-full h-full object-cover">`;
+                btn.innerHTML = `<img src="${photo.thumb}" alt="${photo.description || ''}" class="w-full h-full object-cover" loading="lazy">`;
                 btn.onclick = () => selectUnsplashPhoto(photo, btn);
                 grid.appendChild(btn);
             });
+
+            // Rimuovi pulsante precedente e ricrea se ci sono altre pagine
+            const existingBtn = document.getElementById('unsplash-load-more');
+            if (existingBtn) existingBtn.remove();
+
+            if (data.has_more) {
+                const more = document.createElement('button');
+                more.type = 'button';
+                more.id = 'unsplash-load-more';
+                more.className = 'col-span-3 mt-1 py-2 text-xs font-semibold text-primary-600 hover:text-primary-700 border border-primary-200 hover:border-primary-400 rounded-xl transition-colors';
+                more.textContent = 'Carica altre immagini…';
+                more.onclick = () => searchUnsplash(unsplashCurrentPage + 1);
+                grid.parentElement.insertBefore(more, grid.nextSibling);
+            }
         })
         .catch(() => {
             status.classList.remove('hidden');

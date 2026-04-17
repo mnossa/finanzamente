@@ -11,7 +11,7 @@
                     <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">finanza personale</span>
                 </h1>
                 <p class="text-lg text-surface-600">
-                    Articoli mensili per aiutarti a capire il denaro, risparmiare di più e investire con consapevolezza. In italiano, senza tecnicismi inutili.
+                    Articoli pensati per aiutarti a capire il denaro, risparmiare di più e investire con consapevolezza. In italiano, senza tecnicismi inutili.
                 </p>
             </div>
         </div>

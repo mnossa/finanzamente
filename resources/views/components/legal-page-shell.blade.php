@@ -4,8 +4,8 @@
     'updatedAt' => now()->format('d/m/Y'),
 ])
 
-<section class="py-12 sm:py-16 lg:py-20 bg-surface-50">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+<section class="pt-12 sm:pt-16 lg:pt-20 bg-surface-50">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl my-8">
         <div class="rounded-3xl border border-surface-200 bg-white shadow-soft-md overflow-hidden">
             <div class="px-6 py-8 sm:px-10 sm:py-10 border-b border-surface-100 bg-gradient-to-br from-white via-primary-50/40 to-accent-50/40">
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-700 mb-3">Documentazione legale</p>
