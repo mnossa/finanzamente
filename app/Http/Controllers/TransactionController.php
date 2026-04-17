@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\DebtCredit;
 use App\Models\Tag;
 use App\Models\Transaction;
+use App\Models\TransactionImport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -141,12 +142,16 @@ class TransactionController extends Controller
             ->get(['id', 'name', 'color']);
 
         return Inertia::render('Transactions/Index', [
-            'transactions' => $transactions,
-            'accounts' => $accounts,
-            'categories' => $categories,
-            'debtCredits' => $debtCredits,
-            'tags' => $tags,
-            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id']),
+            'transactions'    => $transactions,
+            'accounts'        => $accounts,
+            'categories'      => $categories,
+            'debtCredits'     => $debtCredits,
+            'tags'            => $tags,
+            'filters'         => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id']),
+            'activeImports'   => TransactionImport::where('user_id', $user->id)
+                ->whereIn('status', ['pending', 'processing'])
+                ->orderBy('created_at', 'desc')
+                ->get(['id', 'status', 'rows_total', 'rows_imported', 'created_at']),
         ]);
     }
 

@@ -96,6 +96,7 @@ interface IndexProps {
     debtCredits: DebtCredit[];
     tags: Array<{ id: number; name: string; color: string | null }>;
     filters: Filters;
+    activeImports: Array<{ id: number; status: string; rows_total: number; rows_imported: number; created_at: string }>;
 }
 
 // Sentinel: campo non modificato
@@ -455,6 +456,7 @@ export default function Index({
     debtCredits,
     tags,
     filters,
+    activeImports,
 }: IndexProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
@@ -620,6 +622,21 @@ export default function Index({
             />
 
             <PageContent>
+                    {/* Banner importazioni in corso */}
+                    {activeImports.length > 0 && (
+                        <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                            <svg className="h-5 w-5 animate-spin flex-shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            <span>
+                                {activeImports.length === 1
+                                    ? `Importazione in corso (${activeImports[0].rows_total} transazioni)\u2026 Riceverai una notifica al termine.`
+                                    : `${activeImports.length} importazioni in corso\u2026 Riceverai una notifica al termine.`}
+                            </span>
+                        </div>
+                    )}
+
                     {/* Filtri */}
                     <CardBox className="overflow-hidden p-4 shadow-sm">
                         <div className="flex flex-wrap items-center gap-4">

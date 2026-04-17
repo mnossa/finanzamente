@@ -72,6 +72,7 @@ class TransactionImportService
     private function mapColumns(array $cols, array $mapping, string $dateFormat, string $raw, int $lineNumber): array
     {
         $errors = [];
+        $warnings = [];
 
         // Extract fields using column indices
         $dateRaw = $this->getColumn($cols, $mapping['date'] ?? null);
@@ -82,6 +83,9 @@ class TransactionImportService
             : null;
         $categoryRaw = isset($mapping['category']) && $mapping['category'] !== null
             ? $this->getColumn($cols, $mapping['category'])
+            : null;
+        $accountRaw = isset($mapping['account']) && $mapping['account'] !== null
+            ? $this->getColumn($cols, $mapping['account'])
             : null;
 
         // Parse date
@@ -110,7 +114,7 @@ class TransactionImportService
         // Description
         $description = $descriptionRaw !== null ? trim($descriptionRaw) : '';
         if ($description === '') {
-            $errors[] = "Riga {$lineNumber}: descrizione mancante";
+            $warnings[] = "Riga {$lineNumber}: descrizione vuota";
         }
 
         return [
@@ -120,8 +124,10 @@ class TransactionImportService
             'description'   => $description,
             'notes'         => $notesRaw !== null ? trim($notesRaw) : null,
             'category_name' => ($categoryRaw !== null && trim($categoryRaw) !== '') ? trim($categoryRaw) : null,
+            'account_name'  => ($accountRaw !== null && trim($accountRaw) !== '') ? trim($accountRaw) : null,
             'raw'           => $raw,
             'errors'        => $errors,
+            'warnings'      => $warnings,
         ];
     }
 
@@ -196,7 +202,7 @@ class TransactionImportService
         $invalid = [];
 
         foreach ($rows as $row) {
-            if (empty($row['errors']) && $row['date'] !== null && $row['amount'] !== null && $row['description'] !== '') {
+            if (empty($row['errors']) && $row['date'] !== null && $row['amount'] !== null) {
                 $valid[] = $row;
             } else {
                 $invalid[] = $row;
@@ -334,6 +340,9 @@ class TransactionImportService
         $categoryCell = $getCell(
             (isset($mapping['category']) && $mapping['category'] !== null) ? (int) $mapping['category'] : null
         );
+        $accountCell = $getCell(
+            (isset($mapping['account']) && $mapping['account'] !== null) ? (int) $mapping['account'] : null
+        );
 
         // ── Data ────────────────────────────────────────────────────────────
         $date      = null;
@@ -378,6 +387,7 @@ class TransactionImportService
 
         $notesRaw    = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
         $categoryRaw = $categoryCell !== null ? trim($this->cellValueToString($categoryCell->getValue())) : null;
+        $accountRaw  = $accountCell !== null ? trim($this->cellValueToString($accountCell->getValue())) : null;
 
         return [
             'line_number'   => $lineNumber,
@@ -386,6 +396,7 @@ class TransactionImportService
             'description'   => $description,
             'notes'         => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
             'category_name' => ($categoryRaw !== null && $categoryRaw !== '') ? $categoryRaw : null,
+            'account_name'  => ($accountRaw !== null && $accountRaw !== '') ? $accountRaw : null,
             'raw'           => "Riga {$lineNumber}",
             'errors'        => $errors,
         ];

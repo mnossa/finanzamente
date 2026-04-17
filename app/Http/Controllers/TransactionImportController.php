@@ -6,10 +6,13 @@ use App\Http\Requests\ImportSheetsRequest;
 use App\Http\Requests\PreviewImportRequest;
 use App\Http\Requests\StoreImportLayoutRequest;
 use App\Http\Requests\StoreImportTransactionsRequest;
+use App\Jobs\ImportTransactionsJob;
 use App\Models\Account;
 use App\Models\BankImportLayout;
 use App\Models\Category;
+use App\Models\Currency;
 use App\Models\Transaction;
+use App\Models\TransactionImport;
 use App\Services\GoogleDriveService;
 use App\Services\TransactionImportService;
 use Illuminate\Http\RedirectResponse;
@@ -55,10 +58,13 @@ class TransactionImportController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
+        $currencies = Currency::orderBy('code')->get(['code', 'name', 'symbol']);
+
         return Inertia::render('Transactions/Import', [
             'accounts'    => $accounts,
             'userLayouts' => $userLayouts,
             'categories'  => $categories,
+            'currencies'  => $currencies,
         ]);
     }
 
@@ -150,6 +156,13 @@ class TransactionImportController extends Controller
                 ->values()
                 ->toArray();
 
+            $uniqueAccounts = collect($validated['valid'])
+                ->pluck('account_name')
+                ->filter(fn ($v) => $v !== null && $v !== '')
+                ->unique()
+                ->values()
+                ->toArray();
+
             return response()->json([
                 'headers'           => $headers,
                 'valid'             => $validated['valid'],
@@ -158,6 +171,7 @@ class TransactionImportController extends Controller
                 'valid_count'       => count($validated['valid']),
                 'invalid_count'     => count($validated['invalid']),
                 'unique_categories' => $uniqueCategories,
+                'unique_accounts'   => $uniqueAccounts,
             ]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -194,19 +208,42 @@ class TransactionImportController extends Controller
     public function checkDuplicates(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'account_id'    => ['required', 'integer'],
-            'rows'          => ['required', 'array'],
-            'rows.*.date'   => ['required', 'date'],
-            'rows.*.amount' => ['required', 'numeric'],
+            'account_id'        => ['nullable', 'integer'],
+            'rows'              => ['required', 'array'],
+            'rows.*.date'       => ['required', 'date'],
+            'rows.*.amount'     => ['required', 'numeric'],
+            'rows.*.account_id' => ['nullable', 'integer'],
         ]);
 
-        $user    = Auth::user();
-        $account = Account::where('id', $request->input('account_id'))
-            ->where('household_id', $user->active_household_id)
-            ->firstOrFail();
+        $user          = Auth::user();
+        $globalAccount = $request->filled('account_id')
+            ? Account::where('id', $request->input('account_id'))
+                ->where('household_id', $user->active_household_id)
+                ->first()
+            : null;
 
+        $accountsCache = $globalAccount ? [$globalAccount->id => $globalAccount] : [];
         $duplicates = [];
         foreach ($request->input('rows') as $index => $row) {
+            // Risolvi il conto per questa riga (per-row oppure globale)
+            $rowAccountId = isset($row['account_id']) ? (int) $row['account_id'] : null;
+            if ($rowAccountId) {
+                if (!isset($accountsCache[$rowAccountId])) {
+                    $acc = Account::where('id', $rowAccountId)
+                        ->where('household_id', $user->active_household_id)
+                        ->first();
+                    if ($acc) {
+                        $accountsCache[$rowAccountId] = $acc;
+                    }
+                }
+                $account = $accountsCache[$rowAccountId] ?? $globalAccount;
+            } else {
+                $account = $globalAccount;
+            }
+
+            if (!$account) {
+                continue;
+            }
             $existing = Transaction::where('account_id', $account->id)
                 ->whereDate('date', $row['date'])
                 ->whereRaw('ABS(amount - ?) < 0.005', [(float) $row['amount']])
@@ -235,109 +272,19 @@ class TransactionImportController extends Controller
     {
         $user      = Auth::user();
         $validated = $request->validated();
-        $account   = Account::findOrFail($validated['account_id']);
 
-        $imported = 0;
-        $skipped  = 0;
+        $importRecord = TransactionImport::create([
+            'user_id'      => $user->id,
+            'household_id' => $user->active_household_id,
+            'status'       => 'pending',
+            'rows_total'   => count($validated['rows']),
+        ]);
 
-        // Risolvi i mapping delle categorie (nome dal file → category_id)
-        $categoryIdMap = [];
-        if (!empty($validated['category_mappings'])) {
-            foreach ($validated['category_mappings'] as $catMapping) {
-                $catName   = $catMapping['name'];
-                $catAction = $catMapping['action'];
-                if ($catAction === 'existing') {
-                    $categoryIdMap[$catName] = isset($catMapping['category_id']) ? (int) $catMapping['category_id'] : null;
-                } elseif ($catAction === 'create') {
-                    $cat = Category::firstOrCreate([
-                        'household_id' => $user->active_household_id,
-                        'name'         => $catName,
-                        'type'         => $catMapping['type'] ?? 'expense',
-                    ]);
-                    $categoryIdMap[$catName] = $cat->id;
-                } else {
-                    $categoryIdMap[$catName] = null;
-                }
-            }
-        }
-        $resolveCategoryId = fn (?string $name): ?int =>
-            ($name !== null && $name !== '' && isset($categoryIdMap[$name]))
-                ? $categoryIdMap[$name]
-                : null;
-
-        foreach ($validated['rows'] as $row) {
-            $action = $row['duplicate_action'] ?? 'import';
-
-            if ($action === 'ignore') {
-                $skipped++;
-                continue;
-            }
-
-            $amount      = (float) $row['amount'];
-            $description = $row['description'];
-            if (!empty($row['notes'])) {
-                $description .= ' - ' . $row['notes'];
-            }
-            $description = mb_substr($description, 0, 1000);
-
-            if (in_array($action, ['replace', 'update'], true) && !empty($row['duplicate_transaction_id'])) {
-                $existing = Transaction::where('id', (int) $row['duplicate_transaction_id'])
-                    ->where('account_id', $account->id)
-                    ->first();
-
-                if ($existing) {
-                    $oldAmount = (float) $existing->amount;
-                    if ($action === 'replace') {
-                        $account->current_balance -= $oldAmount;
-                        $existing->delete();
-                        Transaction::create([
-                            'user_id'       => $user->id,
-                            'account_id'    => $account->id,
-                            'category_id'   => $resolveCategoryId($row['category_name'] ?? null),
-                            'amount'        => $amount,
-                            'currency_code' => $account->currency_code,
-                            'date'          => $row['date'],
-                            'description'   => $description,
-                            'is_private'    => false,
-                        ]);
-                    } else {
-                        $existing->update([
-                            'amount'      => $amount,
-                            'date'        => $row['date'],
-                            'description' => $description,
-                        ]);
-                        $account->current_balance -= $oldAmount;
-                    }
-                    $account->current_balance += $amount;
-                    $imported++;
-                    continue;
-                }
-            }
-
-            Transaction::create([
-                'user_id'       => $user->id,
-                'account_id'    => $account->id,
-                'category_id'   => $resolveCategoryId($row['category_name'] ?? null),
-                'amount'        => $amount,
-                'currency_code' => $account->currency_code,
-                'date'          => $row['date'],
-                'description'   => $description,
-                'is_private'    => false,
-            ]);
-            $account->current_balance += $amount;
-            $imported++;
-        }
-
-        $account->save();
-
-        $msg = "Importazione completata: {$imported} " . ($imported === 1 ? 'transazione importata' : 'transazioni importate') . ' con successo.';
-        if ($skipped > 0) {
-            $msg .= " {$skipped} " . ($skipped === 1 ? 'transazione ignorata' : 'transazioni ignorate') . '.';
-        }
+        ImportTransactionsJob::dispatch($user->id, $user->active_household_id, $validated, $importRecord->id);
 
         return redirect()
             ->route('transactions.index')
-            ->with('success', $msg);
+            ->with('info', 'Importazione avviata. Riceverai una notifica al termine.');
     }
 
     /**
@@ -395,12 +342,20 @@ class TransactionImportController extends Controller
     /**
      * Aggiorna un layout esistente.
      */
-    public function updateLayout(StoreImportLayoutRequest $request, BankImportLayout $bankImportLayout): RedirectResponse
+    public function updateLayout(StoreImportLayoutRequest $request, BankImportLayout $bankImportLayout): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $this->authorize('update', $bankImportLayout);
 
         $validated = $request->validated();
         $bankImportLayout->update($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Layout aggiornato con successo.',
+                'layout' => $bankImportLayout->fresh()->only(['id', 'name', 'bank_name', 'icon', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']),
+            ]);
+        }
 
         return redirect()
             ->route('bank-import-layouts.index')

@@ -53,8 +53,10 @@ interface ImportRow {
     description: string;
     notes: string | null;
     category_name: string | null;
+    account_name: string | null;
     raw: string;
     errors: string[];
+    warnings: string[];
 }
 
 interface PreviewResponse {
@@ -65,6 +67,7 @@ interface PreviewResponse {
     valid_count: number;
     invalid_count: number;
     unique_categories: string[];
+    unique_accounts: string[];
 }
 
 interface ColumnMapping {
@@ -73,12 +76,22 @@ interface ColumnMapping {
     description: number | null;
     notes: number | null;
     category: number | null;
+    account: number | null;
 }
 
 interface CategoryMappingEntry {
     action: 'existing' | 'create' | 'none';
     category_id: number | null;
     type: 'income' | 'expense' | null;
+    suggested?: boolean;
+}
+
+interface AccountMappingEntry {
+    action: 'existing' | 'create';
+    account_id: number | null;
+    currency_code: string;
+    type: 'bank' | 'cash' | 'card' | 'broker' | 'crypto' | 'other';
+    suggested?: boolean;
 }
 
 interface ExistingTransaction {
@@ -107,6 +120,7 @@ interface ImportProps {
     accounts: Account[];
     userLayouts: UserLayout[];
     categories: Category[];
+    currencies: { code: string; name: string; symbol: string }[];
 }
 
 const WIZARD_STEPS = [
@@ -137,9 +151,171 @@ const DATE_FORMAT_OPTIONS = [
 
 const LAYOUT_ICONS = ['🏦', '💳', '💰', '🪙', '📊', '📈', '🏧', '💵', '📮', '🏛️', '💹', '⚙️'];
 
-export default function Import({ accounts, userLayouts: initialUserLayouts, categories }: ImportProps) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Auto-suggest helpers per la mappatura categorie/conti
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Normalizza una stringa per il confronto: lowercase, senza accenti, senza simboli */
+function normalizeForMatch(s: string): string {
+    return s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * Gruppi di sinonimi per categorie finanziarie italiane.
+ * Ogni array contiene varianti dello stesso concetto.
+ */
+const CATEGORY_SYNONYM_GROUPS: string[][] = [
+    ['alimentari', 'spesa', 'supermercato', 'grocery', 'cibo', 'food', 'freschi', 'mercato', 'frutta', 'verdura'],
+    ['ristorazione', 'ristorante', 'bar', 'caffe', 'pizza', 'pranzo', 'cena', 'trattoria', 'fast food', 'mensa', 'osteria', 'aperitivo'],
+    ['trasporto', 'benzina', 'carburante', 'gasolio', 'auto', 'autobus', 'treno', 'taxi', 'uber', 'parcheggio', 'pedaggi', 'autostrada', 'mobilita', 'metro', 'bus'],
+    ['salute', 'farmacia', 'medico', 'dottore', 'ospedale', 'visita', 'analisi', 'dentista', 'ottico', 'sanita', 'cure', 'medicina'],
+    ['abbigliamento', 'vestiti', 'scarpe', 'moda', 'abbigliamento sportivo', 'calzature'],
+    ['intrattenimento', 'cinema', 'teatro', 'concerti', 'fitness', 'palestra', 'hobby', 'svago', 'giochi', 'divertimento', 'leisure'],
+    ['casa', 'affitto', 'mutuo', 'condominio', 'manutenzione', 'mobili', 'arredamento', 'elettrodomestici', 'abitazione', 'immobile'],
+    ['utenze', 'luce', 'elettricita', 'gas', 'acqua', 'internet', 'telefono', 'bollette', 'bolletta', 'energia', 'wifi'],
+    ['stipendio', 'salario', 'retribuzione', 'paga', 'compenso', 'reddito', 'entrate', 'guadagno', 'busta paga'],
+    ['istruzione', 'libri', 'corso', 'scuola', 'universita', 'formazione', 'tasse scolastiche'],
+    ['viaggi', 'hotel', 'aereo', 'volo', 'vacanza', 'albergo', 'airbnb', 'prenotazione', 'vacanze', 'turismo'],
+    ['assicurazioni', 'polizza', 'rc auto', 'assicurazione'],
+    ['banca', 'commissioni', 'spese bancarie', 'canone', 'interessi', 'addebito', 'spese conto'],
+    ['regali', 'regalo', 'donazione', 'beneficenza', 'charity'],
+    ['tecnologia', 'elettronica', 'informatica', 'software', 'app', 'abbonamento', 'streaming'],
+    ['investimenti', 'azioni', 'fondi', 'etf', 'obbligazioni', 'dividendi', 'borsa'],
+    ['tasse', 'imposte', 'f24', 'irpef', 'imu', 'bollo', 'tributi'],
+    ['animali', 'animale domestico', 'pet', 'veterinario', 'cibo animali'],
+    ['cura persona', 'parrucchiere', 'estetista', 'cosmetici', 'profumo', 'bellezza'],
+];
+
+/**
+ * Genera varianti singolari/plurali italiane di una parola normalizzata.
+ * Regole italiane di base: -o↔-i, -a↔-e, -e↔-i, -ca↔-che, -go↔-ghi, invariabili (già gestite).
+ */
+function italianForms(word: string): string[] {
+    const forms = new Set([word]);
+    // plurale → singolare e viceversa (estremità della parola)
+    const last = word.slice(-1);
+    const last2 = word.slice(-2);
+    const last3 = word.slice(-3);
+    const stem2 = word.slice(0, -2);
+    const stem3 = word.slice(0, -3);
+    if (last === 'i') {
+        forms.add(word.slice(0, -1) + 'o');  // ristoranti → ristorante (via 'e')
+        forms.add(word.slice(0, -1) + 'e');
+    }
+    if (last === 'e') {
+        forms.add(word.slice(0, -1) + 'i');
+        forms.add(word.slice(0, -1) + 'a');
+    }
+    if (last === 'o') {
+        forms.add(word.slice(0, -1) + 'i');
+    }
+    if (last === 'a') {
+        forms.add(word.slice(0, -1) + 'e');
+        forms.add(word.slice(0, -1) + 'i');
+    }
+    // -che/-ghe → singolare -ca/-ga
+    if (last3 === 'che') { forms.add(stem3 + 'ca'); }
+    if (last3 === 'ghe') { forms.add(stem3 + 'ga'); }
+    if (last2 === 'ca')  { forms.add(stem2 + 'che'); }
+    if (last2 === 'ga')  { forms.add(stem2 + 'ghe'); }
+    // -go/-ghi
+    if (last3 === 'ghi') { forms.add(stem3 + 'go'); }
+    if (last2 === 'go')  { forms.add(stem2 + 'ghi'); }
+    return [...forms];
+}
+
+/** Cerca la Category più adatta a un nome proveniente dal CSV: exact → singolare/plurale → partial → sinonimi */
+function suggestCategoryMatch(csvName: string, cats: Category[]): Category | null {
+    if (!csvName.trim() || cats.length === 0) return null;
+    const norm = normalizeForMatch(csvName);
+    const normForms = italianForms(norm);
+
+    // 1. Exact match (incluse varianti singolare/plurale)
+    const exact = cats.find(c => {
+        const cn = normalizeForMatch(c.name);
+        return normForms.includes(cn) || italianForms(cn).includes(norm);
+    });
+    if (exact) return exact;
+
+    // 2. Partial match (uno contiene l'altro, minimo 3 caratteri — incluse varianti morfologiche)
+    const partial = cats.find(c => {
+        const cn = normalizeForMatch(c.name);
+        const cnForms = italianForms(cn);
+        return cnForms.some(cf => norm.length >= 3 && cf.length >= 3 && (norm.includes(cf) || cf.includes(norm)))
+            || normForms.some(nf => nf.length >= 3 && cn.length >= 3 && (nf.includes(cn) || cn.includes(nf)));
+    });
+    if (partial) return partial;
+
+    // 3. Synonym match: trova il gruppo che include il nome CSV (o una sua forma), poi cerca una categoria in quel gruppo
+    for (const group of CATEGORY_SYNONYM_GROUPS) {
+        const normGroup = group.map(w => normalizeForMatch(w));
+        const csvInGroup = normGroup.some(w => {
+            const wForms = italianForms(w);
+            return normForms.some(nf => nf === w || wForms.includes(norm) || (w.length >= 4 && (norm.includes(w) || w.includes(norm))));
+        });
+        if (csvInGroup) {
+            const match = cats.find(c => {
+                const cn = normalizeForMatch(c.name);
+                const cnForms = italianForms(cn);
+                return normGroup.some(w => cnForms.includes(w) || italianForms(w).some(wf => cn === wf || (w.length >= 4 && (cn.includes(w) || w.includes(cn)))));
+            });
+            if (match) return match;
+        }
+    }
+
+    return null;
+}
+
+const ACCOUNT_SYNONYM_GROUPS: string[][] = [
+    ['cassa', 'contanti', 'cash', 'portafoglio'],
+    ['carta', 'carta di credito', 'carta di debito', 'prepagata', 'visa', 'mastercard', 'bancomat'],
+    ['risparmio', 'salvadanaio', 'deposito', 'libretto'],
+    ['paypal', 'pay pal'],
+    ['crypto', 'bitcoin', 'ethereum', 'criptovalute'],
+    ['broker', 'trading', 'investimenti', 'titoli'],
+];
+
+/** Cerca l'Account più adatto a un nome proveniente dal CSV: exact → partial → sinonimi */
+function suggestAccountMatch(csvName: string, accs: Account[]): Account | null {
+    if (!csvName.trim() || accs.length === 0) return null;
+    const norm = normalizeForMatch(csvName);
+
+    // 1. Exact match
+    const exact = accs.find(a => normalizeForMatch(a.name) === norm);
+    if (exact) return exact;
+
+    // 2. Partial match
+    const partial = accs.find(a => {
+        const an = normalizeForMatch(a.name);
+        return an.length >= 3 && norm.length >= 3 && (norm.includes(an) || an.includes(norm));
+    });
+    if (partial) return partial;
+
+    // 3. Synonym match
+    for (const group of ACCOUNT_SYNONYM_GROUPS) {
+        const normGroup = group.map(w => normalizeForMatch(w));
+        const csvInGroup = normGroup.some(w => norm === w || (w.length >= 4 && (norm.includes(w) || w.includes(norm))));
+        if (csvInGroup) {
+            const match = accs.find(a => {
+                const an = normalizeForMatch(a.name);
+                return normGroup.some(w => an === w || (w.length >= 4 && (an.includes(w) || w.includes(an))));
+            });
+            if (match) return match;
+        }
+    }
+
+    return null;
+}
+
+export default function Import({ accounts, userLayouts: initialUserLayouts, categories, currencies }: ImportProps) {
     const [currentStep, setCurrentStep] = useState(0);
-    const [selectedBank, setSelectedBank] = useState('');
+    const [selectedBank, setSelectedBank] = useState(() => initialUserLayouts.length === 0 ? 'custom' : '');
     const [csvFile, setCsvFile] = useState<File | null>(null);
     const [delimiter, setDelimiter] = useState(';');
     const [dateFormat, setDateFormat] = useState('d/m/Y');
@@ -151,8 +327,11 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         description: 2,
         notes: null,
         category: null,
+        account: null,
     });
     const [categoryMappings, setCategoryMappings] = useState<Record<string, CategoryMappingEntry>>({});
+    const [accountMappings, setAccountMappings] = useState<Record<string, AccountMappingEntry>>({});
+    const [showInvalidRows, setShowInvalidRows] = useState(false);
     const [previewData, setPreviewData] = useState<PreviewResponse | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
@@ -197,6 +376,11 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
     const [savingLayout, setSavingLayout] = useState(false);
     const [saveLayoutSuccess, setSaveLayoutSuccess] = useState<string | null>(null);
     const [saveLayoutError, setSaveLayoutError] = useState<string | null>(null);
+    /** Snapshot del mapping nel momento in cui è stato applicato un layout — per rilevare modifiche */
+    const [appliedLayoutMapping, setAppliedLayoutMapping] = useState<UserLayout | null>(null);
+    /** true = mostra il banner "vuoi aggiornare il layout?" prima di avanzare */
+    const [showUpdateLayoutPrompt, setShowUpdateLayoutPrompt] = useState(false);
+    const [pendingNextStep, setPendingNextStep] = useState(false);
 
     const saveCurrentLayout = async () => {
         if (!saveLayoutName.trim()) {
@@ -258,12 +442,68 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             description: layout.column_mapping.description,
             notes: layout.column_mapping.notes ?? null,
             category: layout.column_mapping.category ?? null,
+            account: null,
         });
+        // Pre-compila il campo "Salva layout" con i dati del layout applicato
+        setSaveLayoutName(layout.name);
+        setSaveLayoutIcon(layout.icon ?? '🏦');
+        setSaveLayoutSuccess(null);
+        setSaveLayoutError(null);
+        // Registra snapshot per rilevare eventuali modifiche
+        setAppliedLayoutMapping(layout);
+        setShowUpdateLayoutPrompt(false);
     };
 
     const handleSelectCustom = () => {
         setSelectedBank('custom');
         setSelectedLayoutId(null);
+        setSaveLayoutName('');
+        setSaveLayoutIcon('🏦');
+        setAppliedLayoutMapping(null);
+        setShowUpdateLayoutPrompt(false);
+    };
+
+    /** Aggiorna il layout esistente via PATCH */
+    const updateCurrentLayout = async (): Promise<boolean> => {
+        if (!selectedLayoutId) return false;
+        setSavingLayout(true);
+        setSaveLayoutError(null);
+        setSaveLayoutSuccess(null);
+        try {
+            const response = await axios.patch<{ success: boolean; message: string; layout: UserLayout }>(
+                route('bank-import-layouts.update', selectedLayoutId),
+                {
+                    name: saveLayoutName.trim() || appliedLayoutMapping?.name,
+                    bank_name: selectedBank || 'custom',
+                    icon: saveLayoutIcon,
+                    delimiter: isXlsx ? ',' : delimiter,
+                    date_format: dateFormat,
+                    has_header: hasHeader,
+                    encoding: isXlsx ? 'UTF-8' : encoding,
+                    column_mapping: {
+                        date: columnMapping.date ?? 0,
+                        amount: columnMapping.amount ?? 1,
+                        description: columnMapping.description ?? 2,
+                        notes: columnMapping.notes ?? null,
+                        category: columnMapping.category ?? null,
+                    },
+                },
+                { headers: { Accept: 'application/json' } },
+            );
+            setSaveLayoutSuccess(response.data.message ?? 'Layout aggiornato.');
+            setUserLayouts((prev) => prev.map(l => l.id === selectedLayoutId ? response.data.layout : l));
+            setAppliedLayoutMapping(response.data.layout);
+            return true;
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.data?.message) {
+                setSaveLayoutError(err.response.data.message);
+            } else {
+                setSaveLayoutError('Errore durante l’aggiornamento del layout.');
+            }
+            return false;
+        } finally {
+            setSavingLayout(false);
+        }
     };
 
     const steps = WIZARD_STEPS.map((label, index) => ({
@@ -328,6 +568,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         const file = e.target.files?.[0] ?? null;
         setCsvFile(file);
         setPreviewData(null);
+        setAccountMappings({});
         setXlsxSheets([]);
         setSelectedSheetIndex(0);
         if (file) {
@@ -337,10 +578,12 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
     /** Chiamato dal GoogleDrivePicker quando l'utente seleziona un file */
     const handleDriveFileSelected = (file: DriveFile, token: string) => {
+        setFileSource('gdrive');
         setDriveFile(file);
         setDriveAccessToken(token);
         setDriveError(null);
         setPreviewData(null);
+        setAccountMappings({});
         setXlsxSheets([]);
         setSelectedSheetIndex(0);
         void detectSheetsFromDrive(file, token);
@@ -382,6 +625,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         if (columnMapping.category !== null) {
             formData.append('column_mapping[category]', String(columnMapping.category));
         }
+        if (columnMapping.account != null) {
+            formData.append('column_mapping[account]', String(columnMapping.account));
+        }
 
         try {
             const response = await axios.post<PreviewResponse>(route('transactions.import.preview'), formData, {
@@ -396,12 +642,31 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                     const updated = { ...prev };
                     response.data.unique_categories.forEach((name) => {
                         if (!updated[name]) {
-                            updated[name] = { action: 'none', category_id: null, type: null };
+                            const match = suggestCategoryMatch(name, categories);
+                            updated[name] = match
+                                ? { action: 'existing', category_id: match.id, type: match.type, suggested: true }
+                                : { action: 'none', category_id: null, type: null };
                         }
                     });
                     return updated;
                 });
             }
+            // Inizializza i mapping dei conti per quelli trovati nel file
+            const uniqueAccounts = response.data.unique_accounts ?? [];
+            setAccountMappings((prev) => {
+                const updated: Record<string, AccountMappingEntry> = {};
+                uniqueAccounts.forEach((name) => {
+                    if (prev[name]) {
+                        updated[name] = prev[name];
+                    } else {
+                        const match = suggestAccountMatch(name, accounts);
+                        updated[name] = match
+                            ? { action: 'existing', account_id: match.id, currency_code: match.currency_code, type: 'bank', suggested: true }
+                            : { action: 'existing', account_id: null, currency_code: 'EUR', type: 'bank' };
+                    }
+                });
+                return updated;
+            });
             return true;
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -421,12 +686,49 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             const ok = await callPreview();
             if (!ok) return;
         }
-        // Uscendo dallo step 2 verso la conferma: ri-chiama l'anteprima con la mappatura corrente
+        // Uscendo dallo step 2 verso la conferma
         if (currentStep === 2) {
+            // Rileva se il mapping è stato modificato rispetto al layout applicato
+            if (appliedLayoutMapping && selectedLayoutId && !showUpdateLayoutPrompt) {
+                const orig = appliedLayoutMapping.column_mapping;
+                const changed =
+                    columnMapping.date !== orig.date ||
+                    columnMapping.amount !== orig.amount ||
+                    columnMapping.description !== orig.description ||
+                    (columnMapping.notes ?? null) !== (orig.notes ?? null) ||
+                    (columnMapping.category ?? null) !== (orig.category ?? null) ||
+                    delimiter !== appliedLayoutMapping.delimiter ||
+                    dateFormat !== appliedLayoutMapping.date_format ||
+                    hasHeader !== appliedLayoutMapping.has_header;
+                if (changed) {
+                    setShowUpdateLayoutPrompt(true);
+                    setPendingNextStep(true);
+                    return; // blocca l'avanzamento — user deve rispondere al prompt
+                }
+            }
             const ok = await callPreview();
             if (!ok) return;
+            setShowUpdateLayoutPrompt(false);
+            setPendingNextStep(false);
         }
         setCurrentStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1));
+    };
+
+    /** Risposta al prompt: aggiorna il layout e poi avanza */
+    const handleUpdateAndProceed = async () => {
+        await updateCurrentLayout();
+        setShowUpdateLayoutPrompt(false);
+        setPendingNextStep(false);
+        const ok = await callPreview();
+        if (ok) setCurrentStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1));
+    };
+
+    /** Risposta al prompt: ignora e avanza senza salvare */
+    const handleSkipUpdateAndProceed = async () => {
+        setShowUpdateLayoutPrompt(false);
+        setPendingNextStep(false);
+        const ok = await callPreview();
+        if (ok) setCurrentStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1));
     };
 
     const handlePrevStep = () => {
@@ -465,6 +767,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                 description: row.description,
                 notes: row.notes,
                 ...(row.category_name ? { category_name: row.category_name } : {}),
+                // Passa account_name per la risoluzione server-side tramite account_mappings
+                ...(columnMapping.account != null && row.account_name ? { account_name: row.account_name } : {}),
             }));
     };
 
@@ -487,11 +791,26 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                 ...(entry.action === 'existing' && entry.category_id ? { category_id: entry.category_id } : {}),
                 ...(entry.action === 'create' && entry.type ? { type: entry.type } : {}),
             }));
+        // Costruisce l'array account_mappings da inviare al server
+        const accountMappingsArray = columnMapping.account != null
+            ? Object.entries(accountMappings).map(([name, entry]) => ({
+                name,
+                action: entry.action,
+                ...(entry.action === 'existing' && entry.account_id ? { account_id: entry.account_id } : {}),
+                ...(entry.action === 'create' ? { currency_code: entry.currency_code, type: entry.type } : {}),
+            }))
+            : [];
         setImportProcessing(true);
         setImportErrors({});
         router.post(
             route('transactions.import.store'),
-            { account_id: data.account_id, rows: rowsWithResolutions, category_mappings: categoryMappingsArray },
+            {
+                // account_id globale solo se non c'è la colonna conto nel file
+                ...(columnMapping.account === null ? { account_id: data.account_id } : {}),
+                rows: rowsWithResolutions,
+                category_mappings: categoryMappingsArray,
+                ...(accountMappingsArray.length > 0 ? { account_mappings: accountMappingsArray } : {}),
+            },
             {
                 onFinish: () => setImportProcessing(false),
                 onError:  (errs) => setImportErrors(errs as Record<string, string>),
@@ -500,14 +819,18 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
     };
 
     const handleImport = async () => {
-        if (!previewData || !data.account_id) return;
+        // Serve account_id globale SOLO se la colonna conto non è mappata nel file
+        if (!previewData || (columnMapping.account == null && !data.account_id)) return;
         const rows = getRowsToImport();
         setDuplicateCheckLoading(true);
         setImportErrors({});
         try {
             const resp = await axios.post<{ duplicates: DuplicateInfo[] }>(
                 route('transactions.import.check-duplicates'),
-                { account_id: data.account_id, rows },
+                {
+                    ...(columnMapping.account === null ? { account_id: data.account_id } : {}),
+                    rows,
+                },
             );
             const dups = resp.data.duplicates;
             if (dups.length === 0) {
@@ -544,7 +867,22 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             return hasFile && !sheetsLoading;
         }
         if (currentStep === 2) return columnMapping.date !== null && columnMapping.amount !== null && columnMapping.description !== null;
-        if (currentStep === 3) return selectedRows.size > 0 && data.account_id !== '';
+        if (currentStep === 3) {
+            if (!selectedRows.size) return false;
+            if (columnMapping.account != null) {
+                const uniqueAccounts = previewData?.unique_accounts ?? [];
+                return uniqueAccounts.length > 0
+                    ? uniqueAccounts.every((name) => {
+                        const entry = accountMappings[name];
+                        if (!entry) return false;
+                        if (entry.action === 'existing') return entry.account_id != null;
+                        if (entry.action === 'create') return entry.currency_code !== '';
+                        return false;
+                    })
+                    : false;
+            }
+            return data.account_id !== '';
+        }
         return false;
     };
 
@@ -828,7 +1166,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 headers={previewData?.headers ?? []}
                                 columnCount={6}
                                 mapping={columnMapping}
-                                onChange={(m) => setColumnMapping({ ...m, category: m.category ?? null })}
+                                onChange={(m) => setColumnMapping({ ...m, category: m.category ?? null, account: m.account ?? null })}
                             />
                             <PrimaryButton
                                 type="button"
@@ -844,11 +1182,86 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 </div>
                             )}
 
+                            {/* Anteprima righe dopo "Aggiorna anteprima" */}
+                            {previewData && !previewError && (
+                                <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
+                                    <p className="text-sm font-medium text-green-800">
+                                        ✓ {previewData.valid_count} transazioni trovate
+                                        {previewData.invalid_count > 0 && (
+                                            <span className="ml-2 text-orange-600 font-normal">
+                                                · {previewData.invalid_count} righe ignorate
+                                            </span>
+                                        )}
+                                    </p>
+                                    {previewData.valid.length > 0 && (
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full text-xs text-gray-700">
+                                                <thead>
+                                                    <tr className="text-left text-gray-500 border-b border-green-200">
+                                                        <th className="pr-3 pb-1 font-medium">Data</th>
+                                                        <th className="pr-3 pb-1 font-medium">Importo</th>
+                                                        <th className="pb-1 font-medium">Descrizione</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {previewData.valid.slice(0, 5).map((row) => (
+                                                        <tr key={row.line_number} className="border-b border-green-100 last:border-0">
+                                                            <td className="pr-3 py-1 whitespace-nowrap">{row.date}</td>
+                                                            <td className={clsx('pr-3 py-1 whitespace-nowrap font-medium', row.amount < 0 ? 'text-red-600' : 'text-green-700')}>
+                                                                {formatAmount(row.amount)}
+                                                            </td>
+                                                            <td className="py-1 truncate max-w-[200px]">{row.description}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {previewData.valid.length > 5 && (
+                                                <p className="mt-1 text-xs text-gray-500">… e altre {previewData.valid.length - 5} righe</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Banner: aggiorna layout esistente? */}
+                            {showUpdateLayoutPrompt && selectedLayoutId && (
+                                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                    <p className="text-sm font-medium text-amber-800">
+                                        Hai modificato la mappatura rispetto al layout <strong>«{appliedLayoutMapping?.name}»</strong>. Vuoi aggiornarlo?
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleUpdateAndProceed}
+                                            disabled={savingLayout}
+                                            className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        >
+                                            {savingLayout ? 'Salvataggio…' : 'Aggiorna e continua'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleSkipUpdateAndProceed}
+                                            disabled={savingLayout}
+                                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            Continua senza salvare
+                                        </button>
+                                    </div>
+                                    {saveLayoutError && (
+                                        <p className="mt-2 text-xs text-red-600">{saveLayoutError}</p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Salva layout */}
                             <div className="mt-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
-                                <h3 className="text-sm font-medium text-gray-700 mb-1">Salva questa configurazione come layout</h3>
+                                <h3 className="text-sm font-medium text-gray-700 mb-1">
+                                    {selectedLayoutId ? 'Aggiorna layout' : 'Salva questa configurazione come layout'}
+                                </h3>
                                 <p className="text-xs text-gray-500 mb-3">
-                                    Potrai riutilizzarlo nelle prossime importazioni senza dover riconfigurare le colonne.
+                                    {selectedLayoutId
+                                        ? 'Sovrascrive il layout esistente con la configurazione attuale delle colonne.'
+                                        : 'Potrai riutilizzarlo nelle prossime importazioni senza dover riconfigurare le colonne.'}
                                 </p>
                                 {/* Selezione icona */}
                                 <div className="mb-3">
@@ -889,7 +1302,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={saveCurrentLayout}
+                                        onClick={selectedLayoutId ? updateCurrentLayout : saveCurrentLayout}
                                         disabled={savingLayout || !saveLayoutName.trim()}
                                         className={clsx(
                                             'inline-flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500',
@@ -898,7 +1311,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                 : 'bg-blue-600 text-white hover:bg-blue-700',
                                         )}
                                     >
-                                        {savingLayout ? 'Salvataggio…' : 'Salva layout'}
+                                        {savingLayout ? 'Salvataggio…' : (selectedLayoutId ? 'Aggiorna layout' : 'Salva layout')}
                                     </button>
                                 </div>
                                 {saveLayoutSuccess && (
@@ -920,7 +1333,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
                             <h2 className="text-lg font-semibold text-gray-900">Anteprima e conferma</h2>
 
-                            {/* Account selector */}
+                            {/* Account selector (solo se NON mappata la colonna conto) */}
+                            {columnMapping.account === null && (
                             <div>
                                 <InputLabel htmlFor="account_id" value="Conto di destinazione *" />
                                 <p className="mt-0.5 text-xs text-gray-500 mb-2">
@@ -989,21 +1403,146 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 )}
                                 <InputError message={importErrors.account_id} className="mt-1" />
                             </div>
+                            )}
+
+                            {/* Mappatura conti da colonna file */}
+                            {columnMapping.account != null && previewData && (previewData.unique_accounts ?? []).length > 0 && (
+                                <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
+                                    <h3 className="mb-1 text-sm font-semibold text-gray-800">
+                                        🏦 Conti trovati nel file ({(previewData.unique_accounts ?? []).length})
+                                    </h3>
+                                    <p className="mb-3 text-xs text-gray-500">
+                                        Associa ogni nome conto dal file a uno dei tuoi conti oppure creane uno nuovo.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {(previewData.unique_accounts ?? []).map((accName) => {
+                                            const entry = accountMappings[accName] ?? { action: 'existing' as const, account_id: null, currency_code: 'EUR', type: 'bank' as const };
+                                            const isSuggested = (entry.suggested === true) && entry.action === 'existing' && entry.account_id != null;
+                                            return (
+                                                <div key={accName} className={clsx(
+                                                    'flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2',
+                                                    isSuggested ? 'border-emerald-200 bg-emerald-50/40' : 'border-gray-200 bg-white',
+                                                )}>
+                                                    <span className="min-w-[80px] flex-shrink-0 text-sm font-medium text-gray-800">{accName}</span>
+                                                    {isSuggested && (
+                                                        <span className="rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700" title="Abbinato automaticamente in base al nome">
+                                                            ✨ suggerito
+                                                        </span>
+                                                    )}
+                                                    <select
+                                                        value={entry.action}
+                                                        onChange={(e) => {
+                                                            const action = e.target.value as 'existing' | 'create';
+                                                            setAccountMappings((prev) => ({
+                                                                ...prev,
+                                                                [accName]: { ...entry, action, account_id: null, suggested: false },
+                                                            }));
+                                                        }}
+                                                        className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                    >
+                                                        <option value="existing">Usa conto esistente</option>
+                                                        <option value="create">Crea nuovo conto</option>
+                                                    </select>
+                                                    {entry.action === 'existing' && (
+                                                        <select
+                                                            value={entry.account_id ?? ''}
+                                                            onChange={(e) => setAccountMappings((prev) => ({
+                                                                ...prev,
+                                                                [accName]: { ...entry, account_id: Number(e.target.value) || null },
+                                                            }))}
+                                                            className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                        >
+                                                            <option value="">Seleziona conto…</option>
+                                                            {accounts.map((acc) => (
+                                                                <option key={acc.id} value={acc.id}>
+                                                                    {acc.name} ({acc.currency_code})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                    {entry.action === 'create' && (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <select
+                                                                value={entry.type}
+                                                                onChange={(e) => setAccountMappings((prev) => ({
+                                                                    ...prev,
+                                                                    [accName]: { ...entry, type: e.target.value as AccountMappingEntry['type'] },
+                                                                }))}
+                                                                className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                            >
+                                                                <option value="bank">Conto bancario</option>
+                                                                <option value="cash">Contanti</option>
+                                                                <option value="card">Carta</option>
+                                                                <option value="broker">Broker</option>
+                                                                <option value="crypto">Crypto</option>
+                                                                <option value="other">Altro</option>
+                                                            </select>
+                                                            <select
+                                                                value={entry.currency_code}
+                                                                onChange={(e) => setAccountMappings((prev) => ({
+                                                                    ...prev,
+                                                                    [accName]: { ...entry, currency_code: e.target.value },
+                                                                }))}
+                                                                className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                                            >
+                                                                {currencies.map((c) => (
+                                                                    <option key={c.code} value={c.code}>{c.code} – {c.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                    {entry.action === 'existing' && !entry.account_id && (
+                                                        <span className="text-xs text-amber-600">⚠️ non assegnato</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Stats */}
-                            {previewData && (
+                            {previewData && (function() {
+                                const warnCount = previewData.valid.filter(r => r.warnings?.length > 0).length;
+                                return (
                                 <div className="flex flex-wrap gap-3 text-sm">
                                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800">
                                         ✓ {previewData.valid_count} transazioni valide
                                     </span>
-                                    {previewData.invalid_count > 0 && (
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800">
-                                            ✗ {previewData.invalid_count} righe non valide (ignorate)
+                                    {warnCount > 0 && (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800">
+                                            ⚠️ {warnCount} con avvisi
                                         </span>
+                                    )}
+                                    {previewData.invalid_count > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowInvalidRows((v) => !v)}
+                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-800 hover:bg-red-200 transition-colors"
+                                        >
+                                            ✗ {previewData.invalid_count} righe non valide
+                                            <span className="text-xs">{showInvalidRows ? '▲' : '▼'}</span>
+                                        </button>
                                     )}
                                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800">
                                         Selezionate: {selectedRows.size}
                                     </span>
+                                </div>);
+                            })()}
+
+                            {/* Righe non valide */}
+                            {previewData && showInvalidRows && previewData.invalid.length > 0 && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                                    <p className="text-xs font-semibold text-red-700 mb-2">Righe non importabili</p>
+                                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                        {previewData.invalid.map((row) => (
+                                            <div key={row.line_number} className="rounded border border-red-100 bg-white px-2 py-1.5 text-xs">
+                                                <span className="font-medium text-red-700 mr-2">Riga {row.line_number}</span>
+                                                <span className="text-gray-500 mr-2 font-mono truncate">{row.raw}</span>
+                                                <span className="text-red-600">{row.errors.join(' · ')}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
@@ -1015,20 +1554,30 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                     </h3>
                                     <p className="mb-3 text-xs text-gray-500">
                                         Indica come assegnare ogni categoria presente nel file importato.
+                                        Le voci con il badge <span className="text-emerald-600">✨</span> sono state abbinate automaticamente — verifica e correggi se necessario.
                                     </p>
                                     <div className="space-y-2">
                                         {previewData.unique_categories.map((catName) => {
                                             const entry = categoryMappings[catName] ?? { action: 'none' as const, category_id: null, type: null };
+                                            const isSuggested = (entry.suggested === true) && entry.action === 'existing' && entry.category_id != null;
                                             return (
-                                                <div key={catName} className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                                <div key={catName} className={clsx(
+                                                    'flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2',
+                                                    isSuggested ? 'border-emerald-200 bg-emerald-50/40' : 'border-gray-200 bg-white',
+                                                )}>
                                                     <span className="min-w-[80px] flex-shrink-0 text-sm font-medium text-gray-800">{catName}</span>
+                                                    {isSuggested && (
+                                                        <span className="rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700" title="Abbinato automaticamente in base al nome">
+                                                            ✨ suggerito
+                                                        </span>
+                                                    )}
                                                     <select
                                                         value={entry.action}
                                                         onChange={(e) => {
                                                             const action = e.target.value as 'none' | 'existing' | 'create';
                                                             setCategoryMappings((prev) => ({
                                                                 ...prev,
-                                                                [catName]: { action, category_id: null, type: null },
+                                                                [catName]: { action, category_id: null, type: null, suggested: false },
                                                             }));
                                                         }}
                                                         className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
@@ -1080,11 +1629,11 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
                             {/* Preview table */}
                             {previewData && previewData.valid.length > 0 && (
-                                <div className="overflow-x-auto -mx-6">
+                                <div className="overflow-x-auto -mx-6 max-h-[800px]">
                                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-4 py-3 text-left">
+                                                <th className="px-3 py-1.5 text-left">
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedRows.size === previewData.valid.length}
@@ -1093,25 +1642,28 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                         aria-label="Seleziona tutte"
                                                     />
                                                 </th>
-                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Data</th>
-                                                <th className="px-4 py-3 text-right font-medium text-gray-600">Importo</th>
-                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Descrizione</th>
-                                                <th className="px-4 py-3 text-left font-medium text-gray-600 hidden sm:table-cell">Note</th>
+                                                <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600">Data</th>
+                                                <th className="px-3 py-1.5 text-right text-xs font-medium text-gray-600">Importo</th>
+                                                <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600">Descrizione</th>
+                                                <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600 hidden sm:table-cell">Note</th>
                                                 {previewData.unique_categories.length > 0 && (
-                                                    <th className="px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Categoria (file)</th>
+                                                    <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600 hidden md:table-cell">Categoria</th>
+                                                )}
+                                                {columnMapping.account != null && (
+                                                    <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600 hidden md:table-cell">Conto</th>
                                                 )}
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-100">
+                                        <tbody className="bg-white divide-y divide-gray-100 text-sm">
                                             {previewData.valid.map((row, index) => (
                                                 <tr
                                                     key={index}
                                                     className={clsx(
-                                                        'hover:bg-gray-50 transition-colors',
-                                                        !selectedRows.has(index) && 'opacity-40',
+                                                        'transition-colors',
+                                                        !selectedRows.has(index) ? 'opacity-40 hover:bg-gray-50' : (row.warnings?.length > 0 ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-gray-50'),
                                                     )}
                                                 >
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-3 py-1">
                                                         <input
                                                             type="checkbox"
                                                             checked={selectedRows.has(index)}
@@ -1120,26 +1672,40 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                             aria-label={`Seleziona riga ${index + 1}`}
                                                         />
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                                                    <td className="px-3 py-1 text-gray-700 whitespace-nowrap">
                                                         {new Date(row.date).toLocaleDateString('it-IT')}
                                                     </td>
                                                     <td className={clsx(
-                                                        'px-4 py-3 text-right font-medium whitespace-nowrap',
+                                                        'px-3 py-1 text-right font-medium whitespace-nowrap',
                                                         row.amount >= 0 ? 'text-green-600' : 'text-red-600',
                                                     )}>
                                                         {formatAmount(row.amount)}
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-700 max-w-xs truncate">
-                                                        {row.description}
+                                                    <td className="px-3 py-1 text-gray-700 max-w-xs truncate">
+                                                        {row.description || (
+                                                            <span className="inline-flex items-center gap-1 text-amber-600 text-xs">
+                                                                <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" /></svg>
+                                                                vuota
+                                                            </span>
+                                                        )}
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-500 max-w-xs truncate hidden sm:table-cell">
+                                                    <td className="px-3 py-1 text-gray-500 max-w-xs truncate hidden sm:table-cell">
                                                         {row.notes ?? '—'}
                                                     </td>
                                                     {previewData.unique_categories.length > 0 && (
-                                                        <td className="px-4 py-3 hidden md:table-cell">
+                                                        <td className="px-3 py-1 hidden md:table-cell">
                                                             {row.category_name ? (
                                                                 <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
                                                                     {row.category_name}
+                                                                </span>
+                                                            ) : '—'}
+                                                        </td>
+                                                    )}
+                                                    {columnMapping.account != null && (
+                                                        <td className="px-3 py-1 hidden md:table-cell">
+                                                            {row.account_name ? (
+                                                                <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                                                                    {row.account_name}
                                                                 </span>
                                                             ) : '—'}
                                                         </td>
@@ -1191,9 +1757,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 <PrimaryButton
                                     type="button"
                                     onClick={handleImport}
-                                    disabled={selectedRows.size === 0 || importProcessing || duplicateCheckLoading || !data.account_id}
+                                    disabled={selectedRows.size === 0 || importProcessing || duplicateCheckLoading || (columnMapping.account == null && !data.account_id)}
                                 >
-                                    {importProcessing ? 'Importazione…' : duplicateCheckLoading ? 'Verifica duplicati…' : `Importa ${selectedRows.size} transazioni`}
+                                    {importProcessing ? 'Avvio in corso…' : duplicateCheckLoading ? 'Verifica duplicati…' : `Importa ${selectedRows.size} transazioni`}
                                 </PrimaryButton>
                             )}
                         </div>
@@ -1217,6 +1783,36 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                             <p className="mt-1 text-sm text-gray-500">
                                 Sono state trovate transazioni già presenti nel conto con la stessa data e importo. Scegli come gestire ognuna.
                             </p>
+                            {/* Azioni globali veloci */}
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <span className="text-xs text-gray-400">Applica a tutte:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const resolutions: Record<number, DuplicateResolution> = {};
+                                        duplicates.forEach((d) => {
+                                            resolutions[d.row_index] = { action: 'ignore', duplicate_transaction_id: null };
+                                        });
+                                        setDuplicateResolutions(resolutions);
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    Ignora tutte
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const resolutions: Record<number, DuplicateResolution> = {};
+                                        duplicates.forEach((d) => {
+                                            resolutions[d.row_index] = { action: 'import', duplicate_transaction_id: d.existing[0]?.id ?? null };
+                                        });
+                                        setDuplicateResolutions(resolutions);
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    Importa tutte comunque
+                                </button>
+                            </div>
                             <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500">
                                 <span><strong className="text-blue-700">Importa comunque</strong> — crea una nuova transazione (doppia)</span>
                                 <span><strong className="text-gray-700">Ignora</strong> — non importare questa riga</span>
@@ -1327,7 +1923,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 Annulla
                             </button>
                             <PrimaryButton type="button" onClick={handleConfirmImport} disabled={importProcessing}>
-                                {importProcessing ? 'Importazione…' : 'Conferma e importa'}
+                                {importProcessing ? 'Avvio in corso…' : 'Conferma e importa'}
                             </PrimaryButton>
                         </div>
                     </div>

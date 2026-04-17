@@ -110,7 +110,7 @@ export default function GoogleDrivePicker({
     const tokenClientRef = useRef<{ requestAccessToken: () => void } | null>(null);
     const accessTokenRef = useRef<string | null>(null);
 
-    const isConfigured = Boolean(clientId && apiKey);
+    const isConfigured = Boolean(clientId);
 
     useEffect(() => {
         if (!isConfigured) return;
@@ -151,7 +151,6 @@ export default function GoogleDrivePicker({
         const pickerInstance = new picker.PickerBuilder()
             .addView(view)
             .setOAuthToken(token)
-            .setDeveloperKey(apiKey)
             .setCallback((data: PickerData) => {
                 if (data.action === picker.Action.PICKED && data.docs?.length) {
                     const doc = data.docs[0];
