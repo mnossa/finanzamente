@@ -57,6 +57,8 @@ class StoreDashboardLayoutRequest extends FormRequest
      */
     public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
+        // Deve essere allineata a: resources/js/constants/widgetRegistry.ts (WIDGET_REGISTRY)
+        // e a DashboardLayout::defaultConfig()
         $allowedIds = [
             'total_balance',
             'monthly_stats',
@@ -72,6 +74,7 @@ class StoreDashboardLayoutRequest extends FormRequest
             'net_worth',
             'cash_flow',
             'expense_treemap',
+            'financial_goals',
         ];
 
         $validator->after(function ($v) use ($allowedIds) {

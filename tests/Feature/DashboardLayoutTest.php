@@ -340,4 +340,53 @@ class DashboardLayoutTest extends TestCase
             $page->where('dashboardLayout.widgets.0.id', 'quick_actions')
         );
     }
+
+    // ─── Regressione: financial_goals non deve essere rifiutato ───────────
+
+    #[Test]
+    public function saving_layout_with_financial_goals_widget_succeeds(): void
+    {
+        $payload = [
+            'config' => [
+                'widgets' => [
+                    ['id' => 'total_balance',    'visible' => true, 'position' => 0, 'size' => 'xl'],
+                    ['id' => 'financial_goals',  'visible' => true, 'position' => 1, 'size' => 'md'],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson(route('dashboard.layout.store'), $payload)
+            ->assertOk();
+    }
+
+    #[Test]
+    public function saving_full_default_layout_succeeds(): void
+    {
+        // Tutti i widget del defaultConfig() devono essere accettati senza errori
+        $payload = ['config' => DashboardLayout::defaultConfig()];
+
+        $this->actingAs($this->user)
+            ->postJson(route('dashboard.layout.store'), $payload)
+            ->assertOk();
+    }
+
+    #[Test]
+    public function all_allowed_widget_ids_are_accepted_by_validation(): void
+    {
+        $allWidgets = [
+            'total_balance', 'monthly_stats', 'annual_revenue', 'tax_thermometer',
+            'lifestyle_widget', 'accounts', 'recent_transactions', 'active_budgets',
+            'debts_credits', 'quick_actions', 'asset_allocation', 'net_worth',
+            'cash_flow', 'expense_treemap', 'financial_goals',
+        ];
+
+        $widgets = array_values(array_map(fn ($id, $pos) => [
+            'id' => $id, 'visible' => true, 'position' => $pos, 'size' => 'md',
+        ], $allWidgets, array_keys($allWidgets)));
+
+        $this->actingAs($this->user)
+            ->postJson(route('dashboard.layout.store'), ['config' => ['widgets' => $widgets]])
+            ->assertOk();
+    }
 }
