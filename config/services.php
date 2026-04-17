@@ -94,6 +94,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Unsplash — Ricerca immagini per articoli Magazine
+    |--------------------------------------------------------------------------
+    |
+    | Access Key per l'API Unsplash, usata per cercare immagini libere da
+    | copyright per le copertine degli articoli del magazine.
+    | Registrazione: https://unsplash.com/developers
+    | Istruzioni setup: tasks/unsplash-setup.md
+    |
+    */
+
+    'unsplash' => [
+        'access_key' => env('UNSPLASH_ACCESS_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Google Drive
     |--------------------------------------------------------------------------
     |

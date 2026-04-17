@@ -53,34 +53,25 @@ fresh:
 seed:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed
 
-# Prepara il database per i test E2E (migrate:fresh + E2ESeeder)
+# Prepara il database per i test E2E (migrate:fresh + E2ESeeder) sul servizio app_e2e dedicato.
+# Il servizio app_e2e usa db_e2e — il database principale non viene mai toccato.
 e2e-seed:
-	@echo "[+] Preparazione database per test E2E..."
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan migrate:fresh --force
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=E2ESeeder --force
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
+	@echo "[+] Preparazione database per test E2E (servizio app_e2e → db_e2e)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan config:cache
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan migrate:fresh --force
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan db:seed --class=E2ESeeder --force
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan cache:clear
 	@echo "[+] Database E2E pronto (utente: e2e@finanzamente.test)"
 
-# Esegui i test Playwright E2E in modalità headless (modalità normale)
-# Se PRE_LAUNCH_MODE o PRO_WAITLIST_ENABLED sono attivi nel .env, vengono
-# temporaneamente disabilitati per i test e ripristinati automaticamente dopo.
+# Esegui i test Playwright E2E in modalità headless (modalità normale).
+# I test colpiscono nginx_e2e (porta 8081) → app_e2e → db_e2e.
+# Il server principale (porta 8080) e il database reale non vengono mai toccati.
 playwright:
 	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
 	@rm -f public/hot
 	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright'" && exit 1)
-	@echo "[+] Compilazione config E2E (normal: pre-lancio=off, waitlist=off, mail=log)..."
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
-		-e PRE_LAUNCH_MODE=false \
-		-e PRO_WAITLIST_ENABLED=false \
-		-e MAIL_MAILER=log \
-		app php artisan config:cache
-	@echo "[+] Pulizia cache per reset rate limiter..."
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
-	@echo "[+] Esecuzione test E2E Playwright (modalità: normal)..."
-	@E2E_APP_MODE=normal PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test; PLAYWRIGHT_STATUS=$$?; \
-	echo "[+] Ripristino config cache dai valori .env originali..."; \
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan config:cache; \
-	exit $$PLAYWRIGHT_STATUS
+	@echo "[+] Esecuzione test E2E Playwright (porta 8081 → app_e2e → db_e2e)..."
+	@E2E_APP_MODE=normal PLAYWRIGHT_BASE_URL=http://localhost:8081 npx playwright test
 
 # Esegui i test E2E simulando la modalità PRE-LANCIO
 # Legge PRE_LAUNCH_OWNER_EMAIL da .env — non modifica .env
@@ -124,7 +115,7 @@ playwright-waitlist:
 
 # Esegui i test Playwright in modalità UI interattiva (solo locale)
 playwright-ui:
-	PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test --ui
+	PLAYWRIGHT_BASE_URL=http://localhost:8081 npx playwright test --ui
 
 # Apri l'ultimo report HTML generato da Playwright
 playwright-report:

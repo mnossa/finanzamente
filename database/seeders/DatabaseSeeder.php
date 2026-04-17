@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
         // Seed categories (required for transactions)
         $this->call(CategorySeeder::class);
 
+        // Seed magazine categories
+        $this->call(MagazineCategorySeeder::class);
+
         // User::factory(10)->create();
 
         User::factory()->create([

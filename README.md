@@ -1,3 +1,23 @@
+# Test E2E isolati su database MySQL dedicato
+
+Per garantire che i test E2E Playwright e il comando `make e2e-seed` non modifichino mai i dati reali di sviluppo o produzione, viene utilizzato un database MySQL separato (`db_e2e`).
+
+- La connessione E2E è configurata in `config/database.php` come `e2e_mysql` e usa variabili dedicate (`E2E_DB_*`).
+- Il file `.env.e2e` contiene tutte le variabili per il database E2E.
+- Il servizio Docker `db_e2e` è definito in `docker-compose.yml` e ascolta sulla porta 3307.
+- I comandi `make e2e-seed` e `make playwright` esportano automaticamente le variabili per usare il database E2E.
+
+**Nota:** Il database E2E viene svuotato e ricreato ad ogni esecuzione di `make e2e-seed`, senza mai toccare i dati reali.
+
+Per avviare i test E2E in locale:
+
+```
+make up           # Avvia tutti i servizi, incluso db_e2e
+make e2e-seed     # Prepara il database E2E
+make playwright   # Esegue i test Playwright su db_e2e
+```
+
+Il database reale (sviluppo/produzione) non viene mai toccato dai test E2E.
 #
 ## Sicurezza e Rate Limiting avanzato
 

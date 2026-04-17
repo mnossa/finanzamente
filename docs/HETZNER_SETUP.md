@@ -15,6 +15,7 @@
 11. [Rollback](#11-rollback)
 12. [Monitoraggio e log](#12-monitoraggio-e-log)
 13. [Variabili d'ambiente di riferimento](#13-variabili-dambiente-di-riferimento)
+14. [Migrazione a un nuovo server](#14-migrazione-a-un-nuovo-server)
 
 ---
 
@@ -351,6 +352,11 @@ MAIL_FROM_NAME="Finanzamente"
 # ── Sicurezza ──────────────────────────────────────────────────────────────
 ADV_THROTTLE_SALT=GENERA_STRINGA_CASUALE_QUI_MIN_32_CHAR
 
+# ── Backup database cifrato ────────────────────────────────────────────────
+# Chiave usata da openssl AES-256-CBC per cifrare i dump giornalieri.
+# Genera con: openssl rand -base64 32
+BACKUP_ENCRYPTION_KEY=GENERA_CHIAVE_BACKUP_SICURA_QUI
+
 # ── Docker Hub Image Tag (gestito automaticamente dal workflow) ────────────
 IMAGE_TAG=latest
 ```
@@ -524,13 +530,31 @@ docker compose -f docker-compose.prod.yml up -d
 ### Rollback del database
 
 Le migrazioni Laravel sono irreversibili per default (le rollback richiedono implementazione manuale).
-Prima di ogni deploy che modifica il DB, fare un backup:
+Prima di ogni deploy che modifica il DB, fai un backup manuale:
 
 ```bash
-# Backup database
+# Backup manuale cifrato (stessa tecnica del backup automatico notturno)
 docker compose -f docker-compose.prod.yml exec db \
-  mysqldump -u finanzamente -p finanzamente > backup-$(date +%Y%m%d%H%M%S).sql
+  mysqldump -u"$DB_USERNAME" --password="$DB_PASSWORD" "$DB_DATABASE" \
+  | gzip \
+  | openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$BACKUP_ENCRYPTION_KEY" \
+  > backup-manual-$(date +%Y%m%d%H%M%S).sql.gz.enc
 ```
+
+Per ripristinare un backup cifrato (automatico o manuale):
+
+```bash
+openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"$BACKUP_ENCRYPTION_KEY" \
+  -in /path/to/backup.sql.gz.enc \
+  | gunzip \
+  | docker compose -f docker-compose.prod.yml exec -T db \
+      mysql -u"$DB_USERNAME" --password="$DB_PASSWORD" "$DB_DATABASE"
+```
+
+> I backup automatici sono nel volume `backups`, visibili con:
+> ```bash
+> docker run --rm -v finanzamente_backups:/backups alpine ls -lh /backups
+> ```
 
 ---
 
@@ -565,11 +589,45 @@ docker compose -f docker-compose.prod.yml exec app php artisan queue:retry all
 
 ### Spazio su disco
 
+Il server CX22 ha **40 GB SSD**. Ecco la distribuzione attesa e i rischi:
+
+| Componente | Spazio stimato | Gestione |
+|---|---|---|
+| Ubuntu + Docker daemon | ~5 GB fissi | — |
+| Immagine app attiva | ~400 MB | Sostituita ad ogni deploy |
+| Immagini Docker vecchie | ~400 MB × N deploy | ⚠️ Pulizia automatica nel deploy |
+| Volume `dbdata` (MySQL) | ~200 MB → cresce lentamente | — |
+| Volume `storage` (upload/log) | ~50–300 MB/anno | Monitora |
+| Volume `backups` (7 dump cifrati) | ~15 MB fissi | Rotazione automatica 7 gg |
+| Log Docker (tutti i container) | ~120 MB fissi | Limitati via `max-size`/`max-file` |
+
+**Rischio principale: immagini Docker accumulate.**
+Ogni deploy scarica una nuova immagine `sha-XXXXXXX` (~400 MB). Senza pulizia, 12 deploy/anno = ~5 GB sprecati.
+Il workflow CI/CD esegue automaticamente `docker image prune -af --filter "until=168h"` dopo ogni deploy, rimuovendo le immagini più vecchie di 7 giorni.
+
+**Verifica rapida dello stato:**
 ```bash
-df -h
-docker system df        # spazio usato da Docker
-docker image prune -f   # rimuovi immagini non usate
+df -h /                  # spazio totale disco
+docker system df -v      # dettaglio per immagini, volumi, container
+docker image ls          # elenco immagini con dimensione
 ```
+
+**Pulizia manuale di emergenza** (se df -h mostra >80% usato):
+```bash
+# Rimuove immagini non usate dai container attivi (sicuro)
+docker image prune -af --filter "until=168h"
+
+# Rimuove anche build cache (recupera molto spazio, sicuro in produzione)
+docker builder prune -af
+
+# Stima spazio recuperabile prima di agire
+docker system df
+```
+
+**Quando fare l'upgrade a CX32 (8 GB RAM, 80 GB SSD):**
+- `df -h` mostra costantemente >70% usato, oppure
+- `docker stats` mostra l'app con swap attivo (RAM esaurita), oppure
+- Il DB supera i 2 GB (query lente con 4 GB RAM condivisa)
 
 ---
 
@@ -588,6 +646,9 @@ docker image prune -f   # rimuovi immagini non usate
 | `MAIL_MAILER` | ✅ | Driver email (`smtp`, `mailgun`, ecc.) |
 | `MAIL_FROM_ADDRESS` | ✅ | Email mittente |
 | `ADV_THROTTLE_SALT` | ✅ | Salt SHA256 rate limiting (min 32 char) |
+| `BACKUP_ENCRYPTION_KEY` | ✅ | Chiave AES-256 per dump cifrati (`openssl rand -base64 32`) |
+| `PRE_LAUNCH_OWNER_EMAIL` | — | Email owner per bypass waitlist pre-lancio |
+| `MAGAZINE_ADMIN_EMAIL` | — | Email admin magazine (CRUD articoli). Se vuota, usa `PRE_LAUNCH_OWNER_EMAIL` come fallback |
 | `IMAGE_TAG` | ✅ | Tag immagine Docker (gestito da CI/CD) |
 | `SKIP_INIT` | — | `true` nel container scheduler |
 
@@ -601,3 +662,144 @@ docker image prune -f   # rimuovi immagini non usate
 | `HETZNER_USER` | ✅ | Utente SSH (`deploy`) |
 | `HETZNER_SSH_KEY` | ✅ | Chiave SSH privata (per GitHub Actions) |
 | `HETZNER_PORT` | — | Porta SSH (default: `22`) |
+
+---
+
+## 14. Migrazione a un nuovo server
+
+Quando devi passare a un server più potente (es. da CX22 a CX32), segui questi passi nell'ordine.
+I dati non vanno mai persi perché tutto lo stato persistente è nei volumi Docker.
+
+### Panoramica di cosa è persistente
+
+| Dato | Dove vive | Migrazione necessaria |
+|---|---|---|
+| Database MySQL | Volume `dbdata` | ✅ Dump + import |
+| Immagini magazine e upload | Volume `storage` | ✅ `rsync` o tar |
+| Certificato TLS (Caddy) | Volume `caddy_data` | Opzionale (Caddy lo rigenera) |
+| Backup cifrati | Volume `backups` | Consigliato copiare |
+| Codice applicativo | Immagine Docker Hub | ❌ Si scarica da solo |
+| Configurazione `.env` | File sul server | ✅ Copiare manualmente |
+
+### Step 1 — Metti l'app in manutenzione
+
+```bash
+# Sul vecchio server
+ssh deploy@<IP_VECCHIO>
+cd /opt/finanzamente
+docker compose -f docker-compose.prod.yml exec app php artisan down --message="Manutenzione in corso" --retry=60
+```
+
+### Step 2 — Esegui un backup manuale del database
+
+```bash
+# Sul vecchio server — esporta e cifra il dump
+source .env
+docker compose -f docker-compose.prod.yml exec db \
+  mysqldump -u"$DB_USERNAME" --password="$DB_PASSWORD" "$DB_DATABASE" \
+  | gzip \
+  | openssl enc -aes-256-cbc -pbkdf2 -pass pass:"$BACKUP_ENCRYPTION_KEY" \
+  > /tmp/migration_$(date +%Y%m%d%H%M%S).sql.gz.enc
+
+# Verifica che il file sia stato creato e non sia vuoto
+ls -lh /tmp/migration_*.sql.gz.enc
+```
+
+### Step 3 — Copia i volumi persistenti sul nuovo server
+
+```bash
+# Dal tuo computer locale — copia il dump DB e il volume storage
+scp deploy@<IP_VECCHIO>:/tmp/migration_*.sql.gz.enc ./
+
+# Copia il volume storage (immagini, cache sessioni, log)
+# Crea prima una tarball sul vecchio server:
+ssh deploy@<IP_VECCHIO> \
+  "docker run --rm -v finanzamente_storage:/data alpine tar czf - -C /data ." \
+  > storage_backup.tar.gz
+
+# Trasferisci al nuovo server
+scp migration_*.sql.gz.enc storage_backup.tar.gz deploy@<IP_NUOVO>:/tmp/
+```
+
+### Step 4 — Configura il nuovo server
+
+Segui i passi da [sezione 5](#5-provisioning-del-server-hetzner) in poi per il nuovo server.
+Quando arrivi al punto 7.3 (file `.env`), copia quello del vecchio server e aggiorna solo `APP_URL` se cambia.
+
+```bash
+# Copia il .env dal vecchio server
+scp deploy@<IP_VECCHIO>:/opt/finanzamente/.env deploy@<IP_NUOVO>:/opt/finanzamente/.env
+```
+
+### Step 5 — Avvia lo stack sul nuovo server (senza migrate automatico)
+
+```bash
+ssh deploy@<IP_NUOVO>
+cd /opt/finanzamente
+
+# Avvia solo il DB per ora (SKIP_INIT=true evita migrate automatico sull'app)
+docker compose -f docker-compose.prod.yml up -d db
+# Aspetta che sia healthy
+docker compose -f docker-compose.prod.yml ps
+```
+
+### Step 6 — Importa il database
+
+```bash
+# Sul nuovo server — decifra e importa
+source .env
+openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"$BACKUP_ENCRYPTION_KEY" \
+  -in /tmp/migration_*.sql.gz.enc \
+  | gunzip \
+  | docker compose -f docker-compose.prod.yml exec -T db \
+      mysql -u"$DB_USERNAME" --password="$DB_PASSWORD" "$DB_DATABASE"
+
+echo "Import completato"
+```
+
+### Step 7 — Ripristina il volume storage
+
+```bash
+# Sul nuovo server
+docker run --rm \
+  -v finanzamente_storage:/data \
+  -v /tmp:/backup \
+  alpine \
+  sh -c "cd /data && tar xzf /backup/storage_backup.tar.gz"
+```
+
+### Step 8 — Avvia tutto e verifica
+
+```bash
+# Avvia l'intera stack (SKIP_INIT non è settato → migrate --force viene eseguito)
+docker compose -f docker-compose.prod.yml up -d
+
+# Controlla i log dell'entrypoint
+docker compose -f docker-compose.prod.yml logs -f app
+
+# Verifica salute
+curl -s https://tuodominio.com/up
+```
+
+### Step 9 — Aggiorna il DNS e disattiva il vecchio server
+
+1. Punta il record A del dominio all'IP del nuovo server
+2. Aspetta la propagazione DNS (tipicamente 5–30 minuti con TTL basso)
+3. Verifica che il sito funzioni correttamente
+4. Riattiva l'app se era in manutenzione: `php artisan up`
+5. Dopo 24–48h di stabilità, cancella il vecchio server da Hetzner
+
+> **Nota sul TTL DNS**: prima della migrazione abbassa il TTL a 60s sul record A così la propagazione è rapida. Rimettilo a 3600 dopo.
+
+### Checklist migrazione
+
+- [ ] App in manutenzione sul vecchio server
+- [ ] Backup DB cifrato eseguito e verificato
+- [ ] Volume `storage` copiato
+- [ ] `.env` copiato sul nuovo server
+- [ ] DB importato correttamente
+- [ ] `storage:link` ri-eseguito (lo fa l'entrypoint automaticamente)
+- [ ] Sito risponde su `/up`
+- [ ] DNS aggiornato
+- [ ] App fuori manutenzione
+- [ ] Vecchio server cancellato dopo verifica

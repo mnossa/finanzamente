@@ -164,8 +164,14 @@ jobs:
             timeout 120 bash -c \
               'until docker compose -f docker-compose.prod.yml exec -T app curl -sf http://localhost/up > /dev/null 2>&1; do sleep 5; echo "Attesa..."; done'
 
-            # Pulizia immagini obsolete (libera spazio su disco)
-            echo "==> [deploy] Pulizia immagini vecchie..."
-            docker image prune -f
+            # Pulizia immagini obsolete (libera spazio su disco).
+            # --filter "until=168h" rimuove le immagini scaricate più di 7 giorni fa,
+            # mantenendo sempre quella corrente e quella del giorno precedente.
+            echo "==> [deploy] Pulizia immagini vecchie (>7 giorni)..."
+            docker image prune -af --filter "until=168h"
+
+            # Log spazio disco post-deploy
+            echo "==> [deploy] Spazio disco disponibile:"
+            df -h / | tail -1
 
             echo "==> [deploy] Deploy completato! Versione attiva: ${IMAGE_TAG}"

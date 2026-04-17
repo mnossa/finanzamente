@@ -6,7 +6,6 @@ import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import { trackEvent } from '../../utils/tracking';
-import clsx from 'clsx';
 
 interface PlanData {
     key: string;
@@ -155,16 +154,21 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
 
     const hasPlanSummary = Object.keys(plans).length > 0;
 
+    const sidebar = hasPlanSummary ? (
+        <PlanSummary
+            plan={data.selected_plan}
+            billingCycle={data.billing_cycle}
+            plans={plans}
+        />
+    ) : undefined;
+
     return (
-        <GuestLayout>
+        <GuestLayout sidebar={sidebar}>
             <Head title="Registrati" />
 
-            <div className={clsx(
-                'flex gap-8',
-                hasPlanSummary ? 'flex-col lg:flex-row lg:items-start' : 'flex-col',
-            )}>
+            <div className="flex flex-col">
                 {/* Form di registrazione */}
-                <div className="flex-1">
+                <div>
                     <form onSubmit={submit} autoComplete="off">
                         {/* Honeypot fields per laravel-honeypot */}
                         <input type="text" name="my_name" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
@@ -282,17 +286,6 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
                             <InputError message={errors.password_confirmation} className="mt-2" />
                         </div>
 
-                        {/* Riepilogo piano su mobile (sotto il form) */}
-                        {hasPlanSummary && (
-                            <div className="mt-6 lg:hidden">
-                                <PlanSummary
-                                    plan={data.selected_plan}
-                                    billingCycle={data.billing_cycle}
-                                    plans={plans}
-                                />
-                            </div>
-                        )}
-
                         <div className="mt-4 flex items-center justify-end">
                             <Link
                                 href={route('login')}
@@ -307,17 +300,6 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
                         </div>
                     </form>
                 </div>
-
-                {/* Riepilogo piano su desktop (a destra) */}
-                {hasPlanSummary && (
-                    <div className="hidden lg:block w-72 flex-shrink-0">
-                        <PlanSummary
-                            plan={data.selected_plan}
-                            billingCycle={data.billing_cycle}
-                            plans={plans}
-                        />
-                    </div>
-                )}
             </div>
         </GuestLayout>
     );

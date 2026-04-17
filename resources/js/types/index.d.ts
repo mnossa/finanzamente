@@ -106,6 +106,7 @@ export type PageProps<
         excess_households: number;
     } | null;
     isEarlyBird?: boolean;
+    isAdmin?: boolean;
 };
 
 export interface AppNotification {

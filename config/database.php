@@ -63,6 +63,26 @@ return [
             ]) : [],
         ],
 
+        'e2e_mysql' => [
+            'driver' => 'mysql',
+            'url' => env('E2E_DB_URL'),
+            'host' => env('E2E_DB_HOST', '127.0.0.1'),
+            'port' => env('E2E_DB_PORT', '3306'),
+            'database' => env('E2E_DB_DATABASE', 'laravel_e2e'),
+            'username' => env('E2E_DB_USERNAME', 'root'),
+            'password' => env('E2E_DB_PASSWORD', ''),
+            'unix_socket' => env('E2E_DB_SOCKET', ''),
+            'charset' => env('E2E_DB_CHARSET', 'utf8mb4'),
+            'collation' => env('E2E_DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('E2E_MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

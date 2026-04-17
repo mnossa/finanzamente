@@ -1,8 +1,13 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, ReactNode } from 'react';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
+import clsx from 'clsx';
 
-export default function Guest({ children }: PropsWithChildren) {
+interface GuestProps {
+    sidebar?: ReactNode;
+}
+
+export default function Guest({ children, sidebar }: PropsWithChildren<GuestProps>) {
     return (
         <>
             <UmamiAnalytics />
@@ -15,9 +20,26 @@ export default function Guest({ children }: PropsWithChildren) {
                     </a>
                 </div>
 
-                {/* Card Container */}
-                <div className="w-full overflow-hidden bg-white px-8 py-8 shadow-soft sm:max-w-xl sm:rounded-2xl border border-slate-100">
-                    {children}
+                {/* Card + Sidebar Container */}
+                <div className={clsx(
+                    sidebar
+                        ? 'flex w-full max-w-3xl flex-col items-start gap-6 px-4 lg:flex-row'
+                        : 'w-full sm:max-w-xl',
+                )}>
+                    {/* Card */}
+                    <div className={clsx(
+                        'overflow-hidden bg-white px-8 py-8 shadow-soft sm:rounded-2xl border border-slate-100',
+                        sidebar ? 'w-full flex-1' : 'w-full',
+                    )}>
+                        {children}
+                    </div>
+
+                    {/* Sidebar (es. riepilogo ordine) */}
+                    {sidebar && (
+                        <div className="w-full lg:w-72 lg:flex-shrink-0">
+                            {sidebar}
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
