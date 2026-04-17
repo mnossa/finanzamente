@@ -152,6 +152,7 @@
 
 ### Debugging test falliti
 - Analizzare sempre il motivo del fallimento: leggere il messaggio, cercare la logica aggiornata, confrontare con i test.
+- Quando esegui delle migrazioni, riportarle anche verso il db e2e
 - **Regola**: Non correggere "alla cieca"; capire la causa, poi aggiornare test o codice.
 
 ### Best practice generale

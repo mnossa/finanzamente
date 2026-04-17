@@ -49,7 +49,7 @@ export default function Modal({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+                    <div className="absolute inset-0 z-40 bg-slate-900/60 backdrop-blur-sm" />
                 </TransitionChild>
 
                 <TransitionChild
@@ -64,7 +64,7 @@ export default function Modal({
                         className={clsx(
                             'mb-6 transform overflow-hidden rounded-2xl bg-white dark:bg-slate-800 text-left align-middle shadow-xl transition-all',
                             'shadow-soft-lg transition-all sm:mx-auto sm:w-full',
-                            'border border-slate-100',
+                            'border border-slate-100 z-40',
                             maxWidthClass
                         )}
                     >
