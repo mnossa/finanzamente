@@ -1,6 +1,24 @@
 @extends('layouts.guest')
 
 @section('content')
+    @if($article->is_draft)
+        <div class="sticky top-16 sm:top-20 z-40 bg-amber-50 border-b border-amber-200 shadow-sm">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+                <p class="text-sm text-amber-800 font-medium flex items-center gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Anteprima bozza — questo articolo non è ancora pubblicato e non è visibile al pubblico.
+                </p>
+                <a href="{{ route('admin.magazine.edit', $article) }}"
+                   class="text-sm text-amber-700 hover:text-amber-900 underline decoration-dotted flex-shrink-0">
+                    ← Torna alla modifica
+                </a>
+            </div>
+        </div>
+    @endif
+
     <!-- Cover -->
     @if($article->cover_image_url)
         <div class="w-full aspect-video sm:aspect-[21/7] overflow-hidden bg-surface-200 relative">
@@ -46,9 +64,13 @@
             <!-- Autore e data -->
             <div class="flex flex-wrap items-center gap-4 pb-4 border-b border-surface-200 text-sm text-surface-500">
                 <span class="font-medium text-surface-700">{{ $article->author_name }}</span>
-                <time datetime="{{ $article->published_at->toDateString() }}">
-                    {{ $article->published_at->locale('it')->isoFormat('D MMMM YYYY') }}
-                </time>
+                @if($article->published_at)
+                    <time datetime="{{ $article->published_at->toDateString() }}">
+                        {{ $article->published_at->locale('it')->isoFormat('D MMMM YYYY') }}
+                    </time>
+                @else
+                    <span class="italic text-amber-600">non ancora pubblicato</span>
+                @endif
                 <span>{{ $article->reading_time_minutes }} min di lettura</span>
                 <span>{{ number_format($article->views_count) }} letture</span>
             </div>

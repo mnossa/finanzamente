@@ -464,6 +464,7 @@ Route::prefix('admin/magazine')->name('admin.magazine.')->middleware(['auth', 'v
     Route::post('/', [MagazineAdminController::class, 'store'])->name('store');
     Route::get('/unsplash-search', [MagazineAdminController::class, 'unsplashSearch'])->name('unsplash-search');
     Route::get('/{article}/modifica', [MagazineAdminController::class, 'edit'])->name('edit');
+    Route::get('/{article}/anteprima', [MagazineAdminController::class, 'preview'])->name('preview');
     Route::put('/{article}', [MagazineAdminController::class, 'update'])->name('update');
     Route::delete('/{article}', [MagazineAdminController::class, 'destroy'])->name('destroy');
 });

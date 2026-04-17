@@ -66,6 +66,25 @@ class MagazineAdminController extends Controller
         return view('admin.magazine.edit', compact('article', 'categories'));
     }
 
+    /**
+     * Anteprima articolo in bozza — visibile solo all'admin/owner.
+     * Usa la stessa view pubblica ma senza il constraint published().
+     */
+    public function preview(MagazineArticle $article): View
+    {
+        $article->load('category');
+
+        $related = MagazineArticle::with('category')
+            ->published()
+            ->where('category_id', $article->category_id)
+            ->where('id', '!=', $article->id)
+            ->latest('published_at')
+            ->limit(3)
+            ->get();
+
+        return view('magazine.show', compact('article', 'related'));
+    }
+
     /** Aggiorna articolo. */
     public function update(Request $request, MagazineArticle $article): RedirectResponse
     {
