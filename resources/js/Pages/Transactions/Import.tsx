@@ -364,6 +364,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
     // Gestione duplicati
     const [duplicateCheckLoading, setDuplicateCheckLoading] = useState(false);
+    const [duplicateCheckError, setDuplicateCheckError] = useState<string | null>(null);
     const [duplicates, setDuplicates] = useState<DuplicateInfo[]>([]);
     const [duplicateResolutions, setDuplicateResolutions] = useState<Record<number, DuplicateResolution>>({});
     const [showDuplicateModal, setShowDuplicateModal] = useState(false);
@@ -824,6 +825,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         const rows = getRowsToImport();
         setDuplicateCheckLoading(true);
         setImportErrors({});
+        setDuplicateCheckError(null);
         try {
             const resp = await axios.post<{ duplicates: DuplicateInfo[] }>(
                 route('transactions.import.check-duplicates'),
@@ -847,9 +849,12 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                 setDuplicateResolutions(resolutions);
                 setShowDuplicateModal(true);
             }
-        } catch {
-            // In caso di errore nel check, procedi comunque con l'import
-            doImport(rows);
+        } catch (err: unknown) {
+            // Non procedere silenziosamente: mostra il banner e lascia scegliere all'utente
+            const msg = axios.isAxiosError(err) && err.response?.data?.message
+                ? err.response.data.message
+                : 'Impossibile verificare i duplicati. Vuoi importare comunque?';
+            setDuplicateCheckError(msg);
         } finally {
             setDuplicateCheckLoading(false);
         }
@@ -1724,6 +1729,31 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                             )}
 
                             <InputError message={importErrors.rows} className="mt-1" />
+
+                            {/* Errore verifica duplicati */}
+                            {duplicateCheckError && (
+                                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                                    <p className="text-sm font-medium text-red-800">
+                                        ⚠️ {duplicateCheckError}
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setDuplicateCheckError(null); doImport(getRowsToImport()); }}
+                                            className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                        >
+                                            Importa comunque
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setDuplicateCheckError(null); handleImport(); }}
+                                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            Riprova verifica
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </form>
                     )}
 
