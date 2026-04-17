@@ -134,3 +134,26 @@
 - Finestra consigliata: iniziare il nurturing serio circa 6 mesi prima del lancio effettivo
 - Obiettivo delle email: validare pain point, mostrare progresso, far crescere desiderio, preparare l'offerta early bird
 - **Regola**: se il lancio non è imminente, meglio meno email ma più rilevanti
+
+## Lezioni Recurrence Detection & Test Maintenance (2026-04-17)
+
+### Allineamento test-business logic
+- Quando la logica di business evolve (es. da errore a warning su descrizione mancante), aggiornare immediatamente i test per riflettere il nuovo comportamento.
+- **Regola**: Non lasciare test obsoleti; ogni modifica alla logica va accompagnata da revisione dei test correlati.
+
+### Gestione memoria PHPUnit
+- Test suite ampie possono esaurire la memoria PHP (es. memory_limit 128M non sufficiente).
+- **Fix**: Impostare memory_limit esplicitamente sia in Makefile che in phpunit.xml (es. 256M o superiore per suite grandi).
+- **Regola**: Se i test falliscono per memory exhausted, controllare e aumentare memory_limit in TUTTI i punti di entry (Makefile, phpunit.xml, Dockerfile se serve).
+
+### Coerenza logica import/export
+- Se la logica di importazione (es. segno amount in base a category type) cambia, aggiornare sia il codice che i test per garantire coerenza.
+- **Regola**: Ogni modifica a una regola di business che impatta i dati (import, export, calcoli) richiede revisione dei test e dei dati di esempio.
+
+### Debugging test falliti
+- Analizzare sempre il motivo del fallimento: leggere il messaggio, cercare la logica aggiornata, confrontare con i test.
+- **Regola**: Non correggere "alla cieca"; capire la causa, poi aggiornare test o codice.
+
+### Best practice generale
+- Ogni fix a test o configurazione va documentato in lessons.md per evitare ricadute future.
+- **Regola**: lessons.md va aggiornato ogni volta che si risolve un problema non banale di test, configurazione o logica condivisa.
