@@ -38,26 +38,26 @@ class MagazineCategorySeeder extends Seeder
                 'color'       => '#F59E0B',
                 'sort_order'  => 4,
             ],
-            [
-                'slug'        => 'tasse',
-                'name'        => 'Tasse',
-                'description' => 'Detrazioni fiscali, dichiarazione dei redditi e come ottimizzare il carico fiscale nel rispetto della legge italiana.',
-                'color'       => '#EF4444',
-                'sort_order'  => 5,
-            ],
-            [
-                'slug'        => 'conti-e-banche',
-                'name'        => 'Conti e Banche',
-                'description' => 'Conti correnti, carte di credito e banche digitali: quale scegliere e come risparmiare sulle commissioni.',
-                'color'       => '#3B82F6',
-                'sort_order'  => 6,
-            ],
+            // [
+            //     'slug'        => 'tasse',
+            //     'name'        => 'Tasse',
+            //     'description' => 'Detrazioni fiscali, dichiarazione dei redditi e come ottimizzare il carico fiscale nel rispetto della legge italiana.',
+            //     'color'       => '#EF4444',
+            //     'sort_order'  => 5,
+            // ],
+            // [
+            //     'slug'        => 'conti-e-banche',
+            //     'name'        => 'Conti e Banche',
+            //     'description' => 'Conti correnti, carte di credito e banche digitali: quale scegliere e come risparmiare sulle commissioni.',
+            //     'color'       => '#3B82F6',
+            //     'sort_order'  => 6,
+            // ],
             [
                 'slug'        => 'mindset',
                 'name'        => 'Mindset',
                 'description' => 'Psicologia dei soldi, abitudini finanziarie sane e come cambiare il rapporto con il denaro.',
                 'color'       => '#14B8A6',
-                'sort_order'  => 7,
+                'sort_order'  => 5,
             ],
         ];
 
