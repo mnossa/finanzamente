@@ -13,8 +13,9 @@ import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
 import CardBox from '@/Components/CardBox';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import axios from 'axios';
 
 interface Category {
     id: number;
@@ -464,6 +465,52 @@ export default function Index({
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
     const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
 
+    // Polling import attivi: aggiorna il banner e ricarica la pagina quando terminano
+    type ActiveImport = { id: number; status: string; rows_total: number; rows_imported: number; created_at: string };
+    const [pendingImports, setPendingImports] = useState<ActiveImport[]>(activeImports);
+
+    useEffect(() => {
+        // Se non ci sono import attivi non serve polling
+        if (activeImports.length === 0) {
+            setPendingImports([]);
+            return;
+        }
+
+        setPendingImports(activeImports);
+
+        let stopped = false;
+        let timerId: ReturnType<typeof setTimeout>;
+
+        const poll = async () => {
+            if (stopped) return;
+            try {
+                const resp = await axios.get<{ activeImports: ActiveImport[] }>(
+                    route('transactions.import.status'),
+                    { headers: { Accept: 'application/json' } },
+                );
+                if (stopped) return;
+                const still = resp.data.activeImports;
+                setPendingImports(still);
+                if (still.length === 0) {
+                    // Job terminato: ricarica solo le props necessarie
+                    router.reload({ only: ['transactions', 'activeImports'] });
+                    return;
+                }
+            } catch {
+                // noop — riprova al prossimo tick
+            }
+            if (!stopped) timerId = setTimeout(poll, 4000);
+        };
+
+        timerId = setTimeout(poll, 4000);
+        return () => {
+            stopped = true;
+            clearTimeout(timerId);
+        };
+    // activeImports.length: usa length non il riferimento per evitare re-fire inutili
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeImports.length]);
+
     const allIds = transactions.data.map((t) => t.id);
     const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
     const isIndeterminate = selectedIds.size > 0 && !isAllSelected;
@@ -623,16 +670,16 @@ export default function Index({
 
             <PageContent>
                     {/* Banner importazioni in corso */}
-                    {activeImports.length > 0 && (
+                    {pendingImports.length > 0 && (
                         <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
                             <svg className="h-5 w-5 animate-spin flex-shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                             <span>
-                                {activeImports.length === 1
-                                    ? `Importazione in corso (${activeImports[0].rows_total} transazioni)\u2026 Riceverai una notifica al termine.`
-                                    : `${activeImports.length} importazioni in corso\u2026 Riceverai una notifica al termine.`}
+                                {pendingImports.length === 1
+                                    ? `Importazione in corso (${pendingImports[0].rows_total} transazioni)\u2026 Riceverai una notifica al termine.`
+                                    : `${pendingImports.length} importazioni in corso\u2026 Riceverai una notifica al termine.`}
                             </span>
                         </div>
                     )}

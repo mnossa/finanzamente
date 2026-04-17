@@ -357,6 +357,27 @@ class DashboardController extends Controller
      */
     private function getLifestyleWidgetData(\App\Models\User $user): array
     {
+        // Il widget è riservato al piano Pro
+        $moduleService = app(\App\Services\ModuleAccessService::class);
+        if (! $moduleService->canAccessModuleById($user, 'lifestyle_score')) {
+            return [
+                'unlocked'           => false,
+                'months_with_data'   => 0,
+                'months_needed'      => 2,
+                'lifestyle_score'    => null,
+                'net_income'         => 0.0,
+                'effective_expenses' => 0.0,
+                'is_partita_iva'     => $user->user_type === 'partita_iva',
+                'top_categories'     => [],
+                'trend' => [
+                    'last30_score' => null,
+                    'prev30_score' => null,
+                    'delta'        => null,
+                    'direction'    => 'unknown',
+                ],
+            ];
+        }
+
         // ── Verifica mesi distinti con transazioni ───────────────────────────────
         // Compatibile con MySQL (produzione) e SQLite (test in-memory)
         $driver         = \Illuminate\Support\Facades\DB::getDriverName();

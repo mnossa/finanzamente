@@ -29,6 +29,20 @@ class TransactionImportController extends Controller
     ) {}
 
     /**
+     * Restituisce gli import attivi (pending/processing) per il polling lato client.
+     */
+    public function importStatus(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        $imports = TransactionImport::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'processing'])
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'status', 'rows_total', 'rows_imported', 'created_at']);
+
+        return response()->json(['activeImports' => $imports]);
+    }
+
+    /**
      * Mostra il wizard di importazione.
      */
     public function create(Request $request): Response

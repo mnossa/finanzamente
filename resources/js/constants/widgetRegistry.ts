@@ -50,6 +50,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         description: 'Analizza l\'indice di inflazione del tuo stile di vita.',
         defaultSize: 'xl',
         defaultVisible: true,
+        requiresModule: 'lifestyle_score',
         allowedSizes: ALL_SIZES,
     },
     {

@@ -258,6 +258,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
 
         // Transaction Import
         Route::get('/transazioni/importa', [TransactionImportController::class, 'create'])->name('transactions.import');
+        Route::get('/transazioni/importa/stato', [TransactionImportController::class, 'importStatus'])->name('transactions.import.status');
         Route::post('/transazioni/importa/anteprima', [TransactionImportController::class, 'preview'])->name('transactions.import.preview');
         Route::post('/transazioni/importa/fogli', [TransactionImportController::class, 'sheets'])->name('transactions.import.sheets');
         Route::post('/transazioni/importa/controlla-duplicati', [TransactionImportController::class, 'checkDuplicates'])->name('transactions.import.check-duplicates');

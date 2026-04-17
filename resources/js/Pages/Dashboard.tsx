@@ -472,7 +472,9 @@ export default function Dashboard({
                 );
 
             case 'lifestyle_widget':
-                return <LifestyleWidget data={lifestyleWidgetData} />;
+                return isModuleEnabled('lifestyle_score')
+                    ? <LifestyleWidget data={lifestyleWidgetData} />
+                    : <LockedModuleCard moduleId="lifestyle_score" />;
 
             case 'accounts':
                 return (
