@@ -108,7 +108,9 @@ class TransactionImportServiceTest extends TestCase
         $rows = $this->service->parseCsv($csv, $layout);
 
         $this->assertCount(1, $rows);
-        $this->assertNotEmpty($rows[0]['errors']);
+        // La descrizione vuota genera un warning (la riga rimane importabile)
+        $this->assertEmpty($rows[0]['errors']);
+        $this->assertNotEmpty($rows[0]['warnings']);
     }
 
     #[Test]

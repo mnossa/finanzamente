@@ -35,3 +35,9 @@ Schedule::command('plans:process-expirations')->dailyAt('00:05');
  * Invia email di avviso agli utenti Pro il cui piano scade tra 7 o 1 giorno.
  */
 Schedule::command('plans:notify-expiring')->dailyAt('08:00');
+
+/**
+ * Rileva pattern ricorrenti nelle transazioni ogni lunedì alle 01:00.
+ * I suggerimenti vengono mostrati all'utente in /rilevamento-ricorrenze.
+ */
+Schedule::command('recurring:detect')->weeklyOn(1, '01:00');

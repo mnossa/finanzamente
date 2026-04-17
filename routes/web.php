@@ -27,6 +27,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TelegramLinkController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\ThemePreferenceController;
+use App\Http\Controllers\RecurrenceDetectionController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
@@ -314,6 +315,11 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::post('/debiti-crediti/{debts_credit}/riapri', [DebtCreditController::class, 'reopen'])->name('debts-credits.reopen');
         Route::delete('/debiti-crediti/{debts_credit}', [DebtCreditController::class, 'destroy'])->name('debts-credits.destroy');
 
+        // Recurrence Detection - avvia rilevamento e gestione suggerimenti
+        Route::post('/rilevamento-ricorrenze/avvia', [RecurrenceDetectionController::class, 'detect'])->name('recurrence-detection.detect');
+        Route::post('/rilevamento-ricorrenze/{suggestion}/accetta', [RecurrenceDetectionController::class, 'accept'])->name('recurrence-detection.accept');
+        Route::post('/rilevamento-ricorrenze/{suggestion}/ignora', [RecurrenceDetectionController::class, 'ignore'])->name('recurrence-detection.ignore');
+
         // Recurring Transactions - modifica
         Route::get('/transazioni-ricorrenti/crea', [RecurringTransactionController::class, 'create'])->name('recurring-transactions.create');
         Route::post('/transazioni-ricorrenti', [RecurringTransactionController::class, 'store'])->name('recurring-transactions.store');
@@ -393,6 +399,8 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
 
     Route::get('/rimborsi', [RefundController::class, 'index'])->name('refunds.index');
     Route::get('/rimborsi/{refund}', [RefundController::class, 'show'])->name('refunds.show');
+
+    Route::get('/rilevamento-ricorrenze', [RecurrenceDetectionController::class, 'index'])->name('recurrence-detection.index');
 
     Route::get('/transazioni-ricorrenti', [RecurringTransactionController::class, 'index'])->name('recurring-transactions.index');
     Route::get('/transazioni-ricorrenti/{recurringTransaction}', [RecurringTransactionController::class, 'show'])->name('recurring-transactions.show');

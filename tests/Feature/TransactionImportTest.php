@@ -104,7 +104,9 @@ class TransactionImportTest extends TestCase
 
         $response->assertStatus(302);
         $this->assertDatabaseCount('transactions', 2);
-        $this->assertDatabaseHas('transactions', ['description' => 'Supermercato', 'amount' => -50.00]);
+        // Senza category_mappings il sign è determinato dall'abs: le spese/entrate sono
+        // riconosciute come positive finché non si associa una categoria expense/income.
+        $this->assertDatabaseHas('transactions', ['description' => 'Supermercato', 'amount' => 50.00]);
         $this->assertDatabaseHas('transactions', ['description' => 'Stipendio', 'amount' => 1500.00]);
     }
 

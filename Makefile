@@ -285,7 +285,7 @@ clean-duplicates:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan recurring:clean-duplicates
 
 test:
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -e APP_ENV=testing app php artisan test
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -e APP_ENV=testing app php -d memory_limit=256M artisan test
 
 # Simula la pipeline CI/CD in locale (identica a GitHub Actions)
 ci:
