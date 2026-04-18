@@ -54,14 +54,14 @@ const FREQUENCY_LABELS: Record<string, string> = {
 };
 
 const FREQUENCY_COLORS: Record<string, string> = {
-    daily:   'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    weekly:  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    daily: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    weekly: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     monthly: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    yearly:  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    yearly: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-    alto:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    alto: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     medio: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     basso: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
@@ -247,8 +247,7 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
                 <PageHeader
                     title="Ricorrenze Rilevate"
                     subtitle="Transazioni con pattern regolare che potrebbero essere ricorrenti."
-                >
-                    <button
+                    actions={<button
                         type="button"
                         disabled={detecting}
                         onClick={handleDetect}
@@ -270,11 +269,12 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
                                 Avvia Rilevamento
                             </>
                         )}
-                    </button>
-                </PageHeader>
+                    </button>}
+                />
 
                 {suggestions.length === 0 ? (
                     <EmptyState
+                        icon="🔍"
                         title="Nessun suggerimento in attesa"
                         description="Clicca su 'Avvia Rilevamento' per analizzare le tue transazioni e trovare pattern ricorrenti."
                     />
