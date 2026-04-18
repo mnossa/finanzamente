@@ -28,6 +28,9 @@ class TransactionImportTest extends TestCase
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
 
+        // Forza la coda in modalità sync per i test
+        $this->app['config']->set('queue.default', 'sync');
+
         $this->user = User::factory()->create();
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);

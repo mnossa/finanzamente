@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check
+.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -264,6 +264,33 @@ prune-copilot-branches:
 		echo "[+] Nessun branch remoto origin/copilot/* da eliminare"; \
 	else \
 		echo "[+] Eliminazione branch remoti origin/copilot/*"; \
+		for branch in $$remote_branches; do \
+			git push origin --delete "$$branch"; \
+		done; \
+	fi
+
+# Elimina tutti i branch locali e remoti con prefisso renovate/
+prune-renovate-branches:
+	@current_branch=$$(git branch --show-current); \
+	local_branches=$$(git for-each-ref --format='%(refname:short)' refs/heads/renovate/); \
+	if [ -z "$$local_branches" ]; then \
+		echo "[+] Nessun branch locale renovate/* da eliminare"; \
+	else \
+		echo "[+] Eliminazione branch locali renovate/*"; \
+		for branch in $$local_branches; do \
+			if [ "$$branch" = "$$current_branch" ]; then \
+				echo "[!] Salto $$branch perche' e' il branch corrente"; \
+				continue; \
+			fi; \
+			git branch -D "$$branch"; \
+		done; \
+	fi; \
+	git fetch origin --prune; \
+	remote_branches=$$(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin/renovate/); \
+	if [ -z "$$remote_branches" ]; then \
+		echo "[+] Nessun branch remoto origin/renovate/* da eliminare"; \
+	else \
+		echo "[+] Eliminazione branch remoti origin/renovate/*"; \
 		for branch in $$remote_branches; do \
 			git push origin --delete "$$branch"; \
 		done; \
