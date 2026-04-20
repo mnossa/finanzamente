@@ -25,15 +25,16 @@ jobs:
       - name: Build asset frontend (Vite)
         run: npm run build
 
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.5'
           extensions: mbstring, bcmath, pdo, pdo_mysql, intl, fileinfo, curl, gd, zip
           coverage: none
 
       - name: Installa dipendenze PHP
-        run: composer install --optimize-autoloader --no-interaction
+        run: composer install --optimize-autoloader --no-interaction --ignore-platform-reqs
 
       - name: Prepara archivio release
         run: |
