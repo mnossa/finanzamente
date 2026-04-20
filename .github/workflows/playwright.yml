@@ -86,6 +86,10 @@ jobs:
       - name: Build asset frontend (Vite)
         run: npm run build
 
+      - name: Debug HTML /accedi
+        run: |
+          curl -fs http://localhost:8080/accedi > accedi.html || true
+
       - name: Healthcheck applicativo su /accedi
         run: |
           for i in {1..30}; do
@@ -99,6 +103,13 @@ jobs:
           echo "Timeout: login page non pronta dopo 90 secondi"
           docker compose logs app
           exit 1
+
+      - name: Carica HTML /accedi come artefatto
+        uses: actions/upload-artifact@v4
+        with:
+          name: accedi-html
+          path: accedi.html
+          retention-days: 3
 
       - name: Installa browser Playwright (solo Chromium per CI)
         run: npx playwright install chromium --with-deps
