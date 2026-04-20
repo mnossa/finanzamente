@@ -22,6 +22,9 @@ RUN npm run build
 # ─── Stage 2: Dipendenze PHP di produzione ────────────────────────────────────
 FROM composer:2.9 AS composer-builder
 
+# Crea directory cache Composer (necessaria per il fallback VCS quando il dist fallisce)
+RUN mkdir -p /.composer/cache
+
 WORKDIR /app
 
 # Copia solo i file Composer per la cache dei layer

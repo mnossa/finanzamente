@@ -5,6 +5,9 @@ on:
     branches:
       - staging
 
+permissions:
+  contents: write
+
 jobs:
   build-and-release:
     name: Build & Release Staging
@@ -25,7 +28,6 @@ jobs:
       - name: Build asset frontend (Vite)
         run: npm run build
 
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -34,22 +36,32 @@ jobs:
           coverage: none
 
       - name: Installa dipendenze PHP
-        run: composer install --optimize-autoloader --no-interaction --ignore-platform-reqs
+        run: composer install --optimize-autoloader --no-interaction --no-dev --ignore-platform-reqs
+
+      - name: Calcola tag release
+        id: version
+        run: |
+          TAG="staging-v$(date +'%Y%m%d')-$(echo '${{ github.sha }}' | cut -c1-7)"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "filename=finanzamente-${TAG}.tar.gz" >> "$GITHUB_OUTPUT"
 
       - name: Prepara archivio release
         run: |
           mkdir -p release
-          tar czf release/finanzamente-staging-$(date +'%Y%m%d%H%M').tar.gz \
+          tar czf "release/${{ steps.version.outputs.filename }}" \
             --exclude=release \
             --exclude=.git \
             --exclude=node_modules \
-            --exclude=vendor \
             --exclude=.github \
             .
 
-      - name: Carica artefatto release
-        uses: actions/upload-artifact@v4
+      - name: Crea GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: finanzamente-staging-release
-          path: release/*.tar.gz
-          retention-days: 7
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Staging ${{ steps.version.outputs.tag }}"
+          body: |
+            Release automatica staging dal branch `staging`.
+            Commit: ${{ github.sha }}
+          files: release/${{ steps.version.outputs.filename }}
+          prerelease: true
