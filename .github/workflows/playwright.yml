@@ -86,17 +86,17 @@ jobs:
       - name: Build asset frontend (Vite)
         run: npm run build
 
-      - name: Attendi che l'app sia pronta su localhost:8080
+      - name: Healthcheck applicativo su /login
         run: |
           for i in {1..30}; do
-            if curl -fs http://localhost:8080 > /dev/null; then
-              echo "App pronta!"
+            if curl -fs http://localhost:8080/login | grep -q "Accedi"; then
+              echo "Login page pronta!"
               exit 0
             fi
-            echo "Attesa app su http://localhost:8080..."
+            echo "Attesa login page pronta..."
             sleep 3
           done
-          echo "Timeout: app non pronta dopo 90 secondi"
+          echo "Timeout: login page non pronta dopo 90 secondi"
           docker compose logs app
           exit 1
 
