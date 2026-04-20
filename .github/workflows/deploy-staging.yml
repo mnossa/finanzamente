@@ -1,0 +1,54 @@
+name: Deploy Staging — Finanzamente
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build-and-release:
+    name: Build & Release Staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codice sorgente
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Installa dipendenze Node.js
+        run: npm ci
+
+      - name: Build asset frontend (Vite)
+        run: npm run build
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, pdo, pdo_mysql, intl, fileinfo, curl, gd, zip
+          coverage: none
+
+      - name: Installa dipendenze PHP
+        run: composer install --optimize-autoloader --no-interaction
+
+      - name: Prepara archivio release
+        run: |
+          mkdir -p release
+          tar czf release/finanzamente-staging-$(date +'%Y%m%d%H%M').tar.gz \
+            --exclude=release \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=vendor \
+            --exclude=.github \
+            .
+
+      - name: Carica artefatto release
+        uses: actions/upload-artifact@v4
+        with:
+          name: finanzamente-staging-release
+          path: release/*.tar.gz
+          retention-days: 7

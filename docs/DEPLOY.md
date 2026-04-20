@@ -14,10 +14,12 @@
 
 ## 1. Come funziona la pipeline CI/CD
 
-Il file `.github/workflows/ci-cd.yml` definisce una pipeline automatica che si attiva
+
+Il file `.github/workflows/deploy-staging.yml` definisce la pipeline automatica di staging, attivata
 ad ogni **push sul branch `staging`**.
 
-La pipeline è composta da tre job sequenziali:
+
+La pipeline di staging è composta da tre job sequenziali:
 
 ### Job 1 — `test`: Esecuzione dei test
 
@@ -44,7 +46,7 @@ La pipeline è composta da tre job sequenziali:
 2. Crea un **tag Git** e una **GitHub Release** con nome `vYYYYMMDD-<sha>`.
 3. Allega l'archivio `.tar.gz` come asset della release.
 
----
+----
 
 ## 2. Secret e configurazioni necessari
 
