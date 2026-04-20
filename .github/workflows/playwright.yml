@@ -86,10 +86,10 @@ jobs:
       - name: Build asset frontend (Vite)
         run: npm run build
 
-      - name: Healthcheck applicativo su /login
+      - name: Healthcheck applicativo su /accedi
         run: |
           for i in {1..30}; do
-            if curl -fs http://localhost:8080/login | grep -q "Accedi"; then
+            if curl -fs http://localhost:8080/accedi | grep -q "Accedi"; then
               echo "Login page pronta!"
               exit 0
             fi
