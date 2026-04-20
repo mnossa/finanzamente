@@ -158,3 +158,53 @@
 ### Best practice generale
 - Ogni fix a test o configurazione va documentato in lessons.md per evitare ricadute future.
 - **Regola**: lessons.md va aggiornato ogni volta che si risolve un problema non banale di test, configurazione o logica condivisa.
+
+---
+
+## Lezioni Widget Distribuzione Spese & UX Dashboard (2026-04-20)
+
+### Sidebar layout — `lg:static lg:block` sovrascrive `flex flex-col`
+- Strutturare la sidebar come `flex flex-col` non funziona se su desktop è dichiarato `lg:block`.
+- `display: block` di Tailwind sovrascrive `display: flex`, rendendo inutile tutta la struttura flex.
+- **Fix**: sostituire `lg:block` con `lg:flex` per preservare il layout flex su tutti i breakpoint.
+- **Regola**: quando un elemento usa `flex flex-col` per ancorare contenuto in fondo (`shrink-0`), verificare che nessun breakpoint sovrascriva `display` con `block`.
+
+### Sidebar — `absolute bottom-0` vs flex flow
+- Il pattern `absolute bottom-0` per ancorare elementi in fondo alla sidebar causa sovrapposizione con la nav se la nav ha un'altezza fissa `h-[calc(...)]`.
+- **Fix corretto**: sidebar `flex flex-col`, nav `flex-1 min-h-0 overflow-y-auto`, footer `shrink-0` in flusso normale.
+- **Regola**: preferire il flusso flex naturale a `absolute` per elementi fissi in sidebar; è più robusto al variare del contenuto.
+
+### DebtCredit — `amount` vs saldo residuo
+- Il campo `amount` del modello `DebtCredit` è l'importo originale del debito, non il saldo attuale.
+- Il saldo residuo si calcola con `getRemainingAmount()` = `initial_amount - paid_amount`.
+- In dashboard, usare `sum('amount')` mostrava il debito originale invece del residuo, creando incoerenza visiva con la pagina Debiti/Crediti.
+- **Fix**: nei `map()` usare `$dc->getRemainingAmount()`; per i totali aggregati usare `SUM(COALESCE(initial_amount, amount) - COALESCE(paid_amount, 0))` via `selectRaw`.
+- **Regola**: ogni volta che si mostrano importi di DebtCredit, distinguere sempre tra importo originale (`amount`) e saldo residuo (`getRemainingAmount()`). La dashboard deve sempre mostrare il saldo residuo.
+
+### PHP `json_encode(round(...))` — int vs float nelle asserzioni
+- `round(1000.0, 2)` in PHP produce `1000` (int) che `json_encode()` serializza come `1000`, non `1000.0`.
+- I test PHPUnit che assertivano `1000.0` fallivano perché il JSON conteneva `1000`.
+- **Fix**: usare interi nelle asserzioni (`1000`, `50`) quando i valori non hanno decimali significativi.
+- **Regola**: nelle asserzioni su JSON response, usare il tipo che PHP effettivamente serializza — non assumere che i float rimangano float.
+
+### GitHub Actions — versioni azioni inesistenti
+- `actions/checkout@v6`, `actions/setup-node@v6`, `actions/upload-artifact@v7` non esistono.
+- Causano fallimenti CI silenziosi difficili da diagnosticare.
+- **Fix**: usare `@v4` per `checkout`, `setup-node`, `upload-artifact`.
+- **Regola**: quando si scrive un workflow CI, verificare sempre le versioni delle action su marketplace.github.com prima di committare.
+
+### `multi_replace_string_in_file` — rischio di merge accidentale
+- Sostituzioni multiple sullo stesso file possono causare merge errati se le stringhe di contesto si sovrappongono.
+- In un caso è stata persa la chiusura `];` di un FormRequest, causando un ParseError.
+- **Fix**: dopo ogni `multi_replace`, verificare con `php -l` o `get_errors` che la sintassi sia corretta.
+- **Regola**: dopo modifiche a file PHP con `replace_string_in_file`, eseguire sempre una verifica sintattica.
+
+### UX — badge "Mai usata" nelle categorie
+- Mostrare `transactions_count` su ogni card di categoria permette di identificare immediatamente le categorie inutilizzate.
+- Usare `withCount('transactions')` sul query builder è la soluzione ottimale (1 query invece di N).
+- **Regola**: quando si mostra una lista di entità che hanno relazioni contabili, includere sempre il conteggio per dare contesto all'utente.
+
+### UX — box riepilogo ridondante
+- I 3 box "Entrate 9 / Uscite 39 / Spese Fisse 11" in cima alla pagina categorie non aggiungevano valore: le stesse info erano visibili nei titoli di sezione.
+- Su mobile occupavano spazio utile visibile al primo accesso.
+- **Regola**: prima di aggiungere un riepilogo, verificare se le stesse informazioni sono già accessibili nell'interfaccia. In caso affermativo, eliminare la ridondanza.
