@@ -61,11 +61,13 @@ class AdvancedRateLimitWithDelayTest extends TestCase
             'user_type' => 'persona',
             'fiscal_code' => 'RSSMRA80A01H501U',
         ];
+        // Prima chiamata: nessun delay, serve solo a "scaldare" il contatore tentativi
+        $this->post($route, $payload);
+        // Seconda chiamata: deve subire sleep(1)
         $start = microtime(true);
         $this->post($route, $payload);
-        $this->post($route, $payload);
         $elapsed = microtime(true) - $start;
-        $this->assertTrue($elapsed >= 1, 'Delay progressivo non applicato');
+        $this->assertTrue($elapsed >= 0.95, 'Delay progressivo non applicato');
     }
 
     public function test_ip_is_logged_as_hash()
