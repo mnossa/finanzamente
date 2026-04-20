@@ -63,9 +63,18 @@ jobs:
           timeout 120 bash -c             'until docker compose exec -T db mysqladmin ping -h localhost --silent 2>/dev/null; do sleep 5; echo "Attesa database MySQL..."; done'
           echo "MySQL pronto."
 
+      - name: Crea directory cache Composer
+        run: docker compose exec -T app mkdir -p /var/www/.composer/cache
+
       - name: Installa dipendenze PHP (Composer)
+        env:
+          COMPOSER_HOME: /var/www/.composer
+          COMPOSER_CACHE_DIR: /var/www/.composer/cache
         run: |
-          docker compose exec -T app composer install             --optimize-autoloader             --no-interaction
+          docker compose exec -T \
+            -e COMPOSER_HOME=/var/www/.composer \
+            -e COMPOSER_CACHE_DIR=/var/www/.composer/cache \
+            app composer install --optimize-autoloader --no-interaction
 
       - name: Esegui migrazioni e seeder E2E
         run: |
