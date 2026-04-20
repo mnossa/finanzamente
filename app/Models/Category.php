@@ -17,8 +17,14 @@ class Category extends Model
 {
     use HasFactory, SoftDeletes, DispatchesModelEvents;
 
+    /** Valori validi per il campo expense_distribution. */
+    const DISTRIBUTION_NEEDS       = 'needs';
+    const DISTRIBUTION_WANTS       = 'wants';
+    const DISTRIBUTION_INVESTMENTS = 'investments';
+
     protected $fillable = [
-        'household_id', 'name', 'type', 'color', 'icon', 'is_fixed_expense', 'exclude_from_lifestyle_score',
+        'household_id', 'name', 'type', 'color', 'icon', 'is_fixed_expense',
+        'exclude_from_lifestyle_score', 'expense_distribution',
     ];
 
     protected $casts = [

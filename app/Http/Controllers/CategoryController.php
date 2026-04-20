@@ -43,6 +43,7 @@ class CategoryController extends Controller
                     'icon' => $category->icon,
                     'is_fixed_expense' => $category->is_fixed_expense ?? false,
                     'exclude_from_lifestyle_score' => $category->exclude_from_lifestyle_score ?? false,
+                    'expense_distribution' => $category->expense_distribution,
                     'created_at' => $category->created_at->format('Y-m-d'),
                 ];
             });
@@ -103,6 +104,7 @@ class CategoryController extends Controller
                 'icon' => $category->icon,
                 'is_fixed_expense' => $category->is_fixed_expense ?? false,
                 'exclude_from_lifestyle_score' => $category->exclude_from_lifestyle_score ?? false,
+                'expense_distribution' => $category->expense_distribution,
             ],
             'categoryTypes' => self::TYPES,
         ]);

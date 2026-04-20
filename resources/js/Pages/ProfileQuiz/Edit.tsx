@@ -16,6 +16,11 @@ interface ProfileSettings {
     revenue_tracking_enabled?: boolean;
     tax_rate?: number;
     inps_rate?: number;
+    budget503020_targets?: {
+        necessity: number;
+        extra: number;
+        investment: number;
+    };
 }
 
 interface Props {

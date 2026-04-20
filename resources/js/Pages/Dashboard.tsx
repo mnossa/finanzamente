@@ -15,6 +15,7 @@ import LifestyleWidget, { LifestyleWidgetData } from '@/Components/LifestyleWidg
 import CashFlowChart, { CashFlowDataPoint } from '@/Components/Charts/CashFlowChart';
 import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthChart';
 import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
+import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components/ExpenseDistributionWidget';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
@@ -177,6 +178,7 @@ interface DashboardProps {
     cashFlowData: CashFlowDataPoint[];
     expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
+    expenseDistributionData: ExpenseDistributionData;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -385,6 +387,7 @@ export default function Dashboard({
     cashFlowData,
     expenseCategories,
     financialGoals,
+    expenseDistributionData,
 }: DashboardProps) {
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
@@ -718,6 +721,9 @@ export default function Dashboard({
                         </div>
                     </div>
                 ) : <LockedModuleCard moduleId="financial_goals" />;
+
+            case 'expense_distribution':
+                return <ExpenseDistributionWidget data={expenseDistributionData} />;
 
             default:
                 return null;

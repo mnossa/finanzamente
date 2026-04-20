@@ -75,6 +75,7 @@ class StoreDashboardLayoutRequest extends FormRequest
             'cash_flow',
             'expense_treemap',
             'financial_goals',
+            'expense_distribution',
         ];
 
         $validator->after(function ($v) use ($allowedIds) {

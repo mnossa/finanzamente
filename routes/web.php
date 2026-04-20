@@ -33,6 +33,7 @@ use App\Http\Controllers\RefundController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
 use App\Http\Controllers\DashboardLayoutController;
+use App\Http\Controllers\ExpenseDistributionController;
 use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TransactionController;
@@ -180,6 +181,8 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
+    Route::put('/dashboard/distribuzione-spese/soglie', [ExpenseDistributionController::class, 'updateThresholds'])->name('expense-distribution.thresholds.update');
+    Route::delete('/dashboard/distribuzione-spese/soglie', [ExpenseDistributionController::class, 'resetThresholds'])->name('expense-distribution.thresholds.reset');
 
     // Notifiche in-app
     Route::post('/notifiche/{notification}/segna-letto', [NotificationController::class, 'markRead'])->name('notifications.read');

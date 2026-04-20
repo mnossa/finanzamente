@@ -18,7 +18,8 @@ export type WidgetId =
     | 'net_worth'
     | 'cash_flow'
     | 'expense_treemap'
-    | 'financial_goals';
+    | 'financial_goals'
+    | 'expense_distribution';
 
 /** Dimensioni supportate per ogni widget nella griglia. */
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';

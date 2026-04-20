@@ -53,6 +53,7 @@ class DashboardLayout extends Model
                 ['id' => 'cash_flow',            'visible' => true, 'position' => 12, 'size' => 'md'],
                 ['id' => 'expense_treemap',       'visible' => true, 'position' => 13, 'size' => 'md'],
                 ['id' => 'financial_goals',      'visible' => true, 'position' => 14, 'size' => 'md'],
+                ['id' => 'expense_distribution', 'visible' => true, 'position' => 15, 'size' => 'md'],
             ],
         ];
     }

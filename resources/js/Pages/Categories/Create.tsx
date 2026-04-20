@@ -34,6 +34,7 @@ export default function Create({ categoryTypes }: CreateProps) {
         icon: '💸',
         is_fixed_expense: false,
         exclude_from_lifestyle_score: false,
+        expense_distribution: null as 'needs' | 'wants' | 'investments' | null,
     });
 
     const submit = (e: React.FormEvent) => {
@@ -151,6 +152,40 @@ export default function Create({ categoryTypes }: CreateProps) {
                                         </label>
                                     </div>
                                     <InputError message={errors.exclude_from_lifestyle_score} className="mt-2" />
+                                </div>
+                            )}
+
+                            {/* Gruppo di spesa per la distribuzione (solo per categorie di spesa) */}
+                            {data.type === 'expense' && (
+                                <div>
+                                    <InputLabel value="Gruppo di spesa" />
+                                    <p className="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Classifica questa categoria per vederla raggruppata nel widget Distribuzione Spese.
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                        {([
+                                            { value: null,          label: 'Nessuno',       icon: '—',  ring: 'ring-gray-300   dark:ring-gray-600',   bg: 'bg-gray-50   dark:bg-gray-700/30'   },
+                                            { value: 'needs',       label: 'Necessità',     icon: '🏠', ring: 'ring-blue-400   dark:ring-blue-500',    bg: 'bg-blue-50   dark:bg-blue-900/20'   },
+                                            { value: 'wants',       label: 'Extra',         icon: '🎯', ring: 'ring-violet-400 dark:ring-violet-500',  bg: 'bg-violet-50 dark:bg-violet-900/20' },
+                                            { value: 'investments', label: 'Investimenti',  icon: '📈', ring: 'ring-emerald-400 dark:ring-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                        ] as const).map((opt) => (
+                                            <button
+                                                key={String(opt.value)}
+                                                type="button"
+                                                onClick={() => setData('expense_distribution', opt.value)}
+                                                className={clsx(
+                                                    'flex flex-col items-center gap-1 rounded-lg border-2 p-3 text-center transition-colors',
+                                                    data.expense_distribution === opt.value
+                                                        ? `ring-2 ${opt.ring} ${opt.bg} border-transparent`
+                                                        : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                                                )}
+                                            >
+                                                <span className="text-xl">{opt.icon}</span>
+                                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{opt.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <InputError message={errors.expense_distribution} className="mt-2" />
                                 </div>
                             )}
 

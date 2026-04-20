@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout codice sorgente
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Imposta UID/GID per Docker Compose
         run: |
@@ -73,7 +73,7 @@ jobs:
           docker compose exec -T app php artisan db:seed --class=E2ESeeder --force
 
       - name: Configura Node.js per Playwright
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "npm"
@@ -99,7 +99,7 @@ jobs:
         run: docker compose down --volumes
 
       - name: Carica report Playwright come artefatto
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/

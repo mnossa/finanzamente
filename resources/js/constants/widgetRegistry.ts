@@ -137,6 +137,14 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         requiresModule: 'financial_goals',
         allowedSizes: ALL_SIZES,
     },
+    {
+        id: 'expense_distribution',
+        title: 'Distribuzione Spese',
+        description: 'Analisi della distribuzione delle spese per Necessità, Extra e Investimenti (regola 50/30/20).',
+        defaultSize: 'md',
+        defaultVisible: true,
+        allowedSizes: ALL_SIZES,
+    },
 ];
 
 /** Mappa per accesso rapido al widget per ID. */

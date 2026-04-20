@@ -207,6 +207,7 @@ class DashboardController extends Controller
             'cashFlowData' => $this->getCashFlowData($householdId, $user->id),
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
             'financialGoals' => $this->getFinancialGoalsData($householdId),
+            'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
         ]);
     }
 
@@ -739,5 +740,104 @@ class DashboardController extends Controller
             ])
             ->values()
             ->toArray();
+    }
+
+    /**
+     * Calcola i dati per il widget Distribuzione Spese (Necessità / Extra / Investimenti).
+     *
+     * Le spese del mese corrente vengono aggregate per categoria e poi raggruppate
+     * in base al campo `expense_distribution` di ciascuna categoria.
+     * Le soglie personalizzate vengono lette da `profile_settings` dell'utente.
+     * Le categorie non classificate vengono restituite separatamente così il frontend
+     * può suggerire all'utente di classificarle.
+     */
+    private function getExpenseDistributionData(\App\Models\User $user, int $householdId): array
+    {
+        $startDate = Carbon::now()->startOfMonth();
+        $endDate   = Carbon::now()->endOfDay();
+
+        // Recupera soglie personalizzate da profile_settings (default 50/30/20)
+        $settings   = $user->profile_settings ?? [];
+        $thresholds = $settings['expense_distribution_thresholds'] ?? [
+            'needs'       => 50,
+            'wants'       => 30,
+            'investments' => 20,
+        ];
+
+        // Aggrega le spese per categoria nel mese corrente
+        $expenses = \App\Models\Transaction::with('category')
+            ->whereHas('account', fn($q) => $q->where('household_id', $householdId))
+            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->whereBetween('date', [$startDate, $endDate])
+            ->where('amount', '<', 0)
+            ->whereNotNull('category_id')
+            ->selectRaw('category_id, SUM(ABS(amount)) as total')
+            ->groupBy('category_id')
+            ->orderByDesc('total')
+            ->get();
+
+        $totalExpenses = (float) $expenses->sum('total');
+
+        // Bucket iniziali
+        $buckets = [
+            'needs'       => ['amount' => 0.0, 'categories' => []],
+            'wants'       => ['amount' => 0.0, 'categories' => []],
+            'investments' => ['amount' => 0.0, 'categories' => []],
+            'unclassified' => ['amount' => 0.0, 'categories' => []],
+        ];
+
+        foreach ($expenses as $row) {
+            $category = $row->category;
+            $amount   = (float) $row->total;
+            $dist     = $category?->expense_distribution ?? null;
+            $key      = in_array($dist, ['needs', 'wants', 'investments'], true) ? $dist : 'unclassified';
+
+            $buckets[$key]['amount'] += $amount;
+            $buckets[$key]['categories'][] = [
+                'id'         => $category?->id,
+                'name'       => $category?->name ?? 'Senza categoria',
+                'icon'       => $category?->icon ?? '📁',
+                'color'      => $category?->color ?? '#94a3b8',
+                'amount'     => round($amount, 2),
+                'percentage' => $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0,
+            ];
+        }
+
+        // Costruisce il risultato finale con percentuali e flag di superamento soglia
+        $result = [];
+        foreach (['needs', 'wants', 'investments'] as $key) {
+            $amount     = round($buckets[$key]['amount'], 2);
+            $percentage = $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0;
+            $threshold  = (float) ($thresholds[$key] ?? 0);
+
+            $result[$key] = [
+                'amount'     => $amount,
+                'percentage' => $percentage,
+                'threshold'  => $threshold,
+                'exceeded'   => $threshold > 0 && $percentage > $threshold,
+                'categories' => $buckets[$key]['categories'],
+            ];
+        }
+
+        $unclassifiedAmount = round($buckets['unclassified']['amount'], 2);
+
+        return [
+            'needs'       => $result['needs'],
+            'wants'       => $result['wants'],
+            'investments' => $result['investments'],
+            'unclassified' => [
+                'amount'     => $unclassifiedAmount,
+                'percentage' => $totalExpenses > 0 ? round(($unclassifiedAmount / $totalExpenses) * 100, 1) : 0,
+                'categories' => $buckets['unclassified']['categories'],
+            ],
+            'total_expenses'      => round($totalExpenses, 2),
+            'thresholds'          => [
+                'needs'       => (float) ($thresholds['needs'] ?? 50),
+                'wants'       => (float) ($thresholds['wants'] ?? 30),
+                'investments' => (float) ($thresholds['investments'] ?? 20),
+            ],
+            'has_custom_thresholds' => isset($settings['expense_distribution_thresholds']),
+            'current_month'         => Carbon::now()->translatedFormat('F Y'),
+        ];
     }
 }

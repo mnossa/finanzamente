@@ -30,6 +30,7 @@ class StoreCategoryRequest extends FormRequest
             'icon' => ['nullable', 'string', 'max:10'],
             'is_fixed_expense' => ['sometimes', 'boolean'],
             'exclude_from_lifestyle_score' => ['sometimes', 'boolean'],
+            'expense_distribution' => ['nullable', Rule::in(['needs', 'wants', 'investments'])],
         ];
     }
 

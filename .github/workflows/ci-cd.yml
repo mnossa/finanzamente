@@ -91,7 +91,7 @@ jobs:
           echo "archive-name=${ARCHIVE}" >> "$GITHUB_OUTPUT"
           echo "Versione release: ${VERSION}"
 
-      - name: Configura Node.js 20
+      - name: Configura Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: '24'

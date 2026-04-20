@@ -593,14 +593,15 @@ export default function Authenticated({
                 <aside
                     className={clsx(
                         'fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white pr-1',
+                        'flex flex-col',
                         'transition-transform duration-300 ease-in-out',
-                        'lg:translate-x-0 lg:static lg:block',
+                        'lg:translate-x-0 lg:static lg:flex',
                         'shadow-sidebar lg:shadow-none',
                         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     )}
                 >
                     {/* Sidebar Header */}
-                    <div className="flex items-center justify-between h-20 px-6 border-b border-slate-700 bg-slate-950">
+                    <div className="flex items-center justify-between h-20 px-6 border-b border-slate-700 bg-slate-950 shrink-0">
                         <a href="/" className="flex items-center gap-3 font-bold text-xl tracking-tight">
                             <ApplicationLogo className="w-8 h-8" />
                             <span className="text-white">Finanzamente</span>
@@ -614,7 +615,7 @@ export default function Authenticated({
                     </div>
 
                     {/* Navigation */}
-                    <nav className="mt-1 p-4 pb-8 space-y-1 overflow-y-auto h-[calc(100vh-162px)]">
+                    <nav className="flex-1 mt-1 p-4 space-y-1 overflow-y-auto min-h-0">
                         {/* Ricerca nel menu */}
                         <div className="relative mb-3">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
@@ -647,7 +648,7 @@ export default function Authenticated({
 
                     {/* CTA Passa a Pro per utenti base */}
                     {planData?.current === 'base' && (
-                        <div className="px-4 pb-3">
+                        <div className="px-4 pb-3 shrink-0">
                             <Link
                                 href={route('profile.subscription')}
                                 className="flex items-center justify-center gap-2 w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors"
@@ -659,7 +660,7 @@ export default function Authenticated({
                     )}
 
                     {/* User Profile Bottom */}
-                    <div className="absolute bottom-0 w-full p-4 bg-slate-950 border-t border-slate-700">
+                    <div className="shrink-0 w-full p-4 bg-slate-950 border-t border-slate-700">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-semibold">
                                 {user.name.charAt(0).toUpperCase()}

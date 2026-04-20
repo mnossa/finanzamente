@@ -20,6 +20,7 @@ interface Category {
     color: string | null;
     icon: string | null;
     is_fixed_expense: boolean;
+    expense_distribution: 'needs' | 'wants' | 'investments' | null;
     created_at: string;
 }
 
@@ -74,10 +75,22 @@ function CategoryCard({
                             {category.type_label}
                         </span>
                         {category.is_fixed_expense && (
-                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                📌 Spesa Fissa
-                            </span>
-                        )}
+                                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    📌 Spesa Fissa
+                                </span>
+                            )}
+                            {category.expense_distribution && (
+                                <span className={clsx(
+                                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                                    category.expense_distribution === 'needs'       && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                                    category.expense_distribution === 'wants'       && 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
+                                    category.expense_distribution === 'investments' && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                                )}>
+                                    {category.expense_distribution === 'needs'       && '🏠 Necessità'}
+                                    {category.expense_distribution === 'wants'       && '🎯 Extra'}
+                                    {category.expense_distribution === 'investments' && '📈 Investimenti'}
+                                </span>
+                            )}
                     </div>
                 </div>
             </div>
