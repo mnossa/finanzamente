@@ -81,8 +81,24 @@ jobs:
       - name: Installa dipendenze Node.js
         run: npm ci
 
+
+
       - name: Build asset frontend (Vite)
         run: npm run build
+
+      - name: Attendi che l'app sia pronta su localhost:8080
+        run: |
+          for i in {1..30}; do
+            if curl -fs http://localhost:8080 > /dev/null; then
+              echo "App pronta!"
+              exit 0
+            fi
+            echo "Attesa app su http://localhost:8080..."
+            sleep 3
+          done
+          echo "Timeout: app non pronta dopo 90 secondi"
+          docker compose logs app
+          exit 1
 
       - name: Installa browser Playwright (solo Chromium per CI)
         run: npx playwright install chromium --with-deps
