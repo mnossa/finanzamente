@@ -253,22 +253,20 @@ function StatCard({
 
 function AccountCard({ account }: { account: Account }) {
     return (
-        <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-            <div className="flex items-center space-x-3">
-                <span className="text-2xl">{getAccountTypeIcon(account.type)}</span>
+        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/50">
+            <div className="flex items-center gap-2">
+                <span className="text-lg">{getAccountTypeIcon(account.type)}</span>
                 <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
                         {account.name}
-                        {account.is_private && <span className="ml-2 text-xs text-gray-400">🔒</span>}
+                        {account.is_private && <span className="ml-1 text-xs text-gray-400">🔒</span>}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{getAccountTypeLabel(account.type)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{getAccountTypeLabel(account.type)}</p>
                 </div>
             </div>
-            <div className="text-right">
-                <p className={clsx('text-lg font-semibold', account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500')}>
-                    {formatCurrency(account.current_balance, account.currency_code)}
-                </p>
-            </div>
+            <p className={clsx('text-sm font-semibold', account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500')}>
+                {formatCurrency(account.current_balance, account.currency_code)}
+            </p>
         </div>
     );
 }
@@ -276,10 +274,10 @@ function AccountCard({ account }: { account: Account }) {
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
     return (
-        <div className="flex items-center justify-between border-b border-gray-100 py-3 last:border-0 dark:border-gray-700">
-            <div className="flex items-center space-x-3">
+        <div className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0 dark:border-gray-700">
+            <div className="flex items-center gap-2 min-w-0">
                 <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm"
                     style={{
                         backgroundColor: transaction.category?.color
                             ? `${transaction.category.color}20`
@@ -288,16 +286,16 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                 >
                     {transaction.category?.icon || (isIncome ? '💰' : '💸')}
                 </div>
-                <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
+                <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {transaction.description || transaction.category?.name || 'Transazione'}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                         {transaction.account.name} • {formatDate(transaction.date)}
                     </p>
                 </div>
             </div>
-            <p className={clsx('font-semibold', isIncome ? 'text-green-500' : 'text-red-500')}>
+            <p className={clsx('text-sm font-semibold shrink-0 ml-2', isIncome ? 'text-green-500' : 'text-red-500')}>
                 {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
             </p>
         </div>
@@ -306,9 +304,9 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
 
 function EmptyState({ message }: { message: string }) {
     return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 text-4xl">📊</div>
-            <p className="text-gray-500 dark:text-gray-400">{message}</p>
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="mb-2 text-2xl">📊</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
         </div>
     );
 }
@@ -486,7 +484,7 @@ export default function Dashboard({
                             <h3 className="font-semibold text-gray-900 dark:text-white">I tuoi conti</h3>
                             <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
                         </div>
-                        <div className="space-y-3 p-4">
+                        <div className="space-y-1.5 p-3">
                             {accounts.length > 0
                                 ? accounts.map((account) => <AccountCard key={account.id} account={account} />)
                                 : <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />}
@@ -501,7 +499,7 @@ export default function Dashboard({
                             <h3 className="font-semibold text-gray-900 dark:text-white">Ultime transazioni</h3>
                             <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutte</Link>
                         </div>
-                        <div className="p-4">
+                        <div className="px-3 pt-1 pb-2">
                             {recentTransactions.length > 0
                                 ? recentTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
                                 : <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />}

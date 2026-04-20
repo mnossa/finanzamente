@@ -30,6 +30,7 @@ class CategoryController extends Controller
         $householdId = $user->active_household_id;
 
         $categories = Category::where('household_id', $householdId)
+            ->withCount('transactions')
             ->orderBy('type')
             ->orderBy('name')
             ->get()
@@ -44,6 +45,7 @@ class CategoryController extends Controller
                     'is_fixed_expense' => $category->is_fixed_expense ?? false,
                     'exclude_from_lifestyle_score' => $category->exclude_from_lifestyle_score ?? false,
                     'expense_distribution' => $category->expense_distribution,
+                    'transactions_count' => $category->transactions_count,
                     'created_at' => $category->created_at->format('Y-m-d'),
                 ];
             });

@@ -21,6 +21,7 @@ interface Category {
     icon: string | null;
     is_fixed_expense: boolean;
     expense_distribution: 'needs' | 'wants' | 'investments' | null;
+    transactions_count: number;
     created_at: string;
 }
 
@@ -47,68 +48,69 @@ function CategoryCard({
     onDelete: (id: number) => void;
 }) {
     return (
-        <div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-            <div className="flex items-center space-x-3">
-                <span
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-xl"
-                    style={{
-                        backgroundColor: category.color
-                            ? category.color + '20'
-                            : '#e5e7eb',
-                    }}
-                >
-                    {category.icon || '📁'}
-                </span>
-                <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">
+        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+            {/* Top row: icon + name + actions */}
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                    <span
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
+                        style={{ backgroundColor: category.color ? category.color + '20' : '#e5e7eb' }}
+                    >
+                        {category.icon || '📁'}
+                    </span>
+                    <h4 className="font-medium text-gray-900 dark:text-white truncate">
                         {category.name}
                     </h4>
-                    <div className="flex items-center gap-2">
-                        <span
-                            className={clsx(
-                                'text-xs',
-                                category.type === 'income'
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : 'text-red-600 dark:text-red-400'
-                            )}
-                        >
-                            {category.type_label}
-                        </span>
-                        {category.is_fixed_expense && (
-                                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    📌 Spesa Fissa
-                                </span>
-                            )}
-                            {category.expense_distribution && (
-                                <span className={clsx(
-                                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                                    category.expense_distribution === 'needs'       && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                                    category.expense_distribution === 'wants'       && 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
-                                    category.expense_distribution === 'investments' && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-                                )}>
-                                    {category.expense_distribution === 'needs'       && '🏠 Necessità'}
-                                    {category.expense_distribution === 'wants'       && '🎯 Extra'}
-                                    {category.expense_distribution === 'investments' && '📈 Investimenti'}
-                                </span>
-                            )}
-                    </div>
+                </div>
+                <div className="flex items-center shrink-0 gap-1">
+                    <Link
+                        href={route('categories.edit', category.id)}
+                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                        title="Modifica"
+                    >
+                        <PencilIcon size={16} />
+                    </Link>
+                    <button
+                        onClick={(e) => { e.preventDefault(); onDelete(category.id); }}
+                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                        title="Elimina"
+                    >
+                        <TrashIcon size={16} />
+                    </button>
                 </div>
             </div>
-            <div className="flex items-center space-x-2">
-                <Link
-                    href={route('categories.edit', category.id)}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                    title="Modifica"
-                >
-                    <PencilIcon size={18} />
-                </Link>
-                <button
-                    onClick={(e) => { e.preventDefault(); onDelete(category.id); }}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                    title="Elimina"
-                >
-                    <TrashIcon size={18} />
-                </button>
+
+            {/* Bottom row: badges + transaction count */}
+            <div className="flex flex-wrap items-center gap-1.5">
+                {/* Utilizzo */}
+                <span className={clsx(
+                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                    category.transactions_count === 0
+                        ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+                )}>
+                    {category.transactions_count === 0
+                        ? '— Mai usata'
+                        : `${category.transactions_count} transazion${category.transactions_count === 1 ? 'e' : 'i'}`}
+                </span>
+
+                {category.is_fixed_expense && (
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        📌 Spesa Fissa
+                    </span>
+                )}
+                {category.expense_distribution && (
+                    <span className={clsx(
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                        category.expense_distribution === 'needs'       && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                        category.expense_distribution === 'wants'       && 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
+                        category.expense_distribution === 'investments' && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                    )}>
+                        {category.expense_distribution === 'needs'       && '🏠 Necessità'}
+                        {category.expense_distribution === 'wants'       && '🎯 Extra'}
+                        {category.expense_distribution === 'investments' && '📈 Investimenti'}
+                    </span>
+                )}
             </div>
         </div>
     );
@@ -184,64 +186,17 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                         </CardBox>
                     ) : (
                         <>
-                            {/* Riepilogo */}
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <div className="rounded-xl bg-green-50 p-4 dark:bg-green-900/20">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-2xl">📈</span>
-                                        <span className="font-medium text-green-700 dark:text-green-400">
-                                            Entrate
-                                        </span>
-                                    </div>
-                                    <p className="mt-2 text-2xl font-bold text-green-900 dark:text-green-100">
-                                        {byType.income.length}
-                                    </p>
-                                    <p className="text-sm text-green-600 dark:text-green-400">
-                                        {byType.income.length === 1
-                                            ? 'categoria'
-                                            : 'categorie'}
-                                    </p>
-                                </div>
-                                <div className="rounded-xl bg-red-50 p-4 dark:bg-red-900/20">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-2xl">📉</span>
-                                        <span className="font-medium text-red-700 dark:text-red-400">
-                                            Uscite
-                                        </span>
-                                    </div>
-                                    <p className="mt-2 text-2xl font-bold text-red-900 dark:text-red-100">
-                                        {byType.expense.length}
-                                    </p>
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                        {byType.expense.length === 1
-                                            ? 'categoria'
-                                            : 'categorie'}
-                                    </p>
-                                </div>
-                                <div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-2xl">📌</span>
-                                        <span className="font-medium text-blue-700 dark:text-blue-400">
-                                            Spese Fisse
-                                        </span>
-                                    </div>
-                                    <p className="mt-2 text-2xl font-bold text-blue-900 dark:text-blue-100">
-                                        {categories.filter(c => c.is_fixed_expense).length}
-                                    </p>
-                                    <p className="text-sm text-blue-600 dark:text-blue-400">
-                                        affitto, bollette, etc.
-                                    </p>
-                                </div>
-                            </div>
-
                             {/* Categorie Entrate */}
                             {byType.income.length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 flex items-center space-x-2 text-lg font-semibold text-gray-900 dark:text-white">
+                                    <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
                                         <span>📈</span>
-                                        <span>Categorie Entrate</span>
+                                        <span>Entrate</span>
+                                        <span className="ml-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                                            {byType.income.length}
+                                        </span>
                                     </h3>
-                                    <div className="space-y-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {byType.income.map((category) => (
                                             <CategoryCard
                                                 key={category.id}
@@ -256,11 +211,14 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                             {/* Categorie Uscite */}
                             {byType.expense.length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 flex items-center space-x-2 text-lg font-semibold text-gray-900 dark:text-white">
+                                    <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white">
                                         <span>📉</span>
-                                        <span>Categorie Uscite</span>
+                                        <span>Uscite</span>
+                                        <span className="ml-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                            {byType.expense.length}
+                                        </span>
                                     </h3>
-                                    <div className="space-y-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                         {byType.expense.map((category) => (
                                             <CategoryCard
                                                 key={category.id}

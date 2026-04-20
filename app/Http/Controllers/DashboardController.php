@@ -165,23 +165,25 @@ class DashboardController extends Controller
             ->map(fn($dc) => [
                 'id' => $dc->id,
                 'counterparty' => $dc->counterparty,
-                'amount' => (float) $dc->amount,
+                'amount' => (float) $dc->getRemainingAmount(),
                 'type' => $dc->type,
                 'status' => $dc->status,
                 'due_date' => $dc->due_date?->format('Y-m-d'),
                 'currency_symbol' => $dc->currency->symbol,
             ]);
 
-        // Totali debiti e crediti
+        // Totali debiti e crediti (saldo residuo, non importo originale)
         $debtsCreditsSummary = [
             'total_debts' => DebtCredit::where('household_id', $householdId)
                 ->where('type', 'debt')
                 ->whereIn('status', ['open', 'overdue'])
-                ->sum('amount'),
+                ->selectRaw('SUM(COALESCE(initial_amount, amount) - COALESCE(paid_amount, 0)) as total')
+                ->value('total') ?? 0,
             'total_credits' => DebtCredit::where('household_id', $householdId)
                 ->where('type', 'credit')
                 ->whereIn('status', ['open', 'overdue'])
-                ->sum('amount'),
+                ->selectRaw('SUM(COALESCE(initial_amount, amount) - COALESCE(paid_amount, 0)) as total')
+                ->value('total') ?? 0,
             'overdue_count' => DebtCredit::where('household_id', $householdId)
                 ->where('status', 'overdue')
                 ->count(),
