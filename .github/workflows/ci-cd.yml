@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout del codice sorgente
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Imposta UID/GID per Docker Compose
         run: |
@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - name: Checkout del codice sorgente
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Calcola versione release
         id: calcola-versione
@@ -92,7 +92,7 @@ jobs:
           echo "Versione release: ${VERSION}"
 
       - name: Configura Node.js 20
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
@@ -111,7 +111,7 @@ jobs:
           tools: composer:2
 
       - name: Cache dipendenze Composer
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
@@ -146,7 +146,7 @@ jobs:
           echo "Archivio creato: $(du -sh "${ARCHIVE}" | cut -f1)"
 
       - name: Carica artefatto CI
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: release-archive
           path: ${{ steps.calcola-versione.outputs.archive-name }}
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Scarica artefatto dal job build
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: release-archive
 
