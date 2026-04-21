@@ -37,6 +37,8 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 ## Best Practice
 - **Documentazione**: Commentare il codice dove necessario e mantenere aggiornata la documentazione.
 - **Testing**: Implementare test automatici per le funzionalità principali. Struttura: `tests/Feature/` per test di integrazione (rotte, controller, flussi utente) e `tests/Unit/` per test di logica isolata (modelli, service, helper). Le classi di test usano `PascalCase` con suffisso `Test` (es. `TransactionControllerTest`, `HouseholdTest`). Eseguire sempre con `make test`.
+  - **Obbligo di test per ogni nuova funzionalità**: ogni nuova feature introdotta nel codebase — incluse macro `Str::`, helper, observer, service, renderer personalizzati — deve essere accompagnata da almeno un test `Unit` o `Feature` che ne verifichi il comportamento. L'assenza di test è considerata un bug, non una lacuna minore.
+  - **Test di regressione per integrazioni di terze parti**: quando si wrappano o si delegano classi di librerie esterne (es. `League\CommonMark`, `League\Config`), il test deve verificare che l'oggetto delegante implementi tutte le interfacce richieste dalla libreria (es. `ConfigurationAwareInterface`) per evitare errori di proprietà non inizializzata in produzione.
 - **CI/CD**: Integrare pipeline di build, test e deploy.
 - **Sicurezza e GDPR**: Tutti i log di sicurezza e rate limiting devono anonimizzare l’IP tramite hash SHA256 e salt (`ADV_THROTTLE_SALT` in .env). Nessun dato personale viene loggato in chiaro.
 

@@ -208,3 +208,31 @@
 - I 3 box "Entrate 9 / Uscite 39 / Spese Fisse 11" in cima alla pagina categorie non aggiungevano valore: le stesse info erano visibili nei titoli di sezione.
 - Su mobile occupavano spazio utile visibile al primo accesso.
 - **Regola**: prima di aggiungere un riepilogo, verificare se le stesse informazioni sono già accessibili nell'interfaccia. In caso affermativo, eliminare la ridondanza.
+
+# Lessons Learned - Social Share UI
+
+- Tutti i pulsanti di condivisione social devono avere lo stesso peso visivo: stesso padding, dimensioni, font-weight, nessun pulsante evidenziato rispetto agli altri (no background più scuro o contrasto eccessivo su uno solo).
+- Evitare di usare uno stile "selected" o "active" su un solo social (es. X/Twitter) se non è effettivamente selezionato dall’utente.
+- Usare colori coerenti con il brand di ciascun social solo per icona e testo, non per lo sfondo (o usare uno sfondo neutro per tutti).
+- L’ordine dei pulsanti deve essere neutro o ragionato per target, ma senza dare priorità visiva a uno specifico social.
+- Se si usa uno sfondo scuro per X, va usato uno sfondo equivalente per tutti gli altri, oppure tutti su sfondo chiaro/neutro.
+- Testare sempre la resa mobile: i pulsanti devono essere facilmente cliccabili e non "sbilanciati" visivamente.
+
+# Lessons Learned - Image Optimization
+
+- Le immagini di copertina degli articoli devono essere convertite in WebP e ridimensionate a max 1200px per ottimizzare performance e spazio.
+- Il supporto GD per JPEG e WebP va abilitato a livello di Dockerfile con le opzioni --with-jpeg --with-webp e i pacchetti dev corretti.
+- Per immagini molto grandi (es. 6000px), aumentare il memory_limit PHP durante la conversione batch.
+- Aggiornare sempre il path nel DB dopo la conversione batch per evitare riferimenti a file non più esistenti.
+- Usare Intervention Image v3 per compatibilità Laravel 12+ e PHP 8.2+.
+- Testare la conversione sia su upload singolo che su batch di immagini esistenti.
+
+- In Tailwind CSS v4, tutte le utility devono essere dopo @import "tailwindcss"; nessuna regola custom prima, altrimenti @apply non funziona.
+- Se si usa una palette custom (es. solo primary, accent, surface), tutte le utility devono essere mappate su questi colori: niente bg-white, slate, emerald, ecc.
+- Per Alpine.js, aggiungere sempre [x-cloak] { display: none !important; } subito dopo gli import CSS per evitare flicker su x-show.
+- Se una classe Tailwind non viene riconosciuta, controllare che non sia un colore di default non incluso nella palette custom.
+- Per evitare errori PHP con classi final (es. LinkRenderer di league/commonmark), usare il pattern di delega anonima invece dell’estensione diretta.
+- Quando si crea un wrapper/delegante anonimo per un renderer di librerie esterne, verificare SEMPRE quali interfacce implementa la classe originale (es. `ConfigurationAwareInterface` di `League\Config`) e implementarle tutte nel wrapper, delegando i metodi. Altrimenti la libreria non chiamerà `setConfiguration()` e il renderer lancerà un'eccezione su proprietà non inizializzata in produzione.
+- Ogni macro `Str::` o helper registrato in `AppServiceProvider` deve avere un test `Unit` dedicato (vedi `MarkdownWithNofollowTest`) che ne verifichi: rendering base, logica specifica e assenza di eccezioni.
+- Quando si aggiorna la versione PHP (es. 8.5), correggere tutte le costanti deprecate (es. PDO::MYSQL_ATTR_SSL_CA → \Pdo\Mysql::ATTR_SSL_CA) nei config.
+- Testare sempre la pipeline di build Docker dopo modifiche a GD o estensioni PHP: una build parziale può lasciare il container senza supporto immagini.
