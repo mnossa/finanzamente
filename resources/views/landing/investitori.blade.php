@@ -27,15 +27,15 @@
                 ])
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-5 text-sm text-surface-500">
                     <span class="flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                         €2,99/mese
                     </span>
                     <span class="flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                         Nessun conto bancario da collegare
                     </span>
                     <span class="flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                        <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                         Disdici quando vuoi
                     </span>
                 </div>
@@ -106,10 +106,10 @@
                             <div class="w-20 h-2 bg-surface-100 rounded-full overflow-hidden"><div class="h-full bg-violet-500 rounded-full" style="width:12%"></div></div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <div class="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                            <div class="w-3 h-3 rounded-full bg-surface-500 flex-shrink-0"></div>
                             <span class="text-sm font-medium text-surface-800 flex-1">Obbligazionario</span>
                             <span class="text-sm text-surface-600">8%</span>
-                            <div class="w-20 h-2 bg-surface-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:8%"></div></div>
+                            <div class="w-20 h-2 bg-surface-100 rounded-full overflow-hidden"><div class="h-full bg-surface-500 rounded-full" style="width:8%"></div></div>
                         </div>
                     </div>
                     <div class="pt-4 border-t border-surface-100 flex justify-between">

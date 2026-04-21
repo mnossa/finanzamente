@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\ImageProcessingService;
 use Illuminate\View\View;
 
 /**
@@ -212,6 +213,8 @@ class MagazineAdminController extends Controller
             $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
             $path     = $file->storeAs('magazine/covers', $filename, 'public');
 
+            $path = app(ImageProcessingService::class)->convertToWebp($path);
+
             return [$path, null, null];
         }
 
@@ -220,6 +223,8 @@ class MagazineAdminController extends Controller
             $path = $this->downloadRemoteImage($request->unsplash_photo_url);
 
             if ($path) {
+                $path = app(ImageProcessingService::class)->convertToWebp($path);
+
                 return [
                     $path,
                     $request->input('unsplash_photo_credit'),

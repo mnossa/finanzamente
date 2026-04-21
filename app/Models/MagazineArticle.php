@@ -79,7 +79,7 @@ class MagazineArticle extends Model
      */
     public function getContentHtmlAttribute(): string
     {
-        return Str::markdown($this->content, [
+        return Str::markdownWithNofollow($this->content, [
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
         ]);

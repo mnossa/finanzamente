@@ -61,6 +61,7 @@
                 {{ $article->title }}
             </h1>
 
+
             <!-- Autore e data -->
             <div class="flex flex-wrap items-center gap-4 pb-4 border-b border-surface-200 text-sm text-surface-500">
                 <span class="font-medium text-surface-700">{{ $article->author_name }}</span>
@@ -75,21 +76,26 @@
                 <span>{{ number_format($article->views_count) }} letture</span>
             </div>
 
+            @include('magazine._share', ['article' => $article])
+
             <!-- Disclaimer finanziario (sempre presente) -->
             <div class="mt-4 mb-6 px-3 py-2.5 rounded-lg bg-surface-50 border border-surface-200 text-xs text-surface-400 leading-relaxed">
                 <span class="font-semibold text-surface-500">Disclaimer:</span>
                 Il presente articolo ha finalità puramente informative ed educative. Non costituisce consulenza finanziaria, sollecitazione al pubblico risparmio o consulenza fiscale. Le informazioni descritte devono essere adattate alla propria situazione personale, possibilmente con il supporto di professionisti abilitati.
             </div>
 
+
             <!-- Excerpt -->
             <p class="text-lg text-surface-600 leading-relaxed font-medium">
                 {{ $article->excerpt }}
             </p>
 
+            <!-- Separatore visivo -->
+            <div class="my-6 border-t border-surface-200"></div>
+
             <!-- Contenuto Markdown → HTML -->
-            <div class="mt-6 prose prose-surface prose-lg max-w-none
+            <div class="prose prose-surface prose-lg max-w-none
                         prose-headings:font-bold prose-headings:text-surface-900
-                        prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline
                         prose-strong:text-surface-900
                         prose-code:text-primary-700 prose-code:bg-primary-50 prose-code:px-1 prose-code:rounded
                         prose-blockquote:border-l-primary-400 prose-blockquote:text-surface-600">
@@ -118,6 +124,8 @@
                     Scopri Finanzamente
                 </a>
             </div>
+
+            @include('magazine._share', ['article' => $article])
 
             <!-- Articoli correlati -->
             @if($related->isNotEmpty())

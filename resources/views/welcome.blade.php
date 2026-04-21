@@ -74,7 +74,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
                 <!-- Transazioni rapide -->
                 <div class="bg-surface-50 rounded-2xl p-6 sm:p-8 border border-surface-200 hover:border-primary-300 hover:shadow-soft-lg transition-all duration-300">
-                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-surface-500 to-surface-700 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
@@ -275,14 +275,14 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <div class="w-3 h-3 rounded-full bg-emerald-500 flex-shrink-0"></div>
+                            <div class="w-3 h-3 rounded-full bg-surface-500 flex-shrink-0"></div>
                             <div class="flex-1">
                                 <div class="flex justify-between text-sm mb-1">
                                     <span class="font-medium text-surface-800">Obbligazionario</span>
                                     <span class="text-surface-600">8%</span>
                                 </div>
                                 <div class="w-full h-2 bg-surface-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-emerald-500 rounded-full" style="width: 8%"></div>
+                                    <div class="h-full bg-surface-500 rounded-full" style="width: 8%"></div>
                                 </div>
                             </div>
                         </div>
