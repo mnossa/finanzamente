@@ -9,6 +9,8 @@ use League\CommonMark\Extension\CommonMark\Renderer\Inline\LinkRenderer;
 use League\CommonMark\Node\Node;
 use League\CommonMark\Renderer\ChildNodeRendererInterface;
 use League\CommonMark\Util\UrlEncoder;
+use League\Config\ConfigurationAwareInterface;
+use League\Config\ConfigurationInterface;
 use App\Models\Household;
 use App\Observers\HouseholdObserver;
 use Carbon\Carbon;
@@ -44,8 +46,13 @@ class AppServiceProvider extends ServiceProvider
             $environment->addExtension(new \League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension());
 
             // Custom LinkRenderer (delegazione perché LinkRenderer è final)
-            $environment->addRenderer(Link::class, new class(new LinkRenderer()) implements \League\CommonMark\Renderer\NodeRendererInterface {
+            $environment->addRenderer(Link::class, new class(new LinkRenderer()) implements \League\CommonMark\Renderer\NodeRendererInterface, ConfigurationAwareInterface {
                 public function __construct(private readonly LinkRenderer $delegate) {}
+
+                public function setConfiguration(ConfigurationInterface $configuration): void
+                {
+                    $this->delegate->setConfiguration($configuration);
+                }
 
                 public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable|string|null
                 {
