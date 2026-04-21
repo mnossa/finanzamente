@@ -105,6 +105,9 @@ class MagazineController extends Controller
         TwitterCard::setTitle($metaTitle);
         TwitterCard::setDescription($metaDescription);
         TwitterCard::setType('summary_large_image');
+        if ($article->cover_image_path) {
+            TwitterCard::setImage(asset('storage/' . $article->cover_image_path));
+        }
 
         // --- Dati strutturati JSON-LD ---
 
