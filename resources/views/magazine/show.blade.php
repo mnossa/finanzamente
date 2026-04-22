@@ -104,7 +104,7 @@
 
             <!-- Disclaimer finanziario — rimosso dal fondo, ora posizionato sopra il contenuto -->
 
-            @if($article->is_ai_assisted)
+            @if(false && $article->is_ai_assisted)
             <!-- Nota AI -->
             <div class="mt-8 flex items-start gap-2 text-surface-400 leading-relaxed" style="font-size: 0.6875rem;">
                 <svg class="flex-shrink-0 text-surface-300" style="width: 12px; height: 12px; margin-top: 1px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
