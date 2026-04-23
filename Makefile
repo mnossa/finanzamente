@@ -7,7 +7,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check
+.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -381,3 +381,9 @@ set-plan:
 # Verifica che la configurazione Brevo per la waitlist sia completa e funzionante
 waitlist-check:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan waitlist:check
+
+# Popola il magazine con 5-6 articoli fake per ogni categoria (solo locale)
+magazine-demo:
+	@echo [+] Popolamento magazine con articoli demo 5-6 per categoria...
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=MagazineArticleDemoSeeder --force
+	@echo [+] Articoli demo magazine generati.

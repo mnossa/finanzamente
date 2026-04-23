@@ -24,6 +24,9 @@ class DatabaseSeeder extends Seeder
         // Seed magazine categories
         $this->call(MagazineCategorySeeder::class);
 
+        // Seeder demo magazine (solo su richiesta manuale)
+        // \Database\Seeders\MagazineArticleDemoSeeder::class,
+
         // User::factory(10)->create();
 
         User::factory()->create([
