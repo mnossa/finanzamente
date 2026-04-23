@@ -49,3 +49,6 @@ Schedule::command('recurring:detect')->days([1, 4])->at('01:00');
  * Può essere eseguito manualmente con opzione --dry-run per vedere quali immagini verrebbero convertite.
  */
 Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8,15,0);
+
+// Suggerimenti link interni magazine per SEO: ogni 2 settimane, domenica alle 03:00
+Schedule::command('magazine:link-suggestions')->sundays()->twiceMonthly()->at('03:00');

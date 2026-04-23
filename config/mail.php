@@ -1,3 +1,5 @@
+    // Indirizzo email amministratore per report SEO e notifiche interne
+    'admin_address' => env('MAIL_ADMIN_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
 <?php
 
 return [
