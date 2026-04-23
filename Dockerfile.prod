@@ -62,6 +62,7 @@ RUN apk add --no-cache \
         libpng \
         libjpeg-turbo \
         freetype \
+        libwebp \
         icu-libs \
         libzip \
         libxml2 \
@@ -69,13 +70,14 @@ RUN apk add --no-cache \
         libpng-dev \
         libjpeg-turbo-dev \
         freetype-dev \
+        libwebp-dev \
         oniguruma-dev \
         libxml2-dev \
         libzip-dev \
         icu-dev \
         zip \
         unzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" \
         pdo_mysql \
         mbstring \
@@ -90,6 +92,7 @@ RUN apk add --no-cache \
         libpng-dev \
         libjpeg-turbo-dev \
         freetype-dev \
+        libwebp-dev \
         oniguruma-dev \
         libxml2-dev \
         libzip-dev \
