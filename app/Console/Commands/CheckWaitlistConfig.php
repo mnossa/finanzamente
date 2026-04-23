@@ -3,10 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Services\WaitlistService;
+use Brevo\Brevo;
+use Brevo\Contacts\Requests\GetListsRequest;
 use Illuminate\Console\Command;
-use SendinBlue\Client\Api\ContactsApi;
-use SendinBlue\Client\Api\TransactionalEmailsApi;
-use SendinBlue\Client\Configuration;
 
 /**
  * Verifica che la configurazione Brevo per la waitlist sia completa e funzionante.
@@ -67,12 +66,11 @@ class CheckWaitlistConfig extends Command
             return self::FAILURE;
         }
 
-        $brevoConfig = Configuration::getDefaultConfiguration()->setApiKey('api-key', $apiKey);
+        $brevo = new Brevo($apiKey);
 
         try {
-            $contactsApi = new ContactsApi(null, $brevoConfig);
-            $lists = $contactsApi->getLists(10, 0);
-            $this->line('  <fg=green>✔</> Connessione API riuscita (' . count($lists->getLists()) . ' liste trovate)');
+            $lists = $brevo->contacts->getLists(new GetListsRequest(['limit' => 10, 'offset' => 0]));
+            $this->line('  <fg=green>✔</> Connessione API riuscita (' . count($lists->lists ?? []) . ' liste trovate)');
         } catch (\Exception $e) {
             $this->line('  <fg=red>✘</> Connessione API fallita: ' . $e->getMessage());
             $allOk = false;
@@ -88,8 +86,8 @@ class CheckWaitlistConfig extends Command
         $listId = (int) config('services.brevo.waitlist_list_id');
 
         try {
-            $list = $contactsApi->getList($listId);
-            $this->line("  <fg=green>✔</> Lista #{$listId} trovata: \"{$list->getName()}\" ({$list->getTotalSubscribers()} iscritti)");
+            $list = $brevo->contacts->getList($listId);
+            $this->line("  <fg=green>✔</> Lista #{$listId} trovata: \"{$list->name}\" ({$list->totalSubscribers} iscritti)");
         } catch (\Exception $e) {
             $this->line("  <fg=red>✘</> Lista #{$listId} non trovata o non accessibile");
             $allOk = false;
@@ -106,12 +104,11 @@ class CheckWaitlistConfig extends Command
             $allOk = false;
         } else {
             try {
-                $emailApi = new TransactionalEmailsApi(null, $brevoConfig);
-                $template = $emailApi->getSmtpTemplate($templateId);
-                $status = $template->getIsActive() ? '<fg=green>attivo</>' : '<fg=yellow>inattivo</>';
-                $this->line("  <fg=green>✔</> Template #{$templateId} trovato: \"{$template->getName()}\" — {$status}");
+                $template = $brevo->transactionalEmails->getSmtpTemplate($templateId);
+                $status = $template->isActive ? '<fg=green>attivo</>' : '<fg=yellow>inattivo</>';
+                $this->line("  <fg=green>✔</> Template #{$templateId} trovato: \"{$template->name}\" — {$status}");
 
-                if (!$template->getIsActive()) {
+                if (!$template->isActive) {
                     $this->line('  <fg=yellow>⚠</>  Il template non è attivo — attivalo su Brevo prima di procedere');
                     $allOk = false;
                 }
@@ -126,10 +123,10 @@ class CheckWaitlistConfig extends Command
         $this->comment('[5/5] Attributo personalizzato SIGNATURE');
 
         try {
-            $attributes = $contactsApi->getAttributes();
+            $attributes = $brevo->contacts->getAttributes();
             $found = false;
-            foreach ($attributes->getAttributes() as $attr) {
-                if (strtoupper($attr->getName()) === 'SIGNATURE') {
+            foreach ($attributes->attributes as $attr) {
+                if (strtoupper($attr->name) === 'SIGNATURE') {
                     $found = true;
                     break;
                 }

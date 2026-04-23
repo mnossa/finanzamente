@@ -40,7 +40,7 @@ Schedule::command('plans:notify-expiring')->dailyAt('08:00');
  * Rileva pattern ricorrenti nelle transazioni ogni lunedì e giovedì alle 01:00.
  * I suggerimenti vengono mostrati all'utente in /rilevamento-ricorrenze.
  */
-Schedule::command('recurring:detect')->twiceWeeklyOn(1, 4, '01:00');
+Schedule::command('recurring:detect')->days([1, 4])->at('01:00');
 
 
 /**
@@ -48,4 +48,4 @@ Schedule::command('recurring:detect')->twiceWeeklyOn(1, 4, '01:00');
  * Esegue solo su immagini non già in WebP.
  * Può essere eseguito manualmente con opzione --dry-run per vedere quali immagini verrebbero convertite.
  */
-Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt('08:00', '15:00');
+Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8,15,0);

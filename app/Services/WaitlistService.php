@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
+use Brevo\Brevo;
+use Brevo\Contacts\Requests\CreateContactRequest;
+use Brevo\TransactionalEmails\Requests\SendTransacEmailRequest;
+use Brevo\TransactionalEmails\Types\SendTransacEmailRequestToItem;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
-use SendinBlue\Client\Api\ContactsApi;
-use SendinBlue\Client\Api\TransactionalEmailsApi;
-use SendinBlue\Client\Configuration;
-use SendinBlue\Client\Model\CreateContact;
-use SendinBlue\Client\Model\SendSmtpEmail;
-use SendinBlue\Client\Model\SendSmtpEmailTo;
 
 /**
  * Servizio per la gestione della waitlist Pro tramite Brevo (ex Sendinblue).
@@ -72,19 +70,16 @@ class WaitlistService
             ['email' => $email]
         );
 
-        $config = Configuration::getDefaultConfiguration()
-            ->setApiKey('api-key', $apiKey);
+        $brevo = new Brevo($apiKey);
 
-        $emailsApi = new TransactionalEmailsApi(null, $config);
-
-        $sendEmail = new SendSmtpEmail([
-            'to'         => [new SendSmtpEmailTo(['email' => $email])],
+        $sendEmail = new SendTransacEmailRequest([
+            'to'         => [new SendTransacEmailRequestToItem(['email' => $email])],
             'templateId' => (int) $templateId,
             'params'     => ['CONFIRMATION_URL' => $confirmUrl],
         ]);
 
         try {
-            $emailsApi->sendTransacEmail($sendEmail);
+            $brevo->transactionalEmails->sendTransacEmail($sendEmail);
 
             return true;
         } catch (\Throwable $e) {
@@ -119,22 +114,19 @@ class WaitlistService
 
         $signature = $this->generateSignature($email);
 
-        $config = Configuration::getDefaultConfiguration()
-            ->setApiKey('api-key', $apiKey);
+        $brevo = new Brevo($apiKey);
 
-        $contactsApi = new ContactsApi(null, $config);
-
-        $contact = new CreateContact([
+        $contact = new CreateContactRequest([
             'email'         => $email,
             'listIds'       => [(int) $listId],
             'updateEnabled' => true,
             // NOTA: l'attributo personalizzato SIGNATURE deve essere creato manualmente
             // nel pannello Brevo: Contacts > Configuration > Contact Attributes > (type: Text, name: SIGNATURE)
-            'attributes'    => (object) ['SIGNATURE' => $signature],
+            'attributes'    => ['SIGNATURE' => $signature],
         ]);
 
         try {
-            $contactsApi->createContact($contact);
+            $brevo->contacts->createContact($contact);
 
             return true;
         } catch (\Throwable $e) {
