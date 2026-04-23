@@ -145,9 +145,28 @@ jobs:
 
             DEPLOY_DIR="/opt/finanzamente"
             IMAGE_TAG="sha-$(echo '${{ github.sha }}' | cut -c1-7)"
+            CONTAINER_NAME="finanzamente-app"
 
             echo "==> [deploy] Versione: ${IMAGE_TAG}"
             cd "${DEPLOY_DIR}"
+
+            # Salva il tag corrente per eventuale rollback
+            PREVIOUS_TAG=$(grep "^IMAGE_TAG=" .env | cut -d= -f2 || true)
+            echo "==> [deploy] Versione precedente: ${PREVIOUS_TAG:-<nessuna>}"
+
+            # Funzione di rollback: ripristina la versione precedente in caso di errore
+            rollback() {
+              echo "==> [deploy] ERRORE! Avvio rollback a ${PREVIOUS_TAG}..."
+              docker compose -f docker-compose.prod.yml logs "${CONTAINER_NAME}" --tail=50 || true
+              if [ -n "${PREVIOUS_TAG}" ] && [ "${PREVIOUS_TAG}" != "${IMAGE_TAG}" ]; then
+                sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${PREVIOUS_TAG}|" .env
+                docker compose -f docker-compose.prod.yml up -d --remove-orphans || true
+                echo "==> [deploy] Rollback completato. Versione attiva: ${PREVIOUS_TAG}"
+              else
+                echo "==> [deploy] Nessuna versione precedente disponibile per il rollback."
+              fi
+            }
+            trap rollback ERR
 
             # Pull la nuova immagine da Docker Hub
             echo "==> [deploy] Pull immagine Docker Hub..."
@@ -164,10 +183,35 @@ jobs:
             echo "==> [deploy] Riavvio container..."
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
-            # Attendi che l'app sia disponibile (max 120s)
-            echo "==> [deploy] Attesa health check..."
-            timeout 120 bash -c \
-              'until docker compose -f docker-compose.prod.yml exec -T app curl -sf http://localhost/up > /dev/null 2>&1; do sleep 5; echo "Attesa..."; done'
+            # Attendi lo stato "healthy" del Docker healthcheck nativo (max 5 min).
+            # Il docker-compose.prod.yml configura: start_period=90s, interval=30s, retries=3
+            # → il tempo massimo prima di "unhealthy" è 90+30*3=180s → usiamo 300s come timeout.
+            echo "==> [deploy] Attesa health check Docker (max 5 min)..."
+            DEADLINE=$(($(date +%s) + 300))
+            while true; do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "unknown")
+              case "${STATUS}" in
+                healthy)
+                  echo "==> [deploy] App healthy!"
+                  break
+                  ;;
+                unhealthy)
+                  echo "==> [deploy] ERRORE: container unhealthy dopo il deploy."
+                  false  # attiva il trap ERR → rollback
+                  ;;
+                *)
+                  if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
+                    echo "==> [deploy] TIMEOUT: health check non completato entro 5 minuti."
+                    false  # attiva il trap ERR → rollback
+                  fi
+                  echo "    In attesa... (stato: ${STATUS})"
+                  sleep 10
+                  ;;
+              esac
+            done
+
+            # Disattiva il trap ERR dopo il successo (la pulizia non deve attivare rollback)
+            trap - ERR
 
             # Pulizia immagini obsolete (libera spazio su disco).
             # --filter "until=168h" rimuove le immagini scaricate più di 7 giorni fa,

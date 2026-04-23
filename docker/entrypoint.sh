@@ -21,6 +21,10 @@ if [ "${SKIP_INIT}" != "true" ]; then
     echo "    → migrate"
     php artisan migrate --force --no-interaction
 
+    # Scopre i service provider dei nuovi pacchetti (aggiorna packages.php nel volume)
+    echo "    → package:discover"
+    php artisan package:discover --ansi
+
     # Ottimizza la cache di configurazione, rotte e viste
     echo "    → optimize"
     php artisan optimize
