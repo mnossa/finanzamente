@@ -1,125 +1,104 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["config:recommended"],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":timezone(Europe/Rome)"
+  ],
+  "schedule": ["before 6am on Monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "minimumReleaseAge": "7 days",
+  "dependencyDashboard": true,
+  "dependencyDashboardApproval": true,
 
-    "timezone": "Europe/Rome",
-    "schedule": ["before 6am on Monday"],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [],
+    "dependencyDashboardApproval": false,
+    "rangeStrategy": "update-lockfile"
+  },
 
-    "prConcurrentLimit": 3,
-    "prHourlyLimit": 0,
-    "minimumReleaseAge": "7 days",
-
-    "dependencyDashboard": true,
-    "dependencyDashboardApproval": true,
-
-    "packageRules": [
-        {
-            "matchUpdateTypes": ["patch"],
-            "automerge": true,
-            "automergeType": "pr",
-            "dependencyDashboardApproval": false
-        },
-        {
-            "groupName": "laravel/framework",
-            "matchManagers": ["composer"],
-            "matchPackageNames": ["laravel/framework"]
-        },
-        {
-            "groupName": "Altri pacchetti Laravel",
-            "matchManagers": ["composer"],
-            "matchPackageNames": [
-                "/^laravel//",
-                "!laravel/framework"
-            ]
-        },
-        {
-            "groupName": "Spatie",
-            "matchManagers": ["composer"],
-            "matchPackageNames": [
-                "/^spatie//"
-            ]
-        },
-        {
-            "groupName": "PHP dev tools",
-            "matchManagers": ["composer"],
-            "matchPackageNames": [
-                "phpunit/phpunit",
-                "fakerphp/faker",
-                "mockery/mockery",
-                "nunomaduro/collision"
-            ]
-        },
-        {
-            "groupName": "Altri pacchetti PHP",
-            "matchManagers": ["composer"],
-            "matchPackageNames": [
-                "/^artesaos//",
-                "/^mollie//",
-                "/^openspout//",
-                "/^tightenco//"
-            ]
-        },
-        {
-            "groupName": "Inertia.js",
-            "matchPackageNames": [
-                "/^inertiajs//",
-                "/^@inertiajs//"
-            ]
-        },
-        {
-            "groupName": "React core",
-            "matchManagers": ["npm"],
-            "matchPackageNames": ["react", "react-dom"]
-        },
-        {
-            "groupName": "React ecosystem",
-            "matchManagers": ["npm"],
-            "matchPackageNames": [
-                "@types/react",
-                "@types/react-dom",
-                "@headlessui/react",
-                "@heroicons/react"
-            ]
-        },
-        {
-            "groupName": "Tailwind CSS",
-            "matchManagers": ["npm"],
-            "matchPackageNames": [
-                "/^tailwindcss$/",
-                "/^@tailwindcss//",
-                "/^autoprefixer$/",
-                "/^postcss/"
-            ]
-        },
-        {
-            "groupName": "Vite",
-            "matchManagers": ["npm"],
-            "matchPackageNames": [
-                "/^vite$/",
-                "/^@vitejs//",
-                "/^laravel-vite-plugin$/"
-            ]
-        },
-        {
-            "groupName": "TypeScript e @types",
-            "matchManagers": ["npm"],
-            "matchPackageNames": [
-                "/^typescript$/",
-                "/^@types//"
-            ]
-        },
-        {
-            "groupName": "@dnd-kit",
-            "matchManagers": ["npm"],
-            "matchPackageNames": [
-                "/^@dnd-kit//"
-            ]
-        },
-        {
-            "groupName": "Playwright",
-            "matchManagers": ["npm"],
-            "matchPackageNames": ["@playwright/test"]
-        }
-    ]
+  "packageRules": [
+    {
+      "description": "ZONA SICURA: Automerge per pacchetti che non impattano la logica di business",
+      "matchPackageNames": [
+        "typescript",
+        "/^@types//",
+        "tailwindcss",
+        "postcss",
+        "autoprefixer",
+        "phpunit/phpunit",
+        "fakerphp/faker",
+        "mockery/mockery",
+        "nunomaduro/collision",
+        "@playwright/test",
+        "prettier",
+        "eslint"
+      ],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "dependencyDashboardApproval": false
+    },
+    {
+      "description": "ZONA CRITICA: Framework e Pagamenti (Richiedono sempre approvazione manuale)",
+      "matchPackageNames": [
+        "laravel/framework",
+        "react",
+        "react-dom",
+        "/^mollie//",
+        "/^spatie//",
+        "/^inertiajs//",
+        "/^@inertiajs//"
+      ],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "groupName": "Laravel Core & Ecosystem",
+      "matchManagers": ["composer"],
+      "matchPackageNames": ["laravel/framework", "/^laravel//"]
+    },
+    {
+      "groupName": "React & Inertia",
+      "matchPackageNames": [
+        "react", 
+        "react-dom", 
+        "/^inertiajs//", 
+        "/^@inertiajs//",
+        "@types/react",
+        "@types/react-dom"
+      ]
+    },
+    {
+      "groupName": "Tailwind & Style",
+      "matchPackageNames": [
+        "tailwindcss",
+        "/^@tailwindcss//",
+        "autoprefixer",
+        "/^postcss/"
+      ]
+    },
+    {
+      "groupName": "Build Tools (Vite)",
+      "matchPackageNames": [
+        "vite",
+        "/^@vitejs//",
+        "laravel-vite-plugin"
+      ]
+    },
+    {
+      "groupName": "Utility PHP",
+      "matchManagers": ["composer"],
+      "matchPackageNames": [
+        "/^artesaos//",
+        "/^openspout//",
+        "/^tightenco//"
+      ]
+    },
+    {
+      "groupName": "Drag & Drop Kit",
+      "matchPackageNames": ["/^@dnd-kit//"]
+    }
+  ]
 }
-

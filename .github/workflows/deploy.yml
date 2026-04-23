@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+# Qui inserisci il blocco concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   # ── Job 1: Esegui la suite di test ────────────────────────────────────────────
