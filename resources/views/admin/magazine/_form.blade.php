@@ -344,6 +344,7 @@
                     <p class="text-xs text-surface-400 mt-0.5">Aggiunge la nota "redatto con AI" in fondo all'articolo</p>
                 </div>
                 <div class="relative flex-shrink-0">
+                    <input type="hidden" name="is_ai_assisted" value="0">
                     <input type="checkbox" name="is_ai_assisted" value="1"
                            id="toggle-is_ai_assisted"
                            {{ old('is_ai_assisted', $article->is_ai_assisted ?? false) ? 'checked' : '' }}
@@ -354,6 +355,12 @@
                     </div>
                 </div>
             </label>
+
+            <!-- Nota: articoli correlati automatici -->
+            <div class="pt-2 border-t border-surface-100 text-xs text-surface-400 leading-relaxed">
+                <span class="font-medium text-surface-500">Articoli correlati:</span>
+                vengono mostrati automaticamente in fondo all'articolo selezionando fino a 3 articoli pubblicati nella stessa categoria. Pubblica altri articoli nella stessa categoria per vederli apparire.
+            </div>
         </div>
 
     </div>

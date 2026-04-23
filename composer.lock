@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dce987b582803670c57ac635382c8123",
+    "content-hash": "3e3ade78129935ffe43d6089b4ef4a71",
     "packages": [
         {
             "name": "archtechx/enums",
@@ -129,6 +129,87 @@
                 "source": "https://github.com/artesaos/seotools"
             },
             "time": "2026-03-28T12:37:33+00:00"
+        },
+        {
+            "name": "blade-ui-kit/blade-icons",
+            "version": "1.9.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/driesvints/blade-icons.git",
+                "reference": "377eede719f9690b03bbbfd516afef887e27634a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/driesvints/blade-icons/zipball/377eede719f9690b03bbbfd516afef887e27634a",
+                "reference": "377eede719f9690b03bbbfd516afef887e27634a",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/contracts": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/filesystem": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/view": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "php": "^7.4|^8.0",
+                "symfony/console": "^5.3|^6.0|^7.0|^8.0",
+                "symfony/finder": "^5.3|^6.0|^7.0|^8.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.5.1",
+                "orchestra/testbench": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+                "phpunit/phpunit": "^9.0|^10.5|^11.0"
+            },
+            "bin": [
+                "bin/blade-icons-generate"
+            ],
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "BladeUI\\Icons\\BladeIconsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "BladeUI\\Icons\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dries Vints",
+                    "homepage": "https://driesvints.com"
+                }
+            ],
+            "description": "A package to easily make use of icons in your Laravel Blade views.",
+            "homepage": "https://github.com/driesvints/blade-icons",
+            "keywords": [
+                "blade",
+                "icons",
+                "laravel",
+                "svg"
+            ],
+            "support": {
+                "issues": "https://github.com/driesvints/blade-icons/issues",
+                "source": "https://github.com/driesvints/blade-icons"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/driesvints",
+                    "type": "github"
+                },
+                {
+                    "url": "https://www.paypal.com/paypalme/driesvints",
+                    "type": "paypal"
+                }
+            ],
+            "time": "2026-04-07T17:56:48+00:00"
         },
         {
             "name": "brick/math",
@@ -9395,6 +9476,71 @@
                 "source": "https://github.com/tijsverkoyen/CssToInlineStyles/tree/v2.4.0"
             },
             "time": "2025-12-02T11:56:42+00:00"
+        },
+        {
+            "name": "ublabs/blade-simple-icons",
+            "version": "0.196.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ublabs/blade-simple-icons.git",
+                "reference": "87d88fc12a87ec6f3ac675f8d8af22e489dac42a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ublabs/blade-simple-icons/zipball/87d88fc12a87ec6f3ac675f8d8af22e489dac42a",
+                "reference": "87d88fc12a87ec6f3ac675f8d8af22e489dac42a",
+                "shasum": ""
+            },
+            "require": {
+                "blade-ui-kit/blade-icons": "^1.1",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "php": "^7.4|^8.0"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^6.0",
+                "phpunit/phpunit": "^9.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Ublabs\\BladeSimpleIcons\\BladeSimpleIconsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Ublabs\\BladeSimpleIcons\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Adrián UB",
+                    "homepage": "https://github.com/adrian-ub"
+                }
+            ],
+            "description": "A package to easily make use of Simple Icons in your Laravel Blade views.",
+            "homepage": "https://github.com/ublabs/blade-simple-icons",
+            "keywords": [
+                "blade-simple-icons",
+                "laravel",
+                "ublabs"
+            ],
+            "support": {
+                "issues": "https://github.com/ublabs/blade-simple-icons/issues",
+                "source": "https://github.com/ublabs/blade-simple-icons/tree/0.196.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/adrian-ub",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-04-19T14:34:26+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

@@ -104,7 +104,7 @@
 
             <!-- Disclaimer finanziario — rimosso dal fondo, ora posizionato sopra il contenuto -->
 
-            @if(false && $article->is_ai_assisted)
+            {{-- @if(false && $article->is_ai_assisted)
             <!-- Nota AI -->
             <div class="mt-8 flex items-start gap-2 text-surface-400 leading-relaxed" style="font-size: 0.6875rem;">
                 <svg class="flex-shrink-0 text-surface-300" style="width: 12px; height: 12px; margin-top: 1px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -113,7 +113,7 @@
                 </svg>
                 <span>Testo redatto con il supporto di tecnologie di intelligenza artificiale sotto la supervisione e revisione editoriale dell'autore.</span>
             </div>
-            @endif
+            @endif --}}
 
             <!-- CTA -->
             <div class="mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-primary-50 to-accent-50 border border-primary-100 text-center">
@@ -136,6 +136,10 @@
                             @include('magazine._article-card', ['article' => $rel])
                         @endforeach
                     </div>
+                </div>
+            @elseif($article->is_draft)
+                <div class="mt-14 p-4 rounded-xl border border-dashed border-surface-300 bg-surface-50 text-sm text-surface-400 text-center">
+                    <span class="font-medium text-surface-500">Articoli correlati</span> — nessun articolo pubblicato trovato nella stessa categoria. Pubblica altri articoli in <strong>{{ $article->category->name }}</strong> per vederli apparire qui.
                 </div>
             @endif
 
