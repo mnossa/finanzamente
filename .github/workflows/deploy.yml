@@ -201,10 +201,30 @@ jobs:
               echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
             fi
 
-            # Avvia infrastruttura senza ricreare container già in esecuzione
-            # (db e caddy non vengono mai ricreati automaticamente durante il deploy)
-            echo "==> [deploy] Avvio infrastruttura (no-recreate)..."
-            docker compose -f docker-compose.prod.yml up -d --no-recreate db db-backup caddy
+            # Avvia DB e Caddy separatamente (senza db-backup che ha depends_on: healthy)
+            echo "==> [deploy] Avvio DB e Caddy (no-recreate)..."
+            docker compose -f docker-compose.prod.yml up -d --no-recreate db caddy
+
+            # Attendi esplicitamente che MySQL sia healthy prima di procedere (max 3 min)
+            echo "==> [deploy] Attesa MySQL healthy (max 3 min)..."
+            DB_DEADLINE=$(($(date +%s) + 180))
+            while true; do
+              DB_STATUS=$(docker inspect --format='{{.State.Health.Status}}' finanzamente-db 2>/dev/null || echo "unknown")
+              if [ "${DB_STATUS}" = "healthy" ]; then
+                echo "==> [deploy] MySQL healthy!"
+                break
+              fi
+              if [ "$(date +%s)" -ge "${DB_DEADLINE}" ]; then
+                echo "==> [deploy] TIMEOUT: MySQL non è healthy entro 3 minuti."
+                docker logs finanzamente-db --tail=50 || true
+                false
+              fi
+              echo "    In attesa MySQL... (stato: ${DB_STATUS})"
+              sleep 10
+            done
+
+            # Avvia db-backup (ora db è già healthy, nessun race condition)
+            docker compose -f docker-compose.prod.yml up -d --no-recreate db-backup
 
             # Riavvia solo i container app con la nuova immagine
             echo "==> [deploy] Riavvio container app..."
