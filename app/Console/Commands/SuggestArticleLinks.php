@@ -26,15 +26,29 @@ class SuggestArticleLinks extends Command
 
         $linkerUrl = rtrim(env('PYTHON_LINKER_URL', 'http://127.0.0.1:8000'), '/');
 
-        // Verifica che il servizio Python sia raggiungibile
-        try {
-            $health = Http::timeout(5)->get("{$linkerUrl}/health");
-            if (! $health->successful()) {
-                throw new \RuntimeException("HTTP {$health->status()}");
+        // Verifica che il servizio Python sia raggiungibile (max 3 tentativi con backoff)
+        $maxRetries = 3;
+        $retryDelay = 5; // secondi
+        $lastError  = null;
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $health = Http::timeout(5)->get("{$linkerUrl}/health");
+                if ($health->successful()) {
+                    $lastError = null;
+                    break;
+                }
+                $lastError = new \RuntimeException("HTTP {$health->status()}");
+            } catch (\Throwable $e) {
+                $lastError = $e;
             }
-        } catch (\Throwable $e) {
-            $this->error("Servizio python-linker non raggiungibile ({$linkerUrl}): " . $e->getMessage());
-            Log::error('magazine:link-suggestions — python-linker non raggiungibile', ['error' => $e->getMessage()]);
+            if ($attempt < $maxRetries) {
+                $this->warn("Tentativo {$attempt}/{$maxRetries}: python-linker non raggiungibile, attendo {$retryDelay}s...");
+                sleep($retryDelay);
+            }
+        }
+        if ($lastError !== null) {
+            $this->error("Servizio python-linker non raggiungibile ({$linkerUrl}): " . $lastError->getMessage());
+            Log::error('magazine:link-suggestions — python-linker non raggiungibile', ['error' => $lastError->getMessage()]);
             return 1;
         }
 
