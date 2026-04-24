@@ -46,7 +46,9 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
 
 # ─── Stage 3: Python deps + modello ML ────────────────────────────────────────
-FROM python:3.12-slim AS python-builder
+# NOTA: usare la stessa versione Python disponibile via apt nell'immagine di produzione
+# (php:8.5-fpm è basata su Debian Trixie che fornisce python3.13)
+FROM python:3.13-slim AS python-builder
 
 WORKDIR /build
 
