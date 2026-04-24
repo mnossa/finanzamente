@@ -161,6 +161,41 @@
 
 ---
 
+## Lezioni CI/CD — Deploy Docker su Hetzner (2026-04-24)
+
+### Problema 1: spazio disco esaurito sul runner GitHub Actions
+- Il runner `ubuntu-latest` ha ~14GB ma software preinstallati (dotnet, Android SDK, CodeQL, Swift) ne occupano 8-10GB.
+- La build Docker (Laravel + Python + modello ML) riempie il disco rimanente.
+- **Fix**: aggiungere uno step di pulizia **prima** del checkout nel job `build`:
+  ```bash
+  sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+              /opt/hostedtoolcache/CodeQL /usr/local/share/boost \
+              /usr/share/swift /usr/local/.ghcup
+  sudo docker image prune -af
+  ```
+- **Regola**: nei workflow con build Docker pesanti, liberare sempre il disco del runner come primo step.
+
+### Problema 2: push su GHCR fallisce con 403
+- Il workflow tentava di fare push su `ghcr.io/mnossa/finanzamente-python-linker` senza autenticazione GHCR.
+- In realtà il python-linker è già incluso nel `Dockerfile.prod` principale (via `COPY python-linker/`): non esiste un'immagine separata.
+- **Fix**: rimossi completamente i due step per python-linker (calcola tag + build/push). Tutto finisce nell'unica immagine `mnossa/finanzamente` su Docker Hub.
+- **Regola**: prima di aggiungere step di build per un'immagine separata, verificare se il codice è già incluso nel Dockerfile principale.
+
+### Problema 3: deploy ricrea il container MySQL causando crash
+- `docker compose up -d --remove-orphans` su tutti i servizi ricrea `db` quando `docker-compose.prod.yml` è cambiato.
+- MySQL con dati esistenti non si avvia dopo ricreazione accidentale.
+- **Fix**: usare `--no-deps` per avviare ogni servizio in isolamento, e aspettare esplicitamente che MySQL sia healthy con `docker inspect` in loop prima di avviare i servizi dipendenti.
+- **Regola**: nel deploy, mai aggiornare il container DB con `up -d` globale. Usare sempre `--no-deps` e sequenza: `db` → attendi healthy → resto infrastruttura → app.
+
+### Problema 4: upgrade MySQL 8.0 → 9.6 rompe il volume esistente
+- `docker-compose.prod.yml` era stato aggiornato a `mysql:9.6` ma il volume conteneva dati MySQL 8.0.45.
+- MySQL non permette salti di major version diretti: richiede 8.0 → 8.4 (LTS) → 9.x.
+- **Fix**: riportato `mysql:8.0` nel compose. Il server è stato ripristinato manualmente con `sed -i` sul file remoto.
+- **Percorso upgrade corretto**: `8.0` → `8.4` (LTS, con dump/restore verificato) → `9.x`.
+- **Regola**: non aggiornare l'immagine MySQL in compose senza prima eseguire un dump completo, verificare la compatibilità della versione, e pianificare una maintenance window. Mai fare upgrade di major version in modo automatico durante il deploy.
+
+---
+
 ## Lezioni Widget Distribuzione Spese & UX Dashboard (2026-04-20)
 
 ### Sidebar layout — `lg:static lg:block` sovrascrive `flex flex-col`

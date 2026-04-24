@@ -201,9 +201,9 @@ jobs:
               echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
             fi
 
-            # Avvia DB e Caddy separatamente (senza db-backup che ha depends_on: healthy)
-            echo "==> [deploy] Avvio DB e Caddy (no-recreate)..."
-            docker compose -f docker-compose.prod.yml up -d --no-recreate db caddy
+            # Avvia DB isolato (--no-deps evita che docker risolva dipendenze a cascata)
+            echo "==> [deploy] Avvio DB..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps db
 
             # Attendi esplicitamente che MySQL sia healthy prima di procedere (max 3 min)
             echo "==> [deploy] Attesa MySQL healthy (max 3 min)..."
@@ -223,12 +223,13 @@ jobs:
               sleep 10
             done
 
-            # Avvia db-backup (ora db è già healthy, nessun race condition)
-            docker compose -f docker-compose.prod.yml up -d --no-recreate db-backup
+            # Avvia il resto dell'infrastruttura (no-recreate + no-deps)
+            echo "==> [deploy] Avvio infrastruttura..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps --no-recreate caddy db-backup
 
             # Riavvia solo i container app con la nuova immagine
             echo "==> [deploy] Riavvio container app..."
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans app scheduler
+            docker compose -f docker-compose.prod.yml up -d --no-deps --remove-orphans app scheduler
 
             # Attendi lo stato "healthy" del Docker healthcheck nativo (max 5 min).
             # Il docker-compose.prod.yml configura: start_period=90s, interval=30s, retries=3
