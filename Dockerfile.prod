@@ -107,7 +107,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd \
         zip \
         intl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # Rimuove il vhost default di Debian nginx (evita "duplicate default server" con il nostro conf.d/default.conf)
+    && rm -f /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
 
 # Usa la configurazione PHP ottimizzata per produzione
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"

@@ -190,6 +190,12 @@ jobs:
             }
             trap rollback ERR
 
+            # Pulizia preventiva immagini obsolete prima del pull (evita "no space left on device")
+            echo "==> [deploy] Pulizia immagini obsolete pre-pull..."
+            docker image prune -af --filter "until=168h" || true
+            echo "==> [deploy] Spazio disco disponibile:"
+            df -h / | tail -1
+
             # Pull la nuova immagine da Docker Hub
             echo "==> [deploy] Pull immagine Docker Hub..."
             IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler
@@ -262,10 +268,10 @@ jobs:
             trap - ERR
 
             # Pulizia immagini obsolete (libera spazio su disco).
-            # --filter "until=168h" rimuove le immagini scaricate più di 7 giorni fa,
-            # mantenendo sempre quella corrente e quella del giorno precedente.
-            echo "==> [deploy] Pulizia immagini vecchie (>7 giorni)..."
-            docker image prune -af --filter "until=168h"
+            # --filter "until=48h" rimuove le immagini scaricate più di 2 giorni fa,
+            # mantenendo sempre quella corrente e le recenti per rollback rapido.
+            echo "==> [deploy] Pulizia immagini vecchie (>2 giorni)..."
+            docker image prune -af --filter "until=48h"
 
             # Log spazio disco post-deploy
             echo "==> [deploy] Spazio disco disponibile:"
