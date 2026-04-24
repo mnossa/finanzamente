@@ -55,7 +55,7 @@ class SuggestArticleLinks extends Command
         $this->info("Articoli caricati: {$articles->count()}. Invio al servizio semantico...");
 
         // Prepara payload: testo plain di ogni articolo
-        $payload = $articles->map(fn ($a) => [
+        $payload = $articles->map(fn($a) => [
             'id'   => $a->id,
             'slug' => $a->slug,
             'title' => $a->title,
@@ -120,8 +120,8 @@ class SuggestArticleLinks extends Command
 
         $this->info(
             'Suggerimenti generati: ' . count($suggestions) .
-            ' | Tempo: ' . round($duration, 2) . 's' .
-            ' | Memoria: ' . $memory . 'MB'
+                ' | Tempo: ' . round($duration, 2) . 's' .
+                ' | Memoria: ' . $memory . 'MB'
         );
 
         return 0;
@@ -165,7 +165,7 @@ class SuggestArticleLinks extends Command
 
         Mail::raw($body, function ($m) use ($to, $count) {
             $m->to($to)
-              ->subject("[Finanzamente] Suggerimenti link interni magazine ({$count})");
+                ->subject("[Finanzamente] Suggerimenti link interni magazine ({$count})");
         });
     }
 }

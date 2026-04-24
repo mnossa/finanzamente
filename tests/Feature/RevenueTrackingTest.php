@@ -56,7 +56,7 @@ class RevenueTrackingTest extends TestCase
         return $user;
     }
 
-    private function createTransactionForUser(User $user, float $amount, string $date = null): void
+    private function createTransactionForUser(User $user, float $amount, ?string $date = null): void
     {
         $currency = \App\Models\Currency::where('code', 'EUR')->first();
 
