@@ -50,5 +50,9 @@ Schedule::command('recurring:detect')->days([1, 4])->at('01:00');
  */
 Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8,15,0);
 
-// Suggerimenti link interni magazine per SEO: ogni 2 settimane, domenica alle 03:00
+/**
+ * Scansiona gli articoli magazine e suggerisce link interni tramite similarità semantica.
+ * Esegue ogni domenica e metà mese (1° e 15°) alle 03:00 per minimizzare l'impatto sulle performance.
+ * I suggerimenti vengono inviati via email all'amministratore (config('mail.admin_address')) in formato leggibile.
+ */
 Schedule::command('magazine:link-suggestions')->sundays()->twiceMonthly()->at('03:00');

@@ -236,3 +236,31 @@
 - Ogni macro `Str::` o helper registrato in `AppServiceProvider` deve avere un test `Unit` dedicato (vedi `MarkdownWithNofollowTest`) che ne verifichi: rendering base, logica specifica e assenza di eccezioni.
 - Quando si aggiorna la versione PHP (es. 8.5), correggere tutte le costanti deprecate (es. PDO::MYSQL_ATTR_SSL_CA → \Pdo\Mysql::ATTR_SSL_CA) nei config.
 - Testare sempre la pipeline di build Docker dopo modifiche a GD o estensioni PHP: una build parziale può lasciare il container senza supporto immagini.
+
+---
+
+## Lezioni DevOps, Python-linker & Test (2026-04-24)
+
+### 1. Compatibilità SQL: CHAR_LENGTH vs LENGTH
+- `CHAR_LENGTH()` funziona solo su MySQL/MariaDB, non su SQLite (usato nei test Laravel). In SQLite va usato `LENGTH()`.
+- **Regola**: per query cross-DB, preferire funzioni SQL standard o gestire la differenza a livello di codice.
+
+### 2. Test Feature con dipendenze esterne (HTTP)
+- I test che invocano servizi esterni (es. FastAPI python-linker) vanno sempre mockati con `Http::fake()`.
+- **Regola**: ogni test Feature deve essere isolato e non dipendere da servizi reali o dalla rete.
+
+### 3. Factory e Foreign Key
+- Se una factory ha una FK (es. `category_id`), va sempre creata la risorsa collegata (`MagazineCategory::factory()->create()`) e passata esplicitamente.
+- **Regola**: non assumere mai che esista un record con id=1 nei test.
+
+### 4. Limiti memoria container ML
+- I container che usano modelli ML (es. sentence-transformers) possono saturare la RAM. Impostare sempre limiti Docker (`deploy.resources.limits.memory`) sia in dev che in prod.
+- **Regola**: 1.5GB è sufficiente per modelli tipo MiniLM; testare sempre il consumo reale.
+
+### 5. Pipeline CI/CD multi-immagine
+- Se il deploy richiede più immagini custom (es. app + python-linker), la pipeline deve buildare, pushare e pullare tutte le immagini, con cache separata per layer pesanti (modelli ML).
+- **Regola**: usare `docker/metadata-action` e `docker/build-push-action` con scope diversi per ogni immagine.
+
+### 6. Rollback robusto in deploy
+- Il deploy deve salvare il tag precedente e permettere rollback automatico in caso di errore (es. healthcheck fallito).
+- **Regola**: il rollback deve ripristinare tutte le immagini coinvolte (app, servizi ausiliari) e aggiornare il file `.env`.

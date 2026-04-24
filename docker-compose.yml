@@ -180,6 +180,26 @@ services:
     depends_on:
       - app_e2e
 
+  # Servizio di analisi semantica per suggerimenti link interni magazine.
+  # Usa sentence-transformers (multilingual) per calcolare similarità tra articoli.
+  python-linker:
+    build:
+      context: ./python-linker
+      dockerfile: Dockerfile
+    image: finanzamente-python-linker
+    container_name: finanzamente-python-linker
+    restart: unless-stopped
+    networks:
+      - finanzamente
+    ports:
+      - "8001:8000"  # accessibile localmente su http://localhost:8001
+    deploy:
+      resources:
+        limits:
+          memory: 1500m   # sentence-transformers usa ~800MB a regime; 1.5GB è sicuro
+        reservations:
+          memory: 256m
+
 volumes:
   dbdata:
   dbdata_e2e:

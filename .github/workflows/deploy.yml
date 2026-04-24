@@ -107,7 +107,7 @@ jobs:
             # Tag "latest" solo su main
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build e push immagine multi-stage
+      - name: Build e push immagine app (multi-stage)
         uses: docker/build-push-action@v7.0.0
         with:
           context: .
@@ -115,12 +115,32 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Cache GitHub Actions (gratis, riduce i tempi di build)
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
           build-args: |
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             GIT_SHA=${{ github.sha }}
+
+      - name: Calcola tag python-linker
+        id: meta-linker
+        uses: docker/metadata-action@v6.0.0
+        with:
+          images: mnossa/finanzamente-python-linker
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build e push immagine python-linker
+        uses: docker/build-push-action@v7.0.0
+        with:
+          context: ./python-linker
+          file: ./python-linker/Dockerfile
+          push: true
+          tags: ${{ steps.meta-linker.outputs.tags }}
+          labels: ${{ steps.meta-linker.outputs.labels }}
+          # Cache separata: il modello ML (~120MB) non cambia ad ogni commit
+          cache-from: type=gha,scope=python-linker
+          cache-to: type=gha,mode=max,scope=python-linker
 
   # ── Job 3: Deploy su Hetzner via SSH ──────────────────────────────────────────
   deploy:
@@ -168,9 +188,9 @@ jobs:
             }
             trap rollback ERR
 
-            # Pull la nuova immagine da Docker Hub
-            echo "==> [deploy] Pull immagine Docker Hub..."
-            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler
+            # Pull le nuove immagini da Docker Hub
+            echo "==> [deploy] Pull immagini Docker Hub..."
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler python-linker
 
             # Aggiorna IMAGE_TAG nel file .env del server
             if grep -q "^IMAGE_TAG=" .env; then

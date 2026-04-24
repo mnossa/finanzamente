@@ -169,6 +169,34 @@ services:
         max-size: "5m"
         max-file: "2"
 
+  # ── Servizio semantico per suggerimenti link interni magazine ─────────────
+  # Usa sentence-transformers (multilingual) per calcolare similarità tra articoli.
+  # Il modello (~120MB) è pre-scaricato nell'immagine al momento della build.
+  python-linker:
+    image: mnossa/finanzamente-python-linker:${IMAGE_TAG:-latest}
+    container_name: finanzamente-python-linker
+    restart: unless-stopped
+    networks:
+      - finanzamente
+    # NON esporre la porta: raggiungibile solo internamente come python-linker:8000
+    deploy:
+      resources:
+        limits:
+          memory: 1500m   # sentence-transformers usa ~800MB a regime; 1.5GB è sicuro
+        reservations:
+          memory: 256m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
 networks:
   finanzamente:
     driver: bridge
