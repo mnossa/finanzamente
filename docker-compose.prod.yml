@@ -167,7 +167,8 @@ services:
     networks:
       - finanzamente
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     logging:
       driver: "json-file"
       options:

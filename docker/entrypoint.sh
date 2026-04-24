@@ -29,6 +29,10 @@ if [ "${SKIP_INIT}" != "true" ]; then
     echo "    → optimize"
     php artisan optimize
 
+    # I file di cache sono stati creati da root (entrypoint), ma php-fpm gira come
+    # www-data: corregge i permessi sui volumi montati prima di avviare supervisord
+    chown -R www-data:www-data /var/www/bootstrap/cache /var/www/storage
+
     # Genera la sitemap (va rigenerata ad ogni deploy perché public/ è nell'immagine)
     echo "    → sitemap:generate"
     php artisan sitemap:generate
