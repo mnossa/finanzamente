@@ -24,7 +24,7 @@ class SuggestArticleLinks extends Command
         $maxPerArticle  = (int) $this->option('per-article');
         $minScore       = (float) $this->option('min-score');
 
-        $linkerUrl = rtrim(env('PYTHON_LINKER_URL', 'http://python-linker:8000'), '/');
+        $linkerUrl = rtrim(env('PYTHON_LINKER_URL', 'http://127.0.0.1:8000'), '/');
 
         // Verifica che il servizio Python sia raggiungibile
         try {

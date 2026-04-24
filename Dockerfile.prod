@@ -3,7 +3,8 @@
 # =============================================================================
 # Stage 1: Compilazione asset frontend (Node.js)
 # Stage 2: Installazione dipendenze PHP (Composer)
-# Stage 3: Immagine finale di produzione (PHP-FPM + Nginx via supervisord)
+# Stage 3: Pacchetti Python + download modello ML (sentence-transformers)
+# Stage 4: Immagine finale di produzione (PHP-FPM + Nginx + Python via supervisord)
 # =============================================================================
 
 # ─── Stage 1: Build asset frontend ───────────────────────────────────────────
@@ -44,8 +45,26 @@ RUN composer install \
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
 
-# ─── Stage 3: Immagine di produzione ─────────────────────────────────────────
-FROM php:8.5-fpm-alpine AS production
+# ─── Stage 3: Python deps + modello ML ────────────────────────────────────────
+FROM python:3.12-slim AS python-builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY python-linker/requirements.txt .
+
+# Installa in directory dedicata per una copia pulita nello stage finale
+RUN pip install --no-cache-dir --target=/python-packages -r requirements.txt
+
+# Pre-scarica il modello nel HuggingFace cache (evita download a runtime)
+RUN PYTHONPATH=/python-packages python3 -c \
+    "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
+
+# ─── Stage 4: Immagine di produzione ─────────────────────────────────────────
+FROM php:8.5-fpm AS production
 
 ARG BUILD_DATE
 ARG GIT_SHA
@@ -53,28 +72,21 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.revision="${GIT_SHA}"
 LABEL org.opencontainers.image.source="https://github.com/mnossa/finanzamente"
 
-# Installa dipendenze di sistema, nginx, supervisor e estensioni PHP
-RUN apk add --no-cache \
+# Installa dipendenze di sistema, nginx, supervisor, Python e estensioni PHP
+RUN apt-get update && apt-get install -y --no-install-recommends \
         nginx \
         supervisor \
         curl \
-        # Librerie runtime
-        libpng \
-        libjpeg-turbo \
-        freetype \
-        libwebp \
-        icu-libs \
-        libzip \
-        libxml2 \
-        # Librerie di sviluppo (solo build, rimosse dopo)
+        python3 \
+        # Build deps per le estensioni PHP
         libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
         libwebp-dev \
-        oniguruma-dev \
+        libonig-dev \
         libxml2-dev \
         libzip-dev \
-        icu-dev \
+        libicu-dev \
         zip \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
@@ -87,17 +99,7 @@ RUN apk add --no-cache \
         gd \
         zip \
         intl \
-    # Pulizia librerie di sviluppo (riduce dimensione immagine)
-    && apk del \
-        libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev \
-        libwebp-dev \
-        oniguruma-dev \
-        libxml2-dev \
-        libzip-dev \
-        icu-dev \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Usa la configurazione PHP ottimizzata per produzione
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
@@ -113,8 +115,16 @@ COPY --from=node-builder --chown=www-data:www-data /app/public/build ./public/bu
 # Copia le dipendenze PHP dallo stage Composer
 COPY --from=composer-builder --chown=www-data:www-data /app/vendor ./vendor
 
+# Copia pacchetti Python e modello pre-scaricato dallo stage python-builder
+COPY --from=python-builder /python-packages /python-packages
+COPY --from=python-builder /root/.cache /root/.cache
+COPY python-linker/app.py /python-linker/app.py
+
+# Imposta PYTHONPATH per uvicorn/python-linker
+ENV PYTHONPATH=/python-packages
+
 # Copia le configurazioni Docker
-COPY docker/nginx.prod.conf /etc/nginx/http.d/default.conf
+COPY docker/nginx.prod.conf /etc/nginx/conf.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-finanzamente.conf
 COPY docker/php.prod.ini "$PHP_INI_DIR/conf.d/99-finanzamente.ini"
@@ -135,8 +145,7 @@ RUN mkdir -p \
         /run/nginx \
     && chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache \
-    && chown -R nginx:nginx /run/nginx
+    && chmod -R 755 /var/www/bootstrap/cache
 
 EXPOSE 80
 

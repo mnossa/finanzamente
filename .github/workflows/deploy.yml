@@ -125,7 +125,7 @@ jobs:
         id: meta-linker
         uses: docker/metadata-action@v6.0.0
         with:
-          images: mnossa/finanzamente-python-linker
+          images: ghcr.io/mnossa/finanzamente-python-linker
           tags: |
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -198,9 +198,9 @@ jobs:
             }
             trap rollback ERR
 
-            # Pull le nuove immagini da Docker Hub
-            echo "==> [deploy] Pull immagini Docker Hub..."
-            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler python-linker
+            # Pull la nuova immagine da Docker Hub
+            echo "==> [deploy] Pull immagine Docker Hub..."
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler
 
             # Aggiorna IMAGE_TAG nel file .env del server
             if grep -q "^IMAGE_TAG=" .env; then
