@@ -201,9 +201,14 @@ jobs:
               echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
             fi
 
-            # Riavvia i container con la nuova immagine
-            echo "==> [deploy] Riavvio container..."
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Avvia infrastruttura senza ricreare container già in esecuzione
+            # (db e caddy non vengono mai ricreati automaticamente durante il deploy)
+            echo "==> [deploy] Avvio infrastruttura (no-recreate)..."
+            docker compose -f docker-compose.prod.yml up -d --no-recreate db db-backup caddy
+
+            # Riavvia solo i container app con la nuova immagine
+            echo "==> [deploy] Riavvio container app..."
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans app scheduler
 
             # Attendi lo stato "healthy" del Docker healthcheck nativo (max 5 min).
             # Il docker-compose.prod.yml configura: start_period=90s, interval=30s, retries=3
