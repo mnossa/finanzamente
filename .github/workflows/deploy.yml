@@ -153,6 +153,16 @@ jobs:
       - name: Checkout del codice sorgente
         uses: actions/checkout@v6
 
+      - name: Copia docker-compose.prod.yml sul server
+        uses: appleboy/scp-action@v1
+        with:
+          host:     ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key:      ${{ secrets.HETZNER_SSH_KEY }}
+          port:     ${{ secrets.HETZNER_PORT || 22 }}
+          source: docker-compose.prod.yml
+          target: /opt/finanzamente/
+
       - name: Deploy via SSH su Hetzner
         uses: appleboy/ssh-action@v1
         with:
@@ -177,7 +187,7 @@ jobs:
             # Funzione di rollback: ripristina la versione precedente in caso di errore
             rollback() {
               echo "==> [deploy] ERRORE! Avvio rollback a ${PREVIOUS_TAG}..."
-              docker compose -f docker-compose.prod.yml logs "${CONTAINER_NAME}" --tail=50 || true
+              docker compose -f docker-compose.prod.yml logs app --tail=50 || true
               if [ -n "${PREVIOUS_TAG}" ] && [ "${PREVIOUS_TAG}" != "${IMAGE_TAG}" ]; then
                 sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${PREVIOUS_TAG}|" .env
                 docker compose -f docker-compose.prod.yml up -d --remove-orphans || true
