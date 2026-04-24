@@ -63,10 +63,29 @@ e2e-seed:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan cache:clear
 	@echo "[+] Database E2E pronto (utente: e2e@finanzamente.test)"
 
+###############################################################
 # Esegui i test Playwright E2E in modalità headless (modalità normale).
-# I test colpiscono nginx_e2e (porta 8081) → app_e2e → db_e2e.
+#
+# Questo target automatizza tutti i passaggi necessari per garantire
+# che l'ambiente sia sempre pronto e consistente prima di lanciare i test E2E:
+#   1. Compila gli asset frontend (make build)
+#   2. Pulisce tutte le cache Laravel (make clear-cache)
+#   3. Prepara il database E2E (make e2e-seed)
+#   4. Rimuove public/hot per evitare conflitti con dev server
+#   5. Verifica la presenza della build asset
+#   6. Lancia i test Playwright su nginx_e2e (porta 8081 → app_e2e → db_e2e)
+#
 # Il server principale (porta 8080) e il database reale non vengono mai toccati.
+#
+# Utilizzare SEMPRE questo target per eseguire i test E2E, sia in locale che in CI.
+###############################################################
 playwright:
+	@echo "[+] Build asset frontend (make build)..."
+	$(MAKE) build
+	@echo "[+] Clear cache Laravel (make clear-cache)..."
+	$(MAKE) clear-cache
+	@echo "[+] Seed database E2E (make e2e-seed)..."
+	$(MAKE) e2e-seed
 	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
 	@rm -f public/hot
 	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright'" && exit 1)
