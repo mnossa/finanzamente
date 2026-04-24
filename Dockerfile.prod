@@ -56,7 +56,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY python-linker/requirements.txt .
 
-# Installa in directory dedicata per una copia pulita nello stage finale
+# Installa PyTorch CPU-only PRIMA di requirements.txt:
+# sentence-transformers tirerebbe la variante CUDA (~2GB), quella CPU è ~200MB.
+# Pip vedrà torch già soddisfatto e non lo reinstallerà.
+RUN pip install --no-cache-dir --target=/python-packages \
+        torch --index-url https://download.pytorch.org/whl/cpu
+
+# Installa le restanti dipendenze (torch è già presente, non verrà riscaricato)
 RUN pip install --no-cache-dir --target=/python-packages -r requirements.txt
 
 # Pre-scarica il modello nel HuggingFace cache (evita download a runtime)
