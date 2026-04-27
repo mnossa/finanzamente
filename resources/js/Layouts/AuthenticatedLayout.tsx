@@ -153,7 +153,7 @@ interface NavigationItem {
     icon: () => React.JSX.Element;
     altRouteMatch?: string;
     excludeRouteMatch?: string;
-    hrefParams?: any;
+    hrefParams?: Record<string, string | number | boolean | null | undefined>;
     moduleId?: string; // ID del modulo associato per controllo accesso
     requiresPro?: boolean; // Esclusivo piano Pro
 }
@@ -716,7 +716,7 @@ export default function Authenticated({
                                 >
                                     <Icons.Bell />
                                     {notifications.unread_count > 0 && (
-                                        <span className="absolute top-1.5 right-1.5 min-w-[1rem] h-4 px-0.5 flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-slate-800">
+                                        <span className="absolute top-1.5 right-1.5 min-w-4 h-4 px-0.5 flex items-center justify-center bg-rose-500 text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-slate-800">
                                             {notifications.unread_count > 9 ? '9+' : notifications.unread_count}
                                         </span>
                                     )}
@@ -754,7 +754,7 @@ export default function Authenticated({
                                                     Nessuna notifica
                                                 </li>
                                             ) : (
-                                                notifications.items.map((notif) => (
+                                                notifications.items.map((notif: AppNotification) => (
                                                     <li
                                                         key={notif.id}
                                                         className={clsx(

@@ -69,12 +69,15 @@ return [
     | Credenziali per il bot Telegram usato per l'ingest di spese via chat.
     | TELEGRAM_BOT_TOKEN: token ottenuto da @BotFather
     | TELEGRAM_BOT_USERNAME: username del bot (senza @), per generare i link
+    | TELEGRAM_WEBHOOK_SECRET: secret token inviato nell'header
+    | X-Telegram-Bot-Api-Secret-Token per verificare la sorgente webhook
     |
     */
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME'),
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET', ''),
     ],
 
     /*

@@ -177,7 +177,7 @@
                     <span class="text-sm font-medium text-surface-700">In evidenza</span>
                     <p class="text-xs text-surface-400 mt-0.5">Mostrato come hero in homepage</p>
                 </div>
-                <div class="relative flex-shrink-0">
+                <div class="relative shrink-0">
                     <input type="checkbox" name="is_featured" value="1"
                            id="toggle-is_featured"
                            {{ old('is_featured', $article->is_featured ?? false) ? 'checked' : '' }}
@@ -297,7 +297,7 @@
 
                 <div id="unsplash-status" class="text-xs text-surface-400 hidden"></div>
 
-                <div id="unsplash-grid" class="grid grid-cols-3 gap-1.5 hidden"></div>
+                <div id="unsplash-grid" class="grid grid-cols-3 gap-1.5"></div>
 
                 <p class="text-[10px] text-surface-300 leading-relaxed">
                     Immagini fornite da <a href="https://unsplash.com/?utm_source=finanzamente&utm_medium=referral" target="_blank" rel="noopener" class="underline hover:text-surface-400">Unsplash</a>.
@@ -343,7 +343,7 @@
                     <span class="text-sm font-medium text-surface-700">Redatto con AI</span>
                     <p class="text-xs text-surface-400 mt-0.5">Aggiunge la nota "redatto con AI" in fondo all'articolo</p>
                 </div>
-                <div class="relative flex-shrink-0">
+                <div class="relative shrink-0">
                     <input type="hidden" name="is_ai_assisted" value="0">
                     <input type="checkbox" name="is_ai_assisted" value="1"
                            id="toggle-is_ai_assisted"

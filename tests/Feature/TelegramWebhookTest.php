@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\Category;
 use App\Models\Household;
 use App\Models\InboxItem;
 use App\Models\TelegramLinkToken;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -17,12 +20,14 @@ class TelegramWebhookTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->withoutMiddleware(ValidateCsrfToken::class);
+        Cache::flush();
         // Blocca le chiamate HTTP reali verso Telegram durante i test
         Http::fake([
             'api.telegram.org/*' => Http::response(['ok' => true], 200),
@@ -61,7 +66,7 @@ class TelegramWebhookTest extends TestCase
     #[Test]
     public function webhook_parses_account_from_at_syntax()
     {
-        $account = \App\Models\Account::factory()->create([
+        $account = Account::factory()->create([
             'household_id' => $this->household->id,
             'owner_user_id' => $this->user->id,
             'name' => 'Corrente',
@@ -80,7 +85,7 @@ class TelegramWebhookTest extends TestCase
     #[Test]
     public function webhook_parses_category_from_hash_syntax()
     {
-        $category = \App\Models\Category::factory()->create([
+        $category = Category::factory()->create([
             'household_id' => $this->household->id,
             'name' => 'Alimentari',
             'type' => 'expense',
@@ -110,12 +115,12 @@ class TelegramWebhookTest extends TestCase
     #[Test]
     public function webhook_parses_combined_extended_syntax()
     {
-        $account = \App\Models\Account::factory()->create([
+        $account = Account::factory()->create([
             'household_id' => $this->household->id,
             'owner_user_id' => $this->user->id,
             'name' => 'Corrente',
         ]);
-        $category = \App\Models\Category::factory()->create([
+        $category = Category::factory()->create([
             'household_id' => $this->household->id,
             'name' => 'Cibo',
             'type' => 'expense',
@@ -215,13 +220,70 @@ class TelegramWebhookTest extends TestCase
         $response->assertOk();
     }
 
+    #[Test]
+    public function webhook_rejects_request_when_secret_header_is_invalid()
+    {
+        config(['services.telegram.webhook_secret' => 'telegram-secret']);
+
+        $payload = $this->buildTextPayload('987654321', '15.50 Pizza', 99001);
+
+        $response = $this->postJson(route('telegram.webhook'), $payload, [
+            'X-Telegram-Bot-Api-Secret-Token' => 'invalid-secret',
+        ]);
+
+        $response->assertStatus(401);
+        $this->assertDatabaseCount('inbox_items', 0);
+    }
+
+    #[Test]
+    public function webhook_rejects_request_when_secret_is_configured_but_header_is_absent(): void
+    {
+        config(['services.telegram.webhook_secret' => 'telegram-secret']);
+
+        $payload = $this->buildTextPayload('987654321', '15.50 Pizza', 99004);
+
+        $response = $this->postJson(route('telegram.webhook'), $payload);
+
+        $response->assertStatus(401);
+        $this->assertDatabaseCount('inbox_items', 0);
+    }
+
+    #[Test]
+    public function webhook_accepts_request_when_secret_header_is_valid()
+    {
+        config(['services.telegram.webhook_secret' => 'telegram-secret']);
+
+        $payload = $this->buildTextPayload('987654321', '15.50 Pizza', 99002);
+
+        $response = $this->postJson(route('telegram.webhook'), $payload, [
+            'X-Telegram-Bot-Api-Secret-Token' => 'telegram-secret',
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseCount('inbox_items', 1);
+    }
+
+    #[Test]
+    public function webhook_is_idempotent_for_duplicate_update_id()
+    {
+        $payload = $this->buildTextPayload('987654321', '20 Spesa', 88001);
+
+        $first = $this->postJson(route('telegram.webhook'), $payload);
+        $second = $this->postJson(route('telegram.webhook'), $payload);
+
+        $first->assertOk();
+        $second->assertOk();
+        $this->assertDatabaseCount('inbox_items', 1);
+    }
+
     // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------
 
-    private function buildTextPayload(string $chatId, string $text): array
+    private function buildTextPayload(string $chatId, string $text, ?int $updateId = null): array
     {
         return [
+            'update_id' => $updateId ?? random_int(1000000, 9999999),
             'message' => [
                 'message_id' => 1,
                 'chat' => ['id' => $chatId],

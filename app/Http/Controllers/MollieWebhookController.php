@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\MollieService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class MollieWebhookController extends Controller
@@ -23,9 +24,27 @@ class MollieWebhookController extends Controller
      */
     public function handle(Request $request): Response
     {
+        $configuredSecret = (string) config('services.mollie.webhook_secret', '');
+        if ($configuredSecret !== '') {
+            $receivedSecret = (string) $request->header('X-Mollie-Webhook-Secret', '');
+            if (! hash_equals($configuredSecret, $receivedSecret)) {
+                Log::warning('Mollie webhook rejected: invalid secret header', [
+                    'ip' => $request->ip(),
+                ]);
+
+                return response('', 401);
+            }
+        }
+
         $mollieId = $request->input('id');
 
         if (! $mollieId) {
+            return response('', 200);
+        }
+
+        // Idempotenza: evitiamo doppi effetti in caso di retry webhook.
+        $cacheKey = 'mollie_webhook:id:' . $mollieId;
+        if (! Cache::add($cacheKey, now()->timestamp, now()->addHours(12))) {
             return response('', 200);
         }
 

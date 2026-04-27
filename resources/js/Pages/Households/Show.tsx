@@ -28,19 +28,30 @@ interface Props extends PageProps {
     pendingInvitations: PendingInvitation[];
 }
 
+/** Dati form household per Inertia: solo tipi serializzabili (no `unknown` annidati). */
+interface HouseholdEditForm {
+    name: string;
+    financial_management_type: NonNullable<Household['financial_management_type']>;
+    balance_percentages: Record<string, number>;
+    enable_turn_suggestions: boolean;
+    turn_suggestion_settings: Record<string, string | number | boolean | null>;
+    exclude_inter_transfers_from_stats: boolean;
+}
+
 export default function Show({ household, members, pendingInvitations }: Props) {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
 
     // Form per modifica nome
-    const editForm = useForm({
+    const editForm = useForm<HouseholdEditForm>({
         name: household.name,
-        financial_management_type: household.financial_management_type || 'shared_wallet',
-        balance_percentages: household.balance_percentages || {} as Record<string, number>,
-        enable_turn_suggestions: household.enable_turn_suggestions || false,
-        turn_suggestion_settings: household.turn_suggestion_settings || {} as Record<string, any>,
-        exclude_inter_transfers_from_stats: household.exclude_inter_transfers_from_stats || false,
+        financial_management_type: household.financial_management_type ?? 'shared_wallet',
+        balance_percentages: household.balance_percentages ?? {},
+        enable_turn_suggestions: household.enable_turn_suggestions ?? false,
+        turn_suggestion_settings: (household.turn_suggestion_settings ??
+            {}) as HouseholdEditForm['turn_suggestion_settings'],
+        exclude_inter_transfers_from_stats: household.exclude_inter_transfers_from_stats ?? false,
     });
 
     // Form per invito
@@ -98,9 +109,11 @@ export default function Show({ household, members, pendingInvitations }: Props) 
     };
 
     // Calcola percentuali eque per tutti i membri
-    const calculateEqualPercentages = () => {
+    const calculateEqualPercentages = (): Record<string, number> => {
         const memberCount = members.length;
-        if (memberCount === 0) return {};
+        if (memberCount === 0) {
+            return {};
+        }
 
         const equalPercentage = Math.floor(100 / memberCount);
         const remainder = 100 - (equalPercentage * memberCount);
@@ -127,9 +140,10 @@ export default function Show({ household, members, pendingInvitations }: Props) 
         });
     };
 
-    // Calcola totale percentuali
-    const getTotalPercentage = () => {
-        return Object.values(editForm.data.balance_percentages).reduce((sum, perc) => sum + (perc || 0), 0);
+    // Calcola totale percentuali (`Object.values` su Record indicizzato può essere inferito come `unknown[]`).
+    const getTotalPercentage = (): number => {
+        const percents = Object.values(editForm.data.balance_percentages) as number[];
+        return percents.reduce((sum, perc) => sum + (perc || 0), 0);
     };
 
     // Verifica se percentuali sono valide
@@ -437,7 +451,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                                             editForm.setData('enable_turn_suggestions', newValue);
 
                                                             // 2. Trasforma i dati "on-the-fly" per la richiesta
-                                                            editForm.transform((data) => ({
+                                                            editForm.transform((data: HouseholdEditForm) => ({
                                                                 ...data,
                                                                 enable_turn_suggestions: newValue,
                                                             }));

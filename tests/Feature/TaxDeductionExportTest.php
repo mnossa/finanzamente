@@ -19,8 +19,11 @@ class TaxDeductionExportTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $category;
 
     protected function setUp(): void
@@ -83,10 +86,10 @@ class TaxDeductionExportTest extends TestCase
             'is_tax_deductible' => false,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year='.now()->year);
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->component('TaxDeductions/Index')
             ->has('transactions', 1)
             ->where('year', now()->year)
@@ -125,7 +128,7 @@ class TaxDeductionExportTest extends TestCase
         $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=2024');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('transactions', 1)
             ->where('year', 2024)
         );
@@ -160,14 +163,14 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year='.now()->year);
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('summary')
             ->where('summary.total_transactions', 2)
-            ->where('summary.total_amount', fn($value) => $value == 1500.00)
-            ->where('summary.total_deductible', fn($value) => $value == 285.00) // 1500 * 19%
+            ->where('summary.total_amount', fn ($value) => $value == 1500.00)
+            ->where('summary.total_deductible', fn ($value) => $value == 285.00) // 1500 * 19%
         );
     }
 
@@ -200,10 +203,10 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year='.now()->year);
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('summary.grouped_by_type.mediche', 1)
             ->has('summary.grouped_by_type.veterinarie', 1)
         );
@@ -229,10 +232,10 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year='.now()->year);
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('transactions', 0)
         );
     }
@@ -254,10 +257,10 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year='.now()->year);
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('transactions', 1)
         );
     }
@@ -413,10 +416,10 @@ class TaxDeductionExportTest extends TestCase
             'tax_year' => now()->year,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=' . now()->year);
+        $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year='.now()->year);
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('transactions', 1) // Solo quella della household attiva
         );
     }
@@ -428,6 +431,46 @@ class TaxDeductionExportTest extends TestCase
 
         $response->assertStatus(302);
         $response->assertRedirect('/accedi');
+    }
+
+    #[Test]
+    public function base_plan_user_cannot_access_tax_deductions_index(): void
+    {
+        $user = User::factory()->basePlan()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $household->users()->attach($user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
+        $user->update(['active_household_id' => $household->id]);
+
+        $this->actingAs($user)
+            ->get(route('tax-deductions.index'))
+            ->assertRedirect(route('profile.subscription'))
+            ->assertSessionHas('info');
+    }
+
+    #[Test]
+    public function base_plan_user_cannot_export_tax_deductions_pdf(): void
+    {
+        $user = User::factory()->basePlan()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $household->users()->attach($user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
+        $user->update(['active_household_id' => $household->id]);
+
+        $this->actingAs($user)
+            ->get(route('tax-deductions.export-pdf', ['year' => 2024]))
+            ->assertRedirect(route('profile.subscription'));
+    }
+
+    #[Test]
+    public function base_plan_user_cannot_export_tax_deductions_attachments(): void
+    {
+        $user = User::factory()->basePlan()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $household->users()->attach($user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
+        $user->update(['active_household_id' => $household->id]);
+
+        $this->actingAs($user)
+            ->get(route('tax-deductions.export-attachments', ['year' => 2024]))
+            ->assertRedirect(route('profile.subscription'));
     }
 
     #[Test]
@@ -479,9 +522,9 @@ class TaxDeductionExportTest extends TestCase
         $response = $this->actingAs($this->user)->get('/detrazioni-fiscali');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page
+        $response->assertInertia(fn ($page) => $page
             ->has('summary.years')
-            ->where('summary.years', fn($years) => collect($years)->contains(now()->year))
+            ->where('summary.years', fn ($years) => collect($years)->contains(now()->year))
         );
     }
 
@@ -519,11 +562,11 @@ class TaxDeductionExportTest extends TestCase
         // Cerco transazioni per il 2025
         $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=2025');
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page->has('transactions', 1));
+        $response->assertInertia(fn ($page) => $page->has('transactions', 1));
 
         // Cerco transazioni per il 2024
         $response = $this->actingAs($this->user)->get('/detrazioni-fiscali?year=2024');
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page->has('transactions', 1));
+        $response->assertInertia(fn ($page) => $page->has('transactions', 1));
     }
 }

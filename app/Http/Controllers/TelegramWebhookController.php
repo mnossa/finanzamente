@@ -13,6 +13,7 @@ use App\Services\TelegramService;
 use App\Services\VisionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -51,7 +52,28 @@ class TelegramWebhookController extends Controller
      */
     public function handle(Request $request): Response
     {
+        $webhookSecret = (string) config('services.telegram.webhook_secret', '');
+        if ($webhookSecret !== '') {
+            $receivedSecret = (string) $request->header('X-Telegram-Bot-Api-Secret-Token', '');
+            if (! hash_equals($webhookSecret, $receivedSecret)) {
+                Log::warning('Telegram webhook rejected: invalid secret token', [
+                    'ip' => $request->ip(),
+                ]);
+
+                return response('Unauthorized', 401);
+            }
+        }
+
         $update = $request->all();
+        $updateId = isset($update['update_id']) ? (int) $update['update_id'] : null;
+
+        // Idempotenza: Telegram può reinviare lo stesso update se non riceve ACK.
+        if ($updateId !== null) {
+            $cacheKey = "telegram_webhook:update:{$updateId}";
+            if (! Cache::add($cacheKey, now()->timestamp, now()->addHours(12))) {
+                return response('OK', 200);
+            }
+        }
 
         // Telegram invia solo aggiornamenti di tipo 'message'
         if (! isset($update['message'])) {

@@ -26,6 +26,17 @@ jobs:
       - name: Checkout del codice sorgente
         uses: actions/checkout@v6
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Build frontend (typecheck + Vite build)
+        run: |
+          npm ci
+          npm run build
+
       - name: Imposta UID/GID per Docker Compose
         run: |
           echo "LOCAL_UID=$(id -u)" >> "$GITHUB_ENV"
@@ -65,6 +76,9 @@ jobs:
           docker compose exec -T app composer install \
             --optimize-autoloader \
             --no-interaction
+
+      - name: Verifica coding style PHP (Pint)
+        run: docker compose exec -T app php ./vendor/bin/pint --test
 
       - name: Esegui suite di test (SQLite in-memory)
         run: make test

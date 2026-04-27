@@ -1,4 +1,3 @@
-# copilot-instructions.md
 # Ambiente di Sviluppo
 Tutto lo sviluppo e il deploy avverranno tramite Docker, per garantire coerenza tra ambienti, facilità di setup e portabilità. Il progetto includerà file di configurazione Docker per tutti i servizi necessari (PHP, MySQL, Node, ecc.).
 

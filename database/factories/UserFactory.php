@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -58,6 +59,15 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'profile_completed' => false,
             'profile_settings' => null,
+        ]);
+    }
+
+    /** Piano Base (rotte `requires-pro` devono risultare bloccate). */
+    public function basePlan(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'plan' => 'base',
+            'plan_expires_at' => null,
         ]);
     }
 }

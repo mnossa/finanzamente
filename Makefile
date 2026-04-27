@@ -1,5 +1,9 @@
 # Makefile helper per sviluppo Finanzamente
 # Usa UID/GID dell'utente host per evitare problemi di permessi nei volumi
+#
+# Frontend (npm): usa sempre il container `node` (es. `make build`, `make npm-install`).
+# Non eseguire `npm ci` / `npm run build` direttamente sull'host: Vite/Rolldown richiedono
+# binding nativi Linux corretti nel container; una installazione solo su Windows/macOS rompe il volume condiviso.
 
 LOCAL_UID ?= $(shell id -u)
 LOCAL_GID ?= $(shell id -g)
@@ -7,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -36,10 +40,15 @@ dev:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec node npm run dev -- --host --port 5174
 
 build:
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec node npm run build 
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec node npm run build
 
 build-check:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec node npm run build 2>&1 | cat
+
+# Installazione lockfile + build frontend nel container Node (stesso flusso della CI locale dopo `make up`)
+frontend-ci:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm ci
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm run build
 
 clear-cache:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan optimize:clear
@@ -187,8 +196,10 @@ set-telegram-webhook:
 		exit 1; \
 	fi; \
 	TOKEN=$$(grep TELEGRAM_BOT_TOKEN .env | cut -d= -f2); \
+	SECRET=$$(grep TELEGRAM_WEBHOOK_SECRET .env | cut -d= -f2); \
 	curl -s -X POST "https://api.telegram.org/bot$$TOKEN/setWebhook" \
-		-d "url=$(url)/telegram/webhook" | python3 -m json.tool
+		-d "url=$(url)/telegram/webhook" \
+		-d "secret_token=$$SECRET" | python3 -m json.tool
 
 # Mostra lo stato attuale del webhook Telegram
 get-telegram-webhook:
@@ -336,10 +347,10 @@ clean-duplicates:
 test:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -e APP_ENV=testing app php -d memory_limit=256M artisan test
 
-# Simula la pipeline CI/CD in locale (identica a GitHub Actions)
+# Simula la pipeline CI/CD in locale (frontend via container `node`, come in sviluppo)
 ci:
 	@echo "[CI] Simulazione pipeline CI/CD in locale..."
-	@echo "[CI] Step 1/4 - Avvio stack Docker..."
+	@echo "[CI] Step 1/6 - Avvio stack Docker..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d --build
 	@echo "[CI] Attesa container app..."
 	@max_wait=$(CI_APP_WAIT_TIMEOUT); \
@@ -356,12 +367,17 @@ ci:
 		elapsed=$$((elapsed + interval)); \
 		echo "  ...attesa ($$elapsed/$$max_wait s)"; \
 	done
-	@echo "[CI] Step 2/4 - Installazione dipendenze PHP..."
+	@echo "[CI] Step 2/6 - Dipendenze Node + build frontend (container node: tsc + vite)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm ci
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm run build
+	@echo "[CI] Step 3/6 - Installazione dipendenze PHP..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app composer install --optimize-autoloader --no-interaction
-	@echo "[CI] Step 3/4 - Esecuzione suite di test..."
+	@echo "[CI] Step 4/6 - Verifica coding style PHP (Pint)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app php ./vendor/bin/pint --test
+	@echo "[CI] Step 5/6 - Esecuzione suite di test..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T -e APP_ENV=testing app php artisan test; \
 	EXIT_CODE=$$?; \
-	echo "[CI] Step 4/4 - Pulizia..."; \
+	echo "[CI] Step 6/6 - Pulizia..."; \
 	if [ $$EXIT_CODE -eq 0 ]; then \
 		echo "[CI] Pipeline completata con successo!"; \
 	else \
@@ -438,3 +454,11 @@ prod-local:
 	docker build -f Dockerfile.prod -t finanzamente:prod .
 	@echo "[+] Avvio stack produzione (docker-compose.prod.yml)..."
 	docker compose -f docker-compose.prod.yml up --build
+
+# Dry run locale del deploy: valida compose prod e builda immagine senza deploy remoto
+deploy-dry-run:
+	@echo "[DRY-RUN] Validazione docker-compose.prod.yml..."
+	docker compose -f docker-compose.prod.yml config > /dev/null
+	@echo "[DRY-RUN] Build immagine produzione..."
+	docker build -f Dockerfile.prod -t finanzamente:prod-dry-run .
+	@echo "[DRY-RUN] Completato. Consulta docs/deploy-dry-run-checklist.md per i prossimi passi."

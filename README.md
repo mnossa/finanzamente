@@ -100,6 +100,20 @@ Finanzamente è una webapp di gestione finanziaria personale e familiare, pensat
 - Frontend pubblico/SSR: Blade
 - Database: MySQL, tabelle in inglese, espandibile
 
+## Version Matrix ufficiale
+
+Per ridurre differenze tra locale, CI e produzione, usare queste versioni target:
+
+- PHP: `8.5`
+- Node.js: `24`
+- MySQL: `9.6`
+
+Questa matrice e' applicata ai file runtime principali:
+
+- `Dockerfile` e `Dockerfile.prod`
+- `docker-compose.yml`
+- workflow GitHub Actions in `.github/workflows/`
+
 ## Accessibilità e Best Practice
 - Mobile first, UI/UX reattiva e accessibile (WCAG 2.1)
 - Codice DRY/KISS, componenti riutilizzabili, linting e formattazione
@@ -251,6 +265,7 @@ Il bot Telegram permette di registrare spese direttamente dalla chat e di riceve
    ```env
    TELEGRAM_BOT_TOKEN=<token-da-botfather>
    TELEGRAM_BOT_USERNAME=<username-senza-@>
+   TELEGRAM_WEBHOOK_SECRET=<secret-token-lungo-e-casuale>
    ```
 3. Pulisci la cache: `make clear-cache`
 4. Esponi il server locale con ngrok:
@@ -265,6 +280,8 @@ Il bot Telegram permette di registrare spese direttamente dalla chat e di riceve
    ```bash
    make get-telegram-webhook
    ```
+
+> **Sicurezza consigliata:** imposta sempre `TELEGRAM_WEBHOOK_SECRET`. Il comando `make set-telegram-webhook` registra automaticamente il `secret_token` su Telegram e il backend valida l'header `X-Telegram-Bot-Api-Secret-Token`.
 
 ### Configurazione in produzione
 

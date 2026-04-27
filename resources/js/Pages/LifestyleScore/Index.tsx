@@ -34,6 +34,14 @@ interface CategoryRow {
     excluded: boolean;
 }
 
+interface LifestyleBarDatum {
+    name: string;
+    fullName: string;
+    value: number;
+    color: string;
+    excluded: boolean;
+}
+
 interface Metrics {
     gross_income: number;
     estimated_taxes: number;
@@ -359,8 +367,10 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                                 ))}
                                             </Pie>
                                             <Tooltip
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                formatter={(value: any, name: any) => [formatEur(value ?? 0), name ?? '']}
+                                                formatter={(value, name) => [
+                                                    formatEur(Number(value ?? 0)),
+                                                    String(name ?? ''),
+                                                ]}
                                                 contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
                                             />
                                             <Legend
@@ -400,11 +410,13 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                                 tick={{ fontSize: 11 }}
                                             />
                                             <Tooltip
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                formatter={(value: any, _name: any, props: any) => [
-                                                    formatEur(value ?? 0),
-                                                    props.payload.fullName + (props.payload.excluded ? ' (escluso)' : ''),
-                                                ]}
+                                                formatter={(value, _name, item) => {
+                                                    const row = item?.payload as LifestyleBarDatum | undefined;
+                                                    const label =
+                                                        (row?.fullName ?? '') +
+                                                        (row?.excluded ? ' (escluso)' : '');
+                                                    return [formatEur(Number(value ?? 0)), label];
+                                                }}
                                                 contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
                                             />
                                             <Bar dataKey="value" radius={[0, 4, 4, 0]}>

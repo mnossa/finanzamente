@@ -1,6 +1,16 @@
-import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+
+/** Stack sans allineata al default storico Tailwind (senza import da `tailwindcss/defaultTheme`: v4 + exports rompono il resolver dell'estensione VS Code / Cursor). */
+const defaultSansStack = [
+    'ui-sans-serif',
+    'system-ui',
+    'sans-serif',
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji',
+];
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -16,7 +26,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', 'Figtree', ...defaultSansStack],
             },
             colors: {
                 // Design System Finanzamente

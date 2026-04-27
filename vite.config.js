@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const port = env.VITE_PORT ? parseInt(env.VITE_PORT) : 5174;
     const hmrHost = env.APP_URL ? new URL(env.APP_URL).hostname : 'localhost';
@@ -28,15 +28,20 @@ export default defineConfig(({ mode }) => {
         ],
         build: {
             chunkSizeWarningLimit: 900,
-            minify: 'terser',
-            terserOptions: {
-                compress: {
-                    drop_console: true,
-                    drop_debugger: true,
-                },
-            },
+            minify: 'oxc',
             rollupOptions: {
                 output: {
+                    ...(command === 'build'
+                        ? {
+                              minify: {
+                                  mangle: true,
+                                  compress: {
+                                      dropConsole: true,
+                                      dropDebugger: true,
+                                  },
+                              },
+                          }
+                        : {}),
                     manualChunks(id) {
                         if (!id.includes('node_modules')) return;
 

@@ -32,7 +32,7 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 # --ignore-platform-reqs: l'immagine composer:2.9 usa PHP 8.5 mentre alcune
 # dipendenze (es. openspout) richiedono ~8.2/8.3/8.4. Le platform requirements
-# vengono soddisfatte nello stage production (php:8.2-fpm-alpine).
+# vengono soddisfatte nello stage production (php:8.5-fpm).
 RUN composer install \
     --optimize-autoloader \
     --no-dev \
