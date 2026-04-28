@@ -6,6 +6,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use Mollie\Api\MollieApiClient;
 use Mollie\Api\Resources\Customer;
+use Mollie\Api\Resources\Payment;
 
 class MollieService
 {
@@ -14,7 +15,7 @@ class MollieService
     private function client(): MollieApiClient
     {
         if ($this->mollie === null) {
-            $this->mollie = new MollieApiClient();
+            $this->mollie = new MollieApiClient;
             $this->mollie->setApiKey(config('services.mollie.key'));
         }
 
@@ -51,11 +52,8 @@ class MollieService
      * Mollie richiede un "first payment" tramite checkout per ottenere il mandate
      * (autorizzazione addebito ricorrente). I successivi pagamenti avvengono automaticamente.
      *
-     * @param  User    $user
-     * @param  Subscription $subscription  Subscription già salvata con status=pending
-     * @param  string  $redirectUrl
-     * @param  string  $webhookUrl
-     * @return string  URL checkout Mollie
+     * @param  Subscription  $subscription  Subscription già salvata con status=pending
+     * @return string URL checkout Mollie
      */
     public function createFirstPaymentUrl(
         User $user,
@@ -205,7 +203,7 @@ class MollieService
      * Verifica la firma webhook di Mollie (non esiste una firma standard,
      * si verifica tramite recupero diretto del payment/subscription da API).
      */
-    public function getPayment(string $paymentId): \Mollie\Api\Resources\Payment
+    public function getPayment(string $paymentId): Payment
     {
         return $this->client()->payments->get($paymentId);
     }

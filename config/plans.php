@@ -21,13 +21,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'base_limits' => [
-        'max_accounts'               => 5,
-        'max_households'             => 1,
+        'max_accounts' => 5,
+        'max_households' => 1,
         'max_recurring_transactions' => 5,
-        'max_refunds'                => 10,
-        'max_debts_credits'          => 5,
-        'max_financial_goals'        => 1,
-        'can_invite_members'         => false,
+        'max_refunds' => 10,
+        'max_debts_credits' => 5,
+        'max_financial_goals' => 1,
+        'can_invite_members' => false,
     ],
 
     /*

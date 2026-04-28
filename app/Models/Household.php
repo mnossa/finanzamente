@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Household extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -47,6 +47,7 @@ class Household extends Model
 
     // Costanti per i tipi di gestione finanziaria
     public const FINANCIAL_MANAGEMENT_DEBT_BALANCING = 'debt_balancing';
+
     public const FINANCIAL_MANAGEMENT_SHARED_WALLET = 'shared_wallet';
 
     public const FINANCIAL_MANAGEMENT_TYPES = [
@@ -80,8 +81,8 @@ class Household extends Model
 
     /**
      * Imposta le percentuali di bilanciamento per utenti specifici.
-     * 
-     * @param array $percentages Array in formato [user_id => percentage, ...]
+     *
+     * @param  array  $percentages  Array in formato [user_id => percentage, ...]
      */
     public function setBalancePercentages(array $percentages): void
     {
@@ -93,7 +94,7 @@ class Household extends Model
 
         // Verifica che tutti gli utenti appartengano alla household
         foreach ($percentages as $userId => $percentage) {
-            if (!$this->users()->where('user_id', $userId)->exists()) {
+            if (! $this->users()->where('user_id', $userId)->exists()) {
                 throw new \InvalidArgumentException("L'utente {$userId} non appartiene a questa household");
             }
         }
@@ -107,7 +108,7 @@ class Household extends Model
      */
     public function getBalancePercentages(): array
     {
-        if (!empty($this->balance_percentages)) {
+        if (! empty($this->balance_percentages)) {
             return $this->balance_percentages;
         }
 
@@ -148,6 +149,7 @@ class Household extends Model
     public function getUserBalance(int $userId): float
     {
         $percentages = $this->getBalancePercentages();
+
         return $percentages[$userId] ?? 0.0;
     }
 
@@ -156,7 +158,7 @@ class Household extends Model
      */
     public function hasCustomBalancePercentages(): bool
     {
-        return !empty($this->balance_percentages);
+        return ! empty($this->balance_percentages);
     }
 
     /**
@@ -164,7 +166,7 @@ class Household extends Model
      */
     public function areBalancePercentagesValid(): bool
     {
-        if (!$this->isDebtBalancingMode()) {
+        if (! $this->isDebtBalancingMode()) {
             return true; // Non applicabile per shared wallet
         }
 
@@ -174,6 +176,7 @@ class Household extends Model
         }
 
         $total = array_sum($percentages);
+
         return abs($total - 100) <= 0.01;
     }
 
@@ -250,6 +253,7 @@ class Household extends Model
     public function getLastTurnAssignment(int $categoryId): ?int
     {
         $assignments = $this->last_turn_assignments ?? [];
+
         return $assignments[$categoryId] ?? null;
     }
 
@@ -269,7 +273,7 @@ class Household extends Model
      */
     public function suggestNextTurn(int $categoryId): ?int
     {
-        if (!$this->isTurnSuggestionsEnabled()) {
+        if (! $this->isTurnSuggestionsEnabled()) {
             return null;
         }
 
@@ -279,7 +283,7 @@ class Household extends Model
         }
 
         $lastUserId = $this->getLastTurnAssignment($categoryId);
-        
+
         // Se non c'è una assegnazione precedente, sceglie il primo membro
         if ($lastUserId === null) {
             return $members[0];
@@ -294,6 +298,7 @@ class Household extends Model
 
         // Passa al prossimo utente, ciclando se necessario
         $nextIndex = ($currentIndex + 1) % count($members);
+
         return $members[$nextIndex];
     }
 
@@ -302,7 +307,7 @@ class Household extends Model
      */
     public function getFixedExpenseContributions(): array
     {
-        if (!$this->isDebtBalancingMode()) {
+        if (! $this->isDebtBalancingMode()) {
             return [];
         }
 
@@ -314,7 +319,7 @@ class Household extends Model
             $contributions[$userId] = [
                 'user_name' => $userName,
                 'total_contributed' => 0,
-                'categories' => []
+                'categories' => [],
             ];
         }
 
@@ -325,9 +330,9 @@ class Household extends Model
 
         foreach ($fixedExpenseCategories as $categoryId => $categoryName) {
             // Calcola il totale delle spese per questa categoria
-            $totalExpenses = Transaction::whereIn('account_id', 
-                    $this->accounts()->pluck('id')
-                )
+            $totalExpenses = Transaction::whereIn('account_id',
+                $this->accounts()->pluck('id')
+            )
                 ->where('category_id', $categoryId)
                 ->where('amount', '<', 0) // Solo spese (negative)
                 ->sum('amount');
@@ -337,8 +342,8 @@ class Household extends Model
             // Ogni membro contribuisce in base alle sue transazioni
             foreach ($members as $userId => $userName) {
                 $userContribution = Transaction::whereIn('account_id',
-                        $this->accounts()->where('owner_user_id', $userId)->pluck('id')
-                    )
+                    $this->accounts()->where('owner_user_id', $userId)->pluck('id')
+                )
                     ->where('category_id', $categoryId)
                     ->where('amount', '<', 0) // Solo spese (negative)
                     ->sum('amount');
@@ -348,7 +353,7 @@ class Household extends Model
                 $contributions[$userId]['categories'][$categoryName] = [
                     'contributed' => $userContribution,
                     'total_category' => $totalExpenses,
-                    'percentage' => $totalExpenses > 0 ? ($userContribution / $totalExpenses) * 100 : 0
+                    'percentage' => $totalExpenses > 0 ? ($userContribution / $totalExpenses) * 100 : 0,
                 ];
 
                 $contributions[$userId]['total_contributed'] += $userContribution;

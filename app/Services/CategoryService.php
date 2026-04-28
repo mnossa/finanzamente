@@ -82,7 +82,7 @@ class CategoryService
     /**
      * Crea le categorie predefinite per una household.
      *
-     * @param Household $household La household per cui creare le categorie
+     * @param  Household  $household  La household per cui creare le categorie
      * @return int Numero di categorie create
      */
     public function createDefaultCategoriesForHousehold(Household $household): int
@@ -105,8 +105,6 @@ class CategoryService
 
     /**
      * Restituisce l'elenco delle categorie predefinite.
-     *
-     * @return array
      */
     public function getDefaultCategories(): array
     {

@@ -20,7 +20,7 @@ class ConvertArticleImagesToWebp extends Command
     {
         ini_set('memory_limit', '512M');
         $dryRun = $this->option('dry-run');
-        $limit  = (int) $this->option('limit');
+        $limit = (int) $this->option('limit');
 
         $query = MagazineArticle::whereNotNull('cover_image_path')
             ->where('cover_image_path', 'not like', '%.webp');
@@ -51,15 +51,15 @@ class ConvertArticleImagesToWebp extends Command
             return self::SUCCESS;
         }
 
-        $bar       = $this->output->createProgressBar($articles->count());
+        $bar = $this->output->createProgressBar($articles->count());
         $converted = 0;
-        $failed    = 0;
+        $failed = 0;
 
         $bar->start();
 
         foreach ($articles as $article) {
             $originalPath = $article->cover_image_path;
-            $newPath      = $service->convertToWebp($originalPath);
+            $newPath = $service->convertToWebp($originalPath);
 
             if ($newPath !== $originalPath) {
                 $article->updateQuietly(['cover_image_path' => $newPath]);

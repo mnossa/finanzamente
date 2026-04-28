@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDashboardLayoutRequest;
 use App\Models\DashboardLayout;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardLayoutController extends Controller
@@ -36,7 +35,7 @@ class DashboardLayoutController extends Controller
 
         $layout = DashboardLayout::updateOrCreate(
             [
-                'user_id'      => $user->id,
+                'user_id' => $user->id,
                 'household_id' => $user->active_household_id,
             ],
             [
@@ -45,7 +44,7 @@ class DashboardLayoutController extends Controller
         );
 
         return response()->json([
-            'config'  => $layout->config,
+            'config' => $layout->config,
             'message' => 'Layout salvato con successo.',
         ]);
     }
@@ -62,7 +61,7 @@ class DashboardLayoutController extends Controller
             ->delete();
 
         return response()->json([
-            'config'  => DashboardLayout::defaultConfig(),
+            'config' => DashboardLayout::defaultConfig(),
             'message' => 'Layout reimpostato al valore predefinito.',
         ]);
     }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class MagazineCategory extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'slug',
         'name',
@@ -25,7 +26,7 @@ class MagazineCategory extends Model
     public function publishedArticles(): HasMany
     {
         return $this->hasMany(MagazineArticle::class, 'category_id')
-                    ->whereNotNull('published_at')
-                    ->where('published_at', '<=', now());
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 }

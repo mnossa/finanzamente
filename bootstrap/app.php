@@ -1,8 +1,17 @@
 <?php
 
+use App\Http\Middleware\AdvancedRateLimitWithDelay;
+use App\Http\Middleware\EnsureCanModify;
+use App\Http\Middleware\EnsureHasActiveHousehold;
+use App\Http\Middleware\EnsureProfileCompleted;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\OwnerMiddleware;
+use App\Http\Middleware\PreLaunchMiddleware;
+use App\Http\Middleware\RequiresPro;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,18 +29,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->alias([
-            'household' => \App\Http\Middleware\EnsureHasActiveHousehold::class,
-            'can-modify' => \App\Http\Middleware\EnsureCanModify::class,
-            'profile-completed' => \App\Http\Middleware\EnsureProfileCompleted::class,
-            'adv-throttle' => \App\Http\Middleware\AdvancedRateLimitWithDelay::class,
-            'requires-pro' => \App\Http\Middleware\RequiresPro::class,
-            'pre-launch' => \App\Http\Middleware\PreLaunchMiddleware::class,
-            'owner'      => \App\Http\Middleware\OwnerMiddleware::class,
+            'household' => EnsureHasActiveHousehold::class,
+            'can-modify' => EnsureCanModify::class,
+            'profile-completed' => EnsureProfileCompleted::class,
+            'adv-throttle' => AdvancedRateLimitWithDelay::class,
+            'requires-pro' => RequiresPro::class,
+            'pre-launch' => PreLaunchMiddleware::class,
+            'owner' => OwnerMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -9,16 +9,18 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Provider Alpha Vantage.
- * 
+ *
  * Limiti piano gratuito: 25 richieste/giorno (molto restrittivo!)
  * Registrazione: https://www.alphavantage.co/support/#api-key
  */
 class AlphaVantageProvider implements AssetPriceProviderInterface
 {
     private const BASE_URL = 'https://www.alphavantage.co/query';
-    
+
     private const CACHE_TTL_REALTIME = 900; // 15 minuti
+
     private const CACHE_TTL_HISTORICAL = 86400; // 24 ore
+
     private const CACHE_TTL_SEARCH = 3600; // 1 ora
 
     private ?string $apiKey;
@@ -35,7 +37,7 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
 
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
@@ -43,11 +45,11 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
      */
     public function searchAssets(string $query): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return ['error' => 'API Alpha Vantage non configurata', 'results' => []];
         }
 
-        $cacheKey = 'av_search_' . md5($query);
+        $cacheKey = 'av_search_'.md5($query);
 
         return Cache::remember($cacheKey, self::CACHE_TTL_SEARCH, function () use ($query) {
             try {
@@ -57,11 +59,12 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     'apikey' => $this->apiKey,
                 ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     Log::warning('Alpha Vantage search failed', [
                         'query' => $query,
                         'status' => $response->status(),
                     ]);
+
                     return ['error' => 'Errore nella ricerca', 'results' => []];
                 }
 
@@ -92,7 +95,8 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     'query' => $query,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore durante la ricerca: ' . $e->getMessage(), 'results' => []];
+
+                return ['error' => 'Errore durante la ricerca: '.$e->getMessage(), 'results' => []];
             }
         });
     }
@@ -102,11 +106,11 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
      */
     public function getCurrentPrice(string $symbol): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return ['error' => 'API Alpha Vantage non configurata', 'price' => null];
         }
 
-        $cacheKey = 'av_price_' . strtoupper($symbol);
+        $cacheKey = 'av_price_'.strtoupper($symbol);
 
         return Cache::remember($cacheKey, self::CACHE_TTL_REALTIME, function () use ($symbol) {
             try {
@@ -116,7 +120,7 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     'apikey' => $this->apiKey,
                 ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return ['error' => 'Errore nel recupero del prezzo', 'price' => null];
                 }
 
@@ -151,7 +155,8 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     'symbol' => $symbol,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore: ' . $e->getMessage(), 'price' => null];
+
+                return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
             }
         });
     }
@@ -161,11 +166,11 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
      */
     public function getHistoricalPrice(string $symbol, string $date): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return ['error' => 'API Alpha Vantage non configurata', 'price' => null];
         }
 
-        $cacheKey = 'av_historical_' . strtoupper($symbol) . '_' . $date;
+        $cacheKey = 'av_historical_'.strtoupper($symbol).'_'.$date;
 
         return Cache::remember($cacheKey, self::CACHE_TTL_HISTORICAL, function () use ($symbol, $date) {
             try {
@@ -176,7 +181,7 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     'apikey' => $this->apiKey,
                 ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return ['error' => 'Errore nel recupero dei dati storici', 'price' => null];
                 }
 
@@ -197,7 +202,7 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                 $targetDate = $date;
                 $priceData = $timeSeries[$targetDate] ?? null;
 
-                if (!$priceData) {
+                if (! $priceData) {
                     $dates = array_keys($timeSeries);
                     sort($dates);
                     $dates = array_reverse($dates);
@@ -211,7 +216,7 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     }
                 }
 
-                if (!$priceData) {
+                if (! $priceData) {
                     return ['error' => 'Nessun prezzo disponibile per la data richiesta', 'price' => null];
                 }
 
@@ -233,7 +238,8 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     'date' => $date,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore: ' . $e->getMessage(), 'price' => null];
+
+                return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
             }
         });
     }

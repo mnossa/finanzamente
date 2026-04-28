@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
 /**
  * Service centralizzato per la logica di calcolo del Lifestyle Inflation Score.
@@ -29,9 +28,6 @@ class FinancialMetricsService
     /**
      * Calcola tutti i dati necessari al widget/pagina Lifestyle Score.
      *
-     * @param  User    $user
-     * @param  Carbon  $startDate
-     * @param  Carbon  $endDate
      * @return array{
      *   gross_income: float,
      *   estimated_taxes: float,
@@ -51,9 +47,9 @@ class FinancialMetricsService
     public function calculate(User $user, Carbon $startDate, Carbon $endDate): array
     {
         $householdId = $user->active_household_id;
-        $settings    = $user->profile_settings ?? [];
+        $settings = $user->profile_settings ?? [];
         $isPartitaIva = $user->user_type === 'partita_iva';
-        $taxRate  = (float) ($settings['tax_rate']  ?? 15);
+        $taxRate = (float) ($settings['tax_rate'] ?? 15);
         $inpsRate = (float) ($settings['inps_rate'] ?? 26.23);
 
         // ── Reddito Lordo ────────────────────────────────────────────────────────
@@ -68,11 +64,11 @@ class FinancialMetricsService
 
         // ── Tasse stimate (solo P.IVA — regime forfettario) ──────────────────────
         // I contributi INPS sono deducibili dalla base imponibile della flat tax.
-        $inpsAmount   = 0.0;
+        $inpsAmount = 0.0;
         $flatTaxAmount = 0.0;
 
         if ($isPartitaIva) {
-            $inpsAmount    = ($grossIncome * $inpsRate) / 100;
+            $inpsAmount = ($grossIncome * $inpsRate) / 100;
             $flatTaxAmount = (($grossIncome - $inpsAmount) * $taxRate) / 100;
         }
 
@@ -116,18 +112,18 @@ class FinancialMetricsService
         $categoryBreakdown = $this->buildCategoryBreakdown($user, $householdId, $startDate, $endDate, $totalExpenses);
 
         return [
-            'gross_income'       => round($grossIncome, 2),
-            'estimated_taxes'    => round($estimatedTaxes, 2),
-            'inps_amount'        => round($inpsAmount, 2),
-            'flat_tax_amount'    => round($flatTaxAmount, 2),
-            'net_income'         => round($netIncome, 2),
-            'total_expenses'     => round($totalExpenses, 2),
-            'excluded_expenses'  => round($excludedExpenses, 2),
+            'gross_income' => round($grossIncome, 2),
+            'estimated_taxes' => round($estimatedTaxes, 2),
+            'inps_amount' => round($inpsAmount, 2),
+            'flat_tax_amount' => round($flatTaxAmount, 2),
+            'net_income' => round($netIncome, 2),
+            'total_expenses' => round($totalExpenses, 2),
+            'excluded_expenses' => round($excludedExpenses, 2),
             'effective_expenses' => round($effectiveExpenses, 2),
-            'lifestyle_score'    => $lifestyleScore,
-            'tax_rate'           => $taxRate,
-            'inps_rate'          => $inpsRate,
-            'is_partita_iva'     => $isPartitaIva,
+            'lifestyle_score' => $lifestyleScore,
+            'tax_rate' => $taxRate,
+            'inps_rate' => $inpsRate,
+            'is_partita_iva' => $isPartitaIva,
             'category_breakdown' => $categoryBreakdown,
         ];
     }
@@ -167,16 +163,16 @@ class FinancialMetricsService
 
         foreach ($rows as $row) {
             $amount = abs((float) $row->total);
-            $pct    = $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0.0;
+            $pct = $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0.0;
 
             $breakdown[] = [
                 'category_id' => $row->category_id,
-                'name'        => $row->category?->name ?? 'Senza categoria',
-                'icon'        => $row->category?->icon,
-                'color'       => $row->category?->color,
-                'amount'      => round($amount, 2),
-                'percentage'  => $pct,
-                'excluded'    => (bool) ($row->category?->exclude_from_lifestyle_score ?? false),
+                'name' => $row->category?->name ?? 'Senza categoria',
+                'icon' => $row->category?->icon,
+                'color' => $row->category?->color,
+                'amount' => round($amount, 2),
+                'percentage' => $pct,
+                'excluded' => (bool) ($row->category?->exclude_from_lifestyle_score ?? false),
             ];
         }
 

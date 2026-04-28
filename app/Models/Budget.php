@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Budget extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'household_id', 'category_id', 'amount', 'currency_code', 'period_start', 'period_end', 'description',

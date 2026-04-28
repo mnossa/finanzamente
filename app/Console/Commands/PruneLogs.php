@@ -21,14 +21,14 @@ class PruneLogs extends Command
         foreach (glob("{$logPath}/*.log") as $file) {
             if (filemtime($file) < $cutoff->timestamp) {
                 unlink($file);
-                $this->line("Rimosso: " . basename($file));
+                $this->line('Rimosso: '.basename($file));
                 $deleted++;
             }
         }
 
         $this->info($deleted > 0
             ? "Rimossi {$deleted} file di log più vecchi di {$days} giorni."
-            : "Nessun file di log da rimuovere.");
+            : 'Nessun file di log da rimuovere.');
 
         return self::SUCCESS;
     }

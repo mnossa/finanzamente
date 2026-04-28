@@ -49,7 +49,7 @@ class GenerateRecurringTransactions extends Command
         $this->info('🔄 Avvio generazione transazioni ricorrenti...');
 
         // Determina la data target
-        $targetDate = $this->option('date') 
+        $targetDate = $this->option('date')
             ? Carbon::createFromFormat('Y-m-d', $this->option('date'))
             : Carbon::today();
 
@@ -58,13 +58,14 @@ class GenerateRecurringTransactions extends Command
         try {
             $result = $this->recurringService->processAllRecurringTransactions($targetDate);
 
-            $this->info("✅ Processo completato:");
+            $this->info('✅ Processo completato:');
             $this->info("   - Transazioni ricorrenti elaborate: {$result['total_recurring']}");
             $this->info("   - Transazioni generate: {$result['total_generated']}");
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $this->error("❌ Errore durante la generazione: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
     }

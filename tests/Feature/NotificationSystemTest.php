@@ -11,7 +11,6 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\BudgetNotificationService;
 use App\Services\TransactionTrendNotificationService;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -108,7 +107,7 @@ class NotificationSystemTest extends TestCase
             'is_private' => false,
         ]);
 
-        (new BudgetNotificationService())->checkAndNotify($user, $user->active_household_id);
+        (new BudgetNotificationService)->checkAndNotify($user, $user->active_household_id);
 
         $notification = AppNotification::where('user_id', $user->id)->first();
         $this->assertNotNull($notification);
@@ -141,11 +140,11 @@ class NotificationSystemTest extends TestCase
             'is_private' => false,
         ]);
 
-        (new BudgetNotificationService())->checkAndNotify($user, $user->active_household_id);
+        (new BudgetNotificationService)->checkAndNotify($user, $user->active_household_id);
 
         $this->assertSame(1, AppNotification::where('user_id', $user->id)->count());
         $notification = AppNotification::where('user_id', $user->id)->first();
-        $this->assertStringContainsString("80", $notification->title);
+        $this->assertStringContainsString('80', $notification->title);
     }
 
     public function test_budget_notification_not_duplicated(): void
@@ -173,7 +172,7 @@ class NotificationSystemTest extends TestCase
             'is_private' => false,
         ]);
 
-        $service = new BudgetNotificationService();
+        $service = new BudgetNotificationService;
         $service->checkAndNotify($user, $user->active_household_id);
         $service->checkAndNotify($user, $user->active_household_id);
 
@@ -206,7 +205,7 @@ class NotificationSystemTest extends TestCase
             'is_private' => false,
         ]);
 
-        (new BudgetNotificationService())->checkAndNotify($user, $user->active_household_id);
+        (new BudgetNotificationService)->checkAndNotify($user, $user->active_household_id);
 
         $this->assertSame(0, AppNotification::where('user_id', $user->id)->count());
     }
@@ -218,7 +217,7 @@ class NotificationSystemTest extends TestCase
     public function test_expense_increase_notification_created(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService();
+        $service = new TransactionTrendNotificationService;
 
         $service->checkAndNotify(
             $user,
@@ -239,7 +238,7 @@ class NotificationSystemTest extends TestCase
     public function test_income_increase_notification_created(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService();
+        $service = new TransactionTrendNotificationService;
 
         $service->checkAndNotify(
             $user,
@@ -260,7 +259,7 @@ class NotificationSystemTest extends TestCase
     public function test_no_trend_notification_when_change_below_threshold(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService();
+        $service = new TransactionTrendNotificationService;
 
         // Solo 5% di variazione, sotto la soglia del 20%
         $service->checkAndNotify(
@@ -277,7 +276,7 @@ class NotificationSystemTest extends TestCase
     public function test_no_trend_notification_when_previous_month_has_no_data(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService();
+        $service = new TransactionTrendNotificationService;
 
         $service->checkAndNotify(
             $user,
@@ -293,9 +292,9 @@ class NotificationSystemTest extends TestCase
     public function test_trend_notification_not_duplicated(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService();
+        $service = new TransactionTrendNotificationService;
 
-        $currentStats  = ['income' => 2000, 'expenses' => 1500, 'net' => 500, 'transaction_count' => 10];
+        $currentStats = ['income' => 2000, 'expenses' => 1500, 'net' => 500, 'transaction_count' => 10];
         $lastMonthStats = ['income' => 2000, 'expenses' => 1000, 'net' => 1000, 'transaction_count' => 8];
 
         $service->checkAndNotify($user, $currentStats, $lastMonthStats, 'marzo 2026', 'febbraio 2026');
@@ -373,8 +372,7 @@ class NotificationSystemTest extends TestCase
             ->withoutVite()
             ->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('notifications.unread_count', 1)
+        $response->assertInertia(fn ($page) => $page->where('notifications.unread_count', 1)
         );
     }
 }

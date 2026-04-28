@@ -44,8 +44,8 @@ class BudgetNotificationService
 
         foreach ($activeBudgets as $budget) {
             $spent = Transaction::whereHas('account', function ($q) use ($householdId) {
-                    $q->where('household_id', $householdId);
-                })
+                $q->where('household_id', $householdId);
+            })
                 ->where('category_id', $budget->category_id)
                 ->whereHas('category', function ($q) {
                     $q->where('type', 'expense');
@@ -65,17 +65,17 @@ class BudgetNotificationService
                         ->where('notification_key', $notificationKey)
                         ->exists();
 
-                    if (!$alreadyNotified) {
+                    if (! $alreadyNotified) {
                         AppNotification::create([
-                            'user_id'          => $user->id,
-                            'title'            => $level['title'],
-                            'message'          => sprintf(
+                            'user_id' => $user->id,
+                            'title' => $level['title'],
+                            'message' => sprintf(
                                 $level['message'],
                                 $budget->category->name ?? 'Categoria',
                                 $spent,
                                 $budget->amount
                             ),
-                            'read'             => false,
+                            'read' => false,
                             'notification_key' => $notificationKey,
                         ]);
                     }

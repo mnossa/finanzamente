@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 // use ZipArchive;
 
 class TaxDeductionExportController extends Controller
@@ -31,10 +32,10 @@ class TaxDeductionExportController extends Controller
             ->where(function ($q) use ($year) {
                 // Transazioni con tax_year impostato o con data nell'anno selezionato
                 $q->where('tax_year', $year)
-                  ->orWhere(function ($q) use ($year) {
-                      $q->whereNull('tax_year')
-                        ->whereYear('date', $year);
-                  });
+                    ->orWhere(function ($q) use ($year) {
+                        $q->whereNull('tax_year')
+                            ->whereYear('date', $year);
+                    });
             })
             ->where(function ($q) use ($user) {
                 $q->where('is_private', false)
@@ -74,8 +75,8 @@ class TaxDeductionExportController extends Controller
         // Calcola il summary nel formato atteso dal frontend
         $summary = [
             'total_transactions' => $mappedTransactions->count(),
-            'total_amount' => (float) $mappedTransactions->sum(fn($t) => abs($t['amount'])),
-            'total_deductible' => (float) $mappedTransactions->sum(fn($t) => abs($t['amount']) * $t['tax_deduction_rate'] / 100),
+            'total_amount' => (float) $mappedTransactions->sum(fn ($t) => abs($t['amount'])),
+            'total_deductible' => (float) $mappedTransactions->sum(fn ($t) => abs($t['amount']) * $t['tax_deduction_rate'] / 100),
             'years' => $this->getAvailableYears($householdId),
             'grouped_by_type' => $groupedByType,
         ];
@@ -107,10 +108,10 @@ class TaxDeductionExportController extends Controller
             ->where('is_tax_deductible', true)
             ->where(function ($q) use ($year) {
                 $q->where('tax_year', $year)
-                  ->orWhere(function ($q) use ($year) {
-                      $q->whereNull('tax_year')
-                        ->whereYear('date', $year);
-                  });
+                    ->orWhere(function ($q) use ($year) {
+                        $q->whereNull('tax_year')
+                            ->whereYear('date', $year);
+                    });
             })
             ->where(function ($q) use ($user) {
                 $q->where('is_private', false)
@@ -132,7 +133,7 @@ class TaxDeductionExportController extends Controller
         // Per ora, restituiamo l'HTML
         return response($html)
             ->header('Content-Type', 'text/html')
-            ->header('Content-Disposition', 'attachment; filename="detrazioni_fiscali_' . $year . '.html"');
+            ->header('Content-Disposition', 'attachment; filename="detrazioni_fiscali_'.$year.'.html"');
     }
 
     /**
@@ -155,10 +156,10 @@ class TaxDeductionExportController extends Controller
             ->where('is_tax_deductible', true)
             ->where(function ($q) use ($year) {
                 $q->where('tax_year', $year)
-                  ->orWhere(function ($q) use ($year) {
-                      $q->whereNull('tax_year')
-                        ->whereYear('date', $year);
-                  });
+                    ->orWhere(function ($q) use ($year) {
+                        $q->whereNull('tax_year')
+                            ->whereYear('date', $year);
+                    });
             })
             ->where(function ($q) use ($user) {
                 $q->where('is_private', false)
@@ -167,15 +168,15 @@ class TaxDeductionExportController extends Controller
             ->get();
 
         // Crea un file ZIP temporaneo
-        $zipFilename = 'detrazioni_fiscali_' . $year . '_' . time() . '.zip';
-        $zipPath = storage_path('app/temp/' . $zipFilename);
+        $zipFilename = 'detrazioni_fiscali_'.$year.'_'.time().'.zip';
+        $zipPath = storage_path('app/temp/'.$zipFilename);
 
         // Assicurati che la directory temp esista
-        if (!file_exists(storage_path('app/temp'))) {
+        if (! file_exists(storage_path('app/temp'))) {
             mkdir(storage_path('app/temp'), 0755, true);
         }
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             abort(500, 'Impossibile creare il file ZIP.');
         }
@@ -189,12 +190,12 @@ class TaxDeductionExportController extends Controller
                     // Organizza per tipo di detrazione
                     $folder = $transaction->tax_deduction_type ?? 'altro';
                     $folder = preg_replace('/[^a-zA-Z0-9_-]/', '_', $folder);
-                    
+
                     // Nome file con data
                     $date = $transaction->date->format('Y-m-d');
-                    $filename = $date . '_' . $attachment->filename;
-                    
-                    $zip->addFile($filePath, $folder . '/' . $filename);
+                    $filename = $date.'_'.$attachment->filename;
+
+                    $zip->addFile($filePath, $folder.'/'.$filename);
                     $fileCount++;
                 }
             }
@@ -202,7 +203,7 @@ class TaxDeductionExportController extends Controller
 
         // Aggiungi un file README
         $readme = "Detrazioni Fiscali - Anno $year\n";
-        $readme .= "Generato il: " . now()->format('d/m/Y H:i') . "\n";
+        $readme .= 'Generato il: '.now()->format('d/m/Y H:i')."\n";
         $readme .= "Utente: {$user->name}\n\n";
         $readme .= "Totale allegati: $fileCount\n";
         $zip->addFromString('README.txt', $readme);
@@ -231,7 +232,7 @@ class TaxDeductionExportController extends Controller
             ->toArray();
 
         // Aggiungi l'anno corrente se non presente
-        if (!in_array(now()->year, $years)) {
+        if (! in_array(now()->year, $years)) {
             $years[] = now()->year;
             sort($years);
         }

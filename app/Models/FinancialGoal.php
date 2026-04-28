@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class FinancialGoal extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'household_id',
@@ -80,6 +80,7 @@ class FinancialGoal extends Model
         }
 
         $percentage = ((float) $this->current_amount / (float) $this->target_amount) * 100;
+
         return min($percentage, 100);
     }
 
@@ -104,7 +105,7 @@ class FinancialGoal extends Model
      */
     public function isOverdue(): bool
     {
-        if (!$this->target_date) {
+        if (! $this->target_date) {
             return false;
         }
 

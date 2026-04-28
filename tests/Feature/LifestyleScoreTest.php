@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -18,10 +19,15 @@ class LifestyleScoreTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $incomeCategory;
+
     private Category $expenseCategory;
+
     private Category $investmentCategory;
 
     protected function setUp(): void
@@ -38,27 +44,27 @@ class LifestyleScoreTest extends TestCase
         $this->user->update(['active_household_id' => $this->household->id]);
 
         $this->account = Account::factory()->create([
-            'household_id'  => $this->household->id,
+            'household_id' => $this->household->id,
             'owner_user_id' => $this->user->id,
         ]);
 
         $this->incomeCategory = Category::factory()->create([
             'household_id' => $this->household->id,
-            'type'         => 'income',
-            'name'         => 'Stipendio',
+            'type' => 'income',
+            'name' => 'Stipendio',
         ]);
 
         $this->expenseCategory = Category::factory()->create([
-            'household_id'                 => $this->household->id,
-            'type'                         => 'expense',
-            'name'                         => 'Generiche',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+            'name' => 'Generiche',
             'exclude_from_lifestyle_score' => false,
         ]);
 
         $this->investmentCategory = Category::factory()->create([
-            'household_id'                 => $this->household->id,
-            'type'                         => 'expense',
-            'name'                         => 'Investimenti',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+            'name' => 'Investimenti',
             'exclude_from_lifestyle_score' => true,
         ]);
     }
@@ -102,11 +108,11 @@ class LifestyleScoreTest extends TestCase
     {
         // Solo spese, nessun reddito → score deve essere null
         Transaction::create([
-            'user_id'     => $this->user->id,
-            'account_id'  => $this->account->id,
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
             'category_id' => $this->expenseCategory->id,
-            'amount'      => -500.00,
-            'date'        => now()->startOfMonth(),
+            'amount' => -500.00,
+            'date' => now()->startOfMonth(),
             'description' => 'Spesa test',
             'currency_code' => 'EUR',
         ]);
@@ -128,33 +134,33 @@ class LifestyleScoreTest extends TestCase
         // SpeseEffettive = 1000 - 500 = 500
         // Score = (2000 - 500) / 2000 * 100 = 75%
         Transaction::create([
-            'user_id'       => $this->user->id,
-            'account_id'    => $this->account->id,
-            'category_id'   => $this->incomeCategory->id,
-            'amount'        => 2000.00,
-            'date'          => now()->startOfMonth(),
-            'description'   => 'Stipendio',
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->incomeCategory->id,
+            'amount' => 2000.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'Stipendio',
             'currency_code' => 'EUR',
         ]);
 
         Transaction::create([
-            'user_id'       => $this->user->id,
-            'account_id'    => $this->account->id,
-            'category_id'   => $this->expenseCategory->id,
-            'amount'        => -500.00,
-            'date'          => now()->startOfMonth(),
-            'description'   => 'Spese varie',
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->expenseCategory->id,
+            'amount' => -500.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'Spese varie',
             'currency_code' => 'EUR',
         ]);
 
         // Transazione in categoria investimenti (esclusa)
         Transaction::create([
-            'user_id'       => $this->user->id,
-            'account_id'    => $this->account->id,
-            'category_id'   => $this->investmentCategory->id,
-            'amount'        => -500.00,
-            'date'          => now()->startOfMonth(),
-            'description'   => 'ETF',
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->investmentCategory->id,
+            'amount' => -500.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'ETF',
             'currency_code' => 'EUR',
         ]);
 
@@ -177,10 +183,10 @@ class LifestyleScoreTest extends TestCase
     public function lifestyle_score_deducts_taxes_for_partita_iva(): void
     {
         $this->user->update([
-            'user_type'       => 'partita_iva',
+            'user_type' => 'partita_iva',
             'profile_settings' => [
-                'has_vat'   => true,
-                'tax_rate'  => 15,
+                'has_vat' => true,
+                'tax_rate' => 15,
                 'inps_rate' => 0,  // semplificazione per il test
             ],
         ]);
@@ -188,22 +194,22 @@ class LifestyleScoreTest extends TestCase
         // Reddito 1000 €, 15% tasse → netto 850 €
         // Spese 500 €, score = (850 - 500) / 850 * 100 ≈ 41.2%
         Transaction::create([
-            'user_id'       => $this->user->id,
-            'account_id'    => $this->account->id,
-            'category_id'   => $this->incomeCategory->id,
-            'amount'        => 1000.00,
-            'date'          => now()->startOfMonth(),
-            'description'   => 'Fattura',
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->incomeCategory->id,
+            'amount' => 1000.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'Fattura',
             'currency_code' => 'EUR',
         ]);
 
         Transaction::create([
-            'user_id'       => $this->user->id,
-            'account_id'    => $this->account->id,
-            'category_id'   => $this->expenseCategory->id,
-            'amount'        => -500.00,
-            'date'          => now()->startOfMonth(),
-            'description'   => 'Spese',
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->expenseCategory->id,
+            'amount' => -500.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'Spese',
             'currency_code' => 'EUR',
         ]);
 
@@ -223,45 +229,45 @@ class LifestyleScoreTest extends TestCase
     public function transfers_are_excluded_from_score_calculation(): void
     {
         Transaction::create([
-            'user_id'       => $this->user->id,
-            'account_id'    => $this->account->id,
-            'category_id'   => $this->incomeCategory->id,
-            'amount'        => 1000.00,
-            'date'          => now()->startOfMonth(),
-            'description'   => 'Stipendio',
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->incomeCategory->id,
+            'amount' => 1000.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'Stipendio',
             'currency_code' => 'EUR',
         ]);
 
         // Crea un secondo conto e un trasferimento reale
         $secondAccount = Account::factory()->create([
-            'household_id'  => $this->household->id,
+            'household_id' => $this->household->id,
             'owner_user_id' => $this->user->id,
         ]);
 
         // Inserisci un transfer record valido
         $transferId = DB::table('transfers')->insertGetId([
-            'uuid'                   => \Illuminate\Support\Str::uuid()->toString(),
-            'source_account_id'      => $this->account->id,
+            'uuid' => Str::uuid()->toString(),
+            'source_account_id' => $this->account->id,
             'destination_account_id' => $secondAccount->id,
-            'source_amount'          => 300,
-            'source_currency'        => 'EUR',
-            'dest_amount'            => 300,
-            'dest_currency'          => 'EUR',
-            'user_id'                => $this->user->id,
-            'status'                 => 'completed',
-            'created_at'             => now(),
-            'updated_at'             => now(),
+            'source_amount' => 300,
+            'source_currency' => 'EUR',
+            'dest_amount' => 300,
+            'dest_currency' => 'EUR',
+            'user_id' => $this->user->id,
+            'status' => 'completed',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         Transaction::create([
-            'user_id'        => $this->user->id,
-            'account_id'     => $this->account->id,
-            'category_id'    => null,
-            'amount'         => -300.00,
-            'date'           => now()->startOfMonth(),
-            'description'    => 'Trasferimento conto corrente',
-            'currency_code'  => 'EUR',
-            'transfer_id'    => $transferId,
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => null,
+            'amount' => -300.00,
+            'date' => now()->startOfMonth(),
+            'description' => 'Trasferimento conto corrente',
+            'currency_code' => 'EUR',
+            'transfer_id' => $transferId,
         ]);
 
         $response = $this->actingAs($this->user)

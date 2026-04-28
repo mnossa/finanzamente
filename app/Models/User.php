@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPassword;
+use App\Notifications\VerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -9,11 +12,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail
-    
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
-    
+
     /**
      * User
      *
@@ -26,7 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
      * - activeHousehold(): belongsTo(Household)
      * - accounts(): hasMany(Account)
      */
-    
+
     // Relations
     public function households()
     {
@@ -115,6 +117,7 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         $days = (int) now()->diffInDays($this->plan_expires_at, false);
+
         return $days >= 0 ? $days : 0;
     }
 
@@ -129,7 +132,7 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         $maxAccounts = config('plans.base_limits.max_accounts', 3);
-        $count = \App\Models\Account::where('household_id', $this->active_household_id)->count();
+        $count = Account::where('household_id', $this->active_household_id)->count();
 
         return max(0, $count - $maxAccounts);
     }
@@ -210,7 +213,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function sendEmailVerificationNotification()
     {
-        $this->notify(new \App\Notifications\VerifyEmail);
+        $this->notify(new VerifyEmail);
     }
 
     /**
@@ -218,6 +221,6 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function sendPasswordResetNotification($token)
     {
-        $this->notify(new \App\Notifications\ResetPassword($token));
+        $this->notify(new ResetPassword($token));
     }
 }

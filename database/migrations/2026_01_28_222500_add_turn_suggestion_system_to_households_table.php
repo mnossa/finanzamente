@@ -15,11 +15,11 @@ return new class extends Migration
             $table->boolean('enable_turn_suggestions')
                 ->default(false)
                 ->comment('Abilita il suggeritore di turni per le spese fisse');
-            
+
             $table->json('turn_suggestion_settings')
                 ->nullable()
                 ->comment('Impostazioni del suggeritore di turni (categorie, frequenza, ecc.)');
-            
+
             $table->json('last_turn_assignments')
                 ->nullable()
                 ->comment('Ultimi turni assegnati per categoria fissa');

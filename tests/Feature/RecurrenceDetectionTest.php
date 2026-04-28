@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Household;
+use App\Models\RecurringTransaction;
 use App\Models\RecurringTransactionSuggestion;
 use App\Models\Transaction;
 use App\Models\User;
@@ -19,30 +20,34 @@ class RecurrenceDetectionTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $category;
+
     private RecurrenceDetectionService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->user      = User::factory()->create(['user_type' => 'persona']);
+        $this->user = User::factory()->create(['user_type' => 'persona']);
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
         $this->user->update(['active_household_id' => $this->household->id]);
 
         $this->account = Account::factory()->create([
-            'household_id'    => $this->household->id,
-            'owner_user_id'   => $this->user->id,
-            'currency_code'   => 'EUR',
-            'active'          => true,
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'currency_code' => 'EUR',
+            'active' => true,
         ]);
 
         $this->category = Category::factory()->create([
             'household_id' => $this->household->id,
-            'type'         => 'expense',
+            'type' => 'expense',
         ]);
 
         $this->service = app(RecurrenceDetectionService::class);
@@ -54,16 +59,16 @@ class RecurrenceDetectionTest extends TestCase
         // 4 transazioni mensili dello stesso importo e categoria
         foreach (range(1, 4) as $i) {
             Transaction::create([
-                'user_id'                  => $this->user->id,
-                'account_id'               => $this->account->id,
-                'category_id'              => $this->category->id,
-                'amount'                   => -50.00,
-                'currency_code'            => 'EUR',
-                'date'                     => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
-                'recurring'                => false,
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -50.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
+                'recurring' => false,
                 'recurring_transaction_id' => null,
-                'transfer_id'              => null,
-                'refund_id'                => null,
+                'transfer_id' => null,
+                'refund_id' => null,
             ]);
         }
 
@@ -84,16 +89,16 @@ class RecurrenceDetectionTest extends TestCase
     {
         foreach (range(1, 2) as $i) {
             Transaction::create([
-                'user_id'                  => $this->user->id,
-                'account_id'               => $this->account->id,
-                'category_id'              => $this->category->id,
-                'amount'                   => -30.00,
-                'currency_code'            => 'EUR',
-                'date'                     => Carbon::now()->subMonths(2 - $i)->startOfMonth(),
-                'recurring'                => false,
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -30.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(2 - $i)->startOfMonth(),
+                'recurring' => false,
                 'recurring_transaction_id' => null,
-                'transfer_id'              => null,
-                'refund_id'                => null,
+                'transfer_id' => null,
+                'refund_id' => null,
             ]);
         }
 
@@ -106,29 +111,29 @@ class RecurrenceDetectionTest extends TestCase
     #[Test]
     public function it_skips_already_linked_recurring_transactions(): void
     {
-        $recurring = \App\Models\RecurringTransaction::create([
-            'user_id'              => $this->user->id,
-            'account_id'           => $this->account->id,
-            'category_id'          => $this->category->id,
-            'amount'               => -80.00,
-            'currency_code'        => 'EUR',
-            'frequency'            => 'monthly',
-            'start_date'           => Carbon::now()->subMonths(4),
-            'last_generated_date'  => Carbon::now()->subMonth(),
+        $recurring = RecurringTransaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => Carbon::now()->subMonths(4),
+            'last_generated_date' => Carbon::now()->subMonth(),
         ]);
 
         foreach (range(1, 4) as $i) {
             Transaction::create([
-                'user_id'                  => $this->user->id,
-                'account_id'               => $this->account->id,
-                'category_id'              => $this->category->id,
-                'amount'                   => -80.00,
-                'currency_code'            => 'EUR',
-                'date'                     => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
-                'recurring'                => true,
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -80.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
+                'recurring' => true,
                 'recurring_transaction_id' => $recurring->id,
-                'transfer_id'              => null,
-                'refund_id'                => null,
+                'transfer_id' => null,
+                'refund_id' => null,
             ]);
         }
 
@@ -142,16 +147,16 @@ class RecurrenceDetectionTest extends TestCase
     {
         foreach (range(1, 3) as $i) {
             Transaction::create([
-                'user_id'                  => $this->user->id,
-                'account_id'               => $this->account->id,
-                'category_id'              => $this->category->id,
-                'amount'                   => -25.00,
-                'currency_code'            => 'EUR',
-                'date'                     => Carbon::now()->subMonths(3 - $i)->startOfMonth(),
-                'recurring'                => false,
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -25.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(3 - $i)->startOfMonth(),
+                'recurring' => false,
                 'recurring_transaction_id' => null,
-                'transfer_id'              => null,
-                'refund_id'                => null,
+                'transfer_id' => null,
+                'refund_id' => null,
             ]);
         }
 
@@ -166,16 +171,16 @@ class RecurrenceDetectionTest extends TestCase
     {
         foreach (range(1, 3) as $i) {
             Transaction::create([
-                'user_id'                  => $this->user->id,
-                'account_id'               => $this->account->id,
-                'category_id'              => $this->category->id,
-                'amount'                   => -200.00,
-                'currency_code'            => 'EUR',
-                'date'                     => Carbon::now()->subYears(3 - $i)->startOfYear(),
-                'recurring'                => false,
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -200.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subYears(3 - $i)->startOfYear(),
+                'recurring' => false,
                 'recurring_transaction_id' => null,
-                'transfer_id'              => null,
-                'refund_id'                => null,
+                'transfer_id' => null,
+                'refund_id' => null,
             ]);
         }
 

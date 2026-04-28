@@ -13,7 +13,7 @@ class InvestmentImportServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new InvestmentImportService();
+        $this->service = new InvestmentImportService;
     }
 
     // ─── parseDecimal ────────────────────────────────────────────────────────
@@ -67,14 +67,14 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;Ticker;Quantità;Prezzo\n01/01/2024;AAPL;10;180,50\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ];
@@ -94,14 +94,14 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;ISIN;Qty;Price\n15/03/2024;US0378331005;2;190,00\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'isin'      => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'isin' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ];
@@ -119,13 +119,13 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;Qty;Price\n01/01/2024;5;50,00\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'quantity'  => 1,
+                'buy_date' => 0,
+                'quantity' => 1,
                 'buy_price' => 2,
             ],
         ];
@@ -142,14 +142,14 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;Ticker;Qty;Price\nNOT-A-DATE;AAPL;5;50,00\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ];
@@ -166,14 +166,14 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;Ticker;Qty;Price\n01/01/2024;AAPL;-5;50,00\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ];
@@ -190,16 +190,16 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;Ticker;Qty;Price;Fees\n01/01/2024;AAPL;10;180,50;5,00\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
-                'fees'      => 4,
+                'fees' => 4,
             ],
         ];
 
@@ -214,14 +214,14 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "01/01/2024;AAPL;10;180,50\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => false,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => false,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ];
@@ -239,20 +239,20 @@ class InvestmentImportServiceTest extends TestCase
     {
         $rows = [
             [
-                'buy_date'  => '2024-01-01',
-                'quantity'  => 10.0,
+                'buy_date' => '2024-01-01',
+                'quantity' => 10.0,
                 'buy_price' => 180.50,
-                'ticker'    => 'AAPL',
-                'isin'      => null,
-                'errors'    => [],
+                'ticker' => 'AAPL',
+                'isin' => null,
+                'errors' => [],
             ],
             [
-                'buy_date'  => null,
-                'quantity'  => null,
+                'buy_date' => null,
+                'quantity' => null,
                 'buy_price' => null,
-                'ticker'    => null,
-                'isin'      => null,
-                'errors'    => ['Riga 2: data di acquisto mancante'],
+                'ticker' => null,
+                'isin' => null,
+                'errors' => ['Riga 2: data di acquisto mancante'],
             ],
         ];
 
@@ -267,12 +267,12 @@ class InvestmentImportServiceTest extends TestCase
     {
         $rows = [
             [
-                'buy_date'  => '2024-01-01',
-                'quantity'  => 10.0,
+                'buy_date' => '2024-01-01',
+                'quantity' => 10.0,
                 'buy_price' => 180.50,
-                'ticker'    => null,
-                'isin'      => null,
-                'errors'    => ['Riga 1: ticker o ISIN obbligatorio'],
+                'ticker' => null,
+                'isin' => null,
+                'errors' => ['Riga 1: ticker o ISIN obbligatorio'],
             ],
         ];
 
@@ -287,12 +287,12 @@ class InvestmentImportServiceTest extends TestCase
     {
         $rows = [
             [
-                'buy_date'  => '2024-01-01',
-                'quantity'  => 10.0,
+                'buy_date' => '2024-01-01',
+                'quantity' => 10.0,
                 'buy_price' => 180.50,
-                'ticker'    => null,
-                'isin'      => 'US0378331005',
-                'errors'    => [],
+                'ticker' => null,
+                'isin' => 'US0378331005',
+                'errors' => [],
             ],
         ];
 
@@ -306,14 +306,14 @@ class InvestmentImportServiceTest extends TestCase
     {
         $csv = "Data;Ticker;Qty;Price\n01/01/2024;aapl;10;180,50\n";
         $layout = [
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ];

@@ -26,7 +26,7 @@ class TagController extends Controller
             ->withCount('transactions')
             ->orderBy('name')
             ->get()
-            ->map(fn($tag) => [
+            ->map(fn ($tag) => [
                 'id' => $tag->id,
                 'name' => $tag->name,
                 'color' => $tag->color,
@@ -133,7 +133,7 @@ class TagController extends Controller
         $q = strtoupper(trim($request->get('q', '')));
 
         $tags = Tag::where('household_id', $householdId)
-            ->when($q !== '', fn($query) => $query->where('name', 'like', $q . '%'))
+            ->when($q !== '', fn ($query) => $query->where('name', 'like', $q.'%'))
             ->orderBy('name')
             ->limit(15)
             ->get(['id', 'name', 'color']);

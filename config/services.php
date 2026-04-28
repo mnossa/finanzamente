@@ -123,7 +123,7 @@ return [
 
     'google_drive' => [
         'client_id' => env('GOOGLE_DRIVE_CLIENT_ID', ''),
-        'api_key'   => env('GOOGLE_DRIVE_API_KEY', ''),
+        'api_key' => env('GOOGLE_DRIVE_API_KEY', ''),
     ],
 
     /*
@@ -160,8 +160,8 @@ return [
     |
     */
     'brevo' => [
-        'api_key'                  => env('BREVO_API_KEY'),
-        'waitlist_list_id'         => (int) env('BREVO_WAITLIST_LIST_ID', 0),
+        'api_key' => env('BREVO_API_KEY'),
+        'waitlist_list_id' => (int) env('BREVO_WAITLIST_LIST_ID', 0),
         'double_optin_template_id' => (int) env('BREVO_DOUBLE_OPTIN_TEMPLATE_ID', 0),
         'double_optin_redirect_url' => env('BREVO_DOUBLE_OPTIN_REDIRECT_URL', ''),
     ],

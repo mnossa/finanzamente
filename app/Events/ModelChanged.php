@@ -11,6 +11,7 @@ class ModelChanged
     use Dispatchable, SerializesModels;
 
     public Model $model;
+
     public string $action;
 
     public function __construct(Model $model, string $action)

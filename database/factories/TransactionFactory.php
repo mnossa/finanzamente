@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Transaction>
+ * @extends Factory<Transaction>
  */
 class TransactionFactory extends Factory
 {
@@ -18,15 +18,15 @@ class TransactionFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id'     => User::factory(),
-            'account_id'  => Account::factory(),
+            'user_id' => User::factory(),
+            'account_id' => Account::factory(),
             'category_id' => Category::factory(),
-            'amount'      => $this->faker->randomFloat(2, -1000, -1),
+            'amount' => $this->faker->randomFloat(2, -1000, -1),
             'currency_code' => 'EUR',
-            'date'        => $this->faker->dateTimeBetween('-1 month', 'now')->format('Y-m-d'),
+            'date' => $this->faker->dateTimeBetween('-1 month', 'now')->format('Y-m-d'),
             'description' => $this->faker->optional()->sentence(),
-            'recurring'   => false,
-            'is_private'  => false,
+            'recurring' => false,
+            'is_private' => false,
         ];
     }
 

@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Attachment extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'attachable_type', 'attachable_id', 'file_path', 'filename', 'mime_type', 'file_size', 'uploaded_at', 'uploaded_by',

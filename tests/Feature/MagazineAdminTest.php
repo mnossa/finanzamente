@@ -6,7 +6,7 @@ use App\Models\MagazineArticle;
 use App\Models\MagazineCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -27,7 +27,7 @@ class MagazineAdminTest extends TestCase
     private function owner(): User
     {
         return User::factory()->create([
-            'email'             => self::OWNER_EMAIL,
+            'email' => self::OWNER_EMAIL,
             'email_verified_at' => now(),
         ]);
     }
@@ -35,7 +35,7 @@ class MagazineAdminTest extends TestCase
     private function regularUser(): User
     {
         return User::factory()->create([
-            'email'             => 'utente@example.com',
+            'email' => 'utente@example.com',
             'email_verified_at' => now(),
         ]);
     }
@@ -43,9 +43,9 @@ class MagazineAdminTest extends TestCase
     private function createCategory(): MagazineCategory
     {
         return MagazineCategory::create([
-            'slug'       => 'risparmio',
-            'name'       => 'Risparmio',
-            'color'      => '#10B981',
+            'slug' => 'risparmio',
+            'name' => 'Risparmio',
+            'color' => '#10B981',
             'sort_order' => 1,
         ]);
     }
@@ -53,16 +53,16 @@ class MagazineAdminTest extends TestCase
     private function createArticle(MagazineCategory $category, array $overrides = []): MagazineArticle
     {
         return MagazineArticle::create(array_merge([
-            'category_id'          => $category->id,
-            'slug'                 => 'articolo-' . uniqid(),
-            'title'                => 'Articolo di test',
-            'excerpt'              => 'Un breve riassunto.',
-            'content'              => '## Titolo\n\nContenuto.',
-            'author_name'          => 'Redazione',
+            'category_id' => $category->id,
+            'slug' => 'articolo-'.uniqid(),
+            'title' => 'Articolo di test',
+            'excerpt' => 'Un breve riassunto.',
+            'content' => '## Titolo\n\nContenuto.',
+            'author_name' => 'Redazione',
             'reading_time_minutes' => 1,
-            'published_at'         => now()->subDay(),
-            'is_featured'          => false,
-            'views_count'          => 0,
+            'published_at' => now()->subDay(),
+            'is_featured' => false,
+            'views_count' => 0,
         ], $overrides));
     }
 
@@ -107,9 +107,9 @@ class MagazineAdminTest extends TestCase
 
         $this->actingAs($this->regularUser())
             ->post(route('admin.magazine.store'), [
-                'title'       => 'Titolo',
-                'excerpt'     => 'Riassunto',
-                'content'     => 'Contenuto',
+                'title' => 'Titolo',
+                'excerpt' => 'Riassunto',
+                'content' => 'Contenuto',
                 'category_id' => $category->id,
                 'author_name' => 'Autore',
             ])
@@ -145,11 +145,11 @@ class MagazineAdminTest extends TestCase
 
         $this->actingAs($this->owner())
             ->post(route('admin.magazine.store'), [
-                'title'        => 'Nuovo articolo',
-                'excerpt'      => 'Breve riassunto del nuovo articolo.',
-                'content'      => '## Intro\n\nContenuto del nuovo articolo.',
-                'category_id'  => $category->id,
-                'author_name'  => 'Redazione',
+                'title' => 'Nuovo articolo',
+                'excerpt' => 'Breve riassunto del nuovo articolo.',
+                'content' => '## Intro\n\nContenuto del nuovo articolo.',
+                'category_id' => $category->id,
+                'author_name' => 'Redazione',
                 'published_at' => now()->subHour()->format('Y-m-d\TH:i'),
             ])
             ->assertRedirect(route('admin.magazine.index'));
@@ -164,16 +164,16 @@ class MagazineAdminTest extends TestCase
 
         $this->actingAs($this->owner())
             ->post(route('admin.magazine.store'), [
-                'title'       => 'Bozza articolo',
-                'excerpt'     => 'Riassunto bozza.',
-                'content'     => 'Contenuto bozza.',
+                'title' => 'Bozza articolo',
+                'excerpt' => 'Riassunto bozza.',
+                'content' => 'Contenuto bozza.',
                 'category_id' => $category->id,
                 'author_name' => 'Redazione',
             ])
             ->assertRedirect(route('admin.magazine.index'));
 
         $this->assertDatabaseHas('magazine_articles', [
-            'title'        => 'Bozza articolo',
+            'title' => 'Bozza articolo',
             'published_at' => null,
         ]);
     }
@@ -189,20 +189,20 @@ class MagazineAdminTest extends TestCase
     #[Test]
     public function store_invalidates_magazine_nav_cache(): void
     {
-        \Illuminate\Support\Facades\Cache::put('magazine_has_published', false, 3600);
+        Cache::put('magazine_has_published', false, 3600);
 
         $category = $this->createCategory();
 
         $this->actingAs($this->owner())
             ->post(route('admin.magazine.store'), [
-                'title'       => 'Articolo cache',
-                'excerpt'     => 'Riassunto.',
-                'content'     => 'Contenuto.',
+                'title' => 'Articolo cache',
+                'excerpt' => 'Riassunto.',
+                'content' => 'Contenuto.',
                 'category_id' => $category->id,
                 'author_name' => 'Redazione',
             ]);
 
-        $this->assertFalse(\Illuminate\Support\Facades\Cache::has('magazine_has_published'));
+        $this->assertFalse(Cache::has('magazine_has_published'));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -211,13 +211,13 @@ class MagazineAdminTest extends TestCase
     public function owner_can_update_article(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category);
+        $article = $this->createArticle($category);
 
         $this->actingAs($this->owner())
             ->put(route('admin.magazine.update', $article), [
-                'title'       => 'Titolo modificato',
-                'excerpt'     => 'Riassunto aggiornato.',
-                'content'     => 'Contenuto aggiornato.',
+                'title' => 'Titolo modificato',
+                'excerpt' => 'Riassunto aggiornato.',
+                'content' => 'Contenuto aggiornato.',
                 'category_id' => $category->id,
                 'author_name' => 'Redazione',
             ])
@@ -230,13 +230,13 @@ class MagazineAdminTest extends TestCase
     public function non_owner_cannot_update_article(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category);
+        $article = $this->createArticle($category);
 
         $this->actingAs($this->regularUser())
             ->put(route('admin.magazine.update', $article), [
-                'title'       => 'Titolo modificato',
-                'excerpt'     => 'Riassunto.',
-                'content'     => 'Contenuto.',
+                'title' => 'Titolo modificato',
+                'excerpt' => 'Riassunto.',
+                'content' => 'Contenuto.',
                 'category_id' => $category->id,
                 'author_name' => 'Redazione',
             ])
@@ -249,7 +249,7 @@ class MagazineAdminTest extends TestCase
     public function owner_can_delete_article(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category);
+        $article = $this->createArticle($category);
 
         $this->actingAs($this->owner())
             ->delete(route('admin.magazine.destroy', $article))
@@ -262,7 +262,7 @@ class MagazineAdminTest extends TestCase
     public function non_owner_cannot_delete_article(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category);
+        $article = $this->createArticle($category);
 
         $this->actingAs($this->regularUser())
             ->delete(route('admin.magazine.destroy', $article))
@@ -277,7 +277,7 @@ class MagazineAdminTest extends TestCase
         Storage::fake('public');
 
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, [
+        $article = $this->createArticle($category, [
             'cover_image_path' => 'magazine/covers/test.jpg',
         ]);
         Storage::disk('public')->put('magazine/covers/test.jpg', 'fake-image');

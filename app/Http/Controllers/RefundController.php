@@ -4,17 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRefundRequest;
 use App\Http\Requests\UpdateRefundRequest;
-use App\Models\Account;
 use App\Models\Category;
 use App\Models\Refund;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\RefundService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\JsonResponse;
 
 class RefundController extends Controller
 {
@@ -36,7 +36,7 @@ class RefundController extends Controller
             'originalTransaction.category:id,name,color,icon',
             'refundTransaction:id,amount,date,description,account_id,category_id,refund_id',
             'refundTransaction.category:id,name,color,icon',
-            'user:id,name'
+            'user:id,name',
         ])
             ->whereHas('originalTransaction.account', function ($q) use ($householdId) {
                 $q->where('household_id', $householdId);
@@ -202,8 +202,8 @@ class RefundController extends Controller
             ->where('amount', '<', 0);
 
         // Applica filtro di ricerca se presente
-        if (!empty($search)) {
-            $searchTerm = '%' . $search . '%';
+        if (! empty($search)) {
+            $searchTerm = '%'.$search.'%';
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('description', 'like', $searchTerm)
                     ->orWhereHas('category', function ($q2) use ($searchTerm) {
@@ -275,11 +275,11 @@ class RefundController extends Controller
      */
     public function store(StoreRefundRequest $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 10 rimborsi attivi
-        if (!$user->isPro()) {
+        if (! $user->isPro()) {
             $max = config('plans.base_limits.max_refunds', 10);
             $count = Refund::where('user_id', $user->id)
                 ->whereNotIn('status', ['completed', 'cancelled'])
@@ -322,7 +322,7 @@ class RefundController extends Controller
             'refundTransaction:id,amount,date,description,account_id,category_id,refund_id,is_private',
             'refundTransaction.account:id,name,currency_code',
             'refundTransaction.category:id,name,color,icon',
-            'user:id,name'
+            'user:id,name',
         ]);
 
         // Calcola informazioni aggiuntive sui rimborsi per la transazione originale
@@ -448,14 +448,14 @@ class RefundController extends Controller
 
         $originalTransaction = $refund->originalTransaction;
 
-        if (!$originalTransaction) {
+        if (! $originalTransaction) {
             abort(404, 'Rimborso non trovato.');
         }
 
         $account = $originalTransaction->account;
 
         // Deve appartenere alla household attiva
-        if (!$account || $account->household_id !== $householdId) {
+        if (! $account || $account->household_id !== $householdId) {
             abort(403, 'Non hai accesso a questo rimborso.');
         }
 

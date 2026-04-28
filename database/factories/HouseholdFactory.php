@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Household>
+ * @extends Factory<Household>
  */
 class HouseholdFactory extends Factory
 {
@@ -26,7 +26,7 @@ class HouseholdFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->words(2, true) . ' Family',
+            'name' => $this->faker->words(2, true).' Family',
             'owner_user_id' => User::factory(),
             'financial_management_type' => $this->faker->randomElement([
                 Household::FINANCIAL_MANAGEMENT_SHARED_WALLET,
@@ -58,8 +58,8 @@ class HouseholdFactory extends Factory
 
     /**
      * Create household with custom balance percentages.
-     * 
-     * @param array $percentages Array di percentuali [user_id => percentage]
+     *
+     * @param  array  $percentages  Array di percentuali [user_id => percentage]
      */
     public function withBalancePercentages(array $percentages): static
     {

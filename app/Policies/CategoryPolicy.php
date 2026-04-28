@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Models\Category;
 use App\Models\User;
 use App\Services\HouseholdPermissionService;
-use Illuminate\Auth\Access\Response;
 
 class CategoryPolicy
 {
@@ -33,9 +32,10 @@ class CategoryPolicy
         if ($user->active_household_id === null) {
             return false;
         }
-        
+
         // Guests (view_only) cannot create categories
         $svc = app(HouseholdPermissionService::class);
+
         return $svc->canModify($user, $user->active_household_id);
     }
 
@@ -47,9 +47,10 @@ class CategoryPolicy
         if ($category->household_id !== $user->active_household_id) {
             return false;
         }
-        
+
         // Guests (view_only) cannot update categories
         $svc = app(HouseholdPermissionService::class);
+
         return $svc->canModify($user, $category->household_id);
     }
 
@@ -61,9 +62,10 @@ class CategoryPolicy
         if ($category->household_id !== $user->active_household_id) {
             return false;
         }
-        
+
         // Guests (view_only) cannot delete categories
         $svc = app(HouseholdPermissionService::class);
+
         return $svc->canModify($user, $category->household_id);
     }
 
@@ -75,8 +77,9 @@ class CategoryPolicy
         if ($category->household_id !== $user->active_household_id) {
             return false;
         }
-        
+
         $svc = app(HouseholdPermissionService::class);
+
         return $svc->canModify($user, $category->household_id);
     }
 
@@ -88,8 +91,9 @@ class CategoryPolicy
         if ($category->household_id !== $user->active_household_id) {
             return false;
         }
-        
+
         $svc = app(HouseholdPermissionService::class);
+
         return $svc->canModify($user, $category->household_id);
     }
 }

@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateInvestmentRequest;
 use App\Models\Account;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
-use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -60,8 +59,8 @@ class InvestmentController extends Controller
                     'total_buy_value' => $investment->total_buy_value,
                     'total_sell_value' => $investment->total_sell_value,
                     'net_profit' => $investment->net_profit,
-                    'profit_percentage' => $investment->profit_percentage !== null 
-                        ? round($investment->profit_percentage, 2) 
+                    'profit_percentage' => $investment->profit_percentage !== null
+                        ? round($investment->profit_percentage, 2)
                         : null,
                     'is_sold' => $investment->isSold(),
                     'is_private' => $investment->is_private,
@@ -114,7 +113,7 @@ class InvestmentController extends Controller
             ->orderBy('type')
             ->orderBy('name')
             ->get()
-            ->map(fn($asset) => [
+            ->map(fn ($asset) => [
                 'id' => $asset->id,
                 'name' => $asset->name,
                 'symbol' => $asset->symbol,
@@ -206,8 +205,8 @@ class InvestmentController extends Controller
                 'total_sell_value' => $investment->total_sell_value,
                 'gross_profit' => $investment->gross_profit,
                 'net_profit' => $investment->net_profit,
-                'profit_percentage' => $investment->profit_percentage !== null 
-                    ? round($investment->profit_percentage, 2) 
+                'profit_percentage' => $investment->profit_percentage !== null
+                    ? round($investment->profit_percentage, 2)
                     : null,
                 'is_sold' => $investment->isSold(),
                 'is_private' => $investment->is_private,
@@ -240,7 +239,7 @@ class InvestmentController extends Controller
             ->orderBy('type')
             ->orderBy('name')
             ->get()
-            ->map(fn($asset) => [
+            ->map(fn ($asset) => [
                 'id' => $asset->id,
                 'name' => $asset->name,
                 'symbol' => $asset->symbol,
@@ -332,9 +331,9 @@ class InvestmentController extends Controller
         ]);
 
         $profit = $investment->fresh()->net_profit;
-        $message = $profit >= 0 
-            ? "Vendita registrata! Profitto netto: " . number_format($profit, 2, ',', '.') . " €"
-            : "Vendita registrata. Perdita netta: " . number_format(abs($profit), 2, ',', '.') . " €";
+        $message = $profit >= 0
+            ? 'Vendita registrata! Profitto netto: '.number_format($profit, 2, ',', '.').' €'
+            : 'Vendita registrata. Perdita netta: '.number_format(abs($profit), 2, ',', '.').' €';
 
         return redirect()
             ->route('investments.show', $investment)
@@ -371,5 +370,4 @@ class InvestmentController extends Controller
             abort(403, 'Questo investimento è privato.');
         }
     }
-
 }

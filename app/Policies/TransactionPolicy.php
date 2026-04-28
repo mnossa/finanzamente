@@ -2,14 +2,16 @@
 
 namespace App\Policies;
 
+use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\HouseholdPermissionService;
 
 class TransactionPolicy
 {
     public function view(User $user, Transaction $transaction): bool
     {
-        $svc = app(\App\Services\HouseholdPermissionService::class);
+        $svc = app(HouseholdPermissionService::class);
         // private transactions: only owner or household manager
         if ($transaction->is_private) {
             return $transaction->user_id === $user->id || $svc->hasPermission($user, $transaction->account->household_id, 'manage');
@@ -20,9 +22,9 @@ class TransactionPolicy
 
     public function create(User $user, $accountId): bool
     {
-        $svc = app(\App\Services\HouseholdPermissionService::class);
+        $svc = app(HouseholdPermissionService::class);
         // must be member of the account household and not view_only
-        $account = \App\Models\Account::find($accountId);
+        $account = Account::find($accountId);
         if (! $account) {
             return false;
         }
@@ -33,11 +35,12 @@ class TransactionPolicy
 
     public function update(User $user, Transaction $transaction): bool
     {
-        $svc = app(\App\Services\HouseholdPermissionService::class);
+        $svc = app(HouseholdPermissionService::class);
         // Guests (view_only) cannot update transactions
         if ($svc->isViewOnly($user, $transaction->account->household_id)) {
             return false;
         }
+
         return $transaction->user_id === $user->id || $svc->hasPermission($user, $transaction->account->household_id, 'manage');
     }
 

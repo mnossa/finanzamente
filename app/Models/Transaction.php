@@ -17,26 +17,26 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Transaction extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', 
-        'account_id', 
-        'category_id', 
-        'amount', 
-        'currency_code', 
-        'date', 
-        'description', 
-        'recurring', 
-        'recurring_transaction_id', 
-        'is_private', 
-        'transfer_id', 
+        'user_id',
+        'account_id',
+        'category_id',
+        'amount',
+        'currency_code',
+        'date',
+        'description',
+        'recurring',
+        'recurring_transaction_id',
+        'is_private',
+        'transfer_id',
         'inter_household_transfer_id',
-        'refund_id', 
+        'refund_id',
         'debt_credit_id',
-        'is_tax_deductible', 
-        'tax_deduction_rate', 
-        'tax_deduction_type', 
+        'is_tax_deductible',
+        'tax_deduction_rate',
+        'tax_deduction_type',
         'tax_year',
     ];
 
@@ -143,9 +143,8 @@ class Transaction extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('inter_household_transfer_id')
-              ->orWhereHas('interHouseholdTransfer', fn ($q) =>
-                  $q->where('exclude_from_stats', false)
-              );
+                ->orWhereHas('interHouseholdTransfer', fn ($q) => $q->where('exclude_from_stats', false)
+                );
         });
     }
 
@@ -182,12 +181,12 @@ class Transaction extends Model
     {
         $amount = (float) $this->amount;
         $refunded = $this->getTotalRefundedAmount();
-        
+
         // Se è una spesa (negativa), il netto è meno negativo
         if ($amount < 0) {
             return $amount + $refunded;
         }
-        
+
         return $amount - $refunded;
     }
 
@@ -196,11 +195,12 @@ class Transaction extends Model
      */
     public function getTaxDeductibleAmount(): float
     {
-        if (!$this->is_tax_deductible || !$this->tax_deduction_rate) {
+        if (! $this->is_tax_deductible || ! $this->tax_deduction_rate) {
             return 0.0;
         }
 
         $baseAmount = abs((float) $this->amount);
+
         return $baseAmount * ((float) $this->tax_deduction_rate / 100);
     }
 

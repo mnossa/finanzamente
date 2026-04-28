@@ -45,8 +45,8 @@ class StructuredDataService
     /**
      * Landing page target: SoftwareApplication + BreadcrumbList.
      *
-     * @param string $pageUrl      URL canonico della pagina (es. url('/per-investitori'))
-     * @param string $breadcrumbLabel  Label visibile nel breadcrumb (es. "Per Investitori")
+     * @param  string  $pageUrl  URL canonico della pagina (es. url('/per-investitori'))
+     * @param  string  $breadcrumbLabel  Label visibile nel breadcrumb (es. "Per Investitori")
      */
     public function forLandingPage(string $pageUrl, string $breadcrumbLabel): void
     {
@@ -78,18 +78,18 @@ class StructuredDataService
 
         foreach ($plans as $plan) {
             $offer = [
-                '@type'         => 'Offer',
-                'name'          => $plan['name'],
-                'price'         => number_format($plan['price_monthly'], 2, '.', ''),
+                '@type' => 'Offer',
+                'name' => $plan['name'],
+                'price' => number_format($plan['price_monthly'], 2, '.', ''),
                 'priceCurrency' => $plan['currency'],
             ];
 
             if ($plan['price_monthly'] > 0) {
                 $offer['priceSpecification'] = [
-                    '@type'     => 'UnitPriceSpecification',
-                    'price'     => number_format($plan['price_monthly'], 2, '.', ''),
+                    '@type' => 'UnitPriceSpecification',
+                    'price' => number_format($plan['price_monthly'], 2, '.', ''),
                     'priceCurrency' => $plan['currency'],
-                    'unitText'  => 'MONTH',
+                    'unitText' => 'MONTH',
                     'priceType' => 'https://schema.org/RecurringCharge',
                 ];
             }

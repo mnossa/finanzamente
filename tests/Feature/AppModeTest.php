@@ -44,7 +44,7 @@ class AppModeTest extends TestCase
 
         $household = Household::factory()->create(['owner_user_id' => $user->id]);
         $household->users()->attach($user->id, [
-            'role'        => 'owner',
+            'role' => 'owner',
             'permissions' => json_encode(['manage' => true]),
         ]);
         $user->update(['active_household_id' => $household->id]);
@@ -71,11 +71,11 @@ class AppModeTest extends TestCase
     public function test_normal_mode_allows_new_registration(): void
     {
         $response = $this->post('/registrati', [
-            'name'                  => 'Utente Normale',
-            'email'                 => 'normale@example.com',
-            'password'              => 'password',
+            'name' => 'Utente Normale',
+            'email' => 'normale@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $this->assertAuthenticated();
@@ -100,8 +100,7 @@ class AppModeTest extends TestCase
     {
         $response = $this->get('/accedi');
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->where('canRegister', true)
+        $response->assertInertia(fn ($page) => $page->where('canRegister', true)
         );
     }
 
@@ -145,11 +144,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.owner_email', 'owner@example.com');
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Intruso',
-            'email'                 => 'intruso@example.com',
-            'password'              => 'password',
+            'name' => 'Intruso',
+            'email' => 'intruso@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $response->assertRedirect(route('home'));
@@ -163,11 +162,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.owner_email', 'owner@example.com');
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Owner',
-            'email'                 => 'owner@example.com',
-            'password'              => 'password',
+            'name' => 'Owner',
+            'email' => 'owner@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $this->assertAuthenticated();
@@ -228,8 +227,7 @@ class AppModeTest extends TestCase
 
         $response = $this->get('/accedi');
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->where('canRegister', false)
+        $response->assertInertia(fn ($page) => $page->where('canRegister', false)
         );
     }
 
@@ -251,11 +249,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.owner_email', '');
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Chiunque',
-            'email'                 => 'chiunque@example.com',
-            'password'              => 'password',
+            'name' => 'Chiunque',
+            'email' => 'chiunque@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $response->assertRedirect(route('home'));
@@ -288,11 +286,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.waitlist_enabled', true);
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Utente Waitlist',
-            'email'                 => 'waitlist@example.com',
-            'password'              => 'password',
+            'name' => 'Utente Waitlist',
+            'email' => 'waitlist@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $this->assertAuthenticated();
@@ -325,11 +323,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.waitlist_enabled', true);
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Utente Combinato',
-            'email'                 => 'combinato@example.com',
-            'password'              => 'password',
+            'name' => 'Utente Combinato',
+            'email' => 'combinato@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $this->assertAuthenticated();
@@ -347,11 +345,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.waitlist_enabled', true);
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Intruso',
-            'email'                 => 'intruso2@example.com',
-            'password'              => 'password',
+            'name' => 'Intruso',
+            'email' => 'intruso2@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $response->assertRedirect(route('home'));
@@ -365,11 +363,11 @@ class AppModeTest extends TestCase
         Config::set('prelaunch.waitlist_enabled', true);
 
         $response = $this->post('/registrati', [
-            'name'                  => 'Owner Combinato',
-            'email'                 => 'owner@example.com',
-            'password'              => 'password',
+            'name' => 'Owner Combinato',
+            'email' => 'owner@example.com',
+            'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type'             => 'persona',
+            'user_type' => 'persona',
         ]);
 
         $this->assertAuthenticated();

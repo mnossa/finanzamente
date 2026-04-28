@@ -21,7 +21,7 @@ class AuthenticatedSessionController extends Controller
     {
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
-            'canRegister' => Route::has('register') && !config('prelaunch.enabled', false),
+            'canRegister' => Route::has('register') && ! config('prelaunch.enabled', false),
             'status' => session('status'),
         ]);
     }

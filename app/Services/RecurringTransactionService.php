@@ -15,9 +15,8 @@ class RecurringTransactionService
 {
     /**
      * Genera tutte le transazioni mancanti dalla data di inizio fino alla data target.
-     * 
-     * @param RecurringTransaction $recurringTransaction
-     * @param Carbon|null $targetDate Data fino alla quale generare le transazioni (default: oggi)
+     *
+     * @param  Carbon|null  $targetDate  Data fino alla quale generare le transazioni (default: oggi)
      * @return int Numero di transazioni generate
      */
     public function generateTransactionsUntil(RecurringTransaction $recurringTransaction, ?Carbon $targetDate = null): int
@@ -49,7 +48,7 @@ class RecurringTransactionService
 
             foreach ($occurrences as $occurrenceDate) {
                 // Salta le occorrenze già generate (se esiste last_generated_date)
-                if ($recurringTransaction->last_generated_date && 
+                if ($recurringTransaction->last_generated_date &&
                     $occurrenceDate->lte($recurringTransaction->last_generated_date)) {
                     continue;
                 }
@@ -59,7 +58,7 @@ class RecurringTransactionService
                     ->whereDate('date', $occurrenceDate->toDateString())
                     ->exists();
 
-                if (!$exists) {
+                if (! $exists) {
                     $this->createTransactionFromRecurring($recurringTransaction, $occurrenceDate->copy());
                     $generatedCount++;
                     $lastGenerated = $occurrenceDate->copy();
@@ -74,7 +73,7 @@ class RecurringTransactionService
 
             DB::commit();
 
-            Log::info("Transazioni ricorrenti generate", [
+            Log::info('Transazioni ricorrenti generate', [
                 'recurring_transaction_id' => $recurringTransaction->id,
                 'count' => $generatedCount,
                 'last_generated_date' => $lastGenerated?->format('Y-m-d'),
@@ -83,7 +82,7 @@ class RecurringTransactionService
             return $generatedCount;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Errore nella generazione transazioni ricorrenti", [
+            Log::error('Errore nella generazione transazioni ricorrenti', [
                 'recurring_transaction_id' => $recurringTransaction->id,
                 'error' => $e->getMessage(),
             ]);
@@ -93,15 +92,12 @@ class RecurringTransactionService
 
     /**
      * Genera la prossima transazione ricorrente.
-     * 
-     * @param RecurringTransaction $recurringTransaction
-     * @return Transaction|null
      */
     public function generateNextTransaction(RecurringTransaction $recurringTransaction): ?Transaction
     {
         $nextDate = $this->calculateNextDueDate($recurringTransaction);
 
-        if (!$nextDate) {
+        if (! $nextDate) {
             return null;
         }
 
@@ -117,7 +113,7 @@ class RecurringTransactionService
         DB::beginTransaction();
         try {
             $transaction = $this->createTransactionFromRecurring($recurringTransaction, $nextDate);
-            
+
             $recurringTransaction->last_generated_date = $nextDate;
             $recurringTransaction->save();
 
@@ -126,7 +122,7 @@ class RecurringTransactionService
             return $transaction;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Errore nella generazione transazione singola", [
+            Log::error('Errore nella generazione transazione singola', [
                 'recurring_transaction_id' => $recurringTransaction->id,
                 'error' => $e->getMessage(),
             ]);
@@ -136,10 +132,6 @@ class RecurringTransactionService
 
     /**
      * Crea una transazione dalla ricorrente per una specifica data.
-     * 
-     * @param RecurringTransaction $recurringTransaction
-     * @param Carbon $date
-     * @return Transaction
      */
     private function createTransactionFromRecurring(RecurringTransaction $recurringTransaction, Carbon $date): Transaction
     {
@@ -167,10 +159,10 @@ class RecurringTransactionService
 
     /**
      * Calcola tutte le occorrenze di una ricorrenza tra due date.
-     * 
-     * @param Carbon $startDate Data di inizio
-     * @param Carbon $endDate Data di fine
-     * @param string $frequency Frequenza (daily, weekly, monthly, yearly)
+     *
+     * @param  Carbon  $startDate  Data di inizio
+     * @param  Carbon  $endDate  Data di fine
+     * @param  string  $frequency  Frequenza (daily, weekly, monthly, yearly)
      * @return array Array di oggetti Carbon con tutte le occorrenze
      */
     private function calculateOccurrences(Carbon $startDate, Carbon $endDate, string $frequency): array
@@ -202,28 +194,25 @@ class RecurringTransactionService
 
     /**
      * Calcola la prossima data di scadenza per una transazione ricorrente.
-     * 
-     * @param RecurringTransaction $rt
-     * @return Carbon|null
      */
     public function calculateNextDueDate(RecurringTransaction $rt): ?Carbon
     {
         $today = Carbon::today();
-        
+
         // Se la data di fine è passata, non c'è prossima scadenza
         if ($rt->end_date && $rt->end_date->lt($today)) {
             return null;
         }
 
         // Determina da quale data cercare la prossima occorrenza
-        $searchFrom = $rt->last_generated_date 
+        $searchFrom = $rt->last_generated_date
             ? $rt->last_generated_date->copy()
             : $rt->start_date->copy()->subDay(); // Sottraggo un giorno per includere start_date
 
         // Calcola le occorrenze dalla searchFrom fino a un anno nel futuro
         // (un anno dovrebbe essere sufficiente per trovare la prossima occorrenza)
         $futureLimit = $today->copy()->addYear();
-        
+
         if ($rt->end_date && $rt->end_date->lt($futureLimit)) {
             $futureLimit = $rt->end_date;
         }
@@ -246,14 +235,11 @@ class RecurringTransactionService
 
     /**
      * Verifica se la transazione ricorrente è ancora attiva.
-     * 
-     * @param RecurringTransaction $rt
-     * @return bool
      */
     public function isActive(RecurringTransaction $rt): bool
     {
         $today = Carbon::today();
-        
+
         // Non ancora iniziata
         if ($rt->start_date->gt($today)) {
             return true;
@@ -269,8 +255,7 @@ class RecurringTransactionService
 
     /**
      * Genera le transazioni per tutte le ricorrenti attive fino alla data target.
-     * 
-     * @param Carbon|null $targetDate
+     *
      * @return array ['total_recurring' => int, 'total_generated' => int]
      */
     public function processAllRecurringTransactions(?Carbon $targetDate = null): array
@@ -303,9 +288,6 @@ class RecurringTransactionService
     /**
      * Sincronizza il campo last_generated_date basandosi sulle transazioni esistenti.
      * Questo previene duplicazioni quando il comando viene eseguito più volte.
-     * 
-     * @param RecurringTransaction $recurringTransaction
-     * @return void
      */
     private function syncLastGeneratedDate(RecurringTransaction $recurringTransaction): void
     {
@@ -316,9 +298,9 @@ class RecurringTransactionService
 
         if ($lastTransaction) {
             $lastTransactionDate = Carbon::parse($lastTransaction->date);
-            
+
             // Aggiorna last_generated_date solo se è diversa o null
-            if (!$recurringTransaction->last_generated_date || 
+            if (! $recurringTransaction->last_generated_date ||
                 $lastTransactionDate->gt($recurringTransaction->last_generated_date)) {
                 $recurringTransaction->last_generated_date = $lastTransactionDate;
                 $recurringTransaction->saveQuietly(); // saveQuietly per evitare eventi

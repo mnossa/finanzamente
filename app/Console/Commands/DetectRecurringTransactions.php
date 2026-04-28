@@ -32,6 +32,7 @@ class DetectRecurringTransactions extends Command
             $households = Household::where('id', $householdId)->get();
             if ($households->isEmpty()) {
                 $this->error("Household #{$householdId} non trovato.");
+
                 return Command::FAILURE;
             }
         } else {

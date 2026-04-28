@@ -30,11 +30,11 @@ class TransferController extends Controller
         $transfers = Transfer::with([
             'sourceAccount:id,name,currency_code',
             'destinationAccount:id,name,currency_code',
-            'user:id,name'
+            'user:id,name',
         ])
             ->where(function ($query) use ($householdId) {
-                $query->whereHas('sourceAccount', fn($q) => $q->where('household_id', $householdId))
-                    ->orWhereHas('destinationAccount', fn($q) => $q->where('household_id', $householdId));
+                $query->whereHas('sourceAccount', fn ($q) => $q->where('household_id', $householdId))
+                    ->orWhereHas('destinationAccount', fn ($q) => $q->where('household_id', $householdId));
             })
             ->orderBy('created_at', 'desc')
             ->paginate(25)
@@ -86,7 +86,7 @@ class TransferController extends Controller
             })
             ->orderBy('name')
             ->get()
-            ->map(fn($account) => [
+            ->map(fn ($account) => [
                 'id' => $account->id,
                 'name' => $account->name,
                 'currency_code' => $account->currency_code,
@@ -153,7 +153,7 @@ class TransferController extends Controller
             'sourceAccount:id,name,currency_code',
             'destinationAccount:id,name,currency_code',
             'user:id,name',
-            'transactions.category:id,name,icon'
+            'transactions.category:id,name,icon',
         ]);
 
         return Inertia::render('Transfers/Show', [
@@ -211,7 +211,7 @@ class TransferController extends Controller
             $hasAccess = true;
         }
 
-        if (!$hasAccess) {
+        if (! $hasAccess) {
             abort(403, 'Non hai accesso a questo trasferimento.');
         }
     }

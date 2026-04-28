@@ -64,7 +64,7 @@ class HouseholdInvitation extends Model
      */
     public function isValid(): bool
     {
-        return !$this->accepted_at && $this->expires_at->isFuture();
+        return ! $this->accepted_at && $this->expires_at->isFuture();
     }
 
     /**
@@ -80,7 +80,7 @@ class HouseholdInvitation extends Model
      */
     public function isAccepted(): bool
     {
-        return !is_null($this->accepted_at);
+        return ! is_null($this->accepted_at);
     }
 
     /**

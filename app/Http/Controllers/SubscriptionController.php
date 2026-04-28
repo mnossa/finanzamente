@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subscription;
+use App\Models\User;
 use App\Services\MollieService;
 use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +34,7 @@ class SubscriptionController extends Controller
             'billing_cycle' => 'required|in:monthly,annual',
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $billingCycle = $request->billing_cycle;
         $priceCents = $this->planService->getPriceCents('pro', $billingCycle);
@@ -108,7 +109,7 @@ class SubscriptionController extends Controller
      */
     public function cancel(Request $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
 
@@ -133,7 +134,7 @@ class SubscriptionController extends Controller
         }
 
         return redirect()->route('profile.subscription')
-            ->with('success', 'Rinnovo automatico disabilitato. Il piano Pro resterà attivo fino al ' . $user->plan_expires_at->format('d/m/Y') . '.');
+            ->with('success', 'Rinnovo automatico disabilitato. Il piano Pro resterà attivo fino al '.$user->plan_expires_at->format('d/m/Y').'.');
     }
 
     /**
@@ -141,7 +142,7 @@ class SubscriptionController extends Controller
      */
     public function updatePaymentMethod(Request $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
 
@@ -188,7 +189,7 @@ class SubscriptionController extends Controller
      */
     public function updateBilling(Request $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
 
@@ -219,7 +220,7 @@ class SubscriptionController extends Controller
      */
     public function show(Request $request): Response
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $subscription = $user->activeSubscription();
         $plans = $this->planService->getPlansForFrontend();

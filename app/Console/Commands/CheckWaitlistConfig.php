@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\WaitlistService;
 use Brevo\Brevo;
 use Brevo\Contacts\Requests\GetListsRequest;
 use Illuminate\Console\Command;
@@ -40,15 +39,15 @@ class CheckWaitlistConfig extends Command
         $this->comment('[1/5] Variabili di configurazione');
 
         $checks = [
-            'BREVO_API_KEY'                    => config('services.brevo.api_key'),
-            'BREVO_WAITLIST_LIST_ID'           => config('services.brevo.waitlist_list_id'),
-            'BREVO_DOUBLE_OPTIN_TEMPLATE_ID'   => config('services.brevo.double_optin_template_id'),
-            'BREVO_DOUBLE_OPTIN_REDIRECT_URL'  => config('services.brevo.double_optin_redirect_url'),
+            'BREVO_API_KEY' => config('services.brevo.api_key'),
+            'BREVO_WAITLIST_LIST_ID' => config('services.brevo.waitlist_list_id'),
+            'BREVO_DOUBLE_OPTIN_TEMPLATE_ID' => config('services.brevo.double_optin_template_id'),
+            'BREVO_DOUBLE_OPTIN_REDIRECT_URL' => config('services.brevo.double_optin_redirect_url'),
         ];
 
         foreach ($checks as $key => $value) {
-            if (!empty($value) && $value !== 0) {
-                $this->line("  <fg=green>✔</> {$key} = " . (str_contains($key, 'KEY') ? substr($value, 0, 12) . '...' : $value));
+            if (! empty($value) && $value !== 0) {
+                $this->line("  <fg=green>✔</> {$key} = ".(str_contains($key, 'KEY') ? substr($value, 0, 12).'...' : $value));
             } else {
                 $this->line("  <fg=red>✘</> {$key} non impostata");
                 $allOk = false;
@@ -63,6 +62,7 @@ class CheckWaitlistConfig extends Command
 
         if (empty($apiKey)) {
             $this->line('  <fg=yellow>⏭</>  Saltato (BREVO_API_KEY mancante)');
+
             return self::FAILURE;
         }
 
@@ -70,12 +70,13 @@ class CheckWaitlistConfig extends Command
 
         try {
             $lists = $brevo->contacts->getLists(new GetListsRequest(['limit' => 10, 'offset' => 0]));
-            $this->line('  <fg=green>✔</> Connessione API riuscita (' . count($lists->lists ?? []) . ' liste trovate)');
+            $this->line('  <fg=green>✔</> Connessione API riuscita ('.count($lists->lists ?? []).' liste trovate)');
         } catch (\Exception $e) {
-            $this->line('  <fg=red>✘</> Connessione API fallita: ' . $e->getMessage());
+            $this->line('  <fg=red>✘</> Connessione API fallita: '.$e->getMessage());
             $allOk = false;
             // Impossibile procedere senza API
             $this->showSummary($allOk);
+
             return self::FAILURE;
         }
 
@@ -108,12 +109,12 @@ class CheckWaitlistConfig extends Command
                 $status = $template->isActive ? '<fg=green>attivo</>' : '<fg=yellow>inattivo</>';
                 $this->line("  <fg=green>✔</> Template #{$templateId} trovato: \"{$template->name}\" — {$status}");
 
-                if (!$template->isActive) {
+                if (! $template->isActive) {
                     $this->line('  <fg=yellow>⚠</>  Il template non è attivo — attivalo su Brevo prima di procedere');
                     $allOk = false;
                 }
             } catch (\Exception $e) {
-                $this->line("  <fg=red>✘</> Template #{$templateId} non trovato: " . $e->getMessage());
+                $this->line("  <fg=red>✘</> Template #{$templateId} non trovato: ".$e->getMessage());
                 $allOk = false;
             }
         }
@@ -139,7 +140,7 @@ class CheckWaitlistConfig extends Command
                 $allOk = false;
             }
         } catch (\Exception $e) {
-            $this->line('  <fg=yellow>⚠</>  Impossibile verificare attributi: ' . $e->getMessage());
+            $this->line('  <fg=yellow>⚠</>  Impossibile verificare attributi: '.$e->getMessage());
         }
 
         // ── Riepilogo ────────────────────────────────────────────

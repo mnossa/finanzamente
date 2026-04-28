@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Currency extends Model
 {
-    use HasFactory, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

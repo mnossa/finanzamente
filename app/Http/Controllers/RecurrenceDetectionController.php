@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\RecurringTransactionSuggestion;
+use App\Models\Transaction;
 use App\Services\RecurrenceDetectionService;
 use App\Services\RecurringTransactionService;
 use Illuminate\Http\RedirectResponse;
@@ -22,13 +23,13 @@ class RecurrenceDetectionController extends Controller
      */
     public function index(): Response
     {
-        $user        = Auth::user();
+        $user = Auth::user();
         $householdId = $user->active_household_id;
 
         $suggestions = RecurringTransactionSuggestion::with([
-                'account:id,name,currency_code',
-                'category:id,name,color,icon,type',
-            ])
+            'account:id,name,currency_code',
+            'category:id,name,color,icon,type',
+        ])
             ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
             ->pending()
             ->orderByDesc('confidence')
@@ -46,7 +47,7 @@ class RecurrenceDetectionController extends Controller
      */
     public function detect(): RedirectResponse
     {
-        $user        = Auth::user();
+        $user = Auth::user();
         $householdId = $user->active_household_id;
 
         $created = $this->detectionService->detectForHousehold($householdId);
@@ -100,37 +101,37 @@ class RecurrenceDetectionController extends Controller
 
     private function formatSuggestion(RecurringTransactionSuggestion $s): array
     {
-        $transactions = \App\Models\Transaction::whereIn('id', $s->transaction_ids ?? [])
+        $transactions = Transaction::whereIn('id', $s->transaction_ids ?? [])
             ->orderBy('date')
             ->get(['id', 'date', 'description', 'amount'])
             ->map(fn ($t) => [
-                'id'          => $t->id,
-                'date'        => $t->date->format('Y-m-d'),
+                'id' => $t->id,
+                'date' => $t->date->format('Y-m-d'),
                 'description' => $t->description,
-                'amount'      => (float) $t->amount,
+                'amount' => (float) $t->amount,
             ]);
 
         return [
-            'id'                 => $s->id,
-            'amount'             => (float) $s->amount,
-            'currency_code'      => $s->currency_code,
-            'description'        => $s->description,
+            'id' => $s->id,
+            'amount' => (float) $s->amount,
+            'currency_code' => $s->currency_code,
+            'description' => $s->description,
             'detected_frequency' => $s->detected_frequency,
-            'confidence'         => (float) $s->confidence,
-            'confidence_label'   => $s->confidenceLabel(),
-            'transaction_count'  => count($s->transaction_ids ?? []),
-            'transactions'       => $transactions,
-            'account'            => [
-                'id'            => $s->account->id,
-                'name'          => $s->account->name,
+            'confidence' => (float) $s->confidence,
+            'confidence_label' => $s->confidenceLabel(),
+            'transaction_count' => count($s->transaction_ids ?? []),
+            'transactions' => $transactions,
+            'account' => [
+                'id' => $s->account->id,
+                'name' => $s->account->name,
                 'currency_code' => $s->account->currency_code,
             ],
-            'category'           => $s->category ? [
-                'id'    => $s->category->id,
-                'name'  => $s->category->name,
+            'category' => $s->category ? [
+                'id' => $s->category->id,
+                'name' => $s->category->name,
                 'color' => $s->category->color,
-                'icon'  => $s->category->icon,
-                'type'  => $s->category->type,
+                'icon' => $s->category->icon,
+                'type' => $s->category->type,
             ] : null,
         ];
     }

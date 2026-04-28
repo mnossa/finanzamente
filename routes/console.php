@@ -42,13 +42,12 @@ Schedule::command('plans:notify-expiring')->dailyAt('08:00');
  */
 Schedule::command('recurring:detect')->days([1, 4])->at('01:00');
 
-
 /**
  * Converte le immagini di copertina degli articoli in WebP e le ridimensiona a max 1200px.
  * Esegue solo su immagini non già in WebP.
  * Può essere eseguito manualmente con opzione --dry-run per vedere quali immagini verrebbero convertite.
  */
-Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8,15,0);
+Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8, 15, 0);
 
 /**
  * Scansiona gli articoli magazine e suggerisce link interni tramite similarità semantica.

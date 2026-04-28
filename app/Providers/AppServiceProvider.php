@@ -2,22 +2,28 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Str;
-use League\CommonMark\Environment\Environment;
-use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
-use League\CommonMark\Extension\CommonMark\Renderer\Inline\LinkRenderer;
-use League\CommonMark\Node\Node;
-use League\CommonMark\Renderer\ChildNodeRendererInterface;
-use League\CommonMark\Util\UrlEncoder;
-use League\Config\ConfigurationAwareInterface;
-use League\Config\ConfigurationInterface;
+use App\Models\BankImportLayout;
 use App\Models\Household;
 use App\Observers\HouseholdObserver;
+use App\Policies\BankImportLayoutPolicy;
+use Artesaos\SEOTools\Facades\JsonLdMulti;
 use Carbon\Carbon;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
+use League\CommonMark\Extension\CommonMark\Renderer\Inline\LinkRenderer;
+use League\CommonMark\MarkdownConverter;
+use League\CommonMark\Node\Node;
+use League\CommonMark\Renderer\ChildNodeRendererInterface;
+use League\CommonMark\Renderer\NodeRendererInterface;
+use League\CommonMark\Util\HtmlElement;
+use League\Config\ConfigurationAwareInterface;
+use League\Config\ConfigurationInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        AliasLoader::getInstance()->alias('JsonLdMulti', \Artesaos\SEOTools\Facades\JsonLdMulti::class);
+        AliasLoader::getInstance()->alias('JsonLdMulti', JsonLdMulti::class);
     }
 
     /**
@@ -43,10 +49,11 @@ class AppServiceProvider extends ServiceProvider
             ], $options);
 
             $environment = new Environment($options);
-            $environment->addExtension(new \League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension());
+            $environment->addExtension(new CommonMarkCoreExtension);
 
             // Custom LinkRenderer (delegazione perché LinkRenderer è final)
-            $environment->addRenderer(Link::class, new class(new LinkRenderer()) implements \League\CommonMark\Renderer\NodeRendererInterface, ConfigurationAwareInterface {
+            $environment->addRenderer(Link::class, new class(new LinkRenderer) implements ConfigurationAwareInterface, NodeRendererInterface
+            {
                 public function __construct(private readonly LinkRenderer $delegate) {}
 
                 public function setConfiguration(ConfigurationInterface $configuration): void
@@ -57,19 +64,21 @@ class AppServiceProvider extends ServiceProvider
                 public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable|string|null
                 {
                     $element = $this->delegate->render($node, $childRenderer);
-                    if ($element instanceof \League\CommonMark\Util\HtmlElement) {
+                    if ($element instanceof HtmlElement) {
                         $href = $element->getAttribute('href');
                         if ($href && preg_match('/^(https?:)?\/\//i', $href)) {
                             $rel = $element->getAttribute('rel');
-                            $rel = $rel ? $rel . ' nofollow' : 'nofollow';
+                            $rel = $rel ? $rel.' nofollow' : 'nofollow';
                             $element->setAttribute('rel', $rel);
                         }
                     }
+
                     return $element;
                 }
             });
 
-            $converter = new \League\CommonMark\MarkdownConverter($environment);
+            $converter = new MarkdownConverter($environment);
+
             return $converter->convert($string)->getContent();
         });
 
@@ -79,6 +88,6 @@ class AppServiceProvider extends ServiceProvider
         // Registra observer per la creazione automatica delle categorie
         Household::observe(HouseholdObserver::class);
 
-        Gate::policy(\App\Models\BankImportLayout::class, \App\Policies\BankImportLayoutPolicy::class);
+        Gate::policy(BankImportLayout::class, BankImportLayoutPolicy::class);
     }
 }

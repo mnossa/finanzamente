@@ -6,7 +6,6 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Middleware per rate limiting avanzato e delay progressivo.
@@ -17,8 +16,6 @@ class AdvancedRateLimitWithDelay
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @param  int  $maxAttempts
      * @param  int  $decayMinutes
      * @return mixed
@@ -28,11 +25,11 @@ class AdvancedRateLimitWithDelay
 
         $ip = $request->ip();
         $salt = env('ADV_THROTTLE_SALT', 'default_salt');
-        $ipHash = hash('sha256', $ip . $salt);
+        $ipHash = hash('sha256', $ip.$salt);
         $routeKey = $request->route() && $request->route()->getName()
             ? $request->route()->getName()
             : $request->path();
-        $key = 'adv_rate_limit:' . $routeKey . ':' . $ipHash;
+        $key = 'adv_rate_limit:'.$routeKey.':'.$ipHash;
         $attempts = Cache::get($key, 0);
         $resetAt = Cache::get($key.':reset');
         $now = now()->timestamp;
@@ -45,7 +42,7 @@ class AdvancedRateLimitWithDelay
         ]);
 
         // Inizializza finestra al primo tentativo
-        if (!$resetAt) {
+        if (! $resetAt) {
             $resetAt = $now + ($decayMinutes * 60);
             Cache::put($key.':reset', $resetAt, $decayMinutes * 60);
         }
@@ -59,8 +56,9 @@ class AdvancedRateLimitWithDelay
 
         if ($attempts >= $maxAttempts) {
             $wait = $resetAt - $now;
+
             return response()->json([
-                'message' => 'Troppi tentativi. Riprova tra '.ceil($wait).' secondi.'
+                'message' => 'Troppi tentativi. Riprova tra '.ceil($wait).' secondi.',
             ], 429);
         }
 

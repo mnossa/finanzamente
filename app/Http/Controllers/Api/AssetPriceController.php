@@ -151,7 +151,7 @@ class AssetPriceController extends Controller
     public function isinToTicker(string $isin): JsonResponse
     {
         // Valida formato ISIN (2 lettere + 9 caratteri alfanumerici + 1 cifra di controllo)
-        if (!preg_match('/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/', strtoupper($isin))) {
+        if (! preg_match('/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/', strtoupper($isin))) {
             return response()->json([
                 'success' => false,
                 'error' => 'Formato ISIN non valido',

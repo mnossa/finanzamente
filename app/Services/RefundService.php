@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\Refund;
 use App\Models\Transaction;
-use App\Models\Category;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class RefundService
@@ -15,15 +15,15 @@ class RefundService
     /**
      * Crea un rimborso e la transazione di entrata collegata atomicamente.
      *
-     * @param array $data Dati del rimborso:
-     *   - original_transaction_id: ID della transazione di spesa originale
-     *   - amount: Importo del rimborso (valore assoluto, max = importo spesa originale - già rimborsato)
-     *   - user_id: ID dell'utente che crea il rimborso
-     *   - category_id: ID della categoria per la transazione di rimborso (tipo income)
-     *   - date: Data del rimborso (opzionale, default oggi)
-     *   - description: Descrizione del rimborso (opzionale)
-     *   - is_private: Se la transazione di rimborso è privata (opzionale, default false)
-     * @return Refund
+     * @param  array  $data  Dati del rimborso:
+     *                       - original_transaction_id: ID della transazione di spesa originale
+     *                       - amount: Importo del rimborso (valore assoluto, max = importo spesa originale - già rimborsato)
+     *                       - user_id: ID dell'utente che crea il rimborso
+     *                       - category_id: ID della categoria per la transazione di rimborso (tipo income)
+     *                       - date: Data del rimborso (opzionale, default oggi)
+     *                       - description: Descrizione del rimborso (opzionale)
+     *                       - is_private: Se la transazione di rimborso è privata (opzionale, default false)
+     *
      * @throws ValidationException
      */
     public function createRefund(array $data): Refund
@@ -34,7 +34,7 @@ class RefundService
             // Blocca la transazione originale per evitare race condition
             $originalTransaction = Transaction::lockForUpdate()->find($originalTransactionId);
 
-            if (!$originalTransaction) {
+            if (! $originalTransaction) {
                 throw ValidationException::withMessages([
                     'original_transaction_id' => ['La transazione originale non esiste.'],
                 ]);
@@ -75,7 +75,7 @@ class RefundService
                             'L\'importo del rimborso (%.2f) supera l\'importo massimo rimborsabile (%.2f).',
                             $refundAmount,
                             $maxRefundable
-                        )
+                        ),
                     ],
                 ]);
             }
@@ -86,7 +86,7 @@ class RefundService
             // Blocca l'account per aggiornare il saldo
             $account = Account::lockForUpdate()->find($originalTransaction->account_id);
 
-            if (!$account) {
+            if (! $account) {
                 throw ValidationException::withMessages([
                     'original_transaction_id' => ['Il conto associato alla transazione non esiste.'],
                 ]);
@@ -127,17 +127,13 @@ class RefundService
 
     /**
      * Aggiorna un rimborso esistente.
-     *
-     * @param Refund $refund
-     * @param array $data
-     * @return Refund
      */
     public function updateRefund(Refund $refund, array $data): Refund
     {
         return DB::transaction(function () use ($refund, $data) {
             $refundTransaction = $refund->refundTransaction;
 
-            if (!$refundTransaction) {
+            if (! $refundTransaction) {
                 throw ValidationException::withMessages([
                     'refund' => ['La transazione di rimborso non esiste.'],
                 ]);
@@ -161,7 +157,7 @@ class RefundService
                                 'L\'importo del rimborso (%.2f) supera l\'importo massimo rimborsabile (%.2f).',
                                 $newAmount,
                                 $maxRefundable
-                            )
+                            ),
                         ],
                     ]);
                 }
@@ -196,9 +192,6 @@ class RefundService
 
     /**
      * Elimina un rimborso e ripristina il saldo del conto.
-     *
-     * @param Refund $refund
-     * @return bool
      */
     public function deleteRefund(Refund $refund): bool
     {
@@ -222,8 +215,7 @@ class RefundService
     /**
      * Ottiene i rimborsi per una transazione originale.
      *
-     * @param int $originalTransactionId
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
      */
     public function getRefundsForTransaction(int $originalTransactionId)
     {

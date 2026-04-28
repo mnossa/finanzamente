@@ -76,4 +76,3 @@ trait DispatchesModelEvents
         });
     }
 }
-

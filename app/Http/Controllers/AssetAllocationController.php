@@ -42,9 +42,9 @@ class AssetAllocationController extends Controller
 
         return response()->json([
             'total_value' => $data['totalValue'],
-            'risk_index'  => $data['riskIndex'],
-            'risk_label'  => $data['riskLabel'],
-            'allocation'  => $data['allocation'],
+            'risk_index' => $data['riskIndex'],
+            'risk_label' => $data['riskLabel'],
+            'allocation' => $data['allocation'],
         ]);
     }
 
@@ -54,7 +54,7 @@ class AssetAllocationController extends Controller
 
     private function buildAllocationData(): array
     {
-        $user        = Auth::user();
+        $user = Auth::user();
         $householdId = $user->active_household_id;
 
         // ── 1. Posizioni di investimento aperte ───────────────────────────────
@@ -68,31 +68,31 @@ class AssetAllocationController extends Controller
 
         $positions = [];
         foreach ($investments as $inv) {
-            $assetType  = $inv->asset->type ?? 'other';
+            $assetType = $inv->asset->type ?? 'other';
             $assetClass = AssetClassificationService::ASSET_TYPE_CLASS[$assetType] ?? 'other';
-            $risk       = AssetClassificationService::ASSET_TYPE_RISK[$assetType] ?? 3;
-            $value      = $inv->total_buy_value;
+            $risk = AssetClassificationService::ASSET_TYPE_RISK[$assetType] ?? 3;
+            $value = $inv->total_buy_value;
 
             $positions[] = [
-                'id'               => $inv->id,
-                'type'             => 'investment',
-                'name'             => $inv->asset->name,
-                'symbol'           => $inv->asset->symbol,
-                'asset_type'       => $assetType,
+                'id' => $inv->id,
+                'type' => 'investment',
+                'name' => $inv->asset->name,
+                'symbol' => $inv->asset->symbol,
+                'asset_type' => $assetType,
                 'asset_type_label' => $inv->asset->type_label,
-                'asset_class'      => $assetClass,
+                'asset_class' => $assetClass,
                 'asset_class_label' => AssetClassificationService::CLASS_LABELS[$assetClass] ?? $assetClass,
-                'risk'             => $risk,
-                'value'            => $value,
-                'quantity'         => (float) $inv->quantity,
-                'buy_price'        => (float) $inv->buy_price,
-                'buy_date'         => $inv->buy_date->format('Y-m-d'),
-                'account'          => $inv->account ? ['id' => $inv->account->id, 'name' => $inv->account->name] : null,
-                'currency'         => [
-                    'code'   => $inv->asset->currency->code ?? $inv->asset->currency_code,
+                'risk' => $risk,
+                'value' => $value,
+                'quantity' => (float) $inv->quantity,
+                'buy_price' => (float) $inv->buy_price,
+                'buy_date' => $inv->buy_date->format('Y-m-d'),
+                'account' => $inv->account ? ['id' => $inv->account->id, 'name' => $inv->account->name] : null,
+                'currency' => [
+                    'code' => $inv->asset->currency->code ?? $inv->asset->currency_code,
                     'symbol' => $inv->asset->currency->symbol ?? '€',
                 ],
-                'notes'            => $inv->notes,
+                'notes' => $inv->notes,
             ];
         }
 
@@ -124,26 +124,26 @@ class AssetAllocationController extends Controller
                 }
 
                 $accountType = $account->type ?? 'other';
-                $assetClass  = AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity';
-                $risk        = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
+                $assetClass = AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity';
+                $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
 
                 $positions[] = [
-                    'id'               => 'account_' . $account->id,
-                    'type'             => 'account',
-                    'name'             => $account->name,
-                    'symbol'           => null,
-                    'asset_type'       => $accountType,
+                    'id' => 'account_'.$account->id,
+                    'type' => 'account',
+                    'name' => $account->name,
+                    'symbol' => null,
+                    'asset_type' => $accountType,
                     'asset_type_label' => Account::TYPES[$accountType] ?? $accountType,
-                    'asset_class'      => $assetClass,
+                    'asset_class' => $assetClass,
                     'asset_class_label' => AssetClassificationService::CLASS_LABELS[$assetClass] ?? $assetClass,
-                    'risk'             => $risk,
-                    'value'            => $balance,
-                    'quantity'         => null,
-                    'buy_price'        => null,
-                    'buy_date'         => null,
-                    'account'          => ['id' => $account->id, 'name' => $account->name],
-                    'currency'         => ['code' => $account->currency_code, 'symbol' => '€'],
-                    'notes'            => null,
+                    'risk' => $risk,
+                    'value' => $balance,
+                    'quantity' => null,
+                    'buy_price' => null,
+                    'buy_date' => null,
+                    'account' => ['id' => $account->id, 'name' => $account->name],
+                    'currency' => ['code' => $account->currency_code, 'symbol' => '€'],
+                    'notes' => null,
                 ];
             }
         }
@@ -154,35 +154,35 @@ class AssetAllocationController extends Controller
         $classMap = [];
         foreach ($positions as $pos) {
             $cls = $pos['asset_class'];
-            if (!isset($classMap[$cls])) {
+            if (! isset($classMap[$cls])) {
                 $classMap[$cls] = [
                     'asset_class' => $cls,
-                    'label'       => AssetClassificationService::CLASS_LABELS[$cls] ?? $cls,
-                    'color'       => AssetClassificationService::CLASS_COLORS[$cls] ?? '#94a3b8',
-                    'value'       => 0.0,
-                    'percentage'  => 0.0,
+                    'label' => AssetClassificationService::CLASS_LABELS[$cls] ?? $cls,
+                    'color' => AssetClassificationService::CLASS_COLORS[$cls] ?? '#94a3b8',
+                    'value' => 0.0,
+                    'percentage' => 0.0,
                     'risk_weight' => 0.0,
                 ];
             }
-            $classMap[$cls]['value']       += $pos['value'];
+            $classMap[$cls]['value'] += $pos['value'];
             $classMap[$cls]['risk_weight'] += $pos['value'] * $pos['risk'];
         }
 
         $allocation = [];
         foreach ($classMap as $cls => $data) {
-            $pct       = $totalValue > 0 ? round(($data['value'] / $totalValue) * 100, 1) : 0;
+            $pct = $totalValue > 0 ? round(($data['value'] / $totalValue) * 100, 1) : 0;
             $classRisk = $data['value'] > 0 ? round($data['risk_weight'] / $data['value'], 1) : 0;
             $allocation[] = [
                 'asset_class' => $cls,
-                'label'       => $data['label'],
-                'color'       => $data['color'],
-                'value'       => round($data['value'], 2),
-                'percentage'  => $pct,
-                'risk'        => $classRisk,
+                'label' => $data['label'],
+                'color' => $data['color'],
+                'value' => round($data['value'], 2),
+                'percentage' => $pct,
+                'risk' => $classRisk,
             ];
         }
 
-        usort($allocation, fn($a, $b) => $b['value'] <=> $a['value']);
+        usort($allocation, fn ($a, $b) => $b['value'] <=> $a['value']);
 
         // ── 4. Indice di rischio complessivo (media ponderata) ─────────────────
         $riskNumerator = 0.0;
@@ -204,11 +204,11 @@ class AssetAllocationController extends Controller
         unset($pos);
 
         return [
-            'positions'   => array_values($positions),
-            'allocation'  => $allocation,
-            'totalValue'  => (float) round($totalValue, 2),
-            'riskIndex'   => (float) $riskIndex,
-            'riskLabel'   => $riskLabel,
+            'positions' => array_values($positions),
+            'allocation' => $allocation,
+            'totalValue' => (float) round($totalValue, 2),
+            'riskIndex' => (float) $riskIndex,
+            'riskLabel' => $riskLabel,
             'classColors' => AssetClassificationService::CLASS_COLORS,
             'classLabels' => AssetClassificationService::CLASS_LABELS,
         ];

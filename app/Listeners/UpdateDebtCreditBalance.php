@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * UpdateDebtCreditBalance
- * 
+ *
  * Listener che aggiorna automaticamente l'importo pagato di un debito/credito
  * quando viene creata, modificata o eliminata una transazione associata.
  */

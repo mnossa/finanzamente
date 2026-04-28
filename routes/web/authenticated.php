@@ -1,13 +1,15 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\AssetAllocationController;
-use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Api\AssetPriceController;
+use App\Http\Controllers\AssetAllocationController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\DebtCreditController;
+use App\Http\Controllers\ExpenseDistributionController;
 use App\Http\Controllers\FinancialGoalController;
 use App\Http\Controllers\FixedExpenseController;
 use App\Http\Controllers\HouseholdController;
@@ -17,24 +19,22 @@ use App\Http\Controllers\InvestmentAnalysisController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentImportController;
+use App\Http\Controllers\LifestyleScoreController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
-use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\TelegramLinkController;
-use App\Http\Controllers\ThemePreferenceController;
 use App\Http\Controllers\RecurrenceDetectionController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
+use App\Http\Controllers\SimulationController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
-use App\Http\Controllers\DashboardLayoutController;
-use App\Http\Controllers\ExpenseDistributionController;
-use App\Http\Controllers\LifestyleScoreController;
-use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TelegramLinkController;
+use App\Http\Controllers\ThemePreferenceController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
-use App\Http\Controllers\Api\AssetPriceController;
 use Illuminate\Support\Facades\Route;
 
 // Rotte che richiedono autenticazione ma NON household attiva

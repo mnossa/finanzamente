@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Household;
 use App\Models\Category;
+use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
 
@@ -17,16 +17,16 @@ class FixedExpenseService
      */
     public function calculateFixedExpenseContributions(Household $household): array
     {
-        if (!$household->isDebtBalancingMode()) {
+        if (! $household->isDebtBalancingMode()) {
             return [
                 'error' => 'La household non utiliza il bilanciamento debiti',
-                'contributions' => []
+                'contributions' => [],
             ];
         }
 
         $contributions = [];
         $users = $household->users()->get();
-        
+
         // Inizializza i contributi per ogni utente
         foreach ($users as $user) {
             $contributions[$user->id] = [
@@ -36,7 +36,7 @@ class FixedExpenseService
                 'total_contributed' => 0,
                 'expected_contribution' => 0,
                 'balance' => 0, // Differenza tra contributo e atteso
-                'categories' => []
+                'categories' => [],
             ];
         }
 
@@ -49,7 +49,7 @@ class FixedExpenseService
             return [
                 'error' => null,
                 'message' => 'Nessuna categoria di spese fisse configurata',
-                'contributions' => $contributions
+                'contributions' => $contributions,
             ];
         }
 
@@ -57,9 +57,9 @@ class FixedExpenseService
 
         foreach ($fixedCategories as $category) {
             // Calcola il totale speso per questa categoria da tutti
-            $categoryTotal = Transaction::whereIn('account_id', 
-                    $household->accounts()->pluck('id')
-                )
+            $categoryTotal = Transaction::whereIn('account_id',
+                $household->accounts()->pluck('id')
+            )
                 ->where('category_id', $category->id)
                 ->where('amount', '<', 0) // Solo spese
                 ->sum('amount');
@@ -70,8 +70,8 @@ class FixedExpenseService
             foreach ($users as $user) {
                 // Contributo effettivo dell'utente per questa categoria
                 $userContribution = Transaction::whereIn('account_id',
-                        $household->accounts()->where('owner_user_id', $user->id)->pluck('id')
-                    )
+                    $household->accounts()->where('owner_user_id', $user->id)->pluck('id')
+                )
                     ->where('category_id', $category->id)
                     ->where('amount', '<', 0) // Solo spese
                     ->sum('amount');
@@ -79,7 +79,7 @@ class FixedExpenseService
                 $userContribution = abs($userContribution);
 
                 // Calcola la percentuale di contributo dell'utente
-                $contributionPercentage = $categoryTotal > 0 ? 
+                $contributionPercentage = $categoryTotal > 0 ?
                     ($userContribution / $categoryTotal) * 100 : 0;
 
                 // Ottiene la percentuale prevista per questo utente
@@ -94,7 +94,7 @@ class FixedExpenseService
                     'contribution_percentage' => round($contributionPercentage, 2),
                     'expected_percentage' => $expectedPercentage,
                     'expected_contribution' => $expectedContribution,
-                    'category_balance' => $userContribution - $expectedContribution
+                    'category_balance' => $userContribution - $expectedContribution,
                 ];
 
                 $contributions[$user->id]['total_contributed'] += $userContribution;
@@ -104,7 +104,7 @@ class FixedExpenseService
 
         // Calcola il bilancio finale per ogni utente
         foreach ($contributions as &$userContribution) {
-            $userContribution['balance'] = 
+            $userContribution['balance'] =
                 $userContribution['total_contributed'] - $userContribution['expected_contribution'];
         }
 
@@ -113,7 +113,7 @@ class FixedExpenseService
             'message' => null,
             'total_household_expenses' => $totalHouseholdContribution,
             'fixed_categories_count' => $fixedCategories->count(),
-            'contributions' => $contributions
+            'contributions' => $contributions,
         ];
     }
 
@@ -122,10 +122,10 @@ class FixedExpenseService
      */
     public function suggestNextTurnForCategory(Household $household, int $categoryId): array
     {
-        if (!$household->isTurnSuggestionsEnabled()) {
+        if (! $household->isTurnSuggestionsEnabled()) {
             return [
                 'error' => 'Il suggeritore di turni non è abilitato per questa household',
-                'suggestion' => null
+                'suggestion' => null,
             ];
         }
 
@@ -134,19 +134,19 @@ class FixedExpenseService
             ->where('is_fixed_expense', true)
             ->first();
 
-        if (!$category) {
+        if (! $category) {
             return [
                 'error' => 'Categoria non trovata o non è una spesa fissa',
-                'suggestion' => null
+                'suggestion' => null,
             ];
         }
 
         $suggestedUserId = $household->suggestNextTurn($categoryId);
-        
-        if (!$suggestedUserId) {
+
+        if (! $suggestedUserId) {
             return [
                 'error' => 'Impossibile suggerire un turno',
-                'suggestion' => null
+                'suggestion' => null,
             ];
         }
 
@@ -159,8 +159,8 @@ class FixedExpenseService
                 'user_name' => $suggestedUser->name,
                 'category_id' => $categoryId,
                 'category_name' => $category->name,
-                'last_user_id' => $household->getLastTurnAssignment($categoryId)
-            ]
+                'last_user_id' => $household->getLastTurnAssignment($categoryId),
+            ],
         ];
     }
 
@@ -169,11 +169,12 @@ class FixedExpenseService
      */
     public function registerTurnCompleted(Household $household, int $categoryId, int $userId): bool
     {
-        if (!$household->isTurnSuggestionsEnabled()) {
+        if (! $household->isTurnSuggestionsEnabled()) {
             return false;
         }
 
         $household->setLastTurnAssignment($categoryId, $userId);
+
         return true;
     }
 
@@ -183,7 +184,7 @@ class FixedExpenseService
     public function getDashboardStats(Household $household): array
     {
         $contributions = $this->calculateFixedExpenseContributions($household);
-        
+
         if ($contributions['error']) {
             return $contributions;
         }
@@ -193,12 +194,12 @@ class FixedExpenseService
             'categories_count' => $contributions['fixed_categories_count'] ?? 0,
             'members_count' => count($contributions['contributions']),
             'balanced_members' => 0,
-            'members_summary' => []
+            'members_summary' => [],
         ];
 
         foreach ($contributions['contributions'] as $userContrib) {
             $isBalanced = abs($userContrib['balance']) <= 10; // Tolleranza di €10
-            
+
             if ($isBalanced) {
                 $stats['balanced_members']++;
             }
@@ -207,8 +208,8 @@ class FixedExpenseService
                 'name' => $userContrib['user_name'],
                 'balance' => $userContrib['balance'],
                 'is_balanced' => $isBalanced,
-                'status' => $userContrib['balance'] > 10 ? 'creditor' : 
-                           ($userContrib['balance'] < -10 ? 'debtor' : 'balanced')
+                'status' => $userContrib['balance'] > 10 ? 'creditor' :
+                           ($userContrib['balance'] < -10 ? 'debtor' : 'balanced'),
             ];
         }
 

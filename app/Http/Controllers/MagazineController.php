@@ -57,9 +57,9 @@ class MagazineController extends Controller
             ->latest('published_at')
             ->paginate(self::ARTICLES_PER_PAGE);
 
-        SEOMeta::setTitle($category->name . ' — Magazine Finanzamente');
-        SEOMeta::setDescription($category->description ?? 'Articoli su ' . $category->name);
-        OpenGraph::setTitle($category->name . ' — Magazine Finanzamente');
+        SEOMeta::setTitle($category->name.' — Magazine Finanzamente');
+        SEOMeta::setDescription($category->description ?? 'Articoli su '.$category->name);
+        OpenGraph::setTitle($category->name.' — Magazine Finanzamente');
         OpenGraph::setType('website');
 
         return view('magazine.category', compact('category', 'categories', 'articles'));
@@ -75,9 +75,9 @@ class MagazineController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        $ip   = request()->ip() ?? '';
+        $ip = request()->ip() ?? '';
         $salt = config('app.key', '');
-        $article->incrementViews(hash('sha256', $ip . $salt));
+        $article->incrementViews(hash('sha256', $ip.$salt));
 
         $related = MagazineArticle::with('category')
             ->published()
@@ -87,7 +87,7 @@ class MagazineController extends Controller
             ->limit(3)
             ->get();
 
-        $metaTitle = $article->meta_title ?: $article->title . ' — Finanzamente';
+        $metaTitle = $article->meta_title ?: $article->title.' — Finanzamente';
         $metaDescription = $article->meta_description ?: $article->excerpt;
 
         SEOMeta::setTitle($metaTitle, false);
@@ -99,14 +99,14 @@ class MagazineController extends Controller
         OpenGraph::setDescription($metaDescription);
         OpenGraph::setType('article');
         if ($article->cover_image_path) {
-            OpenGraph::addImage(asset('storage/' . $article->cover_image_path));
+            OpenGraph::addImage(asset('storage/'.$article->cover_image_path));
         }
 
         TwitterCard::setTitle($metaTitle);
         TwitterCard::setDescription($metaDescription);
         TwitterCard::setType('summary_large_image');
         if ($article->cover_image_path) {
-            TwitterCard::setImage(asset('storage/' . $article->cover_image_path));
+            TwitterCard::setImage(asset('storage/'.$article->cover_image_path));
         }
 
         // --- Dati strutturati JSON-LD ---
@@ -120,25 +120,25 @@ class MagazineController extends Controller
         JsonLdMulti::addValue('dateModified', $article->updated_at->toIso8601String());
         JsonLdMulti::addValue('author', [
             '@type' => 'Person',
-            'name'  => $article->author_name,
+            'name' => $article->author_name,
         ]);
         JsonLdMulti::addValue('publisher', [
             '@type' => 'Organization',
-            'name'  => 'Finanzamente',
-            'url'   => config('app.url'),
-            'logo'  => [
+            'name' => 'Finanzamente',
+            'url' => config('app.url'),
+            'logo' => [
                 '@type' => 'ImageObject',
-                'url'   => asset('images/finanzamente-logo.webp'),
+                'url' => asset('images/finanzamente-logo.webp'),
             ],
         ]);
         JsonLdMulti::addValue('mainEntityOfPage', [
             '@type' => 'WebPage',
-            '@id'   => route('magazine.show', $article->slug),
+            '@id' => route('magazine.show', $article->slug),
         ]);
         if ($article->cover_image_path) {
             JsonLdMulti::addValue('image', [
                 '@type' => 'ImageObject',
-                'url'   => asset('storage/' . $article->cover_image_path),
+                'url' => asset('storage/'.$article->cover_image_path),
             ]);
         }
 

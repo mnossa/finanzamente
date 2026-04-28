@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Investment extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id', 'household_id', 'account_id', 'asset_id', 'quantity', 'buy_price', 'buy_date', 'sell_price', 'sell_date', 'fees', 'notes', 'is_private',
@@ -67,6 +67,7 @@ class Investment extends Model
         if ($this->sell_price === null) {
             return null;
         }
+
         return (float) $this->quantity * (float) $this->sell_price;
     }
 
@@ -78,6 +79,7 @@ class Investment extends Model
         if ($this->sell_price === null) {
             return null;
         }
+
         return $this->total_sell_value - $this->total_buy_value;
     }
 
@@ -89,6 +91,7 @@ class Investment extends Model
         if ($this->sell_price === null) {
             return null;
         }
+
         return $this->gross_profit - ((float) $this->fees ?? 0);
     }
 
@@ -100,6 +103,7 @@ class Investment extends Model
         if ($this->sell_price === null || $this->total_buy_value == 0) {
             return null;
         }
+
         return ($this->net_profit / $this->total_buy_value) * 100;
     }
 
@@ -116,6 +120,6 @@ class Investment extends Model
      */
     public function isOpen(): bool
     {
-        return !$this->isSold();
+        return ! $this->isSold();
     }
 }

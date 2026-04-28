@@ -18,7 +18,9 @@ use Illuminate\Support\Facades\Hash;
 class DemoDataSeeder extends Seeder
 {
     private Currency $eur;
+
     private array $expenseCategories = [];
+
     private array $incomeCategories = [];
 
     /**
@@ -90,12 +92,12 @@ class DemoDataSeeder extends Seeder
             $this->command->info('✅ Dati demo generati con successo!');
             $this->command->info('');
             $this->command->info('📧 Credenziali utenti:');
-            $this->command->info("   • mario.rossi@example.com (password: password)");
-            $this->command->info("   • laura.bianchi@example.com (password: password)");
+            $this->command->info('   • mario.rossi@example.com (password: password)');
+            $this->command->info('   • laura.bianchi@example.com (password: password)');
             $this->command->info('');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->command->error('❌ Errore durante la generazione: ' . $e->getMessage());
+            $this->command->error('❌ Errore durante la generazione: '.$e->getMessage());
             throw $e;
         }
     }
@@ -119,7 +121,7 @@ class DemoDataSeeder extends Seeder
             'password' => Hash::make('password'),
             'fiscal_code' => $fiscalCode,
             'vat_number' => $vatNumber,
-            'user_type' => !is_null($vatNumber) ? 'partita_iva' : 'persona',
+            'user_type' => ! is_null($vatNumber) ? 'partita_iva' : 'persona',
             'profile_completed' => true,
         ]);
     }
@@ -204,7 +206,7 @@ class DemoDataSeeder extends Seeder
         for ($i = 1; $i <= 3; $i++) {
             $isClosed = $i === 3; // Ultimo debito già chiuso
             $amount = rand(50000, 500000) / 100; // 500-5000 EUR
-            $paidAmount = $isClosed ? $amount : rand(0, (int)($amount * 0.7 * 100)) / 100;
+            $paidAmount = $isClosed ? $amount : rand(0, (int) ($amount * 0.7 * 100)) / 100;
 
             $debts[] = DebtCredit::create([
                 'household_id' => $household->id,
@@ -244,7 +246,7 @@ class DemoDataSeeder extends Seeder
 
             // Aggiungi pagamento debito se disponibile e non è income
             $debtCreditId = null;
-            if (!$isIncome && !empty($debts) && rand(0, 3) === 0) {
+            if (! $isIncome && ! empty($debts) && rand(0, 3) === 0) {
                 $debt = $debts[array_rand($debts)];
                 if ($debt->status !== 'closed') {
                     $debtCreditId = $debt->id;
@@ -265,7 +267,6 @@ class DemoDataSeeder extends Seeder
             ]);
         }
     }
-
 
     private function createTransactions(Household $household, User $user, array $accounts, int $count): void
     {

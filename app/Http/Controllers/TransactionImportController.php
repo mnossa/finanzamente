@@ -15,6 +15,7 @@ use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\GoogleDriveService;
 use App\Services\TransactionImportService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +32,7 @@ class TransactionImportController extends Controller
     /**
      * Restituisce gli import attivi (pending/processing) per il polling lato client.
      */
-    public function importStatus(Request $request): \Illuminate\Http\JsonResponse
+    public function importStatus(Request $request): JsonResponse
     {
         $user = Auth::user();
         $imports = TransactionImport::where('user_id', $user->id)
@@ -75,10 +76,10 @@ class TransactionImportController extends Controller
         $currencies = Currency::orderBy('code')->get(['code', 'name', 'symbol']);
 
         return Inertia::render('Transactions/Import', [
-            'accounts'    => $accounts,
+            'accounts' => $accounts,
             'userLayouts' => $userLayouts,
-            'categories'  => $categories,
-            'currencies'  => $currencies,
+            'categories' => $categories,
+            'currencies' => $currencies,
         ]);
     }
 
@@ -86,7 +87,7 @@ class TransactionImportController extends Controller
      * Restituisce la lista dei fogli (sheets) di un file XLSX.
      * Accetta un file locale o un file da Google Drive.
      */
-    public function sheets(ImportSheetsRequest $request): \Illuminate\Http\JsonResponse
+    public function sheets(ImportSheetsRequest $request): JsonResponse
     {
         $tempPath = null;
 
@@ -99,6 +100,7 @@ class TransactionImportController extends Controller
             }
 
             $sheets = $this->importService->getXlsxSheets($tempPath);
+
             return response()->json(['sheets' => $sheets]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -113,34 +115,34 @@ class TransactionImportController extends Controller
     /**
      * Analizza il file (CSV o XLSX) e restituisce l'anteprima delle righe parsate.
      */
-    public function preview(PreviewImportRequest $request): \Illuminate\Http\JsonResponse
+    public function preview(PreviewImportRequest $request): JsonResponse
     {
-        $tempPath   = null;
+        $tempPath = null;
         $isFromDrive = $request->filled('google_drive_file_id');
 
         try {
-            $filePath  = $this->resolveFilePath($request);
-            $tempPath  = $isFromDrive ? $filePath : null;
+            $filePath = $this->resolveFilePath($request);
+            $tempPath = $isFromDrive ? $filePath : null;
             $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-            $isXlsx    = $extension === 'xlsx';
+            $isXlsx = $extension === 'xlsx';
             $sheetIndex = (int) $request->input('sheet_index', 0);
 
             $layout = [
-                'delimiter'      => $request->input('delimiter', ','),
-                'date_format'    => $request->input('date_format'),
-                'has_header'     => $request->boolean('has_header', true),
-                'encoding'       => $request->input('encoding', 'UTF-8'),
+                'delimiter' => $request->input('delimiter', ','),
+                'date_format' => $request->input('date_format'),
+                'has_header' => $request->boolean('has_header', true),
+                'encoding' => $request->input('encoding', 'UTF-8'),
                 'column_mapping' => $request->input('column_mapping'),
             ];
 
             if ($isXlsx) {
-                $rows    = $this->importService->parseXlsx($filePath, $layout, $sheetIndex);
+                $rows = $this->importService->parseXlsx($filePath, $layout, $sheetIndex);
                 $headers = $layout['has_header']
                     ? $this->importService->getXlsxHeaders($filePath, $sheetIndex)
                     : [];
             } else {
                 $content = file_get_contents($filePath);
-                $rows    = $this->importService->parseCsv($content, $layout);
+                $rows = $this->importService->parseCsv($content, $layout);
 
                 // Estrai intestazioni dalla prima riga CSV
                 $headers = [];
@@ -150,11 +152,11 @@ class TransactionImportController extends Controller
                         fn ($l) => trim($l) !== '',
                     );
                     $lines = array_values($lines);
-                    if (!empty($lines)) {
+                    if (! empty($lines)) {
                         $handle = fopen('php://temp', 'r+');
                         fwrite($handle, $lines[0]);
                         rewind($handle);
-                        $row     = fgetcsv($handle, 0, $layout['delimiter'], '"', '\\');
+                        $row = fgetcsv($handle, 0, $layout['delimiter'], '"', '\\');
                         fclose($handle);
                         $headers = $row !== false ? $row : [];
                     }
@@ -178,14 +180,14 @@ class TransactionImportController extends Controller
                 ->toArray();
 
             return response()->json([
-                'headers'           => $headers,
-                'valid'             => $validated['valid'],
-                'invalid'           => $validated['invalid'],
-                'total'             => count($rows),
-                'valid_count'       => count($validated['valid']),
-                'invalid_count'     => count($validated['invalid']),
+                'headers' => $headers,
+                'valid' => $validated['valid'],
+                'invalid' => $validated['invalid'],
+                'total' => count($rows),
+                'valid_count' => count($validated['valid']),
+                'invalid_count' => count($validated['invalid']),
                 'unique_categories' => $uniqueCategories,
-                'unique_accounts'   => $uniqueAccounts,
+                'unique_accounts' => $uniqueAccounts,
             ]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -208,8 +210,8 @@ class TransactionImportController extends Controller
         if ($request->filled('google_drive_file_id')) {
             return $this->driveService->downloadFile(
                 accessToken: $request->input('google_drive_access_token'),
-                fileId:      $request->input('google_drive_file_id'),
-                mimeType:    $request->input('google_drive_mime_type', 'text/csv'),
+                fileId: $request->input('google_drive_file_id'),
+                mimeType: $request->input('google_drive_mime_type', 'text/csv'),
             );
         }
 
@@ -219,17 +221,17 @@ class TransactionImportController extends Controller
     /**
      * Controlla se le righe da importare hanno potenziali duplicati nel conto.
      */
-    public function checkDuplicates(Request $request): \Illuminate\Http\JsonResponse
+    public function checkDuplicates(Request $request): JsonResponse
     {
         $request->validate([
-            'account_id'        => ['nullable', 'integer'],
-            'rows'              => ['required', 'array'],
-            'rows.*.date'       => ['required', 'date'],
-            'rows.*.amount'     => ['required', 'numeric'],
+            'account_id' => ['nullable', 'integer'],
+            'rows' => ['required', 'array'],
+            'rows.*.date' => ['required', 'date'],
+            'rows.*.amount' => ['required', 'numeric'],
             'rows.*.account_id' => ['nullable', 'integer'],
         ]);
 
-        $user          = Auth::user();
+        $user = Auth::user();
         $globalAccount = $request->filled('account_id')
             ? Account::where('id', $request->input('account_id'))
                 ->where('household_id', $user->active_household_id)
@@ -242,7 +244,7 @@ class TransactionImportController extends Controller
             // Risolvi il conto per questa riga (per-row oppure globale)
             $rowAccountId = isset($row['account_id']) ? (int) $row['account_id'] : null;
             if ($rowAccountId) {
-                if (!isset($accountsCache[$rowAccountId])) {
+                if (! isset($accountsCache[$rowAccountId])) {
                     $acc = Account::where('id', $rowAccountId)
                         ->where('household_id', $user->active_household_id)
                         ->first();
@@ -255,7 +257,7 @@ class TransactionImportController extends Controller
                 $account = $globalAccount;
             }
 
-            if (!$account) {
+            if (! $account) {
                 continue;
             }
             $existing = Transaction::where('account_id', $account->id)
@@ -264,13 +266,13 @@ class TransactionImportController extends Controller
                 ->get(['id', 'date', 'amount', 'description'])
                 ->toArray();
 
-            if (!empty($existing)) {
+            if (! empty($existing)) {
                 $duplicates[] = [
-                    'row_index'   => $index,
-                    'date'        => $row['date'],
-                    'amount'      => (float) $row['amount'],
+                    'row_index' => $index,
+                    'date' => $row['date'],
+                    'amount' => (float) $row['amount'],
                     'description' => $row['description'] ?? '',
-                    'existing'    => $existing,
+                    'existing' => $existing,
                 ];
             }
         }
@@ -284,14 +286,14 @@ class TransactionImportController extends Controller
      */
     public function store(StoreImportTransactionsRequest $request): RedirectResponse
     {
-        $user      = Auth::user();
+        $user = Auth::user();
         $validated = $request->validated();
 
         $importRecord = TransactionImport::create([
-            'user_id'      => $user->id,
+            'user_id' => $user->id,
             'household_id' => $user->active_household_id,
-            'status'       => 'pending',
-            'rows_total'   => count($validated['rows']),
+            'status' => 'pending',
+            'rows_total' => count($validated['rows']),
         ]);
 
         ImportTransactionsJob::dispatch($user->id, $user->active_household_id, $validated, $importRecord->id);
@@ -322,7 +324,7 @@ class TransactionImportController extends Controller
     /**
      * Salva un nuovo layout.
      */
-    public function storeLayout(StoreImportLayoutRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function storeLayout(StoreImportLayoutRequest $request): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
         $validated = $request->validated();
@@ -356,7 +358,7 @@ class TransactionImportController extends Controller
     /**
      * Aggiorna un layout esistente.
      */
-    public function updateLayout(StoreImportLayoutRequest $request, BankImportLayout $bankImportLayout): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function updateLayout(StoreImportLayoutRequest $request, BankImportLayout $bankImportLayout): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $bankImportLayout);
 

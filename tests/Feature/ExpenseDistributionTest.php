@@ -18,7 +18,9 @@ class ExpenseDistributionTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
 
     protected function setUp(): void
@@ -30,20 +32,20 @@ class ExpenseDistributionTest extends TestCase
         $this->user = User::factory()->create([
             'email_verified_at' => now(),
             'profile_completed' => true,
-            'profile_settings'  => [],
+            'profile_settings' => [],
         ]);
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, [
-            'role'        => 'owner',
+            'role' => 'owner',
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
 
         $this->account = Account::factory()->create([
-            'household_id'   => $this->household->id,
-            'owner_user_id'  => $this->user->id,
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
             'initial_balance' => 0,
-            'active'         => true,
+            'active' => true,
         ]);
     }
 
@@ -53,8 +55,8 @@ class ExpenseDistributionTest extends TestCase
     public function unauthenticated_user_cannot_update_thresholds(): void
     {
         $this->put(route('expense-distribution.thresholds.update'), [
-            'needs'       => 50,
-            'wants'       => 30,
+            'needs' => 50,
+            'wants' => 30,
             'investments' => 20,
         ])->assertRedirect(route('login'));
     }
@@ -64,8 +66,8 @@ class ExpenseDistributionTest extends TestCase
     {
         $this->actingAs($this->user)
             ->put(route('expense-distribution.thresholds.update'), [
-                'needs'       => 60,
-                'wants'       => 25,
+                'needs' => 60,
+                'wants' => 25,
                 'investments' => 15,
             ])
             ->assertRedirect();
@@ -83,8 +85,8 @@ class ExpenseDistributionTest extends TestCase
     {
         $this->actingAs($this->user)
             ->put(route('expense-distribution.thresholds.update'), [
-                'needs'       => 150,
-                'wants'       => -5,
+                'needs' => 150,
+                'wants' => -5,
                 'investments' => 'abc',
             ])
             ->assertSessionHasErrors(['needs', 'wants', 'investments']);
@@ -97,8 +99,8 @@ class ExpenseDistributionTest extends TestCase
         $this->user->update([
             'profile_settings' => [
                 'expense_distribution_thresholds' => [
-                    'needs'       => 60,
-                    'wants'       => 25,
+                    'needs' => 60,
+                    'wants' => 25,
                     'investments' => 15,
                 ],
             ],
@@ -124,14 +126,13 @@ class ExpenseDistributionTest extends TestCase
             ->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) =>
-            $page->has('expenseDistributionData')
-                 ->has('expenseDistributionData.needs')
-                 ->has('expenseDistributionData.wants')
-                 ->has('expenseDistributionData.investments')
-                 ->has('expenseDistributionData.unclassified')
-                 ->has('expenseDistributionData.total_expenses')
-                 ->has('expenseDistributionData.thresholds')
+        $response->assertInertia(fn ($page) => $page->has('expenseDistributionData')
+            ->has('expenseDistributionData.needs')
+            ->has('expenseDistributionData.wants')
+            ->has('expenseDistributionData.investments')
+            ->has('expenseDistributionData.unclassified')
+            ->has('expenseDistributionData.total_expenses')
+            ->has('expenseDistributionData.thresholds')
         );
     }
 
@@ -140,53 +141,52 @@ class ExpenseDistributionTest extends TestCase
     {
         // Crea categorie classificate
         $catNeeds = Category::factory()->create([
-            'household_id'         => $this->household->id,
-            'type'                 => 'expense',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
             'expense_distribution' => 'needs',
         ]);
         $catWants = Category::factory()->create([
-            'household_id'         => $this->household->id,
-            'type'                 => 'expense',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
             'expense_distribution' => 'wants',
         ]);
         $catUnclassified = Category::factory()->create([
-            'household_id'         => $this->household->id,
-            'type'                 => 'expense',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
             'expense_distribution' => null,
         ]);
 
         // Aggiunge transazioni nel mese corrente
         Transaction::factory()->create([
-            'account_id'  => $this->account->id,
-            'user_id'     => $this->user->id,
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
             'category_id' => $catNeeds->id,
-            'amount'      => -500,
-            'date'        => Carbon::now()->startOfMonth()->addDays(2),
+            'amount' => -500,
+            'date' => Carbon::now()->startOfMonth()->addDays(2),
         ]);
         Transaction::factory()->create([
-            'account_id'  => $this->account->id,
-            'user_id'     => $this->user->id,
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
             'category_id' => $catWants->id,
-            'amount'      => -200,
-            'date'        => Carbon::now()->startOfMonth()->addDays(3),
+            'amount' => -200,
+            'date' => Carbon::now()->startOfMonth()->addDays(3),
         ]);
         Transaction::factory()->create([
-            'account_id'  => $this->account->id,
-            'user_id'     => $this->user->id,
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
             'category_id' => $catUnclassified->id,
-            'amount'      => -300,
-            'date'        => Carbon::now()->startOfMonth()->addDays(4),
+            'amount' => -300,
+            'date' => Carbon::now()->startOfMonth()->addDays(4),
         ]);
 
         $response = $this->actingAs($this->user)
             ->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) =>
-            $page->where('expenseDistributionData.total_expenses', 1000)
-                 ->where('expenseDistributionData.needs.amount', 500)
-                 ->where('expenseDistributionData.wants.amount', 200)
-                 ->where('expenseDistributionData.unclassified.amount', 300)
+        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.total_expenses', 1000)
+            ->where('expenseDistributionData.needs.amount', 500)
+            ->where('expenseDistributionData.wants.amount', 200)
+            ->where('expenseDistributionData.unclassified.amount', 300)
         );
     }
 
@@ -196,8 +196,8 @@ class ExpenseDistributionTest extends TestCase
         $this->user->update([
             'profile_settings' => [
                 'expense_distribution_thresholds' => [
-                    'needs'       => 40,
-                    'wants'       => 40,
+                    'needs' => 40,
+                    'wants' => 40,
                     'investments' => 20,
                 ],
             ],
@@ -206,10 +206,9 @@ class ExpenseDistributionTest extends TestCase
         $response = $this->actingAs($this->user)
             ->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('expenseDistributionData.thresholds.needs', 40)
-                 ->where('expenseDistributionData.thresholds.wants', 40)
-                 ->where('expenseDistributionData.has_custom_thresholds', true)
+        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.thresholds.needs', 40)
+            ->where('expenseDistributionData.thresholds.wants', 40)
+            ->where('expenseDistributionData.has_custom_thresholds', true)
         );
     }
 
@@ -219,11 +218,10 @@ class ExpenseDistributionTest extends TestCase
         $response = $this->actingAs($this->user)
             ->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('expenseDistributionData.thresholds.needs', 50)
-                 ->where('expenseDistributionData.thresholds.wants', 30)
-                 ->where('expenseDistributionData.thresholds.investments', 20)
-                 ->where('expenseDistributionData.has_custom_thresholds', false)
+        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.thresholds.needs', 50)
+            ->where('expenseDistributionData.thresholds.wants', 30)
+            ->where('expenseDistributionData.thresholds.investments', 20)
+            ->where('expenseDistributionData.has_custom_thresholds', false)
         );
     }
 
@@ -231,24 +229,23 @@ class ExpenseDistributionTest extends TestCase
     public function expense_distribution_ignores_income_transactions(): void
     {
         $catNeeds = Category::factory()->create([
-            'household_id'         => $this->household->id,
-            'type'                 => 'income',
+            'household_id' => $this->household->id,
+            'type' => 'income',
             'expense_distribution' => 'needs',
         ]);
 
         Transaction::factory()->create([
-            'account_id'  => $this->account->id,
-            'user_id'     => $this->user->id,
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
             'category_id' => $catNeeds->id,
-            'amount'      => 1000, // entrata
-            'date'        => Carbon::now()->startOfMonth()->addDays(1),
+            'amount' => 1000, // entrata
+            'date' => Carbon::now()->startOfMonth()->addDays(1),
         ]);
 
         $response = $this->actingAs($this->user)
             ->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('expenseDistributionData.total_expenses', 0)
+        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.total_expenses', 0)
         );
     }
 
@@ -256,38 +253,37 @@ class ExpenseDistributionTest extends TestCase
     public function exceeded_flag_is_true_when_percentage_exceeds_threshold(): void
     {
         $catWants = Category::factory()->create([
-            'household_id'         => $this->household->id,
-            'type'                 => 'expense',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
             'expense_distribution' => 'wants',
         ]);
 
         // wants = 80% delle spese totali, soglia wants = 30%
         Transaction::factory()->create([
-            'account_id'  => $this->account->id,
-            'user_id'     => $this->user->id,
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
             'category_id' => $catWants->id,
-            'amount'      => -800,
-            'date'        => Carbon::now()->startOfMonth()->addDays(1),
+            'amount' => -800,
+            'date' => Carbon::now()->startOfMonth()->addDays(1),
         ]);
         $catNeeds = Category::factory()->create([
-            'household_id'         => $this->household->id,
-            'type'                 => 'expense',
+            'household_id' => $this->household->id,
+            'type' => 'expense',
             'expense_distribution' => 'needs',
         ]);
         Transaction::factory()->create([
-            'account_id'  => $this->account->id,
-            'user_id'     => $this->user->id,
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
             'category_id' => $catNeeds->id,
-            'amount'      => -200,
-            'date'        => Carbon::now()->startOfMonth()->addDays(2),
+            'amount' => -200,
+            'date' => Carbon::now()->startOfMonth()->addDays(2),
         ]);
 
         $response = $this->actingAs($this->user)
             ->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('expenseDistributionData.wants.exceeded', true)
-                 ->where('expenseDistributionData.needs.exceeded', false)
+        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.wants.exceeded', true)
+            ->where('expenseDistributionData.needs.exceeded', false)
         );
     }
 }

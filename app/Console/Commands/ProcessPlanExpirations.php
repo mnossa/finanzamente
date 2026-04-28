@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 class ProcessPlanExpirations extends Command
 {
     protected $signature = 'plans:process-expirations';
+
     protected $description = 'Degrada a Base gli utenti con piano Pro scaduto e invia la email di notifica';
 
     public function handle(): int
@@ -29,6 +30,7 @@ class ProcessPlanExpirations extends Command
 
         if ($expired->isEmpty()) {
             $this->info('Nessun piano Pro scaduto da processare.');
+
             return self::SUCCESS;
         }
 

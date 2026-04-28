@@ -63,6 +63,6 @@ class Subscription extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return number_format($this->amount_cents / 100, 2, ',', '.') . ' €';
+        return number_format($this->amount_cents / 100, 2, ',', '.').' €';
     }
 }

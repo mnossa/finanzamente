@@ -31,8 +31,8 @@ class BudgetController extends Controller
             ->map(function ($budget) use ($householdId) {
                 // Calcola la spesa effettiva per questo budget
                 $spent = Transaction::whereHas('account', function ($query) use ($householdId) {
-                        $query->where('household_id', $householdId);
-                    })
+                    $query->where('household_id', $householdId);
+                })
                     ->where('category_id', $budget->category_id)
                     ->whereHas('category', function ($query) {
                         $query->where('type', 'expense');
@@ -40,8 +40,8 @@ class BudgetController extends Controller
                     ->whereBetween('date', [$budget->period_start, $budget->period_end])
                     ->sum('amount');
 
-                $percentage = $budget->amount > 0 
-                    ? min(100, round(($spent / $budget->amount) * 100, 1)) 
+                $percentage = $budget->amount > 0
+                    ? min(100, round(($spent / $budget->amount) * 100, 1))
                     : 0;
 
                 return [
@@ -85,7 +85,7 @@ class BudgetController extends Controller
             ->where('type', 'expense')
             ->orderBy('name')
             ->get()
-            ->map(fn($cat) => [
+            ->map(fn ($cat) => [
                 'id' => $cat->id,
                 'name' => $cat->name,
                 'icon' => $cat->icon,
@@ -93,7 +93,7 @@ class BudgetController extends Controller
 
         $currencies = Currency::orderBy('code')
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'code' => $c->code,
                 'name' => $c->name,
                 'symbol' => $c->symbol,
@@ -139,8 +139,8 @@ class BudgetController extends Controller
 
         // Transazioni associate a questo budget
         $transactions = Transaction::whereHas('account', function ($query) use ($householdId) {
-                $query->where('household_id', $householdId);
-            })
+            $query->where('household_id', $householdId);
+        })
             ->where('category_id', $budget->category_id)
             ->whereHas('category', function ($query) {
                 $query->where('type', 'expense');
@@ -149,7 +149,7 @@ class BudgetController extends Controller
             ->with(['account'])
             ->orderBy('date', 'desc')
             ->get()
-            ->map(fn($t) => [
+            ->map(fn ($t) => [
                 'id' => $t->id,
                 'description' => $t->description,
                 'amount' => $t->amount,
@@ -158,8 +158,8 @@ class BudgetController extends Controller
             ]);
 
         $spent = $transactions->sum('amount');
-        $percentage = $budget->amount > 0 
-            ? min(100, round(($spent / $budget->amount) * 100, 1)) 
+        $percentage = $budget->amount > 0
+            ? min(100, round(($spent / $budget->amount) * 100, 1))
             : 0;
 
         return Inertia::render('Budgets/Show', [
@@ -201,7 +201,7 @@ class BudgetController extends Controller
             ->where('type', 'expense')
             ->orderBy('name')
             ->get()
-            ->map(fn($cat) => [
+            ->map(fn ($cat) => [
                 'id' => $cat->id,
                 'name' => $cat->name,
                 'icon' => $cat->icon,
@@ -209,7 +209,7 @@ class BudgetController extends Controller
 
         $currencies = Currency::orderBy('code')
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'code' => $c->code,
                 'name' => $c->name,
                 'symbol' => $c->symbol,

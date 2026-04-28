@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\InvestmentAsset;
 use Carbon\Carbon;
+use OpenSpout\Reader\XLSX\Reader;
 
 /**
  * Servizio per il parsing, la validazione e l'importazione di investimenti da CSV/XLSX.
@@ -25,16 +26,16 @@ class InvestmentImportService
     /**
      * Parsa un CSV in righe investimento normalizzate.
      *
-     * @param string $content  Contenuto raw CSV
-     * @param array  $layout   { delimiter, date_format, has_header, encoding, column_mapping }
+     * @param  string  $content  Contenuto raw CSV
+     * @param  array  $layout  { delimiter, date_format, has_header, encoding, column_mapping }
      * @return array<int, array>
      */
     public function parseCsv(string $content, array $layout): array
     {
-        $delimiter     = $layout['delimiter']      ?? ',';
-        $dateFormat    = $layout['date_format']    ?? 'd/m/Y';
-        $hasHeader     = $layout['has_header']     ?? true;
-        $encoding      = $layout['encoding']       ?? 'UTF-8';
+        $delimiter = $layout['delimiter'] ?? ',';
+        $dateFormat = $layout['date_format'] ?? 'd/m/Y';
+        $hasHeader = $layout['has_header'] ?? true;
+        $encoding = $layout['encoding'] ?? 'UTF-8';
         $columnMapping = $layout['column_mapping'] ?? [];
 
         if ($encoding !== 'UTF-8') {
@@ -42,18 +43,18 @@ class InvestmentImportService
         }
 
         $content = str_replace(["\r\n", "\r"], "\n", $content);
-        $lines   = array_values(array_filter(explode("\n", $content), fn ($l) => trim($l) !== ''));
+        $lines = array_values(array_filter(explode("\n", $content), fn ($l) => trim($l) !== ''));
 
         if (empty($lines)) {
             return [];
         }
 
         $startIndex = $hasHeader ? 1 : 0;
-        $rows       = [];
+        $rows = [];
 
         for ($i = $startIndex; $i < count($lines); $i++) {
-            $raw   = $lines[$i];
-            $cols  = $this->parseCsvLine($raw, $delimiter);
+            $raw = $lines[$i];
+            $cols = $this->parseCsvLine($raw, $delimiter);
             $rows[] = $this->mapColumns($cols, $columnMapping, $dateFormat, $raw, $i + 1);
         }
 
@@ -63,27 +64,28 @@ class InvestmentImportService
     /**
      * Parsa un file XLSX in righe investimento normalizzate.
      *
-     * @param string $filePath   Percorso assoluto al file .xlsx
-     * @param array  $layout     { date_format, has_header, column_mapping }
-     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
+     * @param  string  $filePath  Percorso assoluto al file .xlsx
+     * @param  array  $layout  { date_format, has_header, column_mapping }
+     * @param  int  $sheetIndex  Indice (0-based) del foglio da leggere (default 0)
      * @return array<int, array>
      */
     public function parseXlsx(string $filePath, array $layout, int $sheetIndex = 0): array
     {
-        $dateFormat    = $layout['date_format']    ?? 'd/m/Y';
-        $hasHeader     = $layout['has_header']     ?? true;
+        $dateFormat = $layout['date_format'] ?? 'd/m/Y';
+        $hasHeader = $layout['has_header'] ?? true;
         $columnMapping = $layout['column_mapping'] ?? [];
 
-        $reader     = new \OpenSpout\Reader\XLSX\Reader();
+        $reader = new Reader;
         $reader->open($filePath);
 
-        $rows       = [];
+        $rows = [];
         $lineNumber = 0;
         $sheetCount = 0;
 
         foreach ($reader->getSheetIterator() as $sheet) {
             if ($sheetCount !== $sheetIndex) {
                 $sheetCount++;
+
                 continue;
             }
             foreach ($sheet->getRowIterator() as $row) {
@@ -97,26 +99,28 @@ class InvestmentImportService
         }
 
         $reader->close();
+
         return $rows;
     }
 
     /**
      * Restituisce la prima riga di intestazioni da un file XLSX.
      *
-     * @param string $filePath   Percorso assoluto al file .xlsx
-     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
+     * @param  string  $filePath  Percorso assoluto al file .xlsx
+     * @param  int  $sheetIndex  Indice (0-based) del foglio da leggere (default 0)
      * @return string[]
      */
     public function getXlsxHeaders(string $filePath, int $sheetIndex = 0): array
     {
-        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader = new Reader;
         $reader->open($filePath);
 
-        $headers    = [];
+        $headers = [];
         $sheetCount = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
             if ($sheetCount !== $sheetIndex) {
                 $sheetCount++;
+
                 continue;
             }
             foreach ($sheet->getRowIterator() as $row) {
@@ -130,48 +134,50 @@ class InvestmentImportService
         }
 
         $reader->close();
+
         return $headers;
     }
 
     /**
      * Legge i nomi dei fogli presenti in un file XLSX.
      *
-     * @param string $filePath Percorso assoluto al file .xlsx
+     * @param  string  $filePath  Percorso assoluto al file .xlsx
      * @return array<int, array{index: int, name: string}>
      */
     public function getXlsxSheets(string $filePath): array
     {
-        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader = new Reader;
         $reader->open($filePath);
 
         $sheets = [];
-        $index  = 0;
+        $index = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
             $sheets[] = ['index' => $index, 'name' => $sheet->getName()];
             $index++;
         }
 
         $reader->close();
+
         return $sheets;
     }
 
     /**
      * Valida le righe parsate e separa quelle valide da quelle invalide.
      *
-     * @param array<int, array> $rows
+     * @param  array<int, array>  $rows
      * @return array{ valid: array, invalid: array }
      */
     public function validateRows(array $rows): array
     {
-        $valid   = [];
+        $valid = [];
         $invalid = [];
 
         foreach ($rows as $row) {
             if (
                 empty($row['errors'])
-                && $row['buy_date']   !== null
-                && $row['quantity']   !== null
-                && $row['buy_price']  !== null
+                && $row['buy_date'] !== null
+                && $row['quantity'] !== null
+                && $row['buy_price'] !== null
                 && ($row['ticker'] !== null || $row['isin'] !== null)
             ) {
                 $valid[] = $row;
@@ -187,7 +193,7 @@ class InvestmentImportService
      * Per ogni riga valida, tenta la risoluzione dell'asset tramite ticker o ISIN.
      * Restituisce le righe arricchite con asset_id (o null + asset_missing = true).
      *
-     * @param array<int, array> $rows Righe già validate (senza errori di parsing)
+     * @param  array<int, array>  $rows  Righe già validate (senza errori di parsing)
      * @return array<int, array>
      */
     public function resolveAssets(array $rows): array
@@ -195,32 +201,32 @@ class InvestmentImportService
         $allAssets = InvestmentAsset::select(['id', 'symbol', 'isin', 'name', 'type', 'currency_code'])->get();
 
         $bySymbol = $allAssets->keyBy(fn ($a) => strtoupper($a->symbol ?? ''));
-        $byIsin   = $allAssets->keyBy(fn ($a) => strtoupper($a->isin   ?? ''));
+        $byIsin = $allAssets->keyBy(fn ($a) => strtoupper($a->isin ?? ''));
 
         return array_map(function (array $row) use ($bySymbol, $byIsin): array {
             $asset = null;
 
-            if (!empty($row['ticker'])) {
+            if (! empty($row['ticker'])) {
                 $asset = $bySymbol->get(strtoupper($row['ticker']));
             }
 
-            if ($asset === null && !empty($row['isin'])) {
+            if ($asset === null && ! empty($row['isin'])) {
                 $asset = $byIsin->get(strtoupper($row['isin']));
             }
 
             if ($asset !== null) {
                 return array_merge($row, [
-                    'asset_id'      => $asset->id,
-                    'asset_name'    => $asset->name,
-                    'asset_symbol'  => $asset->symbol,
+                    'asset_id' => $asset->id,
+                    'asset_name' => $asset->name,
+                    'asset_symbol' => $asset->symbol,
                     'asset_missing' => false,
                 ]);
             }
 
             return array_merge($row, [
-                'asset_id'      => null,
-                'asset_name'    => null,
-                'asset_symbol'  => null,
+                'asset_id' => null,
+                'asset_name' => null,
+                'asset_symbol' => null,
                 'asset_missing' => true,
             ]);
         }, $rows);
@@ -238,6 +244,7 @@ class InvestmentImportService
         rewind($handle);
         $row = fgetcsv($handle, 0, $delimiter, '"', '\\');
         fclose($handle);
+
         return $row !== false ? $row : [];
     }
 
@@ -250,13 +257,13 @@ class InvestmentImportService
 
         $getCol = fn (?int $idx): ?string => ($idx !== null && isset($cols[$idx])) ? $cols[$idx] : null;
 
-        $dateRaw     = $getCol($mapping['buy_date']  ?? $mapping['date']       ?? null);
-        $quantityRaw = $getCol($mapping['quantity']  ?? null);
-        $priceRaw    = $getCol($mapping['buy_price'] ?? $mapping['price']      ?? null);
-        $tickerRaw   = $getCol($mapping['ticker']    ?? null);
-        $isinRaw     = $getCol($mapping['isin']      ?? null);
-        $feesRaw     = $getCol($mapping['fees']      ?? null);
-        $notesRaw    = $getCol($mapping['notes']     ?? null);
+        $dateRaw = $getCol($mapping['buy_date'] ?? $mapping['date'] ?? null);
+        $quantityRaw = $getCol($mapping['quantity'] ?? null);
+        $priceRaw = $getCol($mapping['buy_price'] ?? $mapping['price'] ?? null);
+        $tickerRaw = $getCol($mapping['ticker'] ?? null);
+        $isinRaw = $getCol($mapping['isin'] ?? null);
+        $feesRaw = $getCol($mapping['fees'] ?? null);
+        $notesRaw = $getCol($mapping['notes'] ?? null);
 
         // Data acquisto
         $buyDate = null;
@@ -296,9 +303,9 @@ class InvestmentImportService
 
         // Ticker / ISIN (almeno uno obbligatorio)
         $tickerTrimmed = $tickerRaw !== null ? trim($tickerRaw) : '';
-        $isinTrimmed   = $isinRaw   !== null ? trim($isinRaw)   : '';
+        $isinTrimmed = $isinRaw !== null ? trim($isinRaw) : '';
         $ticker = $tickerTrimmed !== '' ? strtoupper($tickerTrimmed) : null;
-        $isin   = $isinTrimmed   !== '' ? strtoupper($isinTrimmed)   : null;
+        $isin = $isinTrimmed !== '' ? strtoupper($isinTrimmed) : null;
 
         if ($ticker === null && $isin === null) {
             $errors[] = "Riga {$lineNumber}: ticker o ISIN obbligatorio";
@@ -316,15 +323,15 @@ class InvestmentImportService
 
         return [
             'line_number' => $lineNumber,
-            'buy_date'    => $buyDate,
-            'quantity'    => $quantity,
-            'buy_price'   => $buyPrice,
-            'ticker'      => $ticker,
-            'isin'        => $isin,
-            'fees'        => $fees,
-            'notes'       => ($notesRaw !== null && trim($notesRaw) !== '') ? trim($notesRaw) : null,
-            'raw'         => $raw,
-            'errors'      => $errors,
+            'buy_date' => $buyDate,
+            'quantity' => $quantity,
+            'buy_price' => $buyPrice,
+            'ticker' => $ticker,
+            'isin' => $isin,
+            'fees' => $fees,
+            'notes' => ($notesRaw !== null && trim($notesRaw) !== '') ? trim($notesRaw) : null,
+            'raw' => $raw,
+            'errors' => $errors,
         ];
     }
 
@@ -337,13 +344,13 @@ class InvestmentImportService
 
         $getCell = fn (?int $idx) => ($idx !== null && isset($cells[$idx])) ? $cells[$idx] : null;
 
-        $dateCell     = $getCell($mapping['buy_date']  ?? $mapping['date']  ?? null);
-        $quantityCell = $getCell($mapping['quantity']  ?? null);
-        $priceCell    = $getCell($mapping['buy_price'] ?? $mapping['price'] ?? null);
-        $tickerCell   = $getCell($mapping['ticker']    ?? null);
-        $isinCell     = $getCell($mapping['isin']      ?? null);
-        $feesCell     = $getCell($mapping['fees']      ?? null);
-        $notesCell    = $getCell($mapping['notes']     ?? null);
+        $dateCell = $getCell($mapping['buy_date'] ?? $mapping['date'] ?? null);
+        $quantityCell = $getCell($mapping['quantity'] ?? null);
+        $priceCell = $getCell($mapping['buy_price'] ?? $mapping['price'] ?? null);
+        $tickerCell = $getCell($mapping['ticker'] ?? null);
+        $isinCell = $getCell($mapping['isin'] ?? null);
+        $feesCell = $getCell($mapping['fees'] ?? null);
+        $notesCell = $getCell($mapping['notes'] ?? null);
 
         $cellStr = function ($cell): string {
             if ($cell === null) {
@@ -356,12 +363,13 @@ class InvestmentImportService
             if ($v instanceof \DateTimeInterface) {
                 return Carbon::instance($v)->format('Y-m-d');
             }
+
             return (string) $v;
         };
 
         // Data acquisto
-        $buyDate    = null;
-        $dateValue  = $dateCell?->getValue();
+        $buyDate = null;
+        $dateValue = $dateCell?->getValue();
         if ($dateValue instanceof \DateTimeInterface) {
             $buyDate = Carbon::instance($dateValue)->format('Y-m-d');
         } elseif ($dateValue !== null && trim($cellStr($dateCell)) !== '') {
@@ -375,11 +383,11 @@ class InvestmentImportService
         }
 
         // Quantità
-        $quantity    = null;
+        $quantity = null;
         $quantityVal = $quantityCell?->getValue();
         if (is_float($quantityVal) || is_int($quantityVal)) {
             $quantity = (float) $quantityVal;
-        } elseif ($quantityVal !== null && !($quantityVal instanceof \DateTimeInterface)) {
+        } elseif ($quantityVal !== null && ! ($quantityVal instanceof \DateTimeInterface)) {
             $str = trim($cellStr($quantityCell));
             if ($str !== '') {
                 $quantity = $this->parseDecimal($str);
@@ -393,11 +401,11 @@ class InvestmentImportService
         }
 
         // Prezzo
-        $buyPrice  = null;
-        $priceVal  = $priceCell?->getValue();
+        $buyPrice = null;
+        $priceVal = $priceCell?->getValue();
         if (is_float($priceVal) || is_int($priceVal)) {
             $buyPrice = (float) $priceVal;
-        } elseif ($priceVal !== null && !($priceVal instanceof \DateTimeInterface)) {
+        } elseif ($priceVal !== null && ! ($priceVal instanceof \DateTimeInterface)) {
             $str = trim($cellStr($priceCell));
             if ($str !== '') {
                 $buyPrice = $this->parseDecimal($str);
@@ -412,20 +420,20 @@ class InvestmentImportService
 
         // Ticker / ISIN
         $tickerStr = trim($cellStr($tickerCell));
-        $isinStr   = trim($cellStr($isinCell));
-        $ticker    = $tickerStr !== '' ? strtoupper($tickerStr) : null;
-        $isin      = $isinStr   !== '' ? strtoupper($isinStr)   : null;
+        $isinStr = trim($cellStr($isinCell));
+        $ticker = $tickerStr !== '' ? strtoupper($tickerStr) : null;
+        $isin = $isinStr !== '' ? strtoupper($isinStr) : null;
 
         if ($ticker === null && $isin === null) {
             $errors[] = "Riga {$lineNumber}: ticker o ISIN obbligatorio";
         }
 
         // Commissioni
-        $fees    = null;
+        $fees = null;
         $feesVal = $feesCell?->getValue();
         if (is_float($feesVal) || is_int($feesVal)) {
             $fees = (float) $feesVal;
-        } elseif ($feesVal !== null && !($feesVal instanceof \DateTimeInterface)) {
+        } elseif ($feesVal !== null && ! ($feesVal instanceof \DateTimeInterface)) {
             $str = trim($cellStr($feesCell));
             if ($str !== '') {
                 $fees = $this->parseDecimal($str);
@@ -436,15 +444,15 @@ class InvestmentImportService
 
         return [
             'line_number' => $lineNumber,
-            'buy_date'    => $buyDate,
-            'quantity'    => $quantity,
-            'buy_price'   => $buyPrice,
-            'ticker'      => $ticker,
-            'isin'        => $isin,
-            'fees'        => ($fees !== null && $fees >= 0) ? $fees : null,
-            'notes'       => $notesStr !== '' ? $notesStr : null,
-            'raw'         => "Riga {$lineNumber}",
-            'errors'      => $errors,
+            'buy_date' => $buyDate,
+            'quantity' => $quantity,
+            'buy_price' => $buyPrice,
+            'ticker' => $ticker,
+            'isin' => $isin,
+            'fees' => ($fees !== null && $fees >= 0) ? $fees : null,
+            'notes' => $notesStr !== '' ? $notesStr : null,
+            'raw' => "Riga {$lineNumber}",
+            'errors' => $errors,
         ];
     }
 
@@ -482,7 +490,7 @@ class InvestmentImportService
             }
         }
 
-        if (!is_numeric($value)) {
+        if (! is_numeric($value)) {
             return null;
         }
 

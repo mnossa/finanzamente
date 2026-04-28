@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class ExpenseDistributionController extends Controller
 {
@@ -19,8 +19,8 @@ class ExpenseDistributionController extends Controller
     public function updateThresholds(Request $request)
     {
         $validated = $request->validate([
-            'needs'       => ['required', 'numeric', 'min:0', 'max:100'],
-            'wants'       => ['required', 'numeric', 'min:0', 'max:100'],
+            'needs' => ['required', 'numeric', 'min:0', 'max:100'],
+            'wants' => ['required', 'numeric', 'min:0', 'max:100'],
             'investments' => ['required', 'numeric', 'min:0', 'max:100'],
         ]);
 
@@ -28,13 +28,13 @@ class ExpenseDistributionController extends Controller
             return back()->withErrors(['needs' => 'La somma delle soglie non può superare il 100%.']);
         }
 
-        /** @var \App\Models\User $user */
-        $user     = Auth::user();
+        /** @var User $user */
+        $user = Auth::user();
         $settings = $user->profile_settings ?? [];
 
         $settings['expense_distribution_thresholds'] = [
-            'needs'       => (float) $validated['needs'],
-            'wants'       => (float) $validated['wants'],
+            'needs' => (float) $validated['needs'],
+            'wants' => (float) $validated['wants'],
             'investments' => (float) $validated['investments'],
         ];
 
@@ -49,8 +49,8 @@ class ExpenseDistributionController extends Controller
      */
     public function resetThresholds()
     {
-        /** @var \App\Models\User $user */
-        $user     = Auth::user();
+        /** @var User $user */
+        $user = Auth::user();
         $settings = $user->profile_settings ?? [];
 
         unset($settings['expense_distribution_thresholds']);

@@ -16,18 +16,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class RecurringTransaction extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', 
-        'category_id', 
-        'account_id', 
-        'amount', 
-        'currency_code', 
-        'frequency', 
-        'start_date', 
-        'end_date', 
-        'description', 
+        'user_id',
+        'category_id',
+        'account_id',
+        'amount',
+        'currency_code',
+        'frequency',
+        'start_date',
+        'end_date',
+        'description',
         'last_generated_date',
         'debt_credit_id',
     ];

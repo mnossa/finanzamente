@@ -150,7 +150,7 @@ class StoreInterHouseholdTransferRequest extends FormRequest
             // Verifica che l'utente appartenga alla household sorgente
             if ($sourceAccountId) {
                 $sourceAccount = Account::with('household.users')->find($sourceAccountId);
-                if ($sourceAccount && !$sourceAccount->household->users()->where('users.id', $this->user()->id)->exists()) {
+                if ($sourceAccount && ! $sourceAccount->household->users()->where('users.id', $this->user()->id)->exists()) {
                     $validator->errors()->add(
                         'source_account_id',
                         'Non hai accesso all\'account sorgente selezionato.'
@@ -162,7 +162,7 @@ class StoreInterHouseholdTransferRequest extends FormRequest
             $destUserId = $this->input('dest_user_id');
             if ($destUserId && $destAccountId) {
                 $destAccount = Account::with('household.users')->find($destAccountId);
-                if ($destAccount && !$destAccount->household->users()->where('users.id', $destUserId)->exists()) {
+                if ($destAccount && ! $destAccount->household->users()->where('users.id', $destUserId)->exists()) {
                     $validator->errors()->add(
                         'dest_user_id',
                         'L\'utente destinatario deve appartenere alla household dell\'account destinatario.'

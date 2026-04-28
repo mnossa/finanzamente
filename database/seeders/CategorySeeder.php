@@ -27,6 +27,6 @@ class CategorySeeder extends Seeder
             $this->categoryService->createDefaultCategoriesForHousehold($household);
         }
 
-        $this->command->info('Categorie predefinite create per ' . $households->count() . ' household.');
+        $this->command->info('Categorie predefinite create per '.$households->count().' household.');
     }
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('investment_assets', function (Blueprint $table) {
             $table->string('isin', 12)->nullable()->after('symbol');
             $table->string('exchange', 50)->nullable()->after('isin');
-            
+
             // Indice per ricerca ISIN
             $table->index('isin');
         });

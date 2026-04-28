@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24'
           cache: 'npm'
@@ -77,11 +77,18 @@ jobs:
             --optimize-autoloader \
             --no-interaction
 
-      - name: Verifica coding style PHP (Pint)
-        run: docker compose exec -T app php ./vendor/bin/pint --test
+      - name: Verifica gate backend (Pint + test)
+        run: make test-ci
 
-      - name: Esegui suite di test (SQLite in-memory)
-        run: make test
+      - name: Debug logs in caso di test falliti
+        if: failure()
+        run: |
+          echo "=== docker compose ps ==="
+          docker compose ps || true
+          echo "=== ultimi log container app ==="
+          docker compose logs --tail=200 app || true
+          echo "=== ultimi log container db ==="
+          docker compose logs --tail=200 db || true
 
       - name: Ferma stack Docker Compose
         if: always()

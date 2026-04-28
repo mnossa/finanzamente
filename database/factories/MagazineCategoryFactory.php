@@ -13,12 +13,13 @@ class MagazineCategoryFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->unique()->word();
+
         return [
-            'slug'        => Str::slug($name) . '-' . $this->faker->unique()->numberBetween(1, 9999),
-            'name'        => ucfirst($name),
+            'slug' => Str::slug($name).'-'.$this->faker->unique()->numberBetween(1, 9999),
+            'name' => ucfirst($name),
             'description' => $this->faker->sentence(),
-            'color'       => $this->faker->hexColor(),
-            'sort_order'  => $this->faker->numberBetween(1, 100),
+            'color' => $this->faker->hexColor(),
+            'sort_order' => $this->faker->numberBetween(1, 100),
         ];
     }
 }

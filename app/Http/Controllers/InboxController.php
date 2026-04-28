@@ -184,6 +184,7 @@ class InboxController extends Controller
 
             if (! $accountId) {
                 $skipped++;
+
                 continue;
             }
 
@@ -289,7 +290,7 @@ class InboxController extends Controller
     private function markRelatedNotificationRead(InboxItem $item): void
     {
         AppNotification::where('user_id', $item->user_id)
-            ->where('notification_key', 'inbox_telegram_' . $item->id)
+            ->where('notification_key', 'inbox_telegram_'.$item->id)
             ->where('read', false)
             ->update(['read' => true]);
     }

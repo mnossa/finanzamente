@@ -47,7 +47,7 @@ return new class extends Migration
                 }
             }
 
-            if (!empty($drop)) {
+            if (! empty($drop)) {
                 $table->dropColumn($drop);
             }
         });

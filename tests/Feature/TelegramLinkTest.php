@@ -15,6 +15,7 @@ class TelegramLinkTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
 
     protected function setUp(): void

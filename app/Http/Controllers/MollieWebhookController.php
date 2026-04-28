@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subscription;
-use App\Models\User;
 use App\Services\MollieService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Mollie\Api\Resources\Payment;
 
 class MollieWebhookController extends Controller
 {
@@ -43,7 +43,7 @@ class MollieWebhookController extends Controller
         }
 
         // Idempotenza: evitiamo doppi effetti in caso di retry webhook.
-        $cacheKey = 'mollie_webhook:id:' . $mollieId;
+        $cacheKey = 'mollie_webhook:id:'.$mollieId;
         if (! Cache::add($cacheKey, now()->timestamp, now()->addHours(12))) {
             return response('', 200);
         }
@@ -100,7 +100,7 @@ class MollieWebhookController extends Controller
     }
 
     private function handlePaidPayment(
-        \Mollie\Api\Resources\Payment $payment,
+        Payment $payment,
         Subscription $subscription
     ): void {
         $user = $subscription->user;
@@ -150,7 +150,7 @@ class MollieWebhookController extends Controller
     }
 
     private function handleFailedPayment(
-        \Mollie\Api\Resources\Payment $payment,
+        Payment $payment,
         Subscription $subscription
     ): void {
         if ($subscription->status === 'pending') {
@@ -165,7 +165,7 @@ class MollieWebhookController extends Controller
     }
 
     private function handlePaymentMethodUpdate(
-        \Mollie\Api\Resources\Payment $payment,
+        Payment $payment,
         Subscription $subscription
     ): void {
         if ($payment->status === 'paid' && $payment->mandateId) {

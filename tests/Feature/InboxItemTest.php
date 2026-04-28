@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\AppNotification;
 use App\Models\Category;
 use App\Models\Household;
 use App\Models\InboxItem;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,7 +19,9 @@ class InboxItemTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
 
     protected function setUp(): void
@@ -151,7 +155,7 @@ class InboxItemTest extends TestCase
     #[Test]
     public function confirming_inbox_item_accepts_account_and_category_from_request()
     {
-        $category = \App\Models\Category::factory()->create([
+        $category = Category::factory()->create([
             'household_id' => $this->household->id,
             'type' => 'expense',
         ]);
@@ -197,12 +201,12 @@ class InboxItemTest extends TestCase
             'account_id' => $this->account->id,
         ]);
 
-        $notification = \App\Models\AppNotification::create([
+        $notification = AppNotification::create([
             'user_id' => $this->user->id,
             'title' => '💸 Nuova uscita in Inbox',
             'message' => 'Test',
             'read' => false,
-            'notification_key' => 'inbox_telegram_' . $item->id,
+            'notification_key' => 'inbox_telegram_'.$item->id,
         ]);
 
         $this->actingAs($this->user)->post(route('inbox.confirm', $item->id));
@@ -223,12 +227,12 @@ class InboxItemTest extends TestCase
             'amount' => 10.00,
         ]);
 
-        $notification = \App\Models\AppNotification::create([
+        $notification = AppNotification::create([
             'user_id' => $this->user->id,
             'title' => '💸 Nuova uscita in Inbox',
             'message' => 'Test',
             'read' => false,
-            'notification_key' => 'inbox_telegram_' . $item->id,
+            'notification_key' => 'inbox_telegram_'.$item->id,
         ]);
 
         $this->actingAs($this->user)->post(route('inbox.reject', $item->id));
@@ -361,7 +365,7 @@ class InboxItemTest extends TestCase
         ]);
 
         // Le voci in draft non devono comparire nella tabella transactions
-        $this->assertEquals(0, \App\Models\Transaction::where('user_id', $this->user->id)->count());
+        $this->assertEquals(0, Transaction::where('user_id', $this->user->id)->count());
     }
 
     // -------------------------------------------------------------------------

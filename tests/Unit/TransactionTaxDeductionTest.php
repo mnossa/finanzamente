@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -16,7 +17,9 @@ class TransactionTaxDeductionTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
 
     protected function setUp(): void
@@ -27,7 +30,7 @@ class TransactionTaxDeductionTest extends TestCase
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
         $this->user->update(['active_household_id' => $this->household->id]);
-        
+
         $this->account = Account::factory()->create([
             'household_id' => $this->household->id,
             'owner_user_id' => $this->user->id,
@@ -215,7 +218,7 @@ class TransactionTaxDeductionTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Collection::class, $transaction->attachments);
+        $this->assertInstanceOf(Collection::class, $transaction->attachments);
         $this->assertCount(1, $transaction->attachments);
         $this->assertEquals($attachment->id, $transaction->attachments->first()->id);
     }

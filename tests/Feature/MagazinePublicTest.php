@@ -16,9 +16,9 @@ class MagazinePublicTest extends TestCase
     private function createCategory(array $overrides = []): MagazineCategory
     {
         return MagazineCategory::create(array_merge([
-            'slug'       => 'risparmio-' . uniqid(),
-            'name'       => 'Risparmio',
-            'color'      => '#10B981',
+            'slug' => 'risparmio-'.uniqid(),
+            'name' => 'Risparmio',
+            'color' => '#10B981',
             'sort_order' => 1,
         ], $overrides));
     }
@@ -26,16 +26,16 @@ class MagazinePublicTest extends TestCase
     private function createArticle(MagazineCategory $category, array $overrides = []): MagazineArticle
     {
         return MagazineArticle::create(array_merge([
-            'category_id'          => $category->id,
-            'slug'                 => 'articolo-' . uniqid(),
-            'title'                => 'Articolo di esempio',
-            'excerpt'              => 'Un breve riassunto del contenuto.',
-            'content'              => '## Intro\n\nContenuto dell\'articolo.',
-            'author_name'          => 'Redazione',
+            'category_id' => $category->id,
+            'slug' => 'articolo-'.uniqid(),
+            'title' => 'Articolo di esempio',
+            'excerpt' => 'Un breve riassunto del contenuto.',
+            'content' => '## Intro\n\nContenuto dell\'articolo.',
+            'author_name' => 'Redazione',
             'reading_time_minutes' => 2,
-            'published_at'         => now()->subDay(),
-            'is_featured'          => false,
-            'views_count'          => 0,
+            'published_at' => now()->subDay(),
+            'is_featured' => false,
+            'views_count' => 0,
         ], $overrides));
     }
 
@@ -51,7 +51,7 @@ class MagazinePublicTest extends TestCase
     public function magazine_index_shows_published_articles(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, ['title' => 'Articolo visibile']);
+        $article = $this->createArticle($category, ['title' => 'Articolo visibile']);
 
         $this->get(route('magazine.index'))
             ->assertOk()
@@ -63,7 +63,7 @@ class MagazinePublicTest extends TestCase
     {
         $category = $this->createCategory();
         $this->createArticle($category, [
-            'title'        => 'Articolo nascosto',
+            'title' => 'Articolo nascosto',
             'published_at' => null,
         ]);
 
@@ -77,7 +77,7 @@ class MagazinePublicTest extends TestCase
     {
         $category = $this->createCategory();
         $this->createArticle($category, [
-            'title'        => 'Articolo futuro',
+            'title' => 'Articolo futuro',
             'published_at' => now()->addWeek(),
         ]);
 
@@ -123,7 +123,7 @@ class MagazinePublicTest extends TestCase
     public function magazine_show_returns_200_for_published_article(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, ['slug' => 'articolo-slug']);
+        $article = $this->createArticle($category, ['slug' => 'articolo-slug']);
 
         $this->get(route('magazine.show', 'articolo-slug'))->assertOk();
     }
@@ -139,7 +139,7 @@ class MagazinePublicTest extends TestCase
     {
         $category = $this->createCategory();
         $this->createArticle($category, [
-            'slug'         => 'bozza-slug',
+            'slug' => 'bozza-slug',
             'published_at' => null,
         ]);
 
@@ -150,9 +150,9 @@ class MagazinePublicTest extends TestCase
     public function magazine_show_displays_article_title_and_content(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, [
-            'slug'    => 'articolo-visibile',
-            'title'   => 'Titolo articolo test',
+        $article = $this->createArticle($category, [
+            'slug' => 'articolo-visibile',
+            'title' => 'Titolo articolo test',
             'content' => 'Contenuto di prova',
         ]);
 
@@ -166,7 +166,7 @@ class MagazinePublicTest extends TestCase
     public function magazine_show_increments_views_count(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, ['slug' => 'articolo-views']);
+        $article = $this->createArticle($category, ['slug' => 'articolo-views']);
 
         $this->get(route('magazine.show', 'articolo-views'));
 
@@ -177,7 +177,7 @@ class MagazinePublicTest extends TestCase
     public function magazine_show_does_not_double_count_same_ip_within_30_minutes(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, ['slug' => 'articolo-dedup']);
+        $article = $this->createArticle($category, ['slug' => 'articolo-dedup']);
 
         $this->get(route('magazine.show', 'articolo-dedup'));
         $this->get(route('magazine.show', 'articolo-dedup'));
@@ -194,7 +194,7 @@ class MagazinePublicTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertDontSee('href="' . route('magazine.index') . '"', false);
+            ->assertDontSee('href="'.route('magazine.index').'"', false);
     }
 
     #[Test]
@@ -216,7 +216,7 @@ class MagazinePublicTest extends TestCase
     public function article_cta_contains_utm_parameters(): void
     {
         $category = $this->createCategory();
-        $article  = $this->createArticle($category, ['slug' => 'articolo-utm']);
+        $article = $this->createArticle($category, ['slug' => 'articolo-utm']);
 
         $this->get(route('magazine.show', 'articolo-utm'))
             ->assertOk()

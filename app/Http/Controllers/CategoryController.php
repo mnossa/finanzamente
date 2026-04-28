@@ -153,7 +153,7 @@ class CategoryController extends Controller
         $this->authorizeCategory($category);
 
         $category->update([
-            'exclude_from_lifestyle_score' => !$category->exclude_from_lifestyle_score,
+            'exclude_from_lifestyle_score' => ! $category->exclude_from_lifestyle_score,
         ]);
 
         return back();

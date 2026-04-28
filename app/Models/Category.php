@@ -15,11 +15,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Category extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     /** Valori validi per il campo expense_distribution. */
-    const DISTRIBUTION_NEEDS       = 'needs';
-    const DISTRIBUTION_WANTS       = 'wants';
+    const DISTRIBUTION_NEEDS = 'needs';
+
+    const DISTRIBUTION_WANTS = 'wants';
+
     const DISTRIBUTION_INVESTMENTS = 'investments';
 
     protected $fillable = [

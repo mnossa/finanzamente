@@ -28,36 +28,36 @@ class TransactionTrendNotificationService
      */
     private const TRIGGERS = [
         [
-            'type'      => 'expense_increase',
+            'type' => 'expense_increase',
             'threshold' => self::DEFAULT_THRESHOLD,
-            'title'     => '📈 Uscite in aumento',
-            'message'   => 'Le tue uscite di %s sono aumentate del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
+            'title' => '📈 Uscite in aumento',
+            'message' => 'Le tue uscite di %s sono aumentate del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
         ],
         [
-            'type'      => 'income_increase',
+            'type' => 'income_increase',
             'threshold' => self::DEFAULT_THRESHOLD,
-            'title'     => '📈 Entrate in aumento',
-            'message'   => 'Le tue entrate di %s sono aumentate del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
+            'title' => '📈 Entrate in aumento',
+            'message' => 'Le tue entrate di %s sono aumentate del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
         ],
         [
-            'type'      => 'expense_decrease',
+            'type' => 'expense_decrease',
             'threshold' => self::DEFAULT_THRESHOLD,
-            'title'     => '📉 Uscite in diminuzione',
-            'message'   => 'Le tue uscite di %s sono diminuite del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
+            'title' => '📉 Uscite in diminuzione',
+            'message' => 'Le tue uscite di %s sono diminuite del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
         ],
         [
-            'type'      => 'income_decrease',
+            'type' => 'income_decrease',
             'threshold' => self::DEFAULT_THRESHOLD,
-            'title'     => '📉 Entrate in diminuzione',
-            'message'   => 'Le tue entrate di %s sono diminuite del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
+            'title' => '📉 Entrate in diminuzione',
+            'message' => 'Le tue entrate di %s sono diminuite del %.0f%% rispetto a %s (€%.2f vs €%.2f).',
         ],
     ];
 
     /**
      * Verifica le variazioni di trend mensile e crea notifiche se necessario.
      *
-     * @param array $currentStats   ['income' => float, 'expenses' => float, ...]
-     * @param array $lastMonthStats ['income' => float, 'expenses' => float, ...]
+     * @param  array  $currentStats  ['income' => float, 'expenses' => float, ...]
+     * @param  array  $lastMonthStats  ['income' => float, 'expenses' => float, ...]
      */
     public function checkAndNotify(
         User $user,
@@ -92,7 +92,7 @@ class TransactionTrendNotificationService
                 ? $change >= $trigger['threshold']
                 : $change <= -$trigger['threshold'];
 
-            if (!$conditionMet) {
+            if (! $conditionMet) {
                 continue;
             }
 
@@ -102,11 +102,11 @@ class TransactionTrendNotificationService
                 ->where('notification_key', $notificationKey)
                 ->exists();
 
-            if (!$alreadyNotified) {
+            if (! $alreadyNotified) {
                 AppNotification::create([
-                    'user_id'          => $user->id,
-                    'title'            => $trigger['title'],
-                    'message'          => sprintf(
+                    'user_id' => $user->id,
+                    'title' => $trigger['title'],
+                    'message' => sprintf(
                         $trigger['message'],
                         $currentMonth,
                         abs($change),
@@ -114,7 +114,7 @@ class TransactionTrendNotificationService
                         $current,
                         $previous
                     ),
-                    'read'             => false,
+                    'read' => false,
                     'notification_key' => $notificationKey,
                 ]);
             }
@@ -128,8 +128,8 @@ class TransactionTrendNotificationService
     {
         return match (true) {
             str_starts_with($type, 'expense') => [$current['expenses'], $previous['expenses'], $type],
-            str_starts_with($type, 'income')  => [$current['income'],   $previous['income'],   $type],
-            default                           => [0, 0, $type],
+            str_starts_with($type, 'income') => [$current['income'],   $previous['income'],   $type],
+            default => [0, 0, $type],
         };
     }
 }

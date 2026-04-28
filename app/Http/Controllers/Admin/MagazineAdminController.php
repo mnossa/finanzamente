@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MagazineArticle;
 use App\Models\MagazineCategory;
+use App\Services\ImageProcessingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use App\Services\ImageProcessingService;
 use Illuminate\View\View;
 
 /**
@@ -45,11 +45,11 @@ class MagazineAdminController extends Controller
         $data = $this->validateArticle($request);
 
         [$coverPath, $credit, $creditUrl] = $this->handleCoverImage($request);
-        $data['cover_image_path']       = $coverPath;
-        $data['cover_image_credit']     = $credit;
+        $data['cover_image_path'] = $coverPath;
+        $data['cover_image_credit'] = $credit;
         $data['cover_image_credit_url'] = $creditUrl;
-        $data['reading_time_minutes']   = MagazineArticle::estimateReadingTime($data['content']);
-        $data['slug']                   = $this->uniqueSlug($data['title']);
+        $data['reading_time_minutes'] = MagazineArticle::estimateReadingTime($data['content']);
+        $data['slug'] = $this->uniqueSlug($data['title']);
 
         MagazineArticle::create($data);
 
@@ -96,8 +96,8 @@ class MagazineAdminController extends Controller
             if ($article->cover_image_path) {
                 Storage::disk('public')->delete($article->cover_image_path);
             }
-            $data['cover_image_path']       = $newCoverPath;
-            $data['cover_image_credit']     = $credit;
+            $data['cover_image_path'] = $newCoverPath;
+            $data['cover_image_credit'] = $credit;
             $data['cover_image_credit_url'] = $creditUrl;
         }
 
@@ -133,7 +133,7 @@ class MagazineAdminController extends Controller
     public function unsplashSearch(Request $request): JsonResponse
     {
         $request->validate([
-            'q'    => ['required', 'string', 'max:100'],
+            'q' => ['required', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
@@ -145,35 +145,35 @@ class MagazineAdminController extends Controller
 
         $response = Http::timeout(10)
             ->get('https://api.unsplash.com/search/photos', [
-                'query'       => $request->q,
-                'per_page'    => 20,
-                'page'        => $request->integer('page', 1),
+                'query' => $request->q,
+                'per_page' => 20,
+                'page' => $request->integer('page', 1),
                 'orientation' => 'landscape',
-                'client_id'   => $key,
+                'client_id' => $key,
             ]);
 
         if (! $response->ok()) {
             return response()->json(['error' => 'Errore nella ricerca Unsplash'], 502);
         }
 
-        $data        = $response->json();
-        $totalPages  = $data['total_pages'] ?? 1;
+        $data = $response->json();
+        $totalPages = $data['total_pages'] ?? 1;
         $currentPage = $request->integer('page', 1);
 
         $results = collect($data['results'] ?? [])->map(fn ($photo) => [
-            'id'          => $photo['id'],
-            'thumb'       => $photo['urls']['small'],
-            'full'        => $photo['urls']['full'],
+            'id' => $photo['id'],
+            'thumb' => $photo['urls']['small'],
+            'full' => $photo['urls']['full'],
             'description' => $photo['alt_description'] ?? $photo['description'] ?? '',
             'author_name' => $photo['user']['name'],
-            'author_url'  => $photo['user']['links']['html'] . '?utm_source=finanzamente&utm_medium=referral',
-            'credit'      => 'Photo by ' . $photo['user']['name'] . ' on Unsplash',
+            'author_url' => $photo['user']['links']['html'].'?utm_source=finanzamente&utm_medium=referral',
+            'credit' => 'Photo by '.$photo['user']['name'].' on Unsplash',
         ]);
 
         return response()->json([
-            'results'      => $results,
+            'results' => $results,
             'current_page' => $currentPage,
-            'has_more'     => $currentPage < $totalPages,
+            'has_more' => $currentPage < $totalPages,
         ]);
     }
 
@@ -182,20 +182,20 @@ class MagazineAdminController extends Controller
     private function validateArticle(Request $request, ?int $articleId = null): array
     {
         return $request->validate([
-            'category_id'           => ['required', 'exists:magazine_categories,id'],
-            'title'                 => ['required', 'string', 'max:255'],
-            'excerpt'               => ['required', 'string', 'max:500'],
-            'content'               => ['required', 'string'],
-            'cover_image'           => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
-            'unsplash_photo_url'    => ['nullable', 'url'],
+            'category_id' => ['required', 'exists:magazine_categories,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'excerpt' => ['required', 'string', 'max:500'],
+            'content' => ['required', 'string'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'unsplash_photo_url' => ['nullable', 'url'],
             'unsplash_photo_credit' => ['nullable', 'string', 'max:255'],
-            'unsplash_author_url'   => ['nullable', 'url'],
-            'author_name'           => ['required', 'string', 'max:100'],
-            'published_at'          => ['nullable', 'date'],
-            'is_featured'           => ['boolean'],
-            'is_ai_assisted'        => ['boolean'],
-            'meta_title'            => ['nullable', 'string', 'max:70'],
-            'meta_description'      => ['nullable', 'string', 'max:160'],
+            'unsplash_author_url' => ['nullable', 'url'],
+            'author_name' => ['required', 'string', 'max:100'],
+            'published_at' => ['nullable', 'date'],
+            'is_featured' => ['boolean'],
+            'is_ai_assisted' => ['boolean'],
+            'meta_title' => ['nullable', 'string', 'max:70'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
         ]);
     }
 
@@ -209,9 +209,9 @@ class MagazineAdminController extends Controller
     {
         // Priorità 1: file caricato direttamente
         if ($request->hasFile('cover_image')) {
-            $file     = $request->file('cover_image');
-            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $path     = $file->storeAs('magazine/covers', $filename, 'public');
+            $file = $request->file('cover_image');
+            $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+            $path = $file->storeAs('magazine/covers', $filename, 'public');
 
             $path = app(ImageProcessingService::class)->convertToWebp($path);
 
@@ -250,15 +250,15 @@ class MagazineAdminController extends Controller
             }
 
             $contentType = $response->header('Content-Type');
-            $extension   = match (true) {
+            $extension = match (true) {
                 str_contains($contentType, 'jpeg'), str_contains($contentType, 'jpg') => 'jpg',
-                str_contains($contentType, 'png')  => 'png',
+                str_contains($contentType, 'png') => 'png',
                 str_contains($contentType, 'webp') => 'webp',
-                default                            => 'jpg',
+                default => 'jpg',
             };
 
-            $filename = Str::uuid() . '.' . $extension;
-            $path     = 'magazine/covers/' . $filename;
+            $filename = Str::uuid().'.'.$extension;
+            $path = 'magazine/covers/'.$filename;
 
             Storage::disk('public')->put($path, $response->body());
 
@@ -270,15 +270,14 @@ class MagazineAdminController extends Controller
 
     private function uniqueSlug(string $title): string
     {
-        $slug     = Str::slug($title);
+        $slug = Str::slug($title);
         $original = $slug;
-        $i        = 1;
+        $i = 1;
 
         while (MagazineArticle::where('slug', $slug)->exists()) {
-            $slug = $original . '-' . $i++;
+            $slug = $original.'-'.$i++;
         }
 
         return $slug;
     }
 }
-

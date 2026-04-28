@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  *
  * Rappresenta un trasferimento di fondi tra account appartenenti a households diverse.
  * Richiede approvazione dalla household destinataria per garantire sicurezza e tracciabilità.
- * 
+ *
  * Stati:
  * - pending: In attesa di approvazione dalla household destinataria
  * - approved: Approvato, transazioni create
@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
  */
 class InterHouseholdTransfer extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -84,7 +84,7 @@ class InterHouseholdTransfer extends Model
     }
 
     // Relazioni
-    
+
     public function sourceHousehold()
     {
         return $this->belongsTo(Household::class, 'source_household_id');
@@ -136,7 +136,7 @@ class InterHouseholdTransfer extends Model
     }
 
     // Helper methods
-    
+
     /**
      * Verifica se il trasferimento è in attesa di approvazione
      */

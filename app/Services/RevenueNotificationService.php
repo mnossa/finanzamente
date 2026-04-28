@@ -36,20 +36,21 @@ class RevenueNotificationService
         $notifiedLevels = $settings['revenue_notified_levels'] ?? [];
 
         // Azzera i flag se il fatturato è tornato sotto l'80% (nuovo anno o correzione)
-        if ($percentage < 80 && !empty($notifiedLevels)) {
+        if ($percentage < 80 && ! empty($notifiedLevels)) {
             $settings['revenue_notified_levels'] = [];
             $user->update(['profile_settings' => $settings]);
+
             return;
         }
 
         $changed = false;
         foreach (self::LEVELS as $level) {
-            if ($percentage >= $level['threshold'] && !in_array($level['key'], $notifiedLevels)) {
+            if ($percentage >= $level['threshold'] && ! in_array($level['key'], $notifiedLevels)) {
                 AppNotification::create([
                     'user_id' => $user->id,
-                    'title'   => $level['title'],
+                    'title' => $level['title'],
                     'message' => sprintf($level['message'], $annualRevenue, $threshold),
-                    'read'    => false,
+                    'read' => false,
                 ]);
                 $notifiedLevels[] = $level['key'];
                 $changed = true;

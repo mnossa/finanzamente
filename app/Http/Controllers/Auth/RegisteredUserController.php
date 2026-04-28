@@ -11,8 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Honeypot\ProtectAgainstSpam;
 
 class RegisteredUserController extends Controller
 {
@@ -21,7 +23,7 @@ class RegisteredUserController extends Controller
         private readonly WaitlistService $waitlistService,
     ) {
         // Applica honeypot solo alla registrazione
-        $this->middleware(\Spatie\Honeypot\ProtectAgainstSpam::class)->only('store');
+        $this->middleware(ProtectAgainstSpam::class)->only('store');
     }
 
     /**
@@ -68,7 +70,7 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {

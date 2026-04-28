@@ -6,6 +6,7 @@ use App\Http\Requests\StoreFinancialGoalRequest;
 use App\Http\Requests\UpdateFinancialGoalRequest;
 use App\Models\Currency;
 use App\Models\FinancialGoal;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -88,11 +89,11 @@ class FinancialGoalController extends Controller
      */
     public function store(StoreFinancialGoalRequest $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 1 obiettivo finanziario attivo
-        if (!$user->isPro()) {
+        if (! $user->isPro()) {
             $max = config('plans.base_limits.max_financial_goals', 1);
             $count = FinancialGoal::where('household_id', $user->active_household_id)
                 ->where('status', 'in_progress')
@@ -263,7 +264,7 @@ class FinancialGoalController extends Controller
         $financialGoal->update(['status' => $status]);
 
         $statusLabels = FinancialGoal::STATUSES;
-        
+
         return redirect()
             ->route('financial-goals.show', $financialGoal)
             ->with('success', "Stato cambiato in '{$statusLabels[$status]}'.");

@@ -24,7 +24,7 @@ return new class extends Migration
             ->whereNull('deleted_at')
             ->where(function ($q) {
                 $q->whereNotNull('source_transaction_id')
-                  ->orWhereNotNull('dest_transaction_id');
+                    ->orWhereNotNull('dest_transaction_id');
             })
             ->select(['id', 'source_transaction_id', 'dest_transaction_id'])
             ->get()

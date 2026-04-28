@@ -16,7 +16,9 @@ class TransactionBulkDeleteTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
 
     protected function setUp(): void

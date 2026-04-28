@@ -15,6 +15,7 @@ class DashboardLayoutTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
 
     protected function setUp(): void
@@ -71,9 +72,9 @@ class DashboardLayoutTest extends TestCase
         ];
 
         DashboardLayout::create([
-            'user_id'      => $this->user->id,
+            'user_id' => $this->user->id,
             'household_id' => $this->household->id,
-            'config'       => $config,
+            'config' => $config,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -116,7 +117,7 @@ class DashboardLayoutTest extends TestCase
         $response->assertJsonStructure(['config', 'message']);
 
         $this->assertDatabaseHas('dashboard_layouts', [
-            'user_id'      => $this->user->id,
+            'user_id' => $this->user->id,
             'household_id' => $this->household->id,
         ]);
     }
@@ -235,9 +236,9 @@ class DashboardLayoutTest extends TestCase
     public function user_can_reset_layout_to_default(): void
     {
         DashboardLayout::create([
-            'user_id'      => $this->user->id,
+            'user_id' => $this->user->id,
             'household_id' => $this->household->id,
-            'config'       => ['widgets' => []],
+            'config' => ['widgets' => []],
         ]);
 
         $response = $this->actingAs($this->user)
@@ -247,7 +248,7 @@ class DashboardLayoutTest extends TestCase
         $response->assertJsonFragment(['id' => 'total_balance']);
 
         $this->assertDatabaseMissing('dashboard_layouts', [
-            'user_id'      => $this->user->id,
+            'user_id' => $this->user->id,
             'household_id' => $this->household->id,
         ]);
     }
@@ -275,9 +276,9 @@ class DashboardLayoutTest extends TestCase
 
         // Salva un layout per l'altro utente
         DashboardLayout::create([
-            'user_id'      => $otherUser->id,
+            'user_id' => $otherUser->id,
             'household_id' => $otherHousehold->id,
-            'config'       => ['widgets' => [
+            'config' => ['widgets' => [
                 ['id' => 'quick_actions', 'visible' => true, 'position' => 0, 'size' => 'lg'],
             ]],
         ]);
@@ -302,9 +303,8 @@ class DashboardLayoutTest extends TestCase
             ->get(route('dashboard'));
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->has('dashboardLayout')
-                ->has('dashboardLayout.widgets')
+        $response->assertInertia(fn ($page) => $page->has('dashboardLayout')
+            ->has('dashboardLayout.widgets')
         );
     }
 
@@ -327,17 +327,16 @@ class DashboardLayoutTest extends TestCase
         ];
 
         DashboardLayout::create([
-            'user_id'      => $this->user->id,
+            'user_id' => $this->user->id,
             'household_id' => $this->household->id,
-            'config'       => $config,
+            'config' => $config,
         ]);
 
         $response = $this->withoutVite()->actingAs($this->user)
             ->get(route('dashboard'));
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->where('dashboardLayout.widgets.0.id', 'quick_actions')
+        $response->assertInertia(fn ($page) => $page->where('dashboardLayout.widgets.0.id', 'quick_actions')
         );
     }
 

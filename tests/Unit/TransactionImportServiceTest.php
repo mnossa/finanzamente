@@ -13,7 +13,7 @@ class TransactionImportServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new TransactionImportService();
+        $this->service = new TransactionImportService;
     }
 
     #[Test]

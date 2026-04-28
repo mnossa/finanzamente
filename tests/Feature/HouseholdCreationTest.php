@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Household;
+use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,7 +31,7 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('dashboard'));
-        
+
         $household = Household::where('name', 'Test Household')->first();
         $this->assertNotNull($household);
         $this->assertEquals('shared_wallet', $household->financial_management_type);
@@ -49,7 +49,7 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('dashboard'));
-        
+
         $household = Household::where('name', 'Test Debt Household')->first();
         $this->assertNotNull($household);
         $this->assertEquals('debt_balancing', $household->financial_management_type);
@@ -108,7 +108,7 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        
+
         $household->refresh();
         $this->assertEquals('debt_balancing', $household->financial_management_type);
     }
@@ -118,7 +118,7 @@ class HouseholdCreationTest extends TestCase
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
-        
+
         $household = Household::factory()->create([
             'owner_user_id' => $owner->id,
             'financial_management_type' => 'shared_wallet',
@@ -138,7 +138,7 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertStatus(403); // Forbidden
-        
+
         $household->refresh();
         $this->assertEquals('shared_wallet', $household->financial_management_type); // Non cambiato
     }
@@ -148,7 +148,7 @@ class HouseholdCreationTest extends TestCase
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
-        
+
         $household = Household::factory()->create([
             'owner_user_id' => $owner->id,
             'financial_management_type' => 'debt_balancing',
@@ -172,11 +172,11 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        
+
         $household->refresh();
         $this->assertEquals([
-            (string)$owner->id => 70,
-            (string)$member->id => 30,
+            (string) $owner->id => 70,
+            (string) $member->id => 30,
         ], $household->balance_percentages);
     }
 
@@ -185,7 +185,7 @@ class HouseholdCreationTest extends TestCase
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
-        
+
         $household = Household::factory()->create([
             'owner_user_id' => $owner->id,
             'financial_management_type' => 'debt_balancing',
@@ -209,7 +209,7 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['balance_percentages']);
-        
+
         $household->refresh();
         $this->assertNull($household->balance_percentages);
     }
@@ -226,11 +226,11 @@ class HouseholdCreationTest extends TestCase
         ]);
 
         $response->assertRedirect(route('dashboard'));
-        
+
         $household = Household::where('name', 'Test Debt Household')->first();
         $this->assertNotNull($household);
         $this->assertEquals('debt_balancing', $household->financial_management_type);
-        
+
         // Le percentuali personalizzate saranno configurate dopo nella pagina di modifica
     }
 }

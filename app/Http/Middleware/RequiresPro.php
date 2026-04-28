@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Middleware che protegge le rotte riservate al piano Pro.
- * 
+ *
  * Per richieste Inertia: reindirizza alla pagina di upgrade con messaggio flash.
  * Per richieste JSON/API: restituisce 403.
  */

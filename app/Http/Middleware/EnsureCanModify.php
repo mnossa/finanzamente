@@ -20,13 +20,13 @@ class EnsureCanModify
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if (!$user || !$user->active_household_id) {
+        if (! $user || ! $user->active_household_id) {
             abort(403, 'Devi selezionare una household attiva.');
         }
 

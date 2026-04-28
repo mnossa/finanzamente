@@ -8,12 +8,13 @@ use App\Http\Requests\StoreImportInvestmentsRequest;
 use App\Http\Requests\StoreInvestmentImportLayoutRequest;
 use App\Models\Account;
 use App\Models\BankImportLayout;
+use App\Models\Category;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Models\Transaction;
-use App\Models\Category;
 use App\Services\GoogleDriveService;
 use App\Services\InvestmentImportService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,7 @@ class InvestmentImportController extends Controller
      */
     public function create(Request $request): Response
     {
-        $user        = Auth::user();
+        $user = Auth::user();
         $householdId = $user->active_household_id;
 
         $accounts = Account::where('household_id', $householdId)
@@ -59,10 +60,10 @@ class InvestmentImportController extends Controller
             ->get();
 
         return Inertia::render('Investments/Import', [
-            'accounts'    => $accounts,
+            'accounts' => $accounts,
             'userLayouts' => $userLayouts,
-            'assets'      => $assets,
-            'assetTypes'  => InvestmentAsset::TYPES,
+            'assets' => $assets,
+            'assetTypes' => InvestmentAsset::TYPES,
         ]);
     }
 
@@ -70,7 +71,7 @@ class InvestmentImportController extends Controller
      * Restituisce la lista dei fogli (sheets) di un file XLSX.
      * Accetta un file locale o un file da Google Drive.
      */
-    public function sheets(ImportSheetsRequest $request): \Illuminate\Http\JsonResponse
+    public function sheets(ImportSheetsRequest $request): JsonResponse
     {
         $tempPath = null;
 
@@ -83,6 +84,7 @@ class InvestmentImportController extends Controller
             }
 
             $sheets = $this->importService->getXlsxSheets($tempPath);
+
             return response()->json(['sheets' => $sheets]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -97,47 +99,47 @@ class InvestmentImportController extends Controller
      * Analizza il file (CSV o XLSX) e restituisce l'anteprima delle righe parsate
      * con risoluzione automatica degli asset tramite ticker/ISIN.
      */
-    public function preview(PreviewInvestmentImportRequest $request): \Illuminate\Http\JsonResponse
+    public function preview(PreviewInvestmentImportRequest $request): JsonResponse
     {
-        $tempPath    = null;
+        $tempPath = null;
         $isFromDrive = $request->filled('google_drive_file_id');
 
         try {
-            $filePath   = $this->resolveFilePath($request);
-            $tempPath   = $isFromDrive ? $filePath : null;
-            $extension  = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-            $isXlsx     = $extension === 'xlsx';
+            $filePath = $this->resolveFilePath($request);
+            $tempPath = $isFromDrive ? $filePath : null;
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $isXlsx = $extension === 'xlsx';
             $sheetIndex = (int) $request->input('sheet_index', 0);
 
             $layout = [
-                'delimiter'      => $request->input('delimiter', ','),
-                'date_format'    => $request->input('date_format', 'd/m/Y'),
-                'has_header'     => $request->boolean('has_header', true),
-                'encoding'       => $request->input('encoding', 'UTF-8'),
+                'delimiter' => $request->input('delimiter', ','),
+                'date_format' => $request->input('date_format', 'd/m/Y'),
+                'has_header' => $request->boolean('has_header', true),
+                'encoding' => $request->input('encoding', 'UTF-8'),
                 'column_mapping' => $request->input('column_mapping'),
             ];
 
             if ($isXlsx) {
-                $rows    = $this->importService->parseXlsx($filePath, $layout, $sheetIndex);
+                $rows = $this->importService->parseXlsx($filePath, $layout, $sheetIndex);
                 $headers = $layout['has_header']
                     ? $this->importService->getXlsxHeaders($filePath, $sheetIndex)
                     : [];
             } else {
                 $content = file_get_contents($filePath);
-                $rows    = $this->importService->parseCsv($content, $layout);
+                $rows = $this->importService->parseCsv($content, $layout);
 
                 $headers = [];
                 if ($layout['has_header']) {
                     $normalized = str_replace(["\r\n", "\r"], "\n", $content);
-                    $lines      = array_values(array_filter(
+                    $lines = array_values(array_filter(
                         explode("\n", $normalized),
                         fn ($l) => trim($l) !== ''
                     ));
-                    if (!empty($lines)) {
+                    if (! empty($lines)) {
                         $handle = fopen('php://temp', 'r+');
                         fwrite($handle, $lines[0]);
                         rewind($handle);
-                        $row     = fgetcsv($handle, 0, $layout['delimiter'], '"', '\\');
+                        $row = fgetcsv($handle, 0, $layout['delimiter'], '"', '\\');
                         fclose($handle);
                         $headers = $row !== false ? $row : [];
                     }
@@ -147,17 +149,17 @@ class InvestmentImportController extends Controller
             $validated = $this->importService->validateRows($rows);
 
             // Risolvi gli asset per le righe valide
-            $validWithAssets   = $this->importService->resolveAssets($validated['valid']);
+            $validWithAssets = $this->importService->resolveAssets($validated['valid']);
             $missingAssetCount = collect($validWithAssets)->where('asset_missing', true)->count();
 
             return response()->json([
-                'headers'              => $headers,
-                'valid'                => $validWithAssets,
-                'invalid'              => $validated['invalid'],
-                'total'                => count($rows),
-                'valid_count'          => count($validated['valid']),
-                'invalid_count'        => count($validated['invalid']),
-                'missing_asset_count'  => $missingAssetCount,
+                'headers' => $headers,
+                'valid' => $validWithAssets,
+                'invalid' => $validated['invalid'],
+                'total' => count($rows),
+                'valid_count' => count($validated['valid']),
+                'invalid_count' => count($validated['invalid']),
+                'missing_asset_count' => $missingAssetCount,
             ]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -180,8 +182,8 @@ class InvestmentImportController extends Controller
         if ($request->filled('google_drive_file_id')) {
             return $this->driveService->downloadFile(
                 accessToken: $request->input('google_drive_access_token'),
-                fileId:      $request->input('google_drive_file_id'),
-                mimeType:    $request->input('google_drive_mime_type', 'text/csv'),
+                fileId: $request->input('google_drive_file_id'),
+                mimeType: $request->input('google_drive_mime_type', 'text/csv'),
             );
         }
 
@@ -194,13 +196,13 @@ class InvestmentImportController extends Controller
      */
     public function store(StoreImportInvestmentsRequest $request): RedirectResponse
     {
-        $user      = Auth::user();
+        $user = Auth::user();
         $validated = $request->validated();
 
-        $account                = null;
-        $createCashTransaction  = (bool) ($validated['create_cash_transaction'] ?? false);
+        $account = null;
+        $createCashTransaction = (bool) ($validated['create_cash_transaction'] ?? false);
 
-        if (!empty($validated['account_id'])) {
+        if (! empty($validated['account_id'])) {
             $account = Account::findOrFail($validated['account_id']);
             if ($account->household_id !== $user->active_household_id) {
                 abort(403, 'Il conto non appartiene alla household attiva.');
@@ -213,8 +215,8 @@ class InvestmentImportController extends Controller
             $investmentCategory = Category::firstOrCreate(
                 [
                     'household_id' => $user->active_household_id,
-                    'name'         => 'Investimento',
-                    'type'         => 'expense',
+                    'name' => 'Investimento',
+                    'type' => 'expense',
                 ],
                 ['color' => '#6366f1', 'icon' => '📈']
             );
@@ -227,33 +229,33 @@ class InvestmentImportController extends Controller
 
             foreach ($validated['rows'] as $row) {
                 $investment = Investment::create([
-                    'user_id'      => $user->id,
+                    'user_id' => $user->id,
                     'household_id' => $user->active_household_id,
-                    'account_id'   => $account?->id,
-                    'asset_id'     => $row['asset_id'],
-                    'quantity'     => $row['quantity'],
-                    'buy_price'    => $row['buy_price'],
-                    'buy_date'     => $row['buy_date'],
-                    'fees'         => $row['fees'] ?? null,
-                    'notes'        => $row['notes'] ?? null,
-                    'is_private'   => $row['is_private'] ?? false,
+                    'account_id' => $account?->id,
+                    'asset_id' => $row['asset_id'],
+                    'quantity' => $row['quantity'],
+                    'buy_price' => $row['buy_price'],
+                    'buy_date' => $row['buy_date'],
+                    'fees' => $row['fees'] ?? null,
+                    'notes' => $row['notes'] ?? null,
+                    'is_private' => $row['is_private'] ?? false,
                 ]);
 
                 // Genera transazione cash se richiesto e conto disponibile
                 if ($createCashTransaction && $account !== null) {
-                    $totalCost   = (float) $investment->quantity * (float) $investment->buy_price
+                    $totalCost = (float) $investment->quantity * (float) $investment->buy_price
                         + (float) ($investment->fees ?? 0);
                     $description = "Acquisto investimento - {$investment->asset->name}";
 
                     Transaction::create([
-                        'user_id'       => $user->id,
-                        'account_id'    => $account->id,
-                        'category_id'   => $investmentCategory?->id,
-                        'amount'        => -$totalCost,
+                        'user_id' => $user->id,
+                        'account_id' => $account->id,
+                        'category_id' => $investmentCategory?->id,
+                        'amount' => -$totalCost,
                         'currency_code' => $account->currency_code,
-                        'date'          => $investment->buy_date,
-                        'description'   => mb_substr($description, 0, 1000),
-                        'is_private'    => $investment->is_private,
+                        'date' => $investment->buy_date,
+                        'description' => mb_substr($description, 0, 1000),
+                        'is_private' => $investment->is_private,
                     ]);
 
                     $balanceDelta -= $totalCost;
@@ -268,8 +270,8 @@ class InvestmentImportController extends Controller
             }
         });
 
-        $msg = "Importazione completata: {$imported} " .
-            ($imported === 1 ? 'investimento importato' : 'investimenti importati') .
+        $msg = "Importazione completata: {$imported} ".
+            ($imported === 1 ? 'investimento importato' : 'investimenti importati').
             ' con successo.';
 
         return redirect()
@@ -282,7 +284,7 @@ class InvestmentImportController extends Controller
      */
     public function layouts(Request $request): Response
     {
-        $user        = Auth::user();
+        $user = Auth::user();
         $householdId = $user->active_household_id;
 
         $layouts = BankImportLayout::where('model_type', 'investment')
@@ -301,30 +303,30 @@ class InvestmentImportController extends Controller
     /**
      * Salva un nuovo layout di import per investimenti.
      */
-    public function storeLayout(StoreInvestmentImportLayoutRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function storeLayout(StoreInvestmentImportLayoutRequest $request): RedirectResponse|JsonResponse
     {
-        $user      = Auth::user();
+        $user = Auth::user();
         $validated = $request->validated();
 
         $layout = BankImportLayout::create([
-            'user_id'        => $user->id,
-            'household_id'   => $user->active_household_id,
-            'model_type'     => 'investment',
-            'name'           => $validated['name'],
-            'bank_name'      => $validated['bank_name'] ?? '',
-            'icon'           => $validated['icon'] ?? null,
+            'user_id' => $user->id,
+            'household_id' => $user->active_household_id,
+            'model_type' => 'investment',
+            'name' => $validated['name'],
+            'bank_name' => $validated['bank_name'] ?? '',
+            'icon' => $validated['icon'] ?? null,
             'column_mapping' => $validated['column_mapping'],
-            'delimiter'      => $validated['delimiter'],
-            'date_format'    => $validated['date_format'],
-            'has_header'     => $validated['has_header'] ?? true,
-            'encoding'       => $validated['encoding'],
+            'delimiter' => $validated['delimiter'],
+            'date_format' => $validated['date_format'],
+            'has_header' => $validated['has_header'] ?? true,
+            'encoding' => $validated['encoding'],
         ]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Layout salvato con successo.',
-                'layout'  => $layout->only(['id', 'name', 'bank_name', 'icon', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']),
+                'layout' => $layout->only(['id', 'name', 'bank_name', 'icon', 'column_mapping', 'delimiter', 'date_format', 'has_header', 'encoding']),
             ]);
         }
 

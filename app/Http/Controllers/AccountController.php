@@ -6,6 +6,7 @@ use App\Http\Requests\StoreAccountRequest;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Models\Account;
 use App\Models\Currency;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,7 +73,7 @@ class AccountController extends Controller
      */
     public function create(): Response
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
         $currencies = Currency::orderBy('code')->get(['code', 'name', 'symbol']);
 
@@ -93,11 +94,11 @@ class AccountController extends Controller
      */
     public function store(StoreAccountRequest $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 3 conti per household
-        if (!$user->isPro()) {
+        if (! $user->isPro()) {
             $maxAccounts = config('plans.base_limits.max_accounts', 3);
             $currentCount = Account::where('household_id', $user->active_household_id)->count();
 
@@ -209,9 +210,9 @@ class AccountController extends Controller
         }
 
         // Gestione owner per conto privato
-        if (($validated['is_private'] ?? false) && !$account->is_private) {
+        if (($validated['is_private'] ?? false) && ! $account->is_private) {
             $validated['owner_user_id'] = $user->id;
-        } elseif (!($validated['is_private'] ?? true) && $account->is_private) {
+        } elseif (! ($validated['is_private'] ?? true) && $account->is_private) {
             $validated['owner_user_id'] = null;
         }
 
@@ -248,7 +249,7 @@ class AccountController extends Controller
     {
         $this->authorizeAccount($account);
 
-        $account->active = !$account->active;
+        $account->active = ! $account->active;
         $account->save();
 
         $message = $account->active

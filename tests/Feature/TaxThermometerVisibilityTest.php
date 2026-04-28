@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Household;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,12 +40,11 @@ class TaxThermometerVisibilityTest extends TestCase
         $response->assertStatus(200);
 
         // Verifica che i dati del TaxThermometer siano visibili con visible=true
-        $response->assertInertia(fn ($page) => 
-            $page->has('taxThermometerData')
-                ->where('taxThermometerData.visible', true)
-                ->where('taxThermometerData.has_vat', true)
-                ->where('taxThermometerData.tax_rate', 15)
-                ->where('taxThermometerData.inps_rate', 26.23)
+        $response->assertInertia(fn ($page) => $page->has('taxThermometerData')
+            ->where('taxThermometerData.visible', true)
+            ->where('taxThermometerData.has_vat', true)
+            ->where('taxThermometerData.tax_rate', 15)
+            ->where('taxThermometerData.inps_rate', 26.23)
         );
     }
 
@@ -76,10 +75,9 @@ class TaxThermometerVisibilityTest extends TestCase
         $response->assertStatus(200);
 
         // Verifica che i dati del TaxThermometer indichino visible=false
-        $response->assertInertia(fn ($page) => 
-            $page->has('taxThermometerData')
-                ->where('taxThermometerData.visible', false)
-                ->where('taxThermometerData.has_vat', false)
+        $response->assertInertia(fn ($page) => $page->has('taxThermometerData')
+            ->where('taxThermometerData.visible', false)
+            ->where('taxThermometerData.has_vat', false)
         );
     }
 
@@ -115,10 +113,9 @@ class TaxThermometerVisibilityTest extends TestCase
 
         // Verifica che i dati del TaxThermometer indichino visible=false
         // anche se has_vat=true nelle settings, perché user_type='persona'
-        $response->assertInertia(fn ($page) => 
-            $page->has('taxThermometerData')
-                ->where('taxThermometerData.visible', false)
-                ->where('taxThermometerData.has_vat', false)
+        $response->assertInertia(fn ($page) => $page->has('taxThermometerData')
+            ->where('taxThermometerData.visible', false)
+            ->where('taxThermometerData.has_vat', false)
         );
     }
 }

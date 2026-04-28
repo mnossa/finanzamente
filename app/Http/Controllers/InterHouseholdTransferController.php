@@ -17,8 +17,7 @@ class InterHouseholdTransferController extends Controller
 {
     public function __construct(
         protected InterHouseholdTransferService $transferService
-    ) {
-    }
+    ) {}
 
     /**
      * Mostra l'elenco dei trasferimenti inter-household
@@ -104,10 +103,10 @@ class InterHouseholdTransferController extends Controller
         $activeHousehold = $user->households()->find($activeHouseholdId);
 
         return Inertia::render('InterHouseholdTransfers/Create', [
-            'sourceAccounts'   => $sourceAccounts,
-            'userHouseholds'   => $userHouseholds->map(fn ($h) => [
-                'id'                              => $h->id,
-                'name'                            => $h->name,
+            'sourceAccounts' => $sourceAccounts,
+            'userHouseholds' => $userHouseholds->map(fn ($h) => [
+                'id' => $h->id,
+                'name' => $h->name,
                 'exclude_inter_transfers_from_stats' => $h->exclude_inter_transfers_from_stats,
             ]),
             'activeHouseholdExcludesDefault' => $activeHousehold?->shouldExcludeInterTransfersFromStats() ?? false,
@@ -246,7 +245,7 @@ class InterHouseholdTransferController extends Controller
     public function getHouseholdAccounts(Household $household)
     {
         // Verifica che l'utente abbia accesso a questa household
-        if (!$household->users()->where('users.id', auth()->id())->exists()) {
+        if (! $household->users()->where('users.id', auth()->id())->exists()) {
             abort(403, 'Non hai accesso a questa household.');
         }
 

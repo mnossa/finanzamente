@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             // Campo per tracciare se il quiz di profilazione è stato completato
             $table->boolean('profile_completed')->default(false)->after('preferences');
-            
+
             // Campo JSON per salvare le risposte del quiz di profilazione
             $table->json('profile_settings')->nullable()->after('profile_completed');
         });

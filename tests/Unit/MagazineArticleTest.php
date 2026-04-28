@@ -16,9 +16,9 @@ class MagazineArticleTest extends TestCase
     private function makeCategory(): MagazineCategory
     {
         return MagazineCategory::create([
-            'slug'       => 'risparmio',
-            'name'       => 'Risparmio',
-            'color'      => '#10B981',
+            'slug' => 'risparmio',
+            'name' => 'Risparmio',
+            'color' => '#10B981',
             'sort_order' => 1,
         ]);
     }
@@ -28,16 +28,16 @@ class MagazineArticleTest extends TestCase
         $category = $this->makeCategory();
 
         return MagazineArticle::create(array_merge([
-            'category_id'         => $category->id,
-            'slug'                => 'articolo-test',
-            'title'               => 'Articolo di test',
-            'excerpt'             => 'Un breve riassunto.',
-            'content'             => '## Titolo\n\nTesto del corpo dell\'articolo.',
-            'author_name'         => 'Redazione',
+            'category_id' => $category->id,
+            'slug' => 'articolo-test',
+            'title' => 'Articolo di test',
+            'excerpt' => 'Un breve riassunto.',
+            'content' => '## Titolo\n\nTesto del corpo dell\'articolo.',
+            'author_name' => 'Redazione',
             'reading_time_minutes' => 1,
-            'published_at'        => now()->subDay(),
-            'is_featured'         => false,
-            'views_count'         => 0,
+            'published_at' => now()->subDay(),
+            'is_featured' => false,
+            'views_count' => 0,
         ], $overrides));
     }
 

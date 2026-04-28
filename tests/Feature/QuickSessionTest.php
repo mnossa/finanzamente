@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\Currency;
 use App\Models\Household;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,8 +17,11 @@ class QuickSessionTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $expenseCategory;
 
     protected function setUp(): void
@@ -29,26 +32,26 @@ class QuickSessionTest extends TestCase
         $this->user = User::factory()->create();
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, [
-            'role'        => 'owner',
+            'role' => 'owner',
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
 
-        \App\Models\Currency::firstOrCreate(['code' => 'EUR'], ['symbol' => '€', 'name' => 'Euro']);
+        Currency::firstOrCreate(['code' => 'EUR'], ['symbol' => '€', 'name' => 'Euro']);
 
         $this->account = Account::create([
-            'household_id'    => $this->household->id,
-            'name'            => 'Conto Test',
-            'type'            => 'bank',
+            'household_id' => $this->household->id,
+            'name' => 'Conto Test',
+            'type' => 'bank',
             'initial_balance' => 1000,
-            'currency_code'   => 'EUR',
-            'active'          => true,
+            'currency_code' => 'EUR',
+            'active' => true,
         ]);
 
         $this->expenseCategory = Category::create([
             'household_id' => $this->household->id,
-            'name'         => 'Spesa',
-            'type'         => 'expense',
+            'name' => 'Spesa',
+            'type' => 'expense',
         ]);
     }
 
@@ -71,11 +74,10 @@ class QuickSessionTest extends TestCase
             ->get(route('transactions.quick-session'));
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) =>
-            $page->component('Transactions/QuickSession')
-                ->has('accounts')
-                ->has('categories')
-                ->has('sessionTransactions')
+        $response->assertInertia(fn ($page) => $page->component('Transactions/QuickSession')
+            ->has('accounts')
+            ->has('categories')
+            ->has('sessionTransactions')
         );
     }
 
@@ -86,8 +88,7 @@ class QuickSessionTest extends TestCase
             ->actingAs($this->user)
             ->get(route('transactions.quick-session'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('sessionTransactions', [])
+        $response->assertInertia(fn ($page) => $page->where('sessionTransactions', [])
         );
     }
 
@@ -98,16 +99,16 @@ class QuickSessionTest extends TestCase
     {
         $response = $this->actingAs($this->user)
             ->post(route('transactions.quick-store'), [
-                'account_id'  => $this->account->id,
+                'account_id' => $this->account->id,
                 'category_id' => $this->expenseCategory->id,
-                'amount'      => 25.50,
-                'date'        => now()->toDateString(),
+                'amount' => 25.50,
+                'date' => now()->toDateString(),
                 'description' => 'Pizza',
             ]);
 
         $response->assertRedirect(route('transactions.quick-session'));
         $this->assertDatabaseHas('transactions', [
-            'user_id'     => $this->user->id,
+            'user_id' => $this->user->id,
             'description' => 'Pizza',
         ]);
     }
@@ -117,16 +118,16 @@ class QuickSessionTest extends TestCase
     {
         $this->actingAs($this->user)
             ->post(route('transactions.quick-store'), [
-                'account_id'  => $this->account->id,
+                'account_id' => $this->account->id,
                 'category_id' => $this->expenseCategory->id,
-                'amount'      => 30,
-                'date'        => now()->toDateString(),
+                'amount' => 30,
+                'date' => now()->toDateString(),
                 'description' => 'Uscita',
             ]);
 
         $this->assertDatabaseHas('transactions', [
             'user_id' => $this->user->id,
-            'amount'  => -30,
+            'amount' => -30,
         ]);
     }
 
@@ -135,10 +136,10 @@ class QuickSessionTest extends TestCase
     {
         $response = $this->actingAs($this->user)
             ->post(route('transactions.quick-store'), [
-                'account_id'  => $this->account->id,
+                'account_id' => $this->account->id,
                 'category_id' => $this->expenseCategory->id,
-                'amount'      => 15,
-                'date'        => now()->toDateString(),
+                'amount' => 15,
+                'date' => now()->toDateString(),
                 'description' => 'Sessione test',
             ]);
 
@@ -149,8 +150,7 @@ class QuickSessionTest extends TestCase
             ->actingAs($this->user)
             ->get(route('transactions.quick-session'));
 
-        $sessionResponse->assertInertia(fn ($page) =>
-            $page->has('sessionTransactions', 1)
+        $sessionResponse->assertInertia(fn ($page) => $page->has('sessionTransactions', 1)
         );
     }
 
@@ -171,10 +171,10 @@ class QuickSessionTest extends TestCase
         // Prima aggiungi una transazione
         $this->actingAs($this->user)
             ->post(route('transactions.quick-store'), [
-                'account_id'  => $this->account->id,
+                'account_id' => $this->account->id,
                 'category_id' => $this->expenseCategory->id,
-                'amount'      => 10,
-                'date'        => now()->toDateString(),
+                'amount' => 10,
+                'date' => now()->toDateString(),
             ]);
 
         // Poi pulisci la sessione
@@ -188,8 +188,7 @@ class QuickSessionTest extends TestCase
             ->actingAs($this->user)
             ->get(route('transactions.quick-session'));
 
-        $sessionResponse->assertInertia(fn ($page) =>
-            $page->where('sessionTransactions', [])
+        $sessionResponse->assertInertia(fn ($page) => $page->where('sessionTransactions', [])
         );
     }
 
@@ -198,10 +197,10 @@ class QuickSessionTest extends TestCase
     {
         $this->actingAs($this->user)
             ->post(route('transactions.quick-store'), [
-                'account_id'  => $this->account->id,
+                'account_id' => $this->account->id,
                 'category_id' => $this->expenseCategory->id,
-                'amount'      => 10,
-                'date'        => now()->toDateString(),
+                'amount' => 10,
+                'date' => now()->toDateString(),
                 'description' => 'Mantenuta',
             ]);
 
@@ -210,7 +209,7 @@ class QuickSessionTest extends TestCase
 
         // La transazione deve ancora esistere nel DB
         $this->assertDatabaseHas('transactions', [
-            'user_id'     => $this->user->id,
+            'user_id' => $this->user->id,
             'description' => 'Mantenuta',
         ]);
     }

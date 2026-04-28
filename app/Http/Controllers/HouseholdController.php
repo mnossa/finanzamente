@@ -55,7 +55,7 @@ class HouseholdController extends Controller
         $user = $request->user();
 
         // Limite piano Base: massimo 1 household per utente
-        if (!$user->isPro()) {
+        if (! $user->isPro()) {
             $existingCount = $user->households()->count();
             $maxHouseholds = config('plans.base_limits.max_households', 1);
 
@@ -97,7 +97,7 @@ class HouseholdController extends Controller
         $user = $request->user();
 
         // Verifica che l'utente faccia parte della household
-        if (!$user->households()->where('households.id', $household->id)->exists()) {
+        if (! $user->households()->where('households.id', $household->id)->exists()) {
             abort(403, 'Non hai accesso a questa household.');
         }
 
@@ -115,7 +115,7 @@ class HouseholdController extends Controller
         $user = $request->user();
 
         // Verifica accesso
-        if (!$user->households()->where('households.id', $household->id)->exists()) {
+        if (! $user->households()->where('households.id', $household->id)->exists()) {
             abort(403, 'Non hai accesso a questa household.');
         }
 
@@ -227,7 +227,7 @@ class HouseholdController extends Controller
 
         // Reindirizza alla selezione se l'utente ha altre household
         $remainingCount = $user->households()->count();
-        
+
         if ($remainingCount > 0) {
             return redirect()->route('households.select')
                 ->with('success', 'Household eliminata.');
@@ -251,15 +251,15 @@ class HouseholdController extends Controller
             ->where('households.id', $household->id)
             ->first();
 
-        if (!$membership) {
+        if (! $membership) {
             abort(403, 'Non hai accesso a questa household.');
         }
 
         $permissions = json_decode($membership->pivot->permissions ?? '{}', true);
-        $canManage = $household->owner_user_id === $user->id 
+        $canManage = $household->owner_user_id === $user->id
             || ($permissions['manage'] ?? false);
 
-        if (!$canManage) {
+        if (! $canManage) {
             abort(403, 'Non hai i permessi per invitare membri.');
         }
 
@@ -278,7 +278,7 @@ class HouseholdController extends Controller
         }
 
         $invitedUser = User::where('email', $email)->first();
-        
+
         if ($invitedUser) {
             // L'utente esiste: aggiungilo direttamente alla household
             $household->users()->attach($invitedUser->id, [
@@ -328,7 +328,7 @@ class HouseholdController extends Controller
         // Verifica permessi
         $canManage = $household->owner_user_id === $user->id;
 
-        if (!$canManage) {
+        if (! $canManage) {
             abort(403, 'Solo il proprietario può rimuovere membri.');
         }
 
@@ -391,15 +391,15 @@ class HouseholdController extends Controller
             ->where('households.id', $household->id)
             ->first();
 
-        if (!$membership) {
+        if (! $membership) {
             abort(403, 'Non hai accesso a questa household.');
         }
 
         $permissions = json_decode($membership->pivot->permissions ?? '{}', true);
-        $canManage = $household->owner_user_id === $user->id 
+        $canManage = $household->owner_user_id === $user->id
             || ($permissions['manage'] ?? false);
 
-        if (!$canManage) {
+        if (! $canManage) {
             abort(403, 'Non hai i permessi per gestire gli inviti.');
         }
 
@@ -426,15 +426,15 @@ class HouseholdController extends Controller
             ->where('households.id', $household->id)
             ->first();
 
-        if (!$membership) {
+        if (! $membership) {
             abort(403, 'Non hai accesso a questa household.');
         }
 
         $permissions = json_decode($membership->pivot->permissions ?? '{}', true);
-        $canManage = $household->owner_user_id === $user->id 
+        $canManage = $household->owner_user_id === $user->id
             || ($permissions['manage'] ?? false);
 
-        if (!$canManage) {
+        if (! $canManage) {
             abort(403, 'Non hai i permessi per gestire gli inviti.');
         }
 

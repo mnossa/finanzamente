@@ -6,7 +6,6 @@ use App\Models\Attachment;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -26,7 +25,7 @@ class AttachmentController extends Controller
         ]);
 
         $user = Auth::user();
-        $attachableType = 'App\\Models\\' . $request->attachable_type;
+        $attachableType = 'App\\Models\\'.$request->attachable_type;
         $attachable = $attachableType::findOrFail($request->attachable_id);
 
         // Autorizzazione: verifica che l'utente abbia accesso all'entità
@@ -42,7 +41,7 @@ class AttachmentController extends Controller
         $fileSize = $file->getSize();
 
         // Genera un nome file unico
-        $uniqueFilename = now()->format('Y-m-d_His') . '_' . Str::slug(pathinfo($filename, PATHINFO_FILENAME)) . '.' . $extension;
+        $uniqueFilename = now()->format('Y-m-d_His').'_'.Str::slug(pathinfo($filename, PATHINFO_FILENAME)).'.'.$extension;
         $path = $file->storeAs('attachments', $uniqueFilename, 'private');
 
         // Crea il record dell'attachment
@@ -81,7 +80,7 @@ class AttachmentController extends Controller
             $this->authorizeTransaction($attachable);
         }
 
-        if (!Storage::disk('private')->exists($attachment->file_path)) {
+        if (! Storage::disk('private')->exists($attachment->file_path)) {
             abort(404, 'File non trovato.');
         }
 

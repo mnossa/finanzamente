@@ -26,12 +26,12 @@ class ImageProcessingService
      * il file originale.
      *
      * @param  string  $storagePath  Path relativo nel disco `public`.
-     * @return string                Path relativo del nuovo file WebP, o quello originale in caso di errore.
+     * @return string Path relativo del nuovo file WebP, o quello originale in caso di errore.
      */
     public function convertToWebp(string $storagePath): string
     {
         try {
-            $disk        = Storage::disk('public');
+            $disk = Storage::disk('public');
             $rawContents = $disk->get($storagePath);
 
             if ($rawContents === null) {
@@ -39,7 +39,7 @@ class ImageProcessingService
             }
 
             $manager = ImageManager::gd();
-            $image   = $manager->read($rawContents);
+            $image = $manager->read($rawContents);
 
             // Ridimensiona mantenendo le proporzioni, solo se più larga del massimo.
             if ($image->width() > self::MAX_WIDTH) {
@@ -47,9 +47,9 @@ class ImageProcessingService
             }
 
             // Genera il nuovo path WebP nella stessa directory.
-            $directory   = dirname($storagePath);
-            $newFilename = Str::uuid() . '.webp';
-            $newPath     = $directory . '/' . $newFilename;
+            $directory = dirname($storagePath);
+            $newFilename = Str::uuid().'.webp';
+            $newPath = $directory.'/'.$newFilename;
 
             $disk->put($newPath, $image->toWebp(self::WEBP_QUALITY)->toString());
 
@@ -61,7 +61,7 @@ class ImageProcessingService
             return $newPath;
         } catch (\Throwable $e) {
             Log::warning('ImageProcessingService: conversione WebP fallita', [
-                'path'  => $storagePath,
+                'path' => $storagePath,
                 'error' => $e->getMessage(),
             ]);
 

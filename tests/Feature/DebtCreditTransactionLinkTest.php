@@ -24,9 +24,13 @@ class DebtCreditTransactionLinkTest extends BaseTestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $category;
+
     private Currency $currency;
 
     protected function setUp(): void
@@ -37,7 +41,7 @@ class DebtCreditTransactionLinkTest extends BaseTestCase
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->user->active_household_id = $this->household->id;
         $this->user->save();
-        
+
         $this->currency = Currency::firstOrCreate(
             ['code' => 'EUR'],
             ['name' => 'Euro', 'symbol' => '€']
@@ -302,7 +306,7 @@ class DebtCreditTransactionLinkTest extends BaseTestCase
 
         // Verifica che le transazioni generate abbiano debt_credit_id
         $generatedTransactions = Transaction::where('recurring_transaction_id', $recurringTransaction->id)->get();
-        
+
         foreach ($generatedTransactions as $transaction) {
             $this->assertEquals($debt->id, $transaction->debt_credit_id);
         }

@@ -8,6 +8,7 @@ use App\Models\Household;
 use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -18,8 +19,11 @@ class TransactionTagTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $category;
 
     protected function setUp(): void
@@ -113,7 +117,7 @@ class TransactionTagTest extends TestCase
             'name' => 'SPORT',
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         Tag::create([
             'household_id' => $this->household->id,
@@ -307,10 +311,9 @@ class TransactionTagTest extends TestCase
             ->get(route('transactions.index', ['tag_id' => $tag->id]));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) =>
-            $page->component('Transactions/Index')
-                ->where('transactions.data.0.description', 'Con tag sport')
-                ->where('transactions.total', 1)
+        $response->assertInertia(fn ($page) => $page->component('Transactions/Index')
+            ->where('transactions.data.0.description', 'Con tag sport')
+            ->where('transactions.total', 1)
         );
     }
 
@@ -345,10 +348,9 @@ class TransactionTagTest extends TestCase
             ->get(route('transactions.index', ['tag_id' => $tag1->id]));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) =>
-            $page->component('Transactions/Index')
-                ->where('transactions.total', 1)
-                ->where('transactions.data.0.description', 'Transazione lavoro')
+        $response->assertInertia(fn ($page) => $page->component('Transactions/Index')
+            ->where('transactions.total', 1)
+            ->where('transactions.data.0.description', 'Transazione lavoro')
         );
     }
 

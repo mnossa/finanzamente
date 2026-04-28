@@ -3,15 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class MagazineArticle extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'category_id',
         'slug',
@@ -32,8 +34,8 @@ class MagazineArticle extends Model
     ];
 
     protected $casts = [
-        'published_at'    => 'datetime',
-        'is_featured'    => 'boolean',
+        'published_at' => 'datetime',
+        'is_featured' => 'boolean',
         'is_ai_assisted' => 'boolean',
     ];
 
@@ -43,7 +45,7 @@ class MagazineArticle extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->whereNotNull('published_at')
-                     ->where('published_at', '<=', now());
+            ->where('published_at', '<=', now());
     }
 
     // ── Relazioni ─────────────────────────────────────────────────────────────
@@ -65,7 +67,7 @@ class MagazineArticle extends Model
             return null;
         }
 
-        return asset('storage/' . $this->cover_image_path);
+        return asset('storage/'.$this->cover_image_path);
     }
 
     /**
@@ -96,12 +98,12 @@ class MagazineArticle extends Model
      */
     public function incrementViews(string $ipHash): void
     {
-        $cacheKey = 'magazine_view:' . $this->slug . ':' . $ipHash;
+        $cacheKey = 'magazine_view:'.$this->slug.':'.$ipHash;
 
-        if (! \Illuminate\Support\Facades\Cache::has($cacheKey)) {
+        if (! Cache::has($cacheKey)) {
             $this->increment('views_count');
             // TTL 30 minuti: una view per IP ogni mezz'ora
-            \Illuminate\Support\Facades\Cache::put($cacheKey, 1, now()->addMinutes(30));
+            Cache::put($cacheKey, 1, now()->addMinutes(30));
         }
     }
 

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Servizio principale per recuperare prezzi e informazioni degli asset finanziari.
  * Supporta provider multipli (Yahoo Finance, Alpha Vantage) con fallback automatico.
- * 
+ *
  * Configurazione in .env:
  * - ASSET_PRICE_PROVIDER=yahoo_finance|alpha_vantage (default: yahoo_finance)
  * - YAHOO_FINANCE_API_KEY=xxx (chiave RapidAPI)
@@ -59,8 +59,8 @@ class AssetPriceService
     {
         // Registra tutti i provider disponibili
         $this->providers = [
-            'yahoo_finance' => new YahooFinanceProvider(),
-            'alpha_vantage' => new AlphaVantageProvider(),
+            'yahoo_finance' => new YahooFinanceProvider,
+            'alpha_vantage' => new AlphaVantageProvider,
         ];
 
         // Determina il provider principale dalla configurazione
@@ -88,7 +88,7 @@ class AssetPriceService
         }
 
         // Se nessun provider è configurato, usa YahooFinance come default (mostrerà errore di config)
-        if (!isset($this->provider)) {
+        if (! isset($this->provider)) {
             $this->provider = $this->providers['yahoo_finance'];
         }
     }
@@ -188,7 +188,7 @@ class AssetPriceService
      */
     public function tickerToIsin(string $ticker, ?string $exchange = null): array
     {
-        $cacheKey = 'ticker_isin_' . strtoupper($ticker) . '_' . ($exchange ?? 'ANY');
+        $cacheKey = 'ticker_isin_'.strtoupper($ticker).'_'.($exchange ?? 'ANY');
 
         return Cache::remember($cacheKey, self::CACHE_TTL_ISIN, function () use ($ticker, $exchange) {
             try {
@@ -196,7 +196,7 @@ class AssetPriceService
                     [
                         'idType' => 'TICKER',
                         'idValue' => strtoupper($ticker),
-                    ]
+                    ],
                 ];
 
                 if ($exchange) {
@@ -209,7 +209,7 @@ class AssetPriceService
                     ])
                     ->post(self::OPENFIGI_URL, $payload);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return ['error' => 'Errore OpenFIGI', 'isin' => null];
                 }
 
@@ -235,7 +235,8 @@ class AssetPriceService
                     'ticker' => $ticker,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore: ' . $e->getMessage(), 'isin' => null];
+
+                return ['error' => 'Errore: '.$e->getMessage(), 'isin' => null];
             }
         });
     }
@@ -245,7 +246,7 @@ class AssetPriceService
      */
     public function isinToTicker(string $isin): array
     {
-        $cacheKey = 'isin_ticker_' . strtoupper($isin);
+        $cacheKey = 'isin_ticker_'.strtoupper($isin);
 
         return Cache::remember($cacheKey, self::CACHE_TTL_ISIN, function () use ($isin) {
             try {
@@ -253,7 +254,7 @@ class AssetPriceService
                     [
                         'idType' => 'ID_ISIN',
                         'idValue' => strtoupper($isin),
-                    ]
+                    ],
                 ];
 
                 $response = Http::timeout(10)
@@ -262,7 +263,7 @@ class AssetPriceService
                     ])
                     ->post(self::OPENFIGI_URL, $payload);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return ['error' => 'Errore OpenFIGI', 'ticker' => null];
                 }
 
@@ -288,7 +289,8 @@ class AssetPriceService
                     'isin' => $isin,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore: ' . $e->getMessage(), 'ticker' => null];
+
+                return ['error' => 'Errore: '.$e->getMessage(), 'ticker' => null];
             }
         });
     }
@@ -299,12 +301,12 @@ class AssetPriceService
     public function clearCache(string $symbol): void
     {
         $symbol = strtoupper($symbol);
-        
+
         // Pulisci cache di entrambi i provider
         $prefixes = ['yf_price_', 'yf_historical_', 'av_price_', 'av_historical_', 'ticker_isin_'];
-        
+
         foreach ($prefixes as $prefix) {
-            Cache::forget($prefix . $symbol);
+            Cache::forget($prefix.$symbol);
         }
     }
 }

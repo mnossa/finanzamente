@@ -6,11 +6,11 @@ use App\Models\User;
 
 /**
  * Service per gestire l'accesso ai moduli dell'applicazione.
- * 
+ *
  * Determina quali moduli sono disponibili per un utente in base a:
  * - Impostazioni del profilo (profile_settings)
  * - Piano/pacchetto sottoscritto (free/pro, implementazione futura)
- * 
+ *
  * I moduli sono organizzati in categorie:
  * - base: moduli sempre disponibili
  * - planning: pianificazione finanziaria
@@ -224,8 +224,7 @@ class ModuleAccessService
 
     /**
      * Ottiene tutti i moduli disponibili per un utente.
-     * 
-     * @param User $user
+     *
      * @return array Array associativo [moduleId => moduleData]
      */
     public function getAvailableModules(User $user): array
@@ -248,9 +247,6 @@ class ModuleAccessService
     /**
      * Ottiene tutti i moduli (disponibili e non) con info su accessibilità.
      * Utile per mostrare moduli bloccati con suggerimenti per sbloccarli.
-     * 
-     * @param User $user
-     * @return array
      */
     public function getAllModulesWithAccess(User $user): array
     {
@@ -266,12 +262,12 @@ class ModuleAccessService
             $canAccess = $this->canAccessModule($user, $module, $profileSettings);
             $missingRequirements = $this->getMissingRequirements($module, $profileSettings);
             $requiresPro = ($module['requires_plan'] ?? 'base') === 'pro';
-            $lockedByPlan = $requiresPro && !$user->isPro();
+            $lockedByPlan = $requiresPro && ! $user->isPro();
 
             $modules[$moduleId] = [
                 ...$module,
                 'enabled' => $canAccess,
-                'locked' => !$canAccess,
+                'locked' => ! $canAccess,
                 'locked_by_plan' => $lockedByPlan,
                 'missing_requirements' => $missingRequirements,
                 'unlock_hint' => $this->getUnlockHint($missingRequirements, $lockedByPlan),
@@ -283,29 +279,22 @@ class ModuleAccessService
 
     /**
      * Verifica se un utente può accedere a un modulo specifico.
-     * 
-     * @param User $user
-     * @param string $moduleId
-     * @return bool
      */
     public function canAccessModuleById(User $user, string $moduleId): bool
     {
         $module = self::MODULES[$moduleId] ?? null;
-        
-        if (!$module) {
+
+        if (! $module) {
             return false;
         }
 
         $profileSettings = $user->profile_settings ?? [];
+
         return $this->canAccessModule($user, $module, $profileSettings);
     }
 
     /**
      * Verifica se un utente può accedere a una rotta specifica.
-     * 
-     * @param User $user
-     * @param string $routeName
-     * @return bool
      */
     public function canAccessRoute(User $user, string $routeName): bool
     {
@@ -323,9 +312,6 @@ class ModuleAccessService
 
     /**
      * Ottiene i moduli raggruppati per categoria, con informazioni di accesso.
-     * 
-     * @param User $user
-     * @return array
      */
     public function getModulesByCategory(User $user): array
     {
@@ -334,7 +320,7 @@ class ModuleAccessService
 
         foreach ($modules as $module) {
             $category = $module['category'];
-            if (!isset($grouped[$category])) {
+            if (! isset($grouped[$category])) {
                 $grouped[$category] = [
                     'name' => $this->getCategoryName($category),
                     'modules' => [],
@@ -352,7 +338,7 @@ class ModuleAccessService
     private function canAccessModule(User $user, array $module, array $profileSettings): bool
     {
         // Verifica requisiti dal piano
-        if (($module['requires_plan'] ?? 'base') === 'pro' && !$user->isPro()) {
+        if (($module['requires_plan'] ?? 'base') === 'pro' && ! $user->isPro()) {
             return false;
         }
 
@@ -363,10 +349,11 @@ class ModuleAccessService
                 if ($user->user_type !== 'partita_iva') {
                     return false;
                 }
+
                 continue;
             }
-            
-            if (!($profileSettings[$requirement] ?? false)) {
+
+            if (! ($profileSettings[$requirement] ?? false)) {
                 return false;
             }
         }
@@ -387,8 +374,8 @@ class ModuleAccessService
             if ($requirement === 'has_vat') {
                 continue; // Skip, non è configurabile dall'utente
             }
-            
-            if (!($profileSettings[$requirement] ?? false)) {
+
+            if (! ($profileSettings[$requirement] ?? false)) {
                 $missing[] = $requirement;
             }
         }
@@ -414,6 +401,7 @@ class ModuleAccessService
         ];
 
         $requirement = $missingRequirements[0];
+
         return $hints[$requirement] ?? null;
     }
 
@@ -424,7 +412,8 @@ class ModuleAccessService
     {
         // Converti il pattern in regex
         $regex = str_replace(['*', '.'], ['.*', '\.'], $pattern);
-        return (bool) preg_match('/^' . $regex . '$/', $routeName);
+
+        return (bool) preg_match('/^'.$regex.'$/', $routeName);
     }
 
     /**

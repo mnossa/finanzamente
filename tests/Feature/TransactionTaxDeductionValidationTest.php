@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Household;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,8 +17,11 @@ class TransactionTaxDeductionValidationTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Category $category;
 
     protected function setUp(): void
@@ -322,7 +326,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
 
         $response->assertStatus(422);
         $json = $response->json();
-        
+
         // Verifica che i messaggi siano in italiano
         $this->assertStringContainsString('detrazione', strtolower($json['errors']['tax_deduction_rate'][0]));
         $this->assertStringContainsString('detrazione', strtolower($json['errors']['tax_deduction_type'][0]));
@@ -331,7 +335,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_fields_can_be_updated()
     {
-        $transaction = \App\Models\Transaction::create([
+        $transaction = Transaction::create([
             'user_id' => $this->user->id,
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,
@@ -365,7 +369,7 @@ class TransactionTaxDeductionValidationTest extends TestCase
     #[Test]
     public function tax_deduction_fields_can_be_removed_on_update()
     {
-        $transaction = \App\Models\Transaction::create([
+        $transaction = Transaction::create([
             'user_id' => $this->user->id,
             'account_id' => $this->account->id,
             'category_id' => $this->category->id,

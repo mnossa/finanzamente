@@ -3,27 +3,27 @@
 namespace App\Services;
 
 use App\Models\Account;
-use App\Models\Transfer;
 use App\Models\Transaction;
-use Illuminate\Support\Str;
+use App\Models\Transfer;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Contracts\Auth\Authenticatable as UserContract;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TransferService
 {
     /**
      * Create a transfer and two linked transactions atomically.
      *
-    * $data keys expected:
-    * - source_account_id, destination_account_id
-    * - source_amount, source_currency
-    * - dest_currency
-    * - exchange_rate (optional) — REQUIRED if source_currency != dest_currency
-    * - fee (optional)
-    * - initiated_by (optional user id)
-    * - source_category_id (required) - category for source transaction (type=expense)
-    * - dest_category_id (required) - category for destination transaction (type=income)
-    * - date (optional)
+     * $data keys expected:
+     * - source_account_id, destination_account_id
+     * - source_amount, source_currency
+     * - dest_currency
+     * - exchange_rate (optional) — REQUIRED if source_currency != dest_currency
+     * - fee (optional)
+     * - initiated_by (optional user id)
+     * - source_category_id (required) - category for source transaction (type=expense)
+     * - dest_category_id (required) - category for destination transaction (type=income)
+     * - date (optional)
      */
     public function createTransfer(array $data): Transfer
     {
@@ -50,7 +50,7 @@ class TransferService
 
             // If cross-currency transfer, exchange_rate is required (frontend should provide it).
             if ($destCurrency !== $data['source_currency'] && $exchangeRate === null) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'exchange_rate' => ['Exchange rate is required for cross-currency transfers.'],
                 ]);
             }

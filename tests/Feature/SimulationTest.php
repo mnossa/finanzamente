@@ -6,6 +6,7 @@ use App\Models\Household;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -14,6 +15,7 @@ class SimulationTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
 
     protected function setUp(): void
@@ -24,7 +26,7 @@ class SimulationTest extends TestCase
         $this->user = User::factory()->create();
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, [
-            'role'        => 'owner',
+            'role' => 'owner',
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
@@ -54,11 +56,10 @@ class SimulationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('simulations.index'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->component('Simulations/Index')
-                ->has('presetScenarios')
-                ->has('historicalData')
-                ->has('crisisScenarios')
+        $response->assertInertia(fn ($page) => $page->component('Simulations/Index')
+            ->has('presetScenarios')
+            ->has('historicalData')
+            ->has('crisisScenarios')
         );
     }
 
@@ -69,11 +70,10 @@ class SimulationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('simulations.index'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->has('presetScenarios', 3)
-                ->where('presetScenarios.0.id', 'conservative')
-                ->where('presetScenarios.1.id', 'moderate')
-                ->where('presetScenarios.2.id', 'aggressive')
+        $response->assertInertia(fn ($page) => $page->has('presetScenarios', 3)
+            ->where('presetScenarios.0.id', 'conservative')
+            ->where('presetScenarios.1.id', 'moderate')
+            ->where('presetScenarios.2.id', 'aggressive')
         );
     }
 
@@ -84,11 +84,10 @@ class SimulationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('simulations.index'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->has('historicalData.sp500_avg_return')
-                ->has('historicalData.avg_inflation_italy')
-                ->has('historicalData.avg_bond_return')
-                ->has('historicalData.avg_savings_account')
+        $response->assertInertia(fn ($page) => $page->has('historicalData.sp500_avg_return')
+            ->has('historicalData.avg_inflation_italy')
+            ->has('historicalData.avg_bond_return')
+            ->has('historicalData.avg_savings_account')
         );
     }
 
@@ -99,11 +98,10 @@ class SimulationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('simulations.index'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->has('crisisScenarios', 3)
-                ->where('crisisScenarios.0.id', 'crisis_2008')
-                ->where('crisisScenarios.1.id', 'covid_2020')
-                ->where('crisisScenarios.2.id', 'dot_com')
+        $response->assertInertia(fn ($page) => $page->has('crisisScenarios', 3)
+            ->where('crisisScenarios.0.id', 'crisis_2008')
+            ->where('crisisScenarios.1.id', 'covid_2020')
+            ->where('crisisScenarios.2.id', 'dot_com')
         );
     }
 
@@ -114,14 +112,13 @@ class SimulationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('simulations.index'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->has('crisisScenarios.0.id')
-                ->has('crisisScenarios.0.name')
-                ->has('crisisScenarios.0.description')
-                ->has('crisisScenarios.0.peak_drop')
-                ->has('crisisScenarios.0.recovery_months')
-                ->has('crisisScenarios.0.monthly_returns')
-                ->has('crisisScenarios.0.labels')
+        $response->assertInertia(fn ($page) => $page->has('crisisScenarios.0.id')
+            ->has('crisisScenarios.0.name')
+            ->has('crisisScenarios.0.description')
+            ->has('crisisScenarios.0.peak_drop')
+            ->has('crisisScenarios.0.recovery_months')
+            ->has('crisisScenarios.0.monthly_returns')
+            ->has('crisisScenarios.0.labels')
         );
     }
 
@@ -132,11 +129,10 @@ class SimulationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('simulations.index'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->has('presetScenarios.0.id')
-                ->has('presetScenarios.0.name')
-                ->has('presetScenarios.0.return')
-                ->has('presetScenarios.0.description')
+        $response->assertInertia(fn ($page) => $page->has('presetScenarios.0.id')
+            ->has('presetScenarios.0.name')
+            ->has('presetScenarios.0.return')
+            ->has('presetScenarios.0.description')
         );
     }
 
@@ -144,7 +140,7 @@ class SimulationTest extends TestCase
     public function simulations_route_has_correct_name(): void
     {
         $this->assertTrue(
-            \Illuminate\Support\Facades\Route::has('simulations.index'),
+            Route::has('simulations.index'),
             'La rotta simulations.index deve esistere'
         );
     }

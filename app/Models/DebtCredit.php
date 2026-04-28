@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\DispatchesModelEvents;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,21 +16,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class DebtCredit extends Model
 {
-    use HasFactory, SoftDeletes, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $table = 'debts_credits';
 
     protected $fillable = [
-        'household_id', 
-        'user_id', 
-        'counterparty', 
-        'amount', 
+        'household_id',
+        'user_id',
+        'counterparty',
+        'amount',
         'initial_amount',
         'paid_amount',
-        'currency_code', 
-        'type', 
-        'due_date', 
-        'status', 
+        'currency_code',
+        'type',
+        'due_date',
+        'status',
         'description',
         'interest_rate',
         'interest_type',
@@ -83,31 +84,30 @@ class DebtCredit extends Model
     {
         $initial = (float) ($this->initial_amount ?? $this->amount);
         $paid = (float) $this->paid_amount;
-        
+
         return $initial - $paid;
     }
 
     /**
      * Calcola gli interessi maturati fino alla data specificata.
-     * 
-     * @param \DateTime|string|null $toDate Data fino alla quale calcolare gli interessi (default: oggi)
-     * @return float
+     *
+     * @param  \DateTime|string|null  $toDate  Data fino alla quale calcolare gli interessi (default: oggi)
      */
     public function calculateAccruedInterest($toDate = null): float
     {
         // Se non c'è tasso di interesse, ritorna 0
-        if (!$this->interest_rate || $this->interest_rate <= 0) {
+        if (! $this->interest_rate || $this->interest_rate <= 0) {
             return 0.0;
         }
 
-        $toDate = $toDate ? \Carbon\Carbon::parse($toDate) : now();
-        $startDate = $this->interest_calculation_date 
-            ? \Carbon\Carbon::parse($this->interest_calculation_date) 
+        $toDate = $toDate ? Carbon::parse($toDate) : now();
+        $startDate = $this->interest_calculation_date
+            ? Carbon::parse($this->interest_calculation_date)
             : $this->created_at;
 
         // Calcola i giorni trascorsi
         $days = $startDate->diffInDays($toDate);
-        
+
         if ($days <= 0) {
             return 0.0;
         }
@@ -118,6 +118,7 @@ class DebtCredit extends Model
         if ($this->interest_type === 'compound') {
             // Interesse composto (giornaliero)
             $dailyRate = $rate / 365;
+
             return $principal * (pow(1 + $dailyRate, $days) - 1);
         }
 
@@ -135,17 +136,16 @@ class DebtCredit extends Model
 
     /**
      * Aggiorna l'importo pagato e lo stato del debito/credito.
-     * 
-     * @param float $paymentAmount Importo del pagamento
-     * @return void
+     *
+     * @param  float  $paymentAmount  Importo del pagamento
      */
     public function recordPayment(float $paymentAmount): void
     {
         $this->paid_amount = bcadd((string) $this->paid_amount, (string) $paymentAmount, 2);
-        
+
         // Aggiorna lo stato
         $remaining = $this->getRemainingAmount();
-        
+
         if ($remaining <= 0.01) { // Tolleranza per arrotondamenti
             $this->status = 'closed';
         } elseif ($this->due_date && now()->isAfter($this->due_date)) {
@@ -153,7 +153,7 @@ class DebtCredit extends Model
         } else {
             $this->status = 'open';
         }
-        
+
         $this->save();
     }
 
@@ -162,7 +162,7 @@ class DebtCredit extends Model
      */
     public function isOverdue(): bool
     {
-        return $this->status === 'overdue' || 
+        return $this->status === 'overdue' ||
                ($this->due_date && now()->isAfter($this->due_date) && $this->status !== 'closed');
     }
 

@@ -22,7 +22,7 @@ class InterHouseholdTransferPolicy
     public function view(User $user, InterHouseholdTransfer $transfer): bool
     {
         // L'utente può visualizzare se appartiene alla household sorgente o destinataria
-        return $transfer->isSourceHouseholdMember($user) 
+        return $transfer->isSourceHouseholdMember($user)
             || $transfer->isDestinationHouseholdMember($user);
     }
 
@@ -65,7 +65,7 @@ class InterHouseholdTransferPolicy
     public function delete(User $user, InterHouseholdTransfer $transfer): bool
     {
         // Solo l'utente sorgente può eliminare, e solo se pending o cancelled
-        return $transfer->source_user_id === $user->id 
+        return $transfer->source_user_id === $user->id
             && in_array($transfer->status, ['pending', 'cancelled', 'rejected']);
     }
 }

@@ -39,9 +39,9 @@ class UpdateAccountBalance
                 ELSE ABS(transactions.amount)
             END) as signed_sum"
         )
-        ->leftJoin('categories', 'transactions.category_id', '=', 'categories.id')
-        ->where('transactions.account_id', $account->id)
-        ->whereNull('transactions.deleted_at');
+            ->leftJoin('categories', 'transactions.category_id', '=', 'categories.id')
+            ->where('transactions.account_id', $account->id)
+            ->whereNull('transactions.deleted_at');
 
         $row = $sumQuery->first();
         $signedSum = $row->signed_sum ?? 0;

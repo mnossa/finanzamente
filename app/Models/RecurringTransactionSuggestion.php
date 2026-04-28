@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class RecurringTransactionSuggestion extends Model
 {
-    use HasFactory, DispatchesModelEvents;
+    use DispatchesModelEvents, HasFactory;
 
     protected $fillable = [
         'user_id',
@@ -81,7 +81,7 @@ class RecurringTransactionSuggestion extends Model
         return match (true) {
             $this->confidence >= 0.80 => 'alto',
             $this->confidence >= 0.50 => 'medio',
-            default                    => 'basso',
+            default => 'basso',
         };
     }
 

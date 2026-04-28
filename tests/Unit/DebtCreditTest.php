@@ -6,6 +6,7 @@ use App\Models\Currency;
 use App\Models\DebtCredit;
 use App\Models\Household;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase as BaseTestCase;
@@ -19,7 +20,9 @@ class DebtCreditTest extends BaseTestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Currency $currency;
 
     protected function setUp(): void
@@ -30,7 +33,7 @@ class DebtCreditTest extends BaseTestCase
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->user->active_household_id = $this->household->id;
         $this->user->save();
-        
+
         $this->currency = Currency::firstOrCreate(
             ['code' => 'EUR'],
             ['name' => 'Euro', 'symbol' => '€']
@@ -180,13 +183,13 @@ class DebtCreditTest extends BaseTestCase
         ]);
 
         $debt->recordPayment(500.00);
-        
+
         $this->assertEquals(500.00, $debt->paid_amount);
         $this->assertEquals(500.00, $debt->getRemainingAmount());
         $this->assertEquals('open', $debt->status);
 
         $debt->recordPayment(500.00);
-        
+
         $this->assertEquals(1000.00, $debt->paid_amount);
         $this->assertEquals(0.00, $debt->getRemainingAmount());
         $this->assertEquals('closed', $debt->status);
@@ -209,7 +212,7 @@ class DebtCreditTest extends BaseTestCase
         ]);
 
         $debt->recordPayment(100.00);
-        
+
         $this->assertEquals('overdue', $debt->status);
     }
 
@@ -286,7 +289,7 @@ class DebtCreditTest extends BaseTestCase
             'status' => 'open',
         ]);
 
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $debt->transactions());
-        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $debt->recurringTransactions());
+        $this->assertInstanceOf(HasMany::class, $debt->transactions());
+        $this->assertInstanceOf(HasMany::class, $debt->recurringTransactions());
     }
 }

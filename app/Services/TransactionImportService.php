@@ -4,7 +4,6 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use DateTimeInterface;
-use Illuminate\Support\Collection;
 use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 
 class TransactionImportService
@@ -12,8 +11,8 @@ class TransactionImportService
     /**
      * Parse a CSV string using the given layout configuration.
      *
-     * @param string $content Raw CSV content
-     * @param array $layout { delimiter, date_format, has_header, encoding, column_mapping }
+     * @param  string  $content  Raw CSV content
+     * @param  array  $layout  { delimiter, date_format, has_header, encoding, column_mapping }
      * @return array Array of parsed rows: [{date, amount, description, notes, raw, errors}]
      */
     public function parseCsv(string $content, array $layout): array
@@ -32,7 +31,7 @@ class TransactionImportService
         // Normalize line endings
         $content = str_replace(["\r\n", "\r"], "\n", $content);
 
-        $lines = array_filter(explode("\n", $content), fn($line) => trim($line) !== '');
+        $lines = array_filter(explode("\n", $content), fn ($line) => trim($line) !== '');
         $lines = array_values($lines);
 
         if (empty($lines)) {
@@ -63,6 +62,7 @@ class TransactionImportService
         rewind($handle);
         $row = fgetcsv($handle, 0, $delimiter, '"', '\\');
         fclose($handle);
+
         return $row !== false ? $row : [];
     }
 
@@ -118,16 +118,16 @@ class TransactionImportService
         }
 
         return [
-            'line_number'   => $lineNumber,
-            'date'          => $date,
-            'amount'        => $amount,
-            'description'   => $description,
-            'notes'         => $notesRaw !== null ? trim($notesRaw) : null,
+            'line_number' => $lineNumber,
+            'date' => $date,
+            'amount' => $amount,
+            'description' => $description,
+            'notes' => $notesRaw !== null ? trim($notesRaw) : null,
             'category_name' => ($categoryRaw !== null && trim($categoryRaw) !== '') ? trim($categoryRaw) : null,
-            'account_name'  => ($accountRaw !== null && trim($accountRaw) !== '') ? trim($accountRaw) : null,
-            'raw'           => $raw,
-            'errors'        => $errors,
-            'warnings'      => $warnings,
+            'account_name' => ($accountRaw !== null && trim($accountRaw) !== '') ? trim($accountRaw) : null,
+            'raw' => $raw,
+            'errors' => $errors,
+            'warnings' => $warnings,
         ];
     }
 
@@ -136,9 +136,10 @@ class TransactionImportService
      */
     private function getColumn(array $cols, ?int $index): ?string
     {
-        if ($index === null || !isset($cols[$index])) {
+        if ($index === null || ! isset($cols[$index])) {
             return null;
         }
+
         return $cols[$index];
     }
 
@@ -186,7 +187,7 @@ class TransactionImportService
             }
         }
 
-        if (!is_numeric($value)) {
+        if (! is_numeric($value)) {
             return null;
         }
 
@@ -215,41 +216,43 @@ class TransactionImportService
     /**
      * Legge i nomi dei fogli presenti in un file XLSX.
      *
-     * @param string $filePath Percorso assoluto al file .xlsx
+     * @param  string  $filePath  Percorso assoluto al file .xlsx
      * @return array<int, array{index: int, name: string}>
      */
     public function getXlsxSheets(string $filePath): array
     {
-        $reader = new XlsxReader();
+        $reader = new XlsxReader;
         $reader->open($filePath);
 
         $sheets = [];
-        $index  = 0;
+        $index = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
             $sheets[] = ['index' => $index, 'name' => $sheet->getName()];
             $index++;
         }
 
         $reader->close();
+
         return $sheets;
     }
 
     /**
      * Legge la prima riga di un file XLSX come intestazioni di colonna.
      *
-     * @param string $filePath   Percorso assoluto al file .xlsx
-     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
+     * @param  string  $filePath  Percorso assoluto al file .xlsx
+     * @param  int  $sheetIndex  Indice (0-based) del foglio da leggere (default 0)
      */
     public function getXlsxHeaders(string $filePath, int $sheetIndex = 0): array
     {
-        $reader = new XlsxReader();
+        $reader = new XlsxReader;
         $reader->open($filePath);
 
-        $headers    = [];
+        $headers = [];
         $sheetCount = 0;
         foreach ($reader->getSheetIterator() as $sheet) {
             if ($sheetCount !== $sheetIndex) {
                 $sheetCount++;
+
                 continue;
             }
             foreach ($sheet->getRowIterator() as $row) {
@@ -263,33 +266,35 @@ class TransactionImportService
         }
 
         $reader->close();
+
         return $headers;
     }
 
     /**
      * Legge un file XLSX e restituisce le righe nel formato normalizzato.
      *
-     * @param string $filePath   Percorso assoluto al file .xlsx
-     * @param array  $layout     { date_format, has_header, column_mapping }
-     * @param int    $sheetIndex Indice (0-based) del foglio da leggere (default 0)
+     * @param  string  $filePath  Percorso assoluto al file .xlsx
+     * @param  array  $layout  { date_format, has_header, column_mapping }
+     * @param  int  $sheetIndex  Indice (0-based) del foglio da leggere (default 0)
      * @return array Array di righe: [{date, amount, description, notes, raw, errors}]
      */
     public function parseXlsx(string $filePath, array $layout, int $sheetIndex = 0): array
     {
-        $dateFormat    = $layout['date_format']    ?? 'd/m/Y';
-        $hasHeader     = $layout['has_header']     ?? true;
+        $dateFormat = $layout['date_format'] ?? 'd/m/Y';
+        $hasHeader = $layout['has_header'] ?? true;
         $columnMapping = $layout['column_mapping'] ?? [];
 
-        $reader = new XlsxReader();
+        $reader = new XlsxReader;
         $reader->open($filePath);
 
-        $rows       = [];
+        $rows = [];
         $lineNumber = 0;
         $sheetCount = 0;
 
         foreach ($reader->getSheetIterator() as $sheet) {
             if ($sheetCount !== $sheetIndex) {
                 $sheetCount++;
+
                 continue;
             }
             foreach ($sheet->getRowIterator() as $row) {
@@ -303,6 +308,7 @@ class TransactionImportService
         }
 
         $reader->close();
+
         return $rows;
     }
 
@@ -319,9 +325,10 @@ class TransactionImportService
         if ($value === null) {
             return '';
         }
-        if ($value instanceof \DateTimeInterface) {
+        if ($value instanceof DateTimeInterface) {
             return Carbon::instance($value)->format('Y-m-d');
         }
+
         return (string) $value;
     }
 
@@ -331,10 +338,10 @@ class TransactionImportService
 
         $getCell = fn (?int $idx) => ($idx !== null && isset($cells[$idx])) ? $cells[$idx] : null;
 
-        $dateCell   = $getCell($mapping['date']        ?? 0);
-        $amountCell = $getCell($mapping['amount']      ?? 1);
-        $descCell   = $getCell($mapping['description'] ?? 2);
-        $notesCell  = $getCell(
+        $dateCell = $getCell($mapping['date'] ?? 0);
+        $amountCell = $getCell($mapping['amount'] ?? 1);
+        $descCell = $getCell($mapping['description'] ?? 2);
+        $notesCell = $getCell(
             (isset($mapping['notes']) && $mapping['notes'] !== null) ? (int) $mapping['notes'] : null
         );
         $categoryCell = $getCell(
@@ -345,9 +352,9 @@ class TransactionImportService
         );
 
         // ── Data ────────────────────────────────────────────────────────────
-        $date      = null;
+        $date = null;
         $dateValue = $dateCell?->getValue();
-        if ($dateValue instanceof \DateTimeInterface) {
+        if ($dateValue instanceof DateTimeInterface) {
             // Excel memorizza date come oggetti DateTimeImmutable nativi
             $date = Carbon::instance($dateValue)->format('Y-m-d');
         } elseif ($dateValue !== null && trim($this->cellValueToString($dateValue)) !== '') {
@@ -361,11 +368,11 @@ class TransactionImportService
         }
 
         // ── Importo ─────────────────────────────────────────────────────────
-        $amount      = null;
+        $amount = null;
         $amountValue = $amountCell?->getValue();
         if (is_float($amountValue) || is_int($amountValue)) {
             $amount = (float) $amountValue;
-        } elseif ($amountValue !== null && !($amountValue instanceof \DateTimeInterface)) {
+        } elseif ($amountValue !== null && ! ($amountValue instanceof DateTimeInterface)) {
             $amountStr = trim($this->cellValueToString($amountValue));
             if ($amountStr !== '') {
                 $amount = $this->parseAmount($amountStr);
@@ -385,20 +392,20 @@ class TransactionImportService
             $errors[] = "Riga {$lineNumber}: descrizione mancante";
         }
 
-        $notesRaw    = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
+        $notesRaw = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
         $categoryRaw = $categoryCell !== null ? trim($this->cellValueToString($categoryCell->getValue())) : null;
-        $accountRaw  = $accountCell !== null ? trim($this->cellValueToString($accountCell->getValue())) : null;
+        $accountRaw = $accountCell !== null ? trim($this->cellValueToString($accountCell->getValue())) : null;
 
         return [
-            'line_number'   => $lineNumber,
-            'date'          => $date,
-            'amount'        => $amount,
-            'description'   => $description,
-            'notes'         => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
+            'line_number' => $lineNumber,
+            'date' => $date,
+            'amount' => $amount,
+            'description' => $description,
+            'notes' => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
             'category_name' => ($categoryRaw !== null && $categoryRaw !== '') ? $categoryRaw : null,
-            'account_name'  => ($accountRaw !== null && $accountRaw !== '') ? $accountRaw : null,
-            'raw'           => "Riga {$lineNumber}",
-            'errors'        => $errors,
+            'account_name' => ($accountRaw !== null && $accountRaw !== '') ? $accountRaw : null,
+            'raw' => "Riga {$lineNumber}",
+            'errors' => $errors,
         ];
     }
 }

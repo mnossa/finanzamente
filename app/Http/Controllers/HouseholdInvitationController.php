@@ -24,7 +24,7 @@ class HouseholdInvitationController extends Controller
             ->byToken($token)
             ->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return redirect()->route('register')
                 ->with('error', 'Invito non trovato.');
         }
@@ -73,7 +73,7 @@ class HouseholdInvitationController extends Controller
             ->valid()
             ->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return back()->withErrors(['email' => 'Invito non valido o scaduto.']);
         }
 
@@ -151,16 +151,16 @@ class HouseholdInvitationController extends Controller
             ->valid()
             ->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return redirect()->route('login')
                 ->with('error', 'Invito non valido o scaduto.');
         }
 
         // L'utente deve essere autenticato
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             // Salva il token nella sessione per processarlo dopo il login
             session(['pending_invitation_token' => $token]);
-            
+
             return redirect()->route('login')
                 ->with('info', 'Effettua il login per accettare l\'invito.');
         }
@@ -176,6 +176,7 @@ class HouseholdInvitationController extends Controller
         // Verifica che l'utente non sia già nella household
         if ($invitation->household->users()->where('user_id', $user->id)->exists()) {
             $invitation->markAsAccepted();
+
             return redirect()->route('dashboard')
                 ->with('info', 'Fai già parte di questa household.');
         }
@@ -187,7 +188,7 @@ class HouseholdInvitationController extends Controller
         ]);
 
         // Imposta la household come attiva se l'utente non ne ha una
-        if (!$user->active_household_id) {
+        if (! $user->active_household_id) {
             $user->update(['active_household_id' => $invitation->household_id]);
         }
 
@@ -212,8 +213,8 @@ class HouseholdInvitationController extends Controller
     public static function processPendingInvitation(User $user): void
     {
         $token = session('pending_invitation_token');
-        
-        if (!$token) {
+
+        if (! $token) {
             // Controlla anche inviti non accettati per l'email dell'utente
             $pendingInvitations = HouseholdInvitation::with('household', 'invitedBy')
                 ->forEmail($user->email)
@@ -222,7 +223,7 @@ class HouseholdInvitationController extends Controller
 
             foreach ($pendingInvitations as $invitation) {
                 // Verifica che l'utente non sia già nella household
-                if (!$invitation->household->users()->where('user_id', $user->id)->exists()) {
+                if (! $invitation->household->users()->where('user_id', $user->id)->exists()) {
                     // Aggiungi l'utente alla household
                     $invitation->household->users()->attach($user->id, [
                         'role' => $invitation->role,
@@ -230,7 +231,7 @@ class HouseholdInvitationController extends Controller
                     ]);
 
                     // Imposta la household come attiva se l'utente non ne ha una
-                    if (!$user->active_household_id) {
+                    if (! $user->active_household_id) {
                         $user->update(['active_household_id' => $invitation->household_id]);
                     }
 
@@ -246,7 +247,7 @@ class HouseholdInvitationController extends Controller
                     ));
                 }
             }
-            
+
             return;
         }
 
@@ -257,13 +258,14 @@ class HouseholdInvitationController extends Controller
             ->valid()
             ->first();
 
-        if (!$invitation || strtolower($user->email) !== strtolower($invitation->email)) {
+        if (! $invitation || strtolower($user->email) !== strtolower($invitation->email)) {
             return;
         }
 
         // Verifica che l'utente non sia già nella household
         if ($invitation->household->users()->where('user_id', $user->id)->exists()) {
             $invitation->markAsAccepted();
+
             return;
         }
 
@@ -274,7 +276,7 @@ class HouseholdInvitationController extends Controller
         ]);
 
         // Imposta la household come attiva se l'utente non ne ha una
-        if (!$user->active_household_id) {
+        if (! $user->active_household_id) {
             $user->update(['active_household_id' => $invitation->household_id]);
         }
 

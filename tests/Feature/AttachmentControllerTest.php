@@ -19,8 +19,11 @@ class AttachmentControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Transaction $transaction;
 
     protected function setUp(): void
@@ -89,7 +92,7 @@ class AttachmentControllerTest extends TestCase
     #[Test]
     public function user_can_upload_image_attachment()
     {
-        if (!extension_loaded('gd') || !function_exists('imagejpeg')) {
+        if (! extension_loaded('gd') || ! function_exists('imagejpeg')) {
             $this->markTestSkipped('L\'estensione GD non è disponibile');
         }
 
@@ -411,10 +414,10 @@ class AttachmentControllerTest extends TestCase
         $response->assertStatus(201);
 
         $attachment = Attachment::where('attachable_id', $this->transaction->id)->first();
-        
+
         // Il filename originale deve essere preservato
         $this->assertEquals('Ricevuta Medica 2024.pdf', $attachment->filename);
-        
+
         // Ma il file_path deve essere sanitizzato
         $this->assertStringContainsString('ricevuta-medica-2024', $attachment->file_path);
     }

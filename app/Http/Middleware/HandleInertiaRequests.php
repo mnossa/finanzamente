@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppNotification;
 use App\Services\HouseholdPermissionService;
 use App\Services\ModuleAccessService;
-use App\Models\AppNotification;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,20 +35,20 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
         $permissionService = app(HouseholdPermissionService::class);
         $moduleService = app(ModuleAccessService::class);
-        
+
         // Determina se l'utente può modificare i dati nella household attiva
         $canModify = false;
         $userRole = null;
-        
+
         if ($user && $user->active_household_id) {
             $canModify = $permissionService->canModify($user, $user->active_household_id);
             $membership = $permissionService->getMembership($user, $user->active_household_id);
             $userRole = $membership?->role ?? 'member';
         }
-        
+
         // Moduli disponibili per l'utente
         $availableModules = $user ? $moduleService->getAllModulesWithAccess($user) : [];
-        
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -76,17 +76,17 @@ class HandleInertiaRequests extends Middleware
                     ->limit(10)
                     ->get()
                     ->map(fn ($n) => [
-                        'id'      => $n->id,
-                        'title'   => $n->title,
+                        'id' => $n->id,
+                        'title' => $n->title,
                         'message' => $n->message,
-                        'read'    => $n->read,
+                        'read' => $n->read,
                         'created_at' => $n->created_at->diffForHumans(),
                     ])
                     ->toArray(),
             ] : ['unread_count' => 0, 'items' => []],
             'googleDrive' => [
                 'clientId' => config('services.google_drive.client_id', ''),
-                'apiKey'   => config('services.google_drive.api_key', ''),
+                'apiKey' => config('services.google_drive.api_key', ''),
             ],
             'plan' => fn () => $user ? [
                 'current' => $user->isPro() ? 'pro' : 'base',

@@ -9,17 +9,20 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Provider Yahoo Finance via RapidAPI.
- * 
+ *
  * Limiti piano gratuito: ~500 richieste/mese
  * Registrazione: https://rapidapi.com/apidojo/api/yfinance/
  */
 class YahooFinanceProvider implements AssetPriceProviderInterface
 {
     private const API_HOST = 'apidojo-yahoo-finance-v1.p.rapidapi.com';
+
     private const BASE_URL = 'https://apidojo-yahoo-finance-v1.p.rapidapi.com';
-    
+
     private const CACHE_TTL_REALTIME = 900; // 15 minuti
+
     private const CACHE_TTL_HISTORICAL = 86400; // 24 ore
+
     private const CACHE_TTL_SEARCH = 3600; // 1 ora
 
     private ?string $apiKey;
@@ -36,7 +39,7 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
 
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
@@ -44,11 +47,11 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
      */
     public function searchAssets(string $query): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return ['error' => 'API Yahoo Finance non configurata', 'results' => []];
         }
 
-        $cacheKey = 'yf_search_' . md5($query);
+        $cacheKey = 'yf_search_'.md5($query);
 
         return Cache::remember($cacheKey, self::CACHE_TTL_SEARCH, function () use ($query) {
             try {
@@ -57,16 +60,17 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
                         'x-rapidapi-key' => $this->apiKey,
                         'x-rapidapi-host' => self::API_HOST,
                     ])
-                    ->get(self::BASE_URL . '/auto-complete', [
+                    ->get(self::BASE_URL.'/auto-complete', [
                         'q' => $query,
                         'region' => 'IT',
                     ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     Log::warning('Yahoo Finance search failed', [
                         'query' => $query,
                         'status' => $response->status(),
                     ]);
+
                     return ['error' => 'Errore nella ricerca', 'results' => []];
                 }
 
@@ -91,7 +95,8 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
                     'query' => $query,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore durante la ricerca: ' . $e->getMessage(), 'results' => []];
+
+                return ['error' => 'Errore durante la ricerca: '.$e->getMessage(), 'results' => []];
             }
         });
     }
@@ -101,11 +106,11 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
      */
     public function getCurrentPrice(string $symbol): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return ['error' => 'API Yahoo Finance non configurata', 'price' => null];
         }
 
-        $cacheKey = 'yf_price_' . strtoupper($symbol);
+        $cacheKey = 'yf_price_'.strtoupper($symbol);
 
         return Cache::remember($cacheKey, self::CACHE_TTL_REALTIME, function () use ($symbol) {
             try {
@@ -114,12 +119,12 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
                         'x-rapidapi-key' => $this->apiKey,
                         'x-rapidapi-host' => self::API_HOST,
                     ])
-                    ->get(self::BASE_URL . '/market/v2/get-quotes', [
+                    ->get(self::BASE_URL.'/market/v2/get-quotes', [
                         'region' => 'US',
                         'symbols' => $symbol,
                     ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return ['error' => 'Errore nel recupero del prezzo', 'price' => null];
                 }
 
@@ -151,7 +156,8 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
                     'symbol' => $symbol,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore: ' . $e->getMessage(), 'price' => null];
+
+                return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
             }
         });
     }
@@ -162,11 +168,11 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
      */
     public function getHistoricalPrice(string $symbol, string $date): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return ['error' => 'API Yahoo Finance non configurata', 'price' => null];
         }
 
-        $cacheKey = 'yf_historical_' . strtoupper($symbol) . '_' . $date;
+        $cacheKey = 'yf_historical_'.strtoupper($symbol).'_'.$date;
 
         return Cache::remember($cacheKey, self::CACHE_TTL_HISTORICAL, function () use ($symbol, $date) {
             try {
@@ -191,21 +197,21 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
                         'x-rapidapi-key' => $this->apiKey,
                         'x-rapidapi-host' => self::API_HOST,
                     ])
-                    ->get(self::BASE_URL . '/stock/v3/get-chart', [
+                    ->get(self::BASE_URL.'/stock/v3/get-chart', [
                         'symbol' => $symbol,
                         'interval' => '1d',
                         'range' => $range,
                         'region' => 'US',
                     ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return ['error' => 'Errore nel recupero dei dati storici', 'price' => null];
                 }
 
                 $data = $response->json();
                 $result = $data['chart']['result'][0] ?? null;
 
-                if (!$result) {
+                if (! $result) {
                     return ['error' => 'Nessun dato storico disponibile', 'price' => null];
                 }
 
@@ -266,7 +272,8 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
                     'date' => $date,
                     'error' => $e->getMessage(),
                 ]);
-                return ['error' => 'Errore: ' . $e->getMessage(), 'price' => null];
+
+                return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
             }
         });
     }

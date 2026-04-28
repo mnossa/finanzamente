@@ -11,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -346,6 +346,17 @@ clean-duplicates:
 
 test:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -e APP_ENV=testing app php -d memory_limit=256M artisan test
+
+# Verifica stile PHP come in CI (non modifica i file)
+pint-check:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app php ./vendor/bin/pint --test
+
+# Applica automaticamente la formattazione PHP con Pint
+pint-fix:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app php ./vendor/bin/pint
+
+# Replica i gate CI locali: style check + test
+test-ci: pint-check test
 
 # Simula la pipeline CI/CD in locale (frontend via container `node`, come in sviluppo)
 ci:

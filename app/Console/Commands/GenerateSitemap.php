@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Models\MagazineArticle;
+use App\Models\MagazineCategory;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
-use App\Models\MagazineArticle;
-use App\Models\MagazineCategory;
 
 /**
  * Genera automaticamente il file sitemap.xml con le rotte pubbliche dell'app.
@@ -29,26 +29,26 @@ class GenerateSitemap extends Command
      */
     private array $routes = [
         // Core
-        'home'                  => [Url::CHANGE_FREQUENCY_WEEKLY,  1.0],
-        'login'                 => [Url::CHANGE_FREQUENCY_MONTHLY, 0.7],
+        'home' => [Url::CHANGE_FREQUENCY_WEEKLY,  1.0],
+        'login' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.7],
         // Landing page
-        'landing.investitori'   => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
-        'landing.famiglie'      => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
-        'landing.freelance'     => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
-        'landing.lavoratori'    => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.investitori' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.famiglie' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.freelance' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.lavoratori' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
         'landing.pianificatori' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
-        'landing.tech-savvy'    => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
-        'landing.crescita'      => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.tech-savvy' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'landing.crescita' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
     ];
 
     /**
      * Rotte aggiunte solo a pre-lancio disattivo.
      */
     private array $postLaunchRoutes = [
-        'register'      => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'register' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
         'legal.privacy' => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
         'legal.cookies' => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
-        'legal.terms'   => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
+        'legal.terms' => [Url::CHANGE_FREQUENCY_YEARLY,  0.3],
     ];
 
     public function handle(): int
@@ -106,7 +106,8 @@ class GenerateSitemap extends Command
 
         $sitemap->writeToFile(public_path('sitemap.xml'));
 
-        $this->info('sitemap.xml generato correttamente in ' . public_path('sitemap.xml'));
+        $this->info('sitemap.xml generato correttamente in '.public_path('sitemap.xml'));
+
         return self::SUCCESS;
     }
 }

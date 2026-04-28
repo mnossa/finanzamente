@@ -9,16 +9,18 @@ use App\Models\DebtCredit;
 use App\Models\FinancialGoal;
 use App\Models\Investment;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\AssetClassificationService;
 use App\Services\BudgetNotificationService;
 use App\Services\FinancialMetricsService;
+use App\Services\ModuleAccessService;
 use App\Services\RevenueNotificationService;
 use App\Services\TransactionTrendNotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -112,8 +114,8 @@ class DashboardController extends Controller
         $lastMonthStats = $this->getMonthlyStats($householdId, $user->id, $startOfLastMonth, $endOfLastMonth);
 
         // Controlla e crea notifiche per budget e trend di spesa/entrate
-        (new BudgetNotificationService())->checkAndNotify($user, $householdId);
-        (new TransactionTrendNotificationService())->checkAndNotify(
+        (new BudgetNotificationService)->checkAndNotify($user, $householdId);
+        (new TransactionTrendNotificationService)->checkAndNotify(
             $user,
             $monthlyStats,
             $lastMonthStats,
@@ -129,8 +131,8 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($budget) use ($householdId) {
                 $spent = Transaction::whereHas('account', function ($query) use ($householdId) {
-                        $query->where('household_id', $householdId);
-                    })
+                    $query->where('household_id', $householdId);
+                })
                     ->where('category_id', $budget->category_id)
                     ->whereHas('category', function ($query) {
                         $query->where('type', 'expense');
@@ -138,8 +140,8 @@ class DashboardController extends Controller
                     ->whereBetween('date', [$budget->period_start, $budget->period_end])
                     ->sum('amount');
 
-                $percentage = $budget->amount > 0 
-                    ? min(100, round(($spent / $budget->amount) * 100, 1)) 
+                $percentage = $budget->amount > 0
+                    ? min(100, round(($spent / $budget->amount) * 100, 1))
                     : 0;
 
                 return [
@@ -162,7 +164,7 @@ class DashboardController extends Controller
             ->orderBy('due_date')
             ->limit(5)
             ->get()
-            ->map(fn($dc) => [
+            ->map(fn ($dc) => [
                 'id' => $dc->id,
                 'counterparty' => $dc->counterparty,
                 'amount' => (float) $dc->getRemainingAmount(),
@@ -216,7 +218,7 @@ class DashboardController extends Controller
     /**
      * Recupera i dati per il widget Termometro Tasse.
      */
-    private function getTaxThermometerData(\App\Models\User $user): array
+    private function getTaxThermometerData(User $user): array
     {
         // Il termometro tasse è visibile solo agli utenti con Partita IVA
         if ($user->user_type !== 'partita_iva') {
@@ -238,8 +240,8 @@ class DashboardController extends Controller
         $householdId = $user->active_household_id;
 
         $grossIncome = (float) Transaction::whereHas('account', function ($q) use ($householdId) {
-                $q->where('household_id', $householdId);
-            })
+            $q->where('household_id', $householdId);
+        })
             ->where('user_id', $user->id)
             ->where('amount', '>', 0)
             ->whereBetween('date', [$startOfYear, $endOfYear])
@@ -257,7 +259,7 @@ class DashboardController extends Controller
     /**
      * Calcola il fatturato annuo e controlla le notifiche di soglia.
      */
-    private function getAnnualRevenueData(\App\Models\User $user): array
+    private function getAnnualRevenueData(User $user): array
     {
         // Il widget fatturato è visibile solo agli utenti con Partita IVA
         if ($user->user_type !== 'partita_iva') {
@@ -275,7 +277,7 @@ class DashboardController extends Controller
         $trackingEnabled = $settings['revenue_tracking_enabled'] ?? true;
         $threshold = (float) ($settings['revenue_threshold'] ?? 85000);
 
-        if (!$trackingEnabled) {
+        if (! $trackingEnabled) {
             return [
                 'visible' => true,
                 'has_vat' => true,
@@ -292,8 +294,8 @@ class DashboardController extends Controller
         $householdId = $user->active_household_id;
 
         $annualRevenue = (float) Transaction::whereHas('account', function ($q) use ($householdId) {
-                $q->where('household_id', $householdId);
-            })
+            $q->where('household_id', $householdId);
+        })
             ->where('user_id', $user->id)
             ->where('amount', '>', 0)
             ->whereBetween('date', [$startOfYear, $endOfYear])
@@ -304,7 +306,7 @@ class DashboardController extends Controller
             : 0;
 
         // Controlla e crea notifiche se necessario
-        (new RevenueNotificationService())->checkAndNotify($user, $annualRevenue, $threshold);
+        (new RevenueNotificationService)->checkAndNotify($user, $annualRevenue, $threshold);
 
         return [
             'visible' => true,
@@ -358,37 +360,37 @@ class DashboardController extends Controller
      * stato "locked" con il numero di mesi già coperti, così il frontend può
      * mostrare la challenge di sblocco.
      */
-    private function getLifestyleWidgetData(\App\Models\User $user): array
+    private function getLifestyleWidgetData(User $user): array
     {
         // Il widget è riservato al piano Pro
-        $moduleService = app(\App\Services\ModuleAccessService::class);
+        $moduleService = app(ModuleAccessService::class);
         if (! $moduleService->canAccessModuleById($user, 'lifestyle_score')) {
             return [
-                'unlocked'           => false,
-                'months_with_data'   => 0,
-                'months_needed'      => 2,
-                'lifestyle_score'    => null,
-                'net_income'         => 0.0,
+                'unlocked' => false,
+                'months_with_data' => 0,
+                'months_needed' => 2,
+                'lifestyle_score' => null,
+                'net_income' => 0.0,
                 'effective_expenses' => 0.0,
-                'is_partita_iva'     => $user->user_type === 'partita_iva',
-                'top_categories'     => [],
+                'is_partita_iva' => $user->user_type === 'partita_iva',
+                'top_categories' => [],
                 'trend' => [
                     'last30_score' => null,
                     'prev30_score' => null,
-                    'delta'        => null,
-                    'direction'    => 'unknown',
+                    'delta' => null,
+                    'direction' => 'unknown',
                 ],
             ];
         }
 
         // ── Verifica mesi distinti con transazioni ───────────────────────────────
         // Compatibile con MySQL (produzione) e SQLite (test in-memory)
-        $driver         = \Illuminate\Support\Facades\DB::getDriverName();
-        $yearMonthExpr  = $driver === 'sqlite'
+        $driver = DB::getDriverName();
+        $yearMonthExpr = $driver === 'sqlite'
             ? "strftime('%Y-%m', date)"
             : "DATE_FORMAT(date, '%Y-%m')";
 
-        $monthsWithData = (int) \App\Models\Transaction::whereHas(
+        $monthsWithData = (int) Transaction::whereHas(
             'account',
             fn ($q) => $q->where('household_id', $user->active_household_id)
         )
@@ -400,37 +402,37 @@ class DashboardController extends Controller
             ->count();
 
         $monthsNeeded = 2;
-        $unlocked     = $monthsWithData >= $monthsNeeded;
+        $unlocked = $monthsWithData >= $monthsNeeded;
 
         if (! $unlocked) {
             return [
-                'unlocked'        => false,
+                'unlocked' => false,
                 'months_with_data' => $monthsWithData,
-                'months_needed'   => $monthsNeeded,
+                'months_needed' => $monthsNeeded,
                 // campi nullable per soddisfare l'interfaccia TS
-                'lifestyle_score'    => null,
-                'net_income'         => 0.0,
+                'lifestyle_score' => null,
+                'net_income' => 0.0,
                 'effective_expenses' => 0.0,
-                'is_partita_iva'     => $user->user_type === 'partita_iva',
-                'top_categories'     => [],
+                'is_partita_iva' => $user->user_type === 'partita_iva',
+                'top_categories' => [],
                 'trend' => [
                     'last30_score' => null,
                     'prev30_score' => null,
-                    'delta'        => null,
-                    'direction'    => 'unknown',
+                    'delta' => null,
+                    'direction' => 'unknown',
                 ],
             ];
         }
 
-        $service = new FinancialMetricsService();
+        $service = new FinancialMetricsService;
 
         // Score sull'intero storico
-        $firstTx = \App\Models\Transaction::whereHas(
+        $firstTx = Transaction::whereHas(
             'account',
             fn ($q) => $q->where('household_id', $user->active_household_id)
         )->whereNull('transfer_id')->oldest('date')->first();
 
-        $start   = $firstTx ? $firstTx->date->startOfDay() : Carbon::now()->startOfMonth();
+        $start = $firstTx ? $firstTx->date->startOfDay() : Carbon::now()->startOfMonth();
         $overall = $service->calculate($user, $start, Carbon::now()->endOfDay());
 
         // Trend: ultimi 30 gg vs 30 gg precedenti
@@ -447,37 +449,37 @@ class DashboardController extends Controller
 
         $last30Score = $last30['lifestyle_score'];
         $prev30Score = $prev30['lifestyle_score'];
-        $delta       = ($last30Score !== null && $prev30Score !== null)
+        $delta = ($last30Score !== null && $prev30Score !== null)
             ? round($last30Score - $prev30Score, 1)
             : null;
-        $direction   = match (true) {
+        $direction = match (true) {
             $delta === null && $last30Score !== null => 'new',
-            $delta === null                          => 'unknown',
-            $delta > 1.0                             => 'up',
-            $delta < -1.0                            => 'down',
-            default                                  => 'stable',
+            $delta === null => 'unknown',
+            $delta > 1.0 => 'up',
+            $delta < -1.0 => 'down',
+            default => 'stable',
         };
 
         $topCategories = array_slice(
-            array_filter($overall['category_breakdown'], fn ($c) => !$c['excluded']),
+            array_filter($overall['category_breakdown'], fn ($c) => ! $c['excluded']),
             0,
             5
         );
 
         return [
-            'unlocked'           => true,
-            'months_with_data'   => $monthsWithData,
-            'months_needed'      => $monthsNeeded,
-            'lifestyle_score'    => $overall['lifestyle_score'],
-            'net_income'         => $overall['net_income'],
+            'unlocked' => true,
+            'months_with_data' => $monthsWithData,
+            'months_needed' => $monthsNeeded,
+            'lifestyle_score' => $overall['lifestyle_score'],
+            'net_income' => $overall['net_income'],
             'effective_expenses' => $overall['effective_expenses'],
-            'is_partita_iva'     => $overall['is_partita_iva'],
-            'top_categories'     => array_values($topCategories),
+            'is_partita_iva' => $overall['is_partita_iva'],
+            'top_categories' => array_values($topCategories),
             'trend' => [
                 'last30_score' => $last30Score !== null ? round($last30Score, 1) : null,
                 'prev30_score' => $prev30Score !== null ? round($prev30Score, 1) : null,
-                'delta'        => $delta,
-                'direction'    => $direction,
+                'delta' => $delta,
+                'direction' => $direction,
             ],
         ];
     }
@@ -488,7 +490,7 @@ class DashboardController extends Controller
      * I widget nuovi (non presenti nel layout salvato) vengono aggiunti in coda
      * in modo che gli utenti esistenti vedano i nuovi widget automaticamente.
      */
-    private function getDashboardLayout(\App\Models\User $user): array
+    private function getDashboardLayout(User $user): array
     {
         $layout = DashboardLayout::where('user_id', $user->id)
             ->where('household_id', $user->active_household_id)
@@ -498,7 +500,7 @@ class DashboardController extends Controller
             return DashboardLayout::defaultConfig();
         }
 
-        $savedConfig  = $layout->config;
+        $savedConfig = $layout->config;
         $defaultWidgets = DashboardLayout::defaultConfig()['widgets'];
 
         // Ricava gli ID già presenti nel layout salvato
@@ -522,7 +524,7 @@ class DashboardController extends Controller
      * Utilizza AssetClassificationService per i mapping e un'aggregazione unica
      * delle transazioni per evitare query N+1.
      */
-    private function getAssetAllocationWidgetData(\App\Models\User $user): array
+    private function getAssetAllocationWidgetData(User $user): array
     {
         $householdId = $user->active_household_id;
 
@@ -530,33 +532,33 @@ class DashboardController extends Controller
         $investments = Investment::with('asset')
             ->where('household_id', $householdId)
             ->whereNull('sell_date')
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->get();
 
-        $classValues   = [];
+        $classValues = [];
         $riskNumerator = 0.0;
-        $totalValue    = 0.0;
+        $totalValue = 0.0;
 
         foreach ($investments as $inv) {
             $type = $inv->asset->type ?? 'other';
-            $cls  = AssetClassificationService::ASSET_TYPE_CLASS[$type] ?? 'other';
+            $cls = AssetClassificationService::ASSET_TYPE_CLASS[$type] ?? 'other';
             $risk = AssetClassificationService::ASSET_TYPE_RISK[$type] ?? 3;
-            $val  = $inv->total_buy_value;
+            $val = $inv->total_buy_value;
             $classValues[$cls] = ($classValues[$cls] ?? 0) + $val;
-            $riskNumerator    += $val * $risk;
-            $totalValue       += $val;
+            $riskNumerator += $val * $risk;
+            $totalValue += $val;
         }
 
         // Liquidità conti — aggregazione unica per evitare N+1
         $accounts = Account::where('household_id', $householdId)
             ->where('active', true)
             ->whereNotIn('type', ['broker'])
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
             ->get();
 
         if ($accounts->isNotEmpty()) {
             $transactionSums = Transaction::whereIn('account_id', $accounts->pluck('id'))
-                ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+                ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
                 ->groupBy('account_id')
                 ->pluck(DB::raw('SUM(amount)'), 'account_id');
 
@@ -567,11 +569,11 @@ class DashboardController extends Controller
                 }
 
                 $type = $account->type ?? 'other';
-                $cls  = AssetClassificationService::ACCOUNT_TYPE_CLASS[$type] ?? 'liquidity';
+                $cls = AssetClassificationService::ACCOUNT_TYPE_CLASS[$type] ?? 'liquidity';
                 $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$type] ?? 1;
                 $classValues[$cls] = ($classValues[$cls] ?? 0) + $balance;
-                $riskNumerator    += $balance * $risk;
-                $totalValue       += $balance;
+                $riskNumerator += $balance * $risk;
+                $totalValue += $balance;
             }
         }
 
@@ -579,13 +581,13 @@ class DashboardController extends Controller
         foreach ($classValues as $cls => $val) {
             $allocation[] = [
                 'asset_class' => $cls,
-                'label'       => AssetClassificationService::CLASS_LABELS[$cls] ?? $cls,
-                'color'       => AssetClassificationService::CLASS_COLORS[$cls] ?? '#94a3b8',
-                'value'       => round($val, 2),
-                'percentage'  => $totalValue > 0 ? round(($val / $totalValue) * 100, 1) : 0,
+                'label' => AssetClassificationService::CLASS_LABELS[$cls] ?? $cls,
+                'color' => AssetClassificationService::CLASS_COLORS[$cls] ?? '#94a3b8',
+                'value' => round($val, 2),
+                'percentage' => $totalValue > 0 ? round(($val / $totalValue) * 100, 1) : 0,
             ];
         }
-        usort($allocation, fn($a, $b) => $b['value'] <=> $a['value']);
+        usort($allocation, fn ($a, $b) => $b['value'] <=> $a['value']);
 
         $riskIndex = $totalValue > 0
             ? min(7, max(1, round($riskNumerator / $totalValue, 1)))
@@ -593,9 +595,9 @@ class DashboardController extends Controller
 
         return [
             'total_value' => round($totalValue, 2),
-            'risk_index'  => $riskIndex,
-            'risk_label'  => AssetClassificationService::getRiskLabel($riskIndex),
-            'allocation'  => $allocation,
+            'risk_index' => $riskIndex,
+            'risk_label' => AssetClassificationService::getRiskLabel($riskIndex),
+            'allocation' => $allocation,
         ];
     }
 
@@ -606,49 +608,49 @@ class DashboardController extends Controller
     private function getNetWorthData(int $householdId, int $userId): array
     {
         $startDate = Carbon::now()->subYear()->startOfMonth();
-        $endDate   = Carbon::now()->endOfDay();
+        $endDate = Carbon::now()->endOfDay();
 
         $accounts = Account::where('household_id', $householdId)
             ->where('active', true)
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('owner_user_id', $userId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $userId))
             ->get();
 
         if ($accounts->isEmpty()) {
             return [];
         }
 
-        $initialBalance = $accounts->sum(fn($a) => (float) $a->initial_balance);
+        $initialBalance = $accounts->sum(fn ($a) => (float) $a->initial_balance);
 
-        $balanceBeforePeriod = (float) Transaction::whereHas('account', fn($q) => $q->where('household_id', $householdId))
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+        $balanceBeforePeriod = (float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->where('date', '<', $startDate)
             ->sum('amount');
 
         $runningBalance = $initialBalance + $balanceBeforePeriod;
 
         $isSqlite = DB::getDriverName() === 'sqlite';
-        $yearExpr  = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
+        $yearExpr = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
         $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
 
-        $monthlyTransactions = Transaction::whereHas('account', fn($q) => $q->where('household_id', $householdId))
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+        $monthlyTransactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(amount) as net")
             ->groupByRaw("{$yearExpr}, {$monthExpr}")
             ->orderByRaw("{$yearExpr}, {$monthExpr}")
             ->get()
-            ->keyBy(fn($r) => "{$r->year}-{$r->month}");
+            ->keyBy(fn ($r) => "{$r->year}-{$r->month}");
 
-        $result  = [];
+        $result = [];
         $current = $startDate->copy()->startOfMonth();
 
         while ($current->lte($endDate)) {
-            $key = $current->year . '-' . $current->month;
+            $key = $current->year.'-'.$current->month;
             if (isset($monthlyTransactions[$key])) {
                 $runningBalance += (float) $monthlyTransactions[$key]->net;
             }
             $result[] = [
-                'month'            => $current->translatedFormat('M Y'),
+                'month' => $current->translatedFormat('M Y'),
                 'Patrimonio Netto' => round($runningBalance, 2),
             ];
             $current->addMonth();
@@ -664,24 +666,24 @@ class DashboardController extends Controller
     private function getCashFlowData(int $householdId, int $userId): array
     {
         $startDate = Carbon::now()->subYear()->startOfMonth();
-        $endDate   = Carbon::now()->endOfDay();
+        $endDate = Carbon::now()->endOfDay();
 
-        $isSqlite  = DB::getDriverName() === 'sqlite';
-        $yearExpr  = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
+        $isSqlite = DB::getDriverName() === 'sqlite';
+        $yearExpr = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
         $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
 
-        $transactions = Transaction::whereHas('account', fn($q) => $q->where('household_id', $householdId))
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+        $transactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income, SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expenses")
             ->groupByRaw("{$yearExpr}, {$monthExpr}")
             ->orderByRaw("{$yearExpr}, {$monthExpr}")
             ->get();
 
-        return $transactions->map(fn($row) => [
-            'month'     => Carbon::createFromDate($row->year, $row->month, 1)->translatedFormat('M Y'),
-            'Entrate'   => round((float) $row->income, 2),
-            'Uscite'    => round((float) $row->expenses, 2),
+        return $transactions->map(fn ($row) => [
+            'month' => Carbon::createFromDate($row->year, $row->month, 1)->translatedFormat('M Y'),
+            'Entrate' => round((float) $row->income, 2),
+            'Uscite' => round((float) $row->expenses, 2),
             'Risparmio' => round((float) $row->income - (float) $row->expenses, 2),
         ])->values()->toArray();
     }
@@ -692,11 +694,11 @@ class DashboardController extends Controller
     private function getExpenseCategoryData(int $householdId, int $userId): array
     {
         $startDate = Carbon::now()->startOfMonth();
-        $endDate   = Carbon::now()->endOfDay();
+        $endDate = Carbon::now()->endOfDay();
 
         $expenses = Transaction::with('category')
-            ->whereHas('account', fn($q) => $q->where('household_id', $householdId))
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
+            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->whereBetween('date', [$startDate, $endDate])
             ->where('amount', '<', 0)
             ->whereNotNull('category_id')
@@ -709,12 +711,13 @@ class DashboardController extends Controller
 
         return $expenses->map(function ($row) use ($grandTotal) {
             $category = $row->category;
+
             return [
-                'name'        => $category?->name ?? 'Senza categoria',
-                'value'       => round((float) $row->total, 2),
-                'percentage'  => $grandTotal > 0 ? round(((float) $row->total / (float) $grandTotal) * 100, 1) : 0,
-                'color'       => $category?->color ?? '#94a3b8',
-                'icon'        => $category?->icon ?? '📁',
+                'name' => $category?->name ?? 'Senza categoria',
+                'value' => round((float) $row->total, 2),
+                'percentage' => $grandTotal > 0 ? round(((float) $row->total / (float) $grandTotal) * 100, 1) : 0,
+                'color' => $category?->color ?? '#94a3b8',
+                'icon' => $category?->icon ?? '📁',
                 'category_id' => $row->category_id,
             ];
         })->values()->toArray();
@@ -727,16 +730,16 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->limit(5)
             ->get()
-            ->map(fn($goal) => [
-                'id'             => $goal->id,
-                'name'           => $goal->name,
-                'icon'           => $goal->icon,
-                'color'          => $goal->color,
-                'target_amount'  => (float) $goal->target_amount,
+            ->map(fn ($goal) => [
+                'id' => $goal->id,
+                'name' => $goal->name,
+                'icon' => $goal->icon,
+                'color' => $goal->color,
+                'target_amount' => (float) $goal->target_amount,
                 'current_amount' => (float) $goal->current_amount,
-                'currency_code'  => $goal->currency_code,
-                'target_date'    => $goal->target_date?->format('Y-m-d'),
-                'percentage'     => $goal->target_amount > 0
+                'currency_code' => $goal->currency_code,
+                'target_date' => $goal->target_date?->format('Y-m-d'),
+                'percentage' => $goal->target_amount > 0
                     ? min(100, round(((float) $goal->current_amount / (float) $goal->target_amount) * 100, 1))
                     : 0,
             ])
@@ -753,23 +756,23 @@ class DashboardController extends Controller
      * Le categorie non classificate vengono restituite separatamente così il frontend
      * può suggerire all'utente di classificarle.
      */
-    private function getExpenseDistributionData(\App\Models\User $user, int $householdId): array
+    private function getExpenseDistributionData(User $user, int $householdId): array
     {
         $startDate = Carbon::now()->startOfMonth();
-        $endDate   = Carbon::now()->endOfDay();
+        $endDate = Carbon::now()->endOfDay();
 
         // Recupera soglie personalizzate da profile_settings (default 50/30/20)
-        $settings   = $user->profile_settings ?? [];
+        $settings = $user->profile_settings ?? [];
         $thresholds = $settings['expense_distribution_thresholds'] ?? [
-            'needs'       => 50,
-            'wants'       => 30,
+            'needs' => 50,
+            'wants' => 30,
             'investments' => 20,
         ];
 
         // Aggrega le spese per categoria nel mese corrente
-        $expenses = \App\Models\Transaction::with('category')
-            ->whereHas('account', fn($q) => $q->where('household_id', $householdId))
-            ->where(fn($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+        $expenses = Transaction::with('category')
+            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->whereBetween('date', [$startDate, $endDate])
             ->where('amount', '<', 0)
             ->whereNotNull('category_id')
@@ -782,25 +785,25 @@ class DashboardController extends Controller
 
         // Bucket iniziali
         $buckets = [
-            'needs'       => ['amount' => 0.0, 'categories' => []],
-            'wants'       => ['amount' => 0.0, 'categories' => []],
+            'needs' => ['amount' => 0.0, 'categories' => []],
+            'wants' => ['amount' => 0.0, 'categories' => []],
             'investments' => ['amount' => 0.0, 'categories' => []],
             'unclassified' => ['amount' => 0.0, 'categories' => []],
         ];
 
         foreach ($expenses as $row) {
             $category = $row->category;
-            $amount   = (float) $row->total;
-            $dist     = $category?->expense_distribution ?? null;
-            $key      = in_array($dist, ['needs', 'wants', 'investments'], true) ? $dist : 'unclassified';
+            $amount = (float) $row->total;
+            $dist = $category?->expense_distribution ?? null;
+            $key = in_array($dist, ['needs', 'wants', 'investments'], true) ? $dist : 'unclassified';
 
             $buckets[$key]['amount'] += $amount;
             $buckets[$key]['categories'][] = [
-                'id'         => $category?->id,
-                'name'       => $category?->name ?? 'Senza categoria',
-                'icon'       => $category?->icon ?? '📁',
-                'color'      => $category?->color ?? '#94a3b8',
-                'amount'     => round($amount, 2),
+                'id' => $category?->id,
+                'name' => $category?->name ?? 'Senza categoria',
+                'icon' => $category?->icon ?? '📁',
+                'color' => $category?->color ?? '#94a3b8',
+                'amount' => round($amount, 2),
                 'percentage' => $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0,
             ];
         }
@@ -808,15 +811,15 @@ class DashboardController extends Controller
         // Costruisce il risultato finale con percentuali e flag di superamento soglia
         $result = [];
         foreach (['needs', 'wants', 'investments'] as $key) {
-            $amount     = round($buckets[$key]['amount'], 2);
+            $amount = round($buckets[$key]['amount'], 2);
             $percentage = $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0;
-            $threshold  = (float) ($thresholds[$key] ?? 0);
+            $threshold = (float) ($thresholds[$key] ?? 0);
 
             $result[$key] = [
-                'amount'     => $amount,
+                'amount' => $amount,
                 'percentage' => $percentage,
-                'threshold'  => $threshold,
-                'exceeded'   => $threshold > 0 && $percentage > $threshold,
+                'threshold' => $threshold,
+                'exceeded' => $threshold > 0 && $percentage > $threshold,
                 'categories' => $buckets[$key]['categories'],
             ];
         }
@@ -824,22 +827,22 @@ class DashboardController extends Controller
         $unclassifiedAmount = round($buckets['unclassified']['amount'], 2);
 
         return [
-            'needs'       => $result['needs'],
-            'wants'       => $result['wants'],
+            'needs' => $result['needs'],
+            'wants' => $result['wants'],
             'investments' => $result['investments'],
             'unclassified' => [
-                'amount'     => $unclassifiedAmount,
+                'amount' => $unclassifiedAmount,
                 'percentage' => $totalExpenses > 0 ? round(($unclassifiedAmount / $totalExpenses) * 100, 1) : 0,
                 'categories' => $buckets['unclassified']['categories'],
             ],
-            'total_expenses'      => round($totalExpenses, 2),
-            'thresholds'          => [
-                'needs'       => (float) ($thresholds['needs'] ?? 50),
-                'wants'       => (float) ($thresholds['wants'] ?? 30),
+            'total_expenses' => round($totalExpenses, 2),
+            'thresholds' => [
+                'needs' => (float) ($thresholds['needs'] ?? 50),
+                'wants' => (float) ($thresholds['wants'] ?? 30),
                 'investments' => (float) ($thresholds['investments'] ?? 20),
             ],
             'has_custom_thresholds' => isset($settings['expense_distribution_thresholds']),
-            'current_month'         => Carbon::now()->translatedFormat('F Y'),
+            'current_month' => Carbon::now()->translatedFormat('F Y'),
         ];
     }
 }

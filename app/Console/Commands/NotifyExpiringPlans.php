@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Mail;
 class NotifyExpiringPlans extends Command
 {
     protected $signature = 'plans:notify-expiring';
+
     protected $description = 'Invia email di avviso agli utenti Pro il cui piano scade tra 7 o 1 giorno';
 
     public function handle(): int

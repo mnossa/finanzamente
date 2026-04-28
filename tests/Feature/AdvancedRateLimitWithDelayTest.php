@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AdvancedRateLimitWithDelayTest extends TestCase
 {
@@ -50,7 +51,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
         $response->assertJsonStructure(['message']);
     }
 
-    #[\PHPUnit\Framework\Attributes\DoesNotPerformAssertions]
+    #[DoesNotPerformAssertions]
     public function test_delay_progressivo_is_applied()
     {
         $route = '/registrati';
@@ -80,7 +81,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
     {
         Log::shouldReceive('channel')->with('security')->andReturnSelf();
         Log::shouldReceive('info')->once()->withArgs(function ($msg, $context) {
-            return isset($context['ip_hash']) && !isset($context['ip']);
+            return isset($context['ip_hash']) && ! isset($context['ip']);
         });
         $route = '/registrati';
         $payload = [

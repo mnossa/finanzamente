@@ -28,6 +28,7 @@ class DevSetPlan extends Command
     {
         if (app()->isProduction()) {
             $this->error('Questo comando non è disponibile in produzione.');
+
             return self::FAILURE;
         }
 
@@ -36,6 +37,7 @@ class DevSetPlan extends Command
 
         if (! in_array($plan, ['base', 'pro'])) {
             $this->error("Piano non valido: '{$plan}'. Scegli tra: base, pro");
+
             return self::FAILURE;
         }
 
@@ -43,6 +45,7 @@ class DevSetPlan extends Command
 
         if (! $user) {
             $this->error("Nessun utente trovato con email: {$email}");
+
             return self::FAILURE;
         }
 
@@ -63,7 +66,7 @@ class DevSetPlan extends Command
             ['Campo', 'Valore'],
             [
                 ['plan', $user->fresh()->plan],
-                ['plan_expires_at', $planExpiresAt ? $planExpiresAt->format('d/m/Y H:i') . " (tra {$expiresInDays} giorni)" : 'nessuna scadenza'],
+                ['plan_expires_at', $planExpiresAt ? $planExpiresAt->format('d/m/Y H:i')." (tra {$expiresInDays} giorni)" : 'nessuna scadenza'],
                 ['isPro()', $user->fresh()->isPro() ? 'true' : 'false'],
             ]
         );

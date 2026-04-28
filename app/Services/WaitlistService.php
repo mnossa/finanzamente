@@ -51,13 +51,13 @@ class WaitlistService
      */
     public function subscribe(string $email): bool
     {
-        $apiKey     = config('services.brevo.api_key');
+        $apiKey = config('services.brevo.api_key');
         $templateId = config('services.brevo.double_optin_template_id');
 
         if (empty($apiKey) || empty($templateId)) {
             Log::warning('Brevo waitlist: configurazione incompleta, iscrizione saltata.', [
-                'has_api_key'  => !empty($apiKey),
-                'template_id'  => $templateId,
+                'has_api_key' => ! empty($apiKey),
+                'template_id' => $templateId,
             ]);
 
             return false;
@@ -73,9 +73,9 @@ class WaitlistService
         $brevo = new Brevo($apiKey);
 
         $sendEmail = new SendTransacEmailRequest([
-            'to'         => [new SendTransacEmailRequestToItem(['email' => $email])],
+            'to' => [new SendTransacEmailRequestToItem(['email' => $email])],
             'templateId' => (int) $templateId,
-            'params'     => ['CONFIRMATION_URL' => $confirmUrl],
+            'params' => ['CONFIRMATION_URL' => $confirmUrl],
         ]);
 
         try {
@@ -84,9 +84,9 @@ class WaitlistService
             return true;
         } catch (\Throwable $e) {
             Log::error('Brevo waitlist: errore invio email di conferma.', [
-                'code'    => $e->getCode(),
+                'code' => $e->getCode(),
                 'message' => $e->getMessage(),
-                'class'   => get_class($e),
+                'class' => get_class($e),
             ]);
 
             return false;
@@ -100,13 +100,13 @@ class WaitlistService
      */
     public function confirmSubscription(string $email): bool
     {
-        $apiKey    = config('services.brevo.api_key');
-        $listId    = config('services.brevo.waitlist_list_id');
+        $apiKey = config('services.brevo.api_key');
+        $listId = config('services.brevo.waitlist_list_id');
 
         if (empty($apiKey) || empty($listId)) {
             Log::warning('Brevo waitlist: configurazione incompleta, conferma saltata.', [
-                'has_api_key' => !empty($apiKey),
-                'list_id'     => $listId,
+                'has_api_key' => ! empty($apiKey),
+                'list_id' => $listId,
             ]);
 
             return false;
@@ -117,12 +117,12 @@ class WaitlistService
         $brevo = new Brevo($apiKey);
 
         $contact = new CreateContactRequest([
-            'email'         => $email,
-            'listIds'       => [(int) $listId],
+            'email' => $email,
+            'listIds' => [(int) $listId],
             'updateEnabled' => true,
             // NOTA: l'attributo personalizzato SIGNATURE deve essere creato manualmente
             // nel pannello Brevo: Contacts > Configuration > Contact Attributes > (type: Text, name: SIGNATURE)
-            'attributes'    => ['SIGNATURE' => $signature],
+            'attributes' => ['SIGNATURE' => $signature],
         ]);
 
         try {
@@ -131,9 +131,9 @@ class WaitlistService
             return true;
         } catch (\Throwable $e) {
             Log::error('Brevo waitlist: errore conferma iscrizione.', [
-                'code'    => $e->getCode(),
+                'code' => $e->getCode(),
                 'message' => $e->getMessage(),
-                'class'   => get_class($e),
+                'class' => get_class($e),
             ]);
 
             return false;

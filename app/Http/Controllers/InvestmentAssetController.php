@@ -50,7 +50,7 @@ class InvestmentAssetController extends Controller
                     'icon' => InvestmentAsset::TYPE_ICONS[$type],
                     'count' => $assets->where('type', $type)->count(),
                 ];
-            })->filter(fn($item) => $item['count'] > 0)->values(),
+            })->filter(fn ($item) => $item['count'] > 0)->values(),
         ];
 
         return Inertia::render('InvestmentAssets/Index', [

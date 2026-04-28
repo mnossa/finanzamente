@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\FixedExpenseService;
-use App\Models\Household;
 use App\Models\Category;
+use App\Models\Household;
+use App\Services\FixedExpenseService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -24,17 +24,17 @@ class FixedExpenseController extends Controller
     {
         // Verifica che l'utente appartenga alla household
         abort_unless(
-            $household->users()->where('user_id', auth()->id())->exists(), 
+            $household->users()->where('user_id', auth()->id())->exists(),
             403
         );
 
-        if (!$household->isDebtBalancingMode()) {
+        if (! $household->isDebtBalancingMode()) {
             return redirect()->route('households.show', $household)
                 ->with('error', 'La dashboard spese fisse è disponibile solo per household con bilanciamento debiti.');
         }
 
         $dashboardData = $this->fixedExpenseService->getDashboardStats($household);
-        
+
         $fixedCategories = Category::where('household_id', $household->id)
             ->where('is_fixed_expense', true)
             ->get();
@@ -53,12 +53,12 @@ class FixedExpenseController extends Controller
     public function getContributions(Household $household)
     {
         abort_unless(
-            $household->users()->where('user_id', auth()->id())->exists(), 
+            $household->users()->where('user_id', auth()->id())->exists(),
             403
         );
 
         $contributions = $this->fixedExpenseService->calculateFixedExpenseContributions($household);
-        
+
         return response()->json($contributions);
     }
 
@@ -68,17 +68,17 @@ class FixedExpenseController extends Controller
     public function suggestTurn(Household $household, Category $category)
     {
         abort_unless(
-            $household->users()->where('user_id', auth()->id())->exists(), 
+            $household->users()->where('user_id', auth()->id())->exists(),
             403
         );
 
         abort_unless($category->household_id === $household->id, 404);
 
         $suggestion = $this->fixedExpenseService->suggestNextTurnForCategory(
-            $household, 
+            $household,
             $category->id
         );
-        
+
         return response()->json($suggestion);
     }
 
@@ -88,14 +88,14 @@ class FixedExpenseController extends Controller
     public function completeTurn(Request $request, Household $household, Category $category)
     {
         abort_unless(
-            $household->users()->where('user_id', auth()->id())->exists(), 
+            $household->users()->where('user_id', auth()->id())->exists(),
             403
         );
 
         abort_unless($category->household_id === $household->id, 404);
 
         $request->validate([
-            'user_id' => 'required|integer|exists:users,id'
+            'user_id' => 'required|integer|exists:users,id',
         ]);
 
         // Verifica che l'utente sia membro della household
@@ -106,20 +106,20 @@ class FixedExpenseController extends Controller
         );
 
         $success = $this->fixedExpenseService->registerTurnCompleted(
-            $household, 
-            $category->id, 
+            $household,
+            $category->id,
             $request->user_id
         );
 
-        if (!$success) {
+        if (! $success) {
             return response()->json([
-                'error' => 'Impossibile registrare il turno. Verifica che il suggeritore sia abilitato.'
+                'error' => 'Impossibile registrare il turno. Verifica che il suggeritore sia abilitato.',
             ], 422);
         }
 
         return response()->json([
             'message' => 'Turno registrato con successo',
-            'success' => true
+            'success' => true,
         ]);
     }
 
@@ -138,7 +138,7 @@ class FixedExpenseController extends Controller
 
         $household->update([
             'enable_turn_suggestions' => $request->enable_turn_suggestions,
-            'turn_suggestion_settings' => $request->turn_suggestion_settings ?? []
+            'turn_suggestion_settings' => $request->turn_suggestion_settings ?? [],
         ]);
 
         return redirect()->back()->with('success', 'Impostazioni suggeritore aggiornate con successo.');

@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\TelegramService;
 use App\Services\VisionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -209,35 +210,35 @@ class TelegramWebhookController extends Controller
      */
     private function handleAiutoCommand(string $chatId): void
     {
-        $inboxUrl = config('app.url') . '/inbox';
+        $inboxUrl = config('app.url').'/inbox';
 
         $this->telegram->sendMessage(
             $chatId,
             "📖 <b>Guida Finanzamente Bot</b>\n\n"
-            . "<b>📤 Registrare un'uscita:</b>\n"
-            . "<code>15.50 Supermercato</code>\n"
-            . "<code>Supermercato 15,50</code>\n"
-            . "<code>15.50</code> (solo importo)\n\n"
-            . "<b>📥 Registrare un'entrata:</b>\n"
-            . "<code>+1500 Stipendio</code>\n"
-            . "<code>+500</code> (solo importo)\n\n"
-            . "<b>🔧 Dettagli opzionali (aggiungili al messaggio):</b>\n"
-            . "<code>@NomeConto</code> → specifica il conto (es. <code>@Corrente</code>)\n"
-            . "<code>#Categoria</code> → specifica la categoria (es. <code>#Alimentari</code>)\n"
-            . "<code>DD/MM</code> → specifica la data (es. <code>01/03</code>)\n\n"
-            . "<b>Esempi completi:</b>\n"
-            . "<code>15 Pizza @Corrente #Cibo</code>\n"
-            . "<code>+500 Rimborso @Corrente 15/03</code>\n"
-            . "<code>8.50 Bar #Svago 01/03</code>\n\n"
-            . "<b>📸 Scontrino fotografato:</b>\n"
-            . "Invia direttamente la foto — l'OCR estrae importo e negozio automaticamente.\n\n"
-            . "<b>⌨️ Comandi:</b>\n"
-            . "/start TOKEN — collega il tuo account\n"
-            . "/aiuto — questa guida\n"
-            . "/saldo — mostra i saldi dei tuoi conti\n"
-            . "/ultime — mostra le ultime 5 transazioni\n"
-            . "/lista — mostra conti e categorie disponibili\n\n"
-            . "🔍 <a href=\"{$inboxUrl}\">Vai all'Inbox</a> per revisionare le voci."
+            ."<b>📤 Registrare un'uscita:</b>\n"
+            ."<code>15.50 Supermercato</code>\n"
+            ."<code>Supermercato 15,50</code>\n"
+            ."<code>15.50</code> (solo importo)\n\n"
+            ."<b>📥 Registrare un'entrata:</b>\n"
+            ."<code>+1500 Stipendio</code>\n"
+            ."<code>+500</code> (solo importo)\n\n"
+            ."<b>🔧 Dettagli opzionali (aggiungili al messaggio):</b>\n"
+            ."<code>@NomeConto</code> → specifica il conto (es. <code>@Corrente</code>)\n"
+            ."<code>#Categoria</code> → specifica la categoria (es. <code>#Alimentari</code>)\n"
+            ."<code>DD/MM</code> → specifica la data (es. <code>01/03</code>)\n\n"
+            ."<b>Esempi completi:</b>\n"
+            ."<code>15 Pizza @Corrente #Cibo</code>\n"
+            ."<code>+500 Rimborso @Corrente 15/03</code>\n"
+            ."<code>8.50 Bar #Svago 01/03</code>\n\n"
+            ."<b>📸 Scontrino fotografato:</b>\n"
+            ."Invia direttamente la foto — l'OCR estrae importo e negozio automaticamente.\n\n"
+            ."<b>⌨️ Comandi:</b>\n"
+            ."/start TOKEN — collega il tuo account\n"
+            ."/aiuto — questa guida\n"
+            ."/saldo — mostra i saldi dei tuoi conti\n"
+            ."/ultime — mostra le ultime 5 transazioni\n"
+            ."/lista — mostra conti e categorie disponibili\n\n"
+            ."🔍 <a href=\"{$inboxUrl}\">Vai all'Inbox</a> per revisionare le voci."
         );
     }
 
@@ -260,7 +261,7 @@ class TelegramWebhookController extends Controller
         foreach ($accounts as $account) {
             $balance = (float) ($account->transactions_sum_amount ?? 0);
             $sign = $balance >= 0 ? '+' : '';
-            $lines[] = "• <b>{$account->name}</b>: {$sign}" . number_format($balance, 2, ',', '.') . " {$account->currency_code}";
+            $lines[] = "• <b>{$account->name}</b>: {$sign}".number_format($balance, 2, ',', '.')." {$account->currency_code}";
         }
 
         $this->telegram->sendMessage($chatId, implode("\n", $lines));
@@ -289,9 +290,9 @@ class TelegramWebhookController extends Controller
             $amount = (float) $tx->amount;
             $sign = $amount >= 0 ? '+' : '';
             $emoji = $amount >= 0 ? '📈' : '💸';
-            $date = $tx->date ? \Carbon\Carbon::parse($tx->date)->format('d/m') : '';
+            $date = $tx->date ? Carbon::parse($tx->date)->format('d/m') : '';
             $desc = $tx->description ?? ($tx->category?->name ?? '—');
-            $lines[] = "{$emoji} {$date} <b>{$sign}" . number_format(abs($amount), 2, ',', '.') . " €</b> – {$desc}";
+            $lines[] = "{$emoji} {$date} <b>{$sign}".number_format(abs($amount), 2, ',', '.')." €</b> – {$desc}";
         }
 
         $this->telegram->sendMessage($chatId, implode("\n", $lines));
@@ -314,7 +315,7 @@ class TelegramWebhookController extends Controller
         $lines = ["📂 <b>Dati disponibili:</b>\n"];
 
         if ($accounts->isNotEmpty()) {
-            $lines[] = "<b>🏦 Conti</b> (usa <code>@NomeConto</code>):";
+            $lines[] = '<b>🏦 Conti</b> (usa <code>@NomeConto</code>):';
             foreach ($accounts as $account) {
                 $lines[] = "  • {$account->name}";
             }
@@ -323,15 +324,15 @@ class TelegramWebhookController extends Controller
         $lines[] = '';
 
         if ($categories->isNotEmpty()) {
-            $lines[] = "<b>🏷️ Categorie</b> (usa <code>#NomeCategoria</code>):";
+            $lines[] = '<b>🏷️ Categorie</b> (usa <code>#NomeCategoria</code>):';
             $expenseCategories = $categories->where('type', 'expense');
             $incomeCategories = $categories->where('type', 'income');
 
             if ($expenseCategories->isNotEmpty()) {
-                $lines[] = "  <i>Uscite:</i> " . $expenseCategories->pluck('name')->join(', ');
+                $lines[] = '  <i>Uscite:</i> '.$expenseCategories->pluck('name')->join(', ');
             }
             if ($incomeCategories->isNotEmpty()) {
-                $lines[] = "  <i>Entrate:</i> " . $incomeCategories->pluck('name')->join(', ');
+                $lines[] = '  <i>Entrate:</i> '.$incomeCategories->pluck('name')->join(', ');
             }
         }
 
@@ -379,16 +380,16 @@ class TelegramWebhookController extends Controller
             'user_id' => $user->id,
             'title' => $type === 'income' ? '📈 Nuova entrata in Inbox' : '💸 Nuova uscita in Inbox',
             'message' => $amount !== null
-                ? 'Ricevuto da Telegram: ' . ($description ?? $text) . ' — €' . number_format((float) $amount, 2, ',', '.')
-                : 'Messaggio Telegram salvato in Inbox: ' . mb_strimwidth($text, 0, 80, '…'),
-            'notification_key' => 'inbox_telegram_' . $item->id,
+                ? 'Ricevuto da Telegram: '.($description ?? $text).' — €'.number_format((float) $amount, 2, ',', '.')
+                : 'Messaggio Telegram salvato in Inbox: '.mb_strimwidth($text, 0, 80, '…'),
+            'notification_key' => 'inbox_telegram_'.$item->id,
         ]);
 
         if ($amount !== null) {
-            $amountFormatted = '€' . number_format((float) $amount, 2, ',', '.');
+            $amountFormatted = '€'.number_format((float) $amount, 2, ',', '.');
             $typeEmoji = $type === 'income' ? '📈' : '💸';
             $typeLabel = $type === 'income' ? 'Entrata' : 'Uscita';
-            $preview = "{$typeEmoji} <b>{$typeLabel}: {$amountFormatted}</b>" . ($description ? " – {$description}" : '');
+            $preview = "{$typeEmoji} <b>{$typeLabel}: {$amountFormatted}</b>".($description ? " – {$description}" : '');
 
             $extras = [];
             if ($accountId && $resolvedAccount) {
@@ -402,19 +403,19 @@ class TelegramWebhookController extends Controller
                 $extras[] = "⚠️ Categoria \"{$parsed['category_name']}\" non trovata";
             }
             if ($date && $date !== now()->toDateString()) {
-                $extras[] = "📅 " . \Carbon\Carbon::parse($date)->format('d/m/Y');
+                $extras[] = '📅 '.Carbon::parse($date)->format('d/m/Y');
             }
 
-            $extrasText = ! empty($extras) ? "\n" . implode(' · ', $extras) : '';
+            $extrasText = ! empty($extras) ? "\n".implode(' · ', $extras) : '';
 
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Ricevuto!</b>\n\n{$preview}{$extrasText}\n\n🔍 <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per revisionare e confermare."
+                "✅ <b>Ricevuto!</b>\n\n{$preview}{$extrasText}\n\n🔍 <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per revisionare e confermare."
             );
         } else {
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Ricevuto!</b>\n\n📝 <i>{$text}</i>\n\n⚠️ Nessun importo rilevato. <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per completare i dati."
+                "✅ <b>Ricevuto!</b>\n\n📝 <i>{$text}</i>\n\n⚠️ Nessun importo rilevato. <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per completare i dati."
             );
         }
     }
@@ -445,13 +446,13 @@ class TelegramWebhookController extends Controller
         }
 
         // Salva l'immagine nel disco privato
-        $filename = 'inbox/' . now()->format('Y-m-d_His') . '_' . Str::random(8) . '.jpg';
+        $filename = 'inbox/'.now()->format('Y-m-d_His').'_'.Str::random(8).'.jpg';
         Storage::disk('private')->put($filename, $imageContent);
 
         // Invia feedback immediato (l'OCR può richiedere qualche secondo)
         $this->telegram->sendMessage(
             $chatId,
-            "📸 <b>Foto ricevuta!</b> Sto elaborando lo scontrino..."
+            '📸 <b>Foto ricevuta!</b> Sto elaborando lo scontrino...'
         );
 
         // Estrazione OCR con Mistral Pixtral
@@ -503,26 +504,26 @@ class TelegramWebhookController extends Controller
             'user_id' => $user->id,
             'title' => '📸 Scontrino in Inbox',
             'message' => $aiPayload && $amount !== null
-                ? 'Scontrino elaborato: ' . ($description ?? 'negozio sconosciuto') . ' — €' . number_format((float) $amount, 2, ',', '.')
+                ? 'Scontrino elaborato: '.($description ?? 'negozio sconosciuto').' — €'.number_format((float) $amount, 2, ',', '.')
                 : 'Foto scontrino salvata in Inbox. Vai nell\'Inbox per completare i dati.',
-            'notification_key' => 'inbox_telegram_' . $item->id,
+            'notification_key' => 'inbox_telegram_'.$item->id,
         ]);
 
         // Feedback con risultato OCR
         if ($aiPayload && $amount !== null) {
             $dateFormatted = $item->transaction_date?->format('d/m/Y') ?? '';
-            $preview = "💶 <b>€" . number_format((float) $amount, 2, ',', '.') . "</b>"
-                . ($description ? " – {$description}" : '')
-                . ($dateFormatted ? " ({$dateFormatted})" : '');
+            $preview = '💶 <b>€'.number_format((float) $amount, 2, ',', '.').'</b>'
+                .($description ? " – {$description}" : '')
+                .($dateFormatted ? " ({$dateFormatted})" : '');
 
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Scontrino elaborato!</b>\n\n{$preview}\n\n🔍 <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per verificare e confermare."
+                "✅ <b>Scontrino elaborato!</b>\n\n{$preview}\n\n🔍 <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per verificare e confermare."
             );
         } else {
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Foto salvata!</b>\n\n⚠️ Non sono riuscito a estrarre tutti i dati. <a href=\"" . config('app.url') . "/inbox\">Vai all'Inbox</a> per inserire manualmente l'importo.\n\n💡 <i>Suggerimento: puoi aggiungere <code>@Conto #Categoria</code> come didascalia della foto.</i>"
+                "✅ <b>Foto salvata!</b>\n\n⚠️ Non sono riuscito a estrarre tutti i dati. <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per inserire manualmente l'importo.\n\n💡 <i>Suggerimento: puoi aggiungere <code>@Conto #Categoria</code> come didascalia della foto.</i>"
             );
         }
     }
@@ -535,7 +536,7 @@ class TelegramWebhookController extends Controller
      * Risolve un conto per nome nell'household dell'utente.
      * Restituisce [id|null, Account|null].
      *
-     * @return array{int|null, \App\Models\Account|null}
+     * @return array{int|null, Account|null}
      */
     private function resolveAccountByName(?string $name, User $user): array
     {
@@ -553,7 +554,7 @@ class TelegramWebhookController extends Controller
      * Risolve una categoria per nome nell'household dell'utente.
      * Restituisce [id|null, Category|null].
      *
-     * @return array{int|null, \App\Models\Category|null}
+     * @return array{int|null, Category|null}
      */
     private function resolveCategoryByName(?string $name, User $user): array
     {
@@ -605,7 +606,7 @@ class TelegramWebhookController extends Controller
             $month = (int) $m[2];
             $year = isset($m[3]) && $m[3] ? (int) $m[3] : now()->year;
             try {
-                $parsedDate = \Carbon\Carbon::createFromDate($year, $month, $day);
+                $parsedDate = Carbon::createFromDate($year, $month, $day);
                 $date = $parsedDate->toDateString();
                 $text = trim(preg_replace('/\b\d{1,2}\/\d{1,2}(?:\/\d{4})?\b/', '', $text));
             } catch (\Throwable) {

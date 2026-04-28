@@ -75,7 +75,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('verification.notice', absolute: false));
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'test@example.com',
             'user_type' => 'persona',
@@ -96,7 +96,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('verification.notice', absolute: false));
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'company@example.com',
             'user_type' => 'partita_iva',
@@ -116,7 +116,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('verification.notice', absolute: false));
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'test2@example.com',
             'user_type' => 'persona',
@@ -136,7 +136,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('verification.notice', absolute: false));
-        
+
         $this->assertDatabaseHas('users', [
             'email' => 'company2@example.com',
             'user_type' => 'partita_iva',

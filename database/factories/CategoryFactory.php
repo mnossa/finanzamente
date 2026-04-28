@@ -7,7 +7,7 @@ use App\Models\Household;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Category>
+ * @extends Factory<Category>
  */
 class CategoryFactory extends Factory
 {
@@ -26,7 +26,7 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         $type = $this->faker->randomElement(['income', 'expense']);
-        
+
         $expenseCategories = [
             ['name' => 'Alimentari', 'icon' => '🛒', 'color' => '#10b981'],
             ['name' => 'Spese Mediche', 'icon' => '🏥', 'color' => '#ef4444'],
@@ -44,7 +44,7 @@ class CategoryFactory extends Factory
             ['name' => 'Bonus', 'icon' => '🎁', 'color' => '#f59e0b'],
         ];
 
-        $categoryData = $type === 'expense' 
+        $categoryData = $type === 'expense'
             ? $this->faker->randomElement($expenseCategories)
             : $this->faker->randomElement($incomeCategories);
 

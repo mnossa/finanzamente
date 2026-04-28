@@ -16,7 +16,7 @@ class HouseholdTest extends BaseTestCase
     public function it_can_create_household_with_financial_management_type()
     {
         $user = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user->id,
@@ -31,7 +31,7 @@ class HouseholdTest extends BaseTestCase
     public function it_defaults_to_shared_wallet_mode()
     {
         $user = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user->id,
@@ -48,7 +48,7 @@ class HouseholdTest extends BaseTestCase
     public function it_can_check_if_household_is_debt_balancing_mode()
     {
         $user = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user->id,
@@ -63,7 +63,7 @@ class HouseholdTest extends BaseTestCase
     public function it_can_check_if_household_is_shared_wallet_mode()
     {
         $user = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user->id,
@@ -78,7 +78,7 @@ class HouseholdTest extends BaseTestCase
     public function it_returns_correct_financial_management_type_labels()
     {
         $user = User::factory()->create();
-        
+
         $sharedWalletHousehold = Household::create([
             'name' => 'Shared Wallet Household',
             'owner_user_id' => $user->id,
@@ -100,12 +100,12 @@ class HouseholdTest extends BaseTestCase
     {
         $this->assertEquals('shared_wallet', Household::FINANCIAL_MANAGEMENT_SHARED_WALLET);
         $this->assertEquals('debt_balancing', Household::FINANCIAL_MANAGEMENT_DEBT_BALANCING);
-        
+
         $expectedTypes = [
             'debt_balancing' => 'Bilanciamento Debiti',
             'shared_wallet' => 'Portafoglio Comune',
         ];
-        
+
         $this->assertEquals($expectedTypes, Household::FINANCIAL_MANAGEMENT_TYPES);
     }
 
@@ -114,7 +114,7 @@ class HouseholdTest extends BaseTestCase
     {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user1->id,
@@ -143,7 +143,7 @@ class HouseholdTest extends BaseTestCase
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
         $user3 = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user1->id,
@@ -158,7 +158,7 @@ class HouseholdTest extends BaseTestCase
         ]);
 
         $percentages = $household->getBalancePercentages();
-        
+
         // Deve dividere equamente tra 3 utenti (33.33 + 33.33 + 33.34 = 100)
         $total = array_sum($percentages);
         $this->assertEquals(100, round($total, 2));
@@ -171,7 +171,7 @@ class HouseholdTest extends BaseTestCase
     {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user1->id,
@@ -197,7 +197,7 @@ class HouseholdTest extends BaseTestCase
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
         $user3 = User::factory()->create(); // Non nella household
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user1->id,
@@ -222,7 +222,7 @@ class HouseholdTest extends BaseTestCase
     {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
-        
+
         $household = Household::create([
             'name' => 'Test Household',
             'owner_user_id' => $user1->id,

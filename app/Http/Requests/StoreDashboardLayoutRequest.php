@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreDashboardLayoutRequest extends FormRequest
 {
@@ -20,12 +21,12 @@ class StoreDashboardLayoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'config'                        => ['required', 'array'],
-            'config.widgets'                => ['required', 'array', 'min:1', 'max:50'],
-            'config.widgets.*.id'           => ['required', 'string', 'max:64'],
-            'config.widgets.*.visible'      => ['required', 'boolean'],
-            'config.widgets.*.position'     => ['required', 'integer', 'min:0'],
-            'config.widgets.*.size'         => ['required', 'string', 'in:sm,md,lg,xl'],
+            'config' => ['required', 'array'],
+            'config.widgets' => ['required', 'array', 'min:1', 'max:50'],
+            'config.widgets.*.id' => ['required', 'string', 'max:64'],
+            'config.widgets.*.visible' => ['required', 'boolean'],
+            'config.widgets.*.position' => ['required', 'integer', 'min:0'],
+            'config.widgets.*.size' => ['required', 'string', 'in:sm,md,lg,xl'],
         ];
     }
 
@@ -35,27 +36,27 @@ class StoreDashboardLayoutRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'config.required'                    => 'La configurazione è obbligatoria.',
-            'config.array'                       => 'La configurazione deve essere un oggetto valido.',
-            'config.widgets.required'            => 'La lista dei widget è obbligatoria.',
-            'config.widgets.array'               => 'La lista dei widget deve essere un array.',
-            'config.widgets.min'                 => 'Deve essere presente almeno un widget.',
-            'config.widgets.max'                 => 'Il numero massimo di widget è 50.',
-            'config.widgets.*.id.required'       => 'Ogni widget deve avere un identificatore.',
-            'config.widgets.*.id.string'         => 'L\'identificatore del widget deve essere una stringa.',
-            'config.widgets.*.visible.required'  => 'Il campo visibilità del widget è obbligatorio.',
-            'config.widgets.*.visible.boolean'   => 'Il campo visibilità deve essere vero o falso.',
+            'config.required' => 'La configurazione è obbligatoria.',
+            'config.array' => 'La configurazione deve essere un oggetto valido.',
+            'config.widgets.required' => 'La lista dei widget è obbligatoria.',
+            'config.widgets.array' => 'La lista dei widget deve essere un array.',
+            'config.widgets.min' => 'Deve essere presente almeno un widget.',
+            'config.widgets.max' => 'Il numero massimo di widget è 50.',
+            'config.widgets.*.id.required' => 'Ogni widget deve avere un identificatore.',
+            'config.widgets.*.id.string' => 'L\'identificatore del widget deve essere una stringa.',
+            'config.widgets.*.visible.required' => 'Il campo visibilità del widget è obbligatorio.',
+            'config.widgets.*.visible.boolean' => 'Il campo visibilità deve essere vero o falso.',
             'config.widgets.*.position.required' => 'La posizione del widget è obbligatoria.',
-            'config.widgets.*.position.integer'  => 'La posizione deve essere un numero intero.',
-            'config.widgets.*.size.required'     => 'La dimensione del widget è obbligatoria.',
-            'config.widgets.*.size.in'           => 'La dimensione del widget deve essere sm, md, lg o xl.',
+            'config.widgets.*.position.integer' => 'La posizione deve essere un numero intero.',
+            'config.widgets.*.size.required' => 'La dimensione del widget è obbligatoria.',
+            'config.widgets.*.size.in' => 'La dimensione del widget deve essere sm, md, lg o xl.',
         ];
     }
 
     /**
      * Ensure only allowed widget IDs are accepted.
      */
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
         // Deve essere allineata a: resources/js/constants/widgetRegistry.ts (WIDGET_REGISTRY)
         // e a DashboardLayout::defaultConfig()
@@ -85,7 +86,7 @@ class StoreDashboardLayoutRequest extends FormRequest
             if (! empty($unknownIds)) {
                 $v->errors()->add(
                     'config.widgets',
-                    'Uno o più widget non sono riconosciuti: ' . implode(', ', $unknownIds)
+                    'Uno o più widget non sono riconosciuti: '.implode(', ', $unknownIds)
                 );
             }
         });

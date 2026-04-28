@@ -14,7 +14,8 @@ class MagazineArticleFactory extends Factory
     public function definition(): array
     {
         $title = $this->faker->unique()->sentence(4);
-        $slug = Str::slug($title) . '-' . $this->faker->unique()->word();
+        $slug = Str::slug($title).'-'.$this->faker->unique()->word();
+
         return [
             'category_id' => MagazineCategory::inRandomOrder()->first()?->id ?? 1,
             'slug' => $slug,

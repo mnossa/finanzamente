@@ -49,6 +49,7 @@ class CleanDuplicateRecurringTransactions extends Command
 
         if ($duplicates->isEmpty()) {
             $this->info('✅ Nessun duplicato trovato!');
+
             return Command::SUCCESS;
         }
 
@@ -80,7 +81,7 @@ class CleanDuplicateRecurringTransactions extends Command
         // Mostra dettagli
         $this->table(
             ['Ricorrenza ID', 'Data', 'Totale', 'Da Eliminare', 'Mantieni ID', 'Elimina IDs'],
-            array_map(function($detail) {
+            array_map(function ($detail) {
                 return [
                     $detail['recurring_id'],
                     $detail['date'],
@@ -94,18 +95,20 @@ class CleanDuplicateRecurringTransactions extends Command
 
         $this->info("\n📊 Riepilogo:");
         $this->info("   - Gruppi duplicati: {$duplicates->count()}");
-        $this->info("   - Transazioni totali duplicate: " . ($totalToDelete + $duplicates->count()));
+        $this->info('   - Transazioni totali duplicate: '.($totalToDelete + $duplicates->count()));
         $this->info("   - Transazioni da eliminare: {$totalToDelete}");
         $this->info("   - Transazioni da mantenere: {$duplicates->count()}");
 
         if ($dryRun) {
             $this->warn("\n🔍 DRY RUN - Nessuna transazione è stata eliminata");
+
             return Command::SUCCESS;
         }
 
         // Chiedi conferma se non in modalità force
-        if (!$force && !$this->confirm("\n❓ Vuoi procedere con l'eliminazione?", false)) {
+        if (! $force && ! $this->confirm("\n❓ Vuoi procedere con l'eliminazione?", false)) {
             $this->info('Operazione annullata.');
+
             return Command::SUCCESS;
         }
 
@@ -133,12 +136,13 @@ class CleanDuplicateRecurringTransactions extends Command
 
             $this->info("\n✅ Eliminazione completata!");
             $this->info("   - Transazioni eliminate: {$deleted}");
-            $this->info("   - Saldi account aggiornati");
+            $this->info('   - Saldi account aggiornati');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error("\n❌ Errore durante l'eliminazione: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
     }

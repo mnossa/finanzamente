@@ -21,8 +21,8 @@ return new class extends Migration
         Schema::create('magazine_articles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')
-                  ->constrained('magazine_categories')
-                  ->cascadeOnDelete();
+                ->constrained('magazine_categories')
+                ->cascadeOnDelete();
             $table->string('slug')->unique();
             $table->string('title');
             $table->text('excerpt');

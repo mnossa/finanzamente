@@ -7,9 +7,11 @@ use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\DebtCredit;
+use App\Models\InterHouseholdTransfer;
 use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\TransactionImport;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -142,13 +144,13 @@ class TransactionController extends Controller
             ->get(['id', 'name', 'color']);
 
         return Inertia::render('Transactions/Index', [
-            'transactions'    => $transactions,
-            'accounts'        => $accounts,
-            'categories'      => $categories,
-            'debtCredits'     => $debtCredits,
-            'tags'            => $tags,
-            'filters'         => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id']),
-            'activeImports'   => TransactionImport::where('user_id', $user->id)
+            'transactions' => $transactions,
+            'accounts' => $accounts,
+            'categories' => $categories,
+            'debtCredits' => $debtCredits,
+            'tags' => $tags,
+            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id']),
+            'activeImports' => TransactionImport::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'processing'])
                 ->orderBy('created_at', 'desc')
                 ->get(['id', 'status', 'rows_total', 'rows_imported', 'created_at']),
@@ -243,12 +245,12 @@ class TransactionController extends Controller
         // Recupera le ultime transazioni aggiunte nella sessione corrente
         $sessionIds = $request->session()->get('quick_session_ids', []);
         $sessionTransactions = [];
-        if (!empty($sessionIds)) {
+        if (! empty($sessionIds)) {
             $sessionTransactions = Transaction::with(['category:id,name,color,icon,type', 'account:id,name,currency_code'])
                 ->whereIn('id', $sessionIds)
                 ->orderByDesc('created_at')
                 ->get()
-                ->map(fn($t) => [
+                ->map(fn ($t) => [
                     'id' => $t->id,
                     'amount' => (float) $t->amount,
                     'date' => $t->date->format('Y-m-d'),
@@ -269,10 +271,10 @@ class TransactionController extends Controller
         }
 
         return Inertia::render('Transactions/QuickSession', [
-            'accounts'           => $accounts,
-            'categories'         => $categories,
+            'accounts' => $accounts,
+            'categories' => $categories,
             'sessionTransactions' => $sessionTransactions,
-            'defaultAccountId'   => $request->query('account_id'),
+            'defaultAccountId' => $request->query('account_id'),
         ]);
     }
 
@@ -280,7 +282,7 @@ class TransactionController extends Controller
      * Salva una transazione durante una Sessione Rapida.
      * Traccia l'ID in sessione per mostrare la lista delle transazioni aggiunte.
      */
-    public function quickStore(StoreTransactionRequest $request): \Illuminate\Http\RedirectResponse
+    public function quickStore(StoreTransactionRequest $request): RedirectResponse
     {
         $user = Auth::user();
         $validated = $request->validated();
@@ -294,14 +296,14 @@ class TransactionController extends Controller
         $account = Account::find($validated['account_id']);
 
         $transaction = Transaction::create([
-            'user_id'     => $user->id,
-            'account_id'  => $validated['account_id'],
+            'user_id' => $user->id,
+            'account_id' => $validated['account_id'],
             'category_id' => $validated['category_id'],
-            'amount'      => $amount,
+            'amount' => $amount,
             'currency_code' => $account->currency_code,
-            'date'        => $validated['date'],
+            'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
-            'is_private'  => $validated['is_private'] ?? false,
+            'is_private' => $validated['is_private'] ?? false,
         ]);
 
         $account->current_balance += $amount;
@@ -320,7 +322,7 @@ class TransactionController extends Controller
     /**
      * Azzera la lista delle transazioni della sessione rapida corrente.
      */
-    public function clearQuickSession(Request $request): \Illuminate\Http\RedirectResponse
+    public function clearQuickSession(Request $request): RedirectResponse
     {
         $request->session()->forget('quick_session_ids');
 
@@ -359,7 +361,7 @@ class TransactionController extends Controller
             'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
             'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
             'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
-            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? \Carbon\Carbon::parse($validated['date'])->year : null),
+            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? Carbon::parse($validated['date'])->year : null),
         ]);
 
         // Sincronizza i tag (esistenti + nuovi da creare)
@@ -397,7 +399,7 @@ class TransactionController extends Controller
 
         // Calcola informazioni sui rimborsi se è una spesa
         $refundInfo = null;
-        if ((float) $transaction->amount < 0 && !$transaction->transfer_id && !$transaction->refund_id) {
+        if ((float) $transaction->amount < 0 && ! $transaction->transfer_id && ! $transaction->refund_id) {
             $totalRefunded = $transaction->getTotalRefundedAmount();
             $originalAmount = abs((float) $transaction->amount);
             $refundInfo = [
@@ -500,9 +502,9 @@ class TransactionController extends Controller
         $transaction->load('tags:id,name,color');
 
         // Verifica se è parte di un trasferimento inter-household
-        $isInterHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+        $isInterHouseholdTransfer = InterHouseholdTransfer::where(function ($q) use ($transaction) {
             $q->where('source_transaction_id', $transaction->id)
-              ->orWhere('dest_transaction_id', $transaction->id);
+                ->orWhere('dest_transaction_id', $transaction->id);
         })->exists();
 
         return Inertia::render('Transactions/Edit', [
@@ -519,7 +521,7 @@ class TransactionController extends Controller
                 'tax_deduction_type' => $transaction->tax_deduction_type,
                 'tax_year' => $transaction->tax_year,
                 'tag_ids' => $transaction->tags->pluck('id')->toArray(),
-                'tags' => $transaction->tags->map(fn($tag) => [
+                'tags' => $transaction->tags->map(fn ($tag) => [
                     'id' => $tag->id,
                     'name' => $tag->name,
                     'color' => $tag->color,
@@ -543,9 +545,9 @@ class TransactionController extends Controller
         $this->authorizeTransaction($transaction);
 
         // Verifica se è parte di un trasferimento inter-household
-        $isInterHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+        $isInterHouseholdTransfer = InterHouseholdTransfer::where(function ($q) use ($transaction) {
             $q->where('source_transaction_id', $transaction->id)
-              ->orWhere('dest_transaction_id', $transaction->id);
+                ->orWhere('dest_transaction_id', $transaction->id);
         })->exists();
 
         if ($isInterHouseholdTransfer) {
@@ -594,7 +596,7 @@ class TransactionController extends Controller
             'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
             'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
             'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
-            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? \Carbon\Carbon::parse($validated['date'])->year : null),
+            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? Carbon::parse($validated['date'])->year : null),
         ]);
 
         // Sincronizza i tag (esistenti + nuovi da creare)
@@ -615,7 +617,7 @@ class TransactionController extends Controller
                 // Calcola il nuovo importo per la transazione collegata
                 // Se questa è uscita (negativa), l'altra è entrata (positiva) e viceversa
                 $linkedOldAmount = (float) $linkedTransaction->amount;
-                $linkedNewAmount = $oldAmount != 0 
+                $linkedNewAmount = $oldAmount != 0
                     ? ($linkedOldAmount / abs($oldAmount)) * abs($newAmount)
                     : abs($newAmount);
 
@@ -670,17 +672,17 @@ class TransactionController extends Controller
     public function bulkUpdate(Request $request): RedirectResponse
     {
         $request->validate([
-            'ids'               => 'required|array|min:1',
-            'ids.*'             => 'integer',
-            'category_id'       => 'sometimes|nullable|integer|exists:categories,id',
-            'is_private'        => 'sometimes|boolean',
-            'debt_credit_id'    => 'sometimes|nullable|integer|exists:debt_credits,id',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+            'category_id' => 'sometimes|nullable|integer|exists:categories,id',
+            'is_private' => 'sometimes|boolean',
+            'debt_credit_id' => 'sometimes|nullable|integer|exists:debt_credits,id',
             'is_tax_deductible' => 'sometimes|boolean',
-            'account_id'        => 'sometimes|integer|exists:accounts,id',
+            'account_id' => 'sometimes|integer|exists:accounts,id',
         ]);
 
         $user = Auth::user();
-        $ids  = $request->input('ids');
+        $ids = $request->input('ids');
 
         $transactions = Transaction::with('account')
             ->whereIn('id', $ids)
@@ -781,13 +783,13 @@ class TransactionController extends Controller
         $processedTransferIds = [];
 
         foreach ($transactions as $transaction) {
-            $interHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+            $interHouseholdTransfer = InterHouseholdTransfer::where(function ($q) use ($transaction) {
                 $q->where('source_transaction_id', $transaction->id)
-                  ->orWhere('dest_transaction_id', $transaction->id);
+                    ->orWhere('dest_transaction_id', $transaction->id);
             })->first();
 
             if ($interHouseholdTransfer) {
-                if (!in_array($interHouseholdTransfer->id, $processedTransferIds)) {
+                if (! in_array($interHouseholdTransfer->id, $processedTransferIds)) {
                     $interHouseholdTransfer->delete();
                     $processedTransferIds[] = $interHouseholdTransfer->id;
                     $deletedCount++;
@@ -814,15 +816,15 @@ class TransactionController extends Controller
         $this->authorizeTransaction($transaction);
 
         // Verifica se è parte di un trasferimento inter-household
-        $interHouseholdTransfer = \App\Models\InterHouseholdTransfer::where(function ($q) use ($transaction) {
+        $interHouseholdTransfer = InterHouseholdTransfer::where(function ($q) use ($transaction) {
             $q->where('source_transaction_id', $transaction->id)
-              ->orWhere('dest_transaction_id', $transaction->id);
+                ->orWhere('dest_transaction_id', $transaction->id);
         })->first();
 
         if ($interHouseholdTransfer) {
             // Elimina il trasferimento inter-household (che eliminerà automaticamente entrambe le transazioni)
             $interHouseholdTransfer->delete();
-            
+
             return redirect()
                 ->route('transactions.index')
                 ->with('success', 'Transazione e trasferimento inter-household eliminati con successo.');
@@ -864,10 +866,10 @@ class TransactionController extends Controller
      * più quelli creati al volo dai nuovi nomi forniti (normalizzati in uppercase,
      * con riuso del tag esistente se il nome corrisponde case-insensitive).
      *
-     * @param array $tagIds        ID di tag già esistenti da associare
-     * @param array $newTagNames   Nuovi nomi di tag da creare/trovare
-     * @param int   $householdId   ID della household corrente
-     * @return array               Array unico di ID tag da sincronizzare
+     * @param  array  $tagIds  ID di tag già esistenti da associare
+     * @param  array  $newTagNames  Nuovi nomi di tag da creare/trovare
+     * @param  int  $householdId  ID della household corrente
+     * @return array Array unico di ID tag da sincronizzare
      */
     private function resolveTagIds(array $tagIds, array $newTagNames, int $householdId): array
     {
@@ -880,6 +882,7 @@ class TransactionController extends Controller
                 ]);
             $tagIds[] = $tag->id;
         }
+
         return array_unique($tagIds);
     }
 }

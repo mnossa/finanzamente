@@ -9,9 +9,9 @@ use App\Models\Category;
 use App\Models\DebtCredit;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\RecurringTransactionService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -47,10 +47,10 @@ class RecurringTransactionController extends Controller
         $householdId = $user->active_household_id;
 
         $recurringTransactions = RecurringTransaction::with([
-                'account:id,name,currency_code',
-                'category:id,name,color,icon,type',
-                'user:id,name'
-            ])
+            'account:id,name,currency_code',
+            'category:id,name,color,icon,type',
+            'user:id,name',
+        ])
             ->whereHas('account', function ($q) use ($householdId) {
                 $q->where('household_id', $householdId);
             })
@@ -59,7 +59,7 @@ class RecurringTransactionController extends Controller
             ->map(function ($rt) {
                 $nextDue = $this->recurringService->calculateNextDueDate($rt);
                 $isActive = $this->recurringService->isActive($rt);
-                
+
                 return [
                     'id' => $rt->id,
                     'amount' => (float) $rt->amount,
@@ -151,11 +151,11 @@ class RecurringTransactionController extends Controller
      */
     public function store(StoreRecurringTransactionRequest $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 5 transazioni ricorrenti attive
-        if (!$user->isPro()) {
+        if (! $user->isPro()) {
             $max = config('plans.base_limits.max_recurring_transactions', 5);
             $count = RecurringTransaction::where('user_id', $user->id)
                 ->where(function ($q) {
@@ -194,7 +194,7 @@ class RecurringTransactionController extends Controller
         // Genera automaticamente tutte le transazioni fino a oggi
         $count = $this->recurringService->generateTransactionsUntil($recurringTransaction);
 
-        $message = $count > 0 
+        $message = $count > 0
             ? "Transazione ricorrente creata con successo. Generate {$count} transazioni."
             : 'Transazione ricorrente creata con successo.';
 
@@ -213,7 +213,7 @@ class RecurringTransactionController extends Controller
         $recurringTransaction->load([
             'account:id,name,currency_code',
             'category:id,name,color,icon,type',
-            'user:id,name'
+            'user:id,name',
         ]);
 
         $nextDue = $this->recurringService->calculateNextDueDate($recurringTransaction);
@@ -361,15 +361,15 @@ class RecurringTransactionController extends Controller
     {
         $this->authorizeRecurringTransaction($recurringTransaction);
 
-        if (!$this->recurringService->isActive($recurringTransaction)) {
+        if (! $this->recurringService->isActive($recurringTransaction)) {
             return redirect()
                 ->route('recurring-transactions.show', $recurringTransaction)
                 ->with('error', 'Questa transazione ricorrente non è più attiva.');
         }
 
         $transaction = $this->recurringService->generateNextTransaction($recurringTransaction);
-        
-        if (!$transaction) {
+
+        if (! $transaction) {
             return redirect()
                 ->route('recurring-transactions.show', $recurringTransaction)
                 ->with('error', 'Nessuna transazione disponibile da generare o già esistente.');

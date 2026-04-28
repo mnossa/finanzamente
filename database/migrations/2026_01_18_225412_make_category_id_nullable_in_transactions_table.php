@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::table('transactions', function (Blueprint $table) {
             // Rimuovi il vincolo di foreign key esistente
             $table->dropForeign(['category_id']);
-            
+
             // Modifica la colonna per renderla nullable
             $table->foreignId('category_id')->nullable()->change();
-            
+
             // Ricrea il vincolo di foreign key
             $table->foreign('category_id')->references('id')->on('categories')->cascadeOnDelete();
         });
@@ -31,10 +31,10 @@ return new class extends Migration
         Schema::table('transactions', function (Blueprint $table) {
             // Rimuovi il vincolo di foreign key
             $table->dropForeign(['category_id']);
-            
+
             // Riporta la colonna a NOT NULL
             $table->foreignId('category_id')->nullable(false)->change();
-            
+
             // Ricrea il vincolo di foreign key
             $table->foreign('category_id')->references('id')->on('categories')->cascadeOnDelete();
         });

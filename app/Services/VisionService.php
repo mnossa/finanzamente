@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Storage;
 class VisionService
 {
     private const API_URL = 'https://api.mistral.ai/v1/chat/completions';
+
     private const MODEL = 'pixtral-12b-2409';
+
     private const MAX_HEIGHT = 1000;
 
     /**

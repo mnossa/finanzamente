@@ -13,62 +13,62 @@ class AssetClassificationService
 {
     /** Rischio KIID (1-7) per tipo di asset InvestmentAsset */
     public const ASSET_TYPE_RISK = [
-        'etf'       => 4,
-        'stock'     => 6,
-        'index'     => 4,
+        'etf' => 4,
+        'stock' => 6,
+        'index' => 4,
         'commodity' => 5,
         'insurance' => 2,
-        'crypto'    => 7,
-        'other'     => 3,
+        'crypto' => 7,
+        'other' => 3,
     ];
 
     /** Asset class per tipo di asset InvestmentAsset */
     public const ASSET_TYPE_CLASS = [
-        'etf'       => 'equities',
-        'stock'     => 'equities',
-        'index'     => 'equities',
+        'etf' => 'equities',
+        'stock' => 'equities',
+        'index' => 'equities',
         'commodity' => 'commodities',
         'insurance' => 'bonds',
-        'crypto'    => 'crypto',
-        'other'     => 'other',
+        'crypto' => 'crypto',
+        'other' => 'other',
     ];
 
     /** Rischio KIID per tipo di conto */
     public const ACCOUNT_TYPE_RISK = [
-        'bank'   => 1,
-        'cash'   => 1,
-        'card'   => 1,
+        'bank' => 1,
+        'cash' => 1,
+        'card' => 1,
         'crypto' => 7,
-        'other'  => 1,
+        'other' => 1,
     ];
 
     /** Asset class per tipo di conto */
     public const ACCOUNT_TYPE_CLASS = [
-        'bank'   => 'liquidity',
-        'cash'   => 'liquidity',
-        'card'   => 'liquidity',
+        'bank' => 'liquidity',
+        'cash' => 'liquidity',
+        'card' => 'liquidity',
         'crypto' => 'crypto',
-        'other'  => 'liquidity',
+        'other' => 'liquidity',
     ];
 
     /** Etichette in italiano per asset class */
     public const CLASS_LABELS = [
-        'equities'    => 'Azionario',
-        'bonds'       => 'Obbligazionario',
+        'equities' => 'Azionario',
+        'bonds' => 'Obbligazionario',
         'commodities' => 'Commodities',
-        'crypto'      => 'Crypto',
-        'liquidity'   => 'Liquidità',
-        'other'       => 'Altro',
+        'crypto' => 'Crypto',
+        'liquidity' => 'Liquidità',
+        'other' => 'Altro',
     ];
 
     /** Colori per asset class (usati nel Donut chart) */
     public const CLASS_COLORS = [
-        'equities'    => '#3b82f6', // blue
-        'bonds'       => '#10b981', // emerald
+        'equities' => '#3b82f6', // blue
+        'bonds' => '#10b981', // emerald
         'commodities' => '#f59e0b', // amber
-        'crypto'      => '#8b5cf6', // violet
-        'liquidity'   => '#06b6d4', // cyan
-        'other'       => '#94a3b8', // slate
+        'crypto' => '#8b5cf6', // violet
+        'liquidity' => '#06b6d4', // cyan
+        'other' => '#94a3b8', // slate
     ];
 
     /**
@@ -83,7 +83,7 @@ class AssetClassificationService
             $index <= 4.5 => 'Moderato',
             $index <= 5.5 => 'Moderato-Alto',
             $index <= 6.5 => 'Alto',
-            default       => 'Molto Alto',
+            default => 'Molto Alto',
         };
     }
 }

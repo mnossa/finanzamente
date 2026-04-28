@@ -6,6 +6,7 @@ use App\Http\Requests\StoreDebtCreditRequest;
 use App\Http\Requests\UpdateDebtCreditRequest;
 use App\Models\Currency;
 use App\Models\DebtCredit;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,7 +39,7 @@ class DebtCreditController extends Controller
             ->orderByRaw("CASE status WHEN 'overdue' THEN 0 WHEN 'open' THEN 1 WHEN 'closed' THEN 2 ELSE 3 END")
             ->orderBy('due_date')
             ->get()
-            ->map(fn($dc) => [
+            ->map(fn ($dc) => [
                 'id' => $dc->id,
                 'counterparty' => $dc->counterparty,
                 'amount' => $dc->amount,
@@ -82,7 +83,7 @@ class DebtCreditController extends Controller
     {
         $currencies = Currency::orderBy('code')
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'code' => $c->code,
                 'name' => $c->name,
                 'symbol' => $c->symbol,
@@ -99,11 +100,11 @@ class DebtCreditController extends Controller
      */
     public function store(StoreDebtCreditRequest $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         // Limite piano Base: massimo 5 debiti/crediti attivi
-        if (!$user->isPro()) {
+        if (! $user->isPro()) {
             $max = config('plans.base_limits.max_debts_credits', 5);
             $count = DebtCredit::where('household_id', $user->active_household_id)
                 ->whereIn('status', ['open', 'overdue'])
@@ -141,7 +142,7 @@ class DebtCreditController extends Controller
 
         return redirect()
             ->route('debts-credits.index')
-            ->with('success', self::TYPES[$validated['type']] . ' creato con successo.');
+            ->with('success', self::TYPES[$validated['type']].' creato con successo.');
     }
 
     /**
@@ -153,11 +154,11 @@ class DebtCreditController extends Controller
 
         $debts_credit->load(['transactions' => function ($q) {
             $q->with('account:id,name,currency_code', 'category:id,name,icon')
-              ->orderBy('date', 'desc')
-              ->limit(50);
+                ->orderBy('date', 'desc')
+                ->limit(50);
         }]);
 
-        $transactions = $debts_credit->transactions->map(fn($t) => [
+        $transactions = $debts_credit->transactions->map(fn ($t) => [
             'id' => $t->id,
             'amount' => (float) $t->amount,
             'date' => $t->date->format('Y-m-d'),
@@ -208,7 +209,7 @@ class DebtCreditController extends Controller
 
         $currencies = Currency::orderBy('code')
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'code' => $c->code,
                 'name' => $c->name,
                 'symbol' => $c->symbol,
@@ -245,7 +246,7 @@ class DebtCreditController extends Controller
 
         return redirect()
             ->route('debts-credits.index')
-            ->with('success', self::TYPES[$debts_credit->type] . ' aggiornato con successo.');
+            ->with('success', self::TYPES[$debts_credit->type].' aggiornato con successo.');
     }
 
     /**
@@ -259,7 +260,7 @@ class DebtCreditController extends Controller
 
         return redirect()
             ->route('debts-credits.index')
-            ->with('success', self::TYPES[$debts_credit->type] . ' chiuso con successo.');
+            ->with('success', self::TYPES[$debts_credit->type].' chiuso con successo.');
     }
 
     /**
@@ -278,7 +279,7 @@ class DebtCreditController extends Controller
 
         return redirect()
             ->route('debts-credits.index')
-            ->with('success', self::TYPES[$debts_credit->type] . ' riaperto con successo.');
+            ->with('success', self::TYPES[$debts_credit->type].' riaperto con successo.');
     }
 
     /**
@@ -293,7 +294,7 @@ class DebtCreditController extends Controller
 
         return redirect()
             ->route('debts-credits.index')
-            ->with('success', self::TYPES[$type] . ' eliminato con successo.');
+            ->with('success', self::TYPES[$type].' eliminato con successo.');
     }
 
     /**

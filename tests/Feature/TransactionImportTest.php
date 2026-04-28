@@ -10,7 +10,6 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -19,7 +18,9 @@ class TransactionImportTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
 
     protected function setUp(): void
@@ -200,17 +201,17 @@ class TransactionImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
 
         $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
-            'csv_file'     => $file,
-            'bank_name'    => 'custom',
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
-            'sheet_index'  => 0,
+            'csv_file' => $file,
+            'bank_name' => 'custom',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'sheet_index' => 0,
             'column_mapping' => [
-                'date'        => 0,
+                'date' => 0,
                 'description' => 1,
-                'amount'      => 2,
+                'amount' => 2,
             ],
         ]);
 
@@ -224,7 +225,7 @@ class TransactionImportTest extends TestCase
         $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
             'google_drive_file_id' => 'some-file-id',
             // google_drive_access_token mancante
-            'date_format'  => 'd/m/Y',
+            'date_format' => 'd/m/Y',
             'column_mapping' => ['date' => 0, 'amount' => 1, 'description' => 2],
         ]);
 
@@ -241,11 +242,11 @@ class TransactionImportTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
-            'google_drive_file_id'      => 'fake-file-id',
+            'google_drive_file_id' => 'fake-file-id',
             'google_drive_access_token' => 'fake-token',
-            'google_drive_mime_type'    => 'text/csv',
-            'date_format'               => 'd/m/Y',
-            'column_mapping'            => ['date' => 0, 'amount' => 1, 'description' => 2],
+            'google_drive_mime_type' => 'text/csv',
+            'date_format' => 'd/m/Y',
+            'column_mapping' => ['date' => 0, 'amount' => 1, 'description' => 2],
         ]);
 
         $response->assertStatus(422);

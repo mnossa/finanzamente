@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Household;
 use App\Models\User;
 use App\Services\WaitlistService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class WaitlistTest extends TestCase
@@ -140,7 +142,7 @@ class WaitlistTest extends TestCase
             'email_verified_at' => now(),
         ]);
         // Crea una household per evitare redirect da EnsureHasActiveHousehold
-        $household = \App\Models\Household::factory()->create(['owner_user_id' => $user->id]);
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
         $user->update(['active_household_id' => $household->id]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
@@ -155,7 +157,7 @@ class WaitlistTest extends TestCase
         config(['prelaunch.enabled' => false]);
 
         $user = User::factory()->create(['email' => 'other@example.com', 'email_verified_at' => now()]);
-        $household = \App\Models\Household::factory()->create(['owner_user_id' => $user->id]);
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
         $user->update(['active_household_id' => $household->id]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
@@ -247,7 +249,7 @@ class WaitlistTest extends TestCase
     {
         return json_encode([
             'eventType' => 'FORM_RESPONSE',
-            'data'      => [
+            'data' => [
                 'fields' => [
                     ['type' => 'INPUT_EMAIL', 'value' => $email],
                 ],
@@ -264,7 +266,7 @@ class WaitlistTest extends TestCase
         });
 
         $body = $this->tallyPayload('survey@example.com');
-        $sig  = base64_encode(hash_hmac('sha256', $body, 'test-secret', true));
+        $sig = base64_encode(hash_hmac('sha256', $body, 'test-secret', true));
 
         $response = $this->postJson('/webhooks/tally', json_decode($body, true), [
             'X-Tally-Signature' => $sig,
@@ -282,7 +284,7 @@ class WaitlistTest extends TestCase
         });
 
         $body = $this->tallyPayload('survey2@example.com');
-        $sig  = base64_encode(hash_hmac('sha256', $body, 'test-secret', true));
+        $sig = base64_encode(hash_hmac('sha256', $body, 'test-secret', true));
 
         $response = $this->postJson('/webhooks/tally', json_decode($body, true), [
             'Tally-Signature' => $sig,
@@ -326,7 +328,7 @@ class WaitlistTest extends TestCase
                 ->andReturn(true);
         });
 
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $url = URL::temporarySignedRoute(
             'waitlist.confirm',
             now()->addDays(7),
             ['email' => 'test@example.com']
@@ -339,7 +341,7 @@ class WaitlistTest extends TestCase
 
     public function test_waitlist_confirm_with_expired_signature_returns_403(): void
     {
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $url = URL::temporarySignedRoute(
             'waitlist.confirm',
             now()->subSecond(), // scaduto
             ['email' => 'test@example.com']
@@ -365,7 +367,7 @@ class WaitlistTest extends TestCase
                 ->andReturn(false);
         });
 
-        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $url = URL::temporarySignedRoute(
             'waitlist.confirm',
             now()->addDays(7),
             ['email' => 'test@example.com']

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\AppNotification;
+use App\Models\Currency;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
@@ -58,7 +59,7 @@ class RevenueTrackingTest extends TestCase
 
     private function createTransactionForUser(User $user, float $amount, ?string $date = null): void
     {
-        $currency = \App\Models\Currency::where('code', 'EUR')->first();
+        $currency = Currency::where('code', 'EUR')->first();
 
         $account = Account::create([
             'household_id' => $user->active_household_id,
@@ -147,7 +148,7 @@ class RevenueTrackingTest extends TestCase
     public function test_notification_created_when_revenue_exceeds_80_percent(): void
     {
         $user = $this->createVatUserWithHousehold();
-        $service = new RevenueNotificationService();
+        $service = new RevenueNotificationService;
 
         $service->checkAndNotify($user, 68100, 85000); // ~80.1%
 
@@ -161,7 +162,7 @@ class RevenueTrackingTest extends TestCase
     public function test_notification_not_duplicated_for_same_level(): void
     {
         $user = $this->createVatUserWithHousehold();
-        $service = new RevenueNotificationService();
+        $service = new RevenueNotificationService;
 
         $service->checkAndNotify($user, 68100, 85000);
         $service->checkAndNotify($user, 68100, 85000);
@@ -172,7 +173,7 @@ class RevenueTrackingTest extends TestCase
     public function test_notification_created_when_revenue_exceeds_90_percent(): void
     {
         $user = $this->createVatUserWithHousehold();
-        $service = new RevenueNotificationService();
+        $service = new RevenueNotificationService;
 
         $service->checkAndNotify($user, 76600, 85000); // ~90.1%
 
@@ -185,7 +186,7 @@ class RevenueTrackingTest extends TestCase
     public function test_critical_notification_created_when_revenue_exceeds_100_percent(): void
     {
         $user = $this->createVatUserWithHousehold();
-        $service = new RevenueNotificationService();
+        $service = new RevenueNotificationService;
 
         $service->checkAndNotify($user, 85001, 85000); // >100%
 
@@ -200,7 +201,7 @@ class RevenueTrackingTest extends TestCase
         $user = $this->createVatUserWithHousehold([
             'revenue_notified_levels' => ['80'],
         ]);
-        $service = new RevenueNotificationService();
+        $service = new RevenueNotificationService;
 
         $service->checkAndNotify($user, 10000, 85000); // ~11.7% – below 80%
 
@@ -211,7 +212,7 @@ class RevenueTrackingTest extends TestCase
     public function test_no_notification_when_threshold_is_zero(): void
     {
         $user = $this->createVatUserWithHousehold(['revenue_threshold' => 0]);
-        $service = new RevenueNotificationService();
+        $service = new RevenueNotificationService;
 
         $service->checkAndNotify($user, 90000, 0);
 

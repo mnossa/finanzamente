@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\Category;
-use App\Models\Currency;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;

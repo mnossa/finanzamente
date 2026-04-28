@@ -15,16 +15,16 @@ return new class extends Migration
         Schema::table('debts_credits', function (Blueprint $table) {
             // Importo iniziale del debito/credito
             $table->decimal('initial_amount', 12, 2)->after('amount')->nullable();
-            
+
             // Importo totale pagato
             $table->decimal('paid_amount', 12, 2)->default(0)->after('initial_amount');
-            
+
             // Tasso di interesse annuale (percentuale)
             $table->decimal('interest_rate', 5, 2)->nullable()->after('paid_amount');
-            
+
             // Tipo di interesse (semplice o composto)
             $table->enum('interest_type', ['simple', 'compound'])->default('simple')->after('interest_rate');
-            
+
             // Data di riferimento per il calcolo degli interessi
             $table->date('interest_calculation_date')->nullable()->after('interest_type');
         });

@@ -8,6 +8,7 @@ use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -16,8 +17,11 @@ class AttachmentTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private Transaction $transaction;
 
     protected function setUp(): void
@@ -160,7 +164,7 @@ class AttachmentTest extends TestCase
             $attachment = Attachment::create([
                 'attachable_type' => Transaction::class,
                 'attachable_id' => $this->transaction->id,
-                'file_path' => 'attachments/' . $fileType['filename'],
+                'file_path' => 'attachments/'.$fileType['filename'],
                 'filename' => $fileType['filename'],
                 'mime_type' => $fileType['mime_type'],
                 'file_size' => 1024,
@@ -214,7 +218,7 @@ class AttachmentTest extends TestCase
             'uploaded_by' => $this->user->id,
         ]);
 
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $attachment->uploaded_at);
+        $this->assertInstanceOf(Carbon::class, $attachment->uploaded_at);
         $this->assertEquals($now->toDateString(), $attachment->uploaded_at->toDateString());
     }
 
@@ -223,7 +227,7 @@ class AttachmentTest extends TestCase
     {
         $fillable = ['attachable_type', 'attachable_id', 'file_path', 'filename', 'mime_type', 'file_size', 'uploaded_at', 'uploaded_by'];
 
-        $attachment = new Attachment();
+        $attachment = new Attachment;
         $this->assertEquals($fillable, $attachment->getFillable());
     }
 

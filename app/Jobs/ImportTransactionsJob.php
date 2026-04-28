@@ -26,10 +26,10 @@ class ImportTransactionsJob implements ShouldQueue
     public int $tries = 1;
 
     public function __construct(
-        private readonly int   $userId,
-        private readonly int   $householdId,
+        private readonly int $userId,
+        private readonly int $householdId,
         private readonly array $validated,
-        private readonly int   $importId = 0,
+        private readonly int $importId = 0,
     ) {}
 
     public function handle(): void
@@ -42,33 +42,34 @@ class ImportTransactionsJob implements ShouldQueue
         }
 
         // Cache conti e variazioni di saldo
-        $accountsCache  = [];
+        $accountsCache = [];
         $balanceChanges = [];
 
         $loadAccount = function (int $id) use (&$accountsCache, &$balanceChanges): ?Account {
-            if (!isset($accountsCache[$id])) {
+            if (! isset($accountsCache[$id])) {
                 $acc = Account::where('id', $id)
                     ->where('household_id', $this->householdId)
                     ->first();
                 if ($acc) {
-                    $accountsCache[$id]  = $acc;
+                    $accountsCache[$id] = $acc;
                     $balanceChanges[$id] = 0.0;
                 }
             }
+
             return $accountsCache[$id] ?? null;
         };
 
-        $globalAccountId = !empty($this->validated['account_id']) ? (int) $this->validated['account_id'] : null;
+        $globalAccountId = ! empty($this->validated['account_id']) ? (int) $this->validated['account_id'] : null;
 
         $imported = 0;
-        $skipped  = 0;
+        $skipped = 0;
 
         // Risolvi i mapping delle categorie (nome dal file → category_id + type)
-        $categoryIdMap   = [];
+        $categoryIdMap = [];
         $categoryTypeMap = [];
-        if (!empty($this->validated['category_mappings'])) {
+        if (! empty($this->validated['category_mappings'])) {
             foreach ($this->validated['category_mappings'] as $catMapping) {
-                $catName   = $catMapping['name'];
+                $catName = $catMapping['name'];
                 $catAction = $catMapping['action'];
                 if ($catAction === 'existing') {
                     $catId = isset($catMapping['category_id']) ? (int) $catMapping['category_id'] : null;
@@ -80,50 +81,48 @@ class ImportTransactionsJob implements ShouldQueue
                 } elseif ($catAction === 'create') {
                     $cat = Category::firstOrCreate([
                         'household_id' => $this->householdId,
-                        'name'         => $catName,
-                        'type'         => $catMapping['type'] ?? 'expense',
+                        'name' => $catName,
+                        'type' => $catMapping['type'] ?? 'expense',
                     ]);
-                    $categoryIdMap[$catName]   = $cat->id;
+                    $categoryIdMap[$catName] = $cat->id;
                     $categoryTypeMap[$catName] = $cat->type;
                 } else {
-                    $categoryIdMap[$catName]   = null;
+                    $categoryIdMap[$catName] = null;
                     $categoryTypeMap[$catName] = null;
                 }
             }
         }
 
-        $resolveCategoryId = fn (?string $name): ?int =>
-            ($name !== null && $name !== '' && isset($categoryIdMap[$name]))
+        $resolveCategoryId = fn (?string $name): ?int => ($name !== null && $name !== '' && isset($categoryIdMap[$name]))
                 ? $categoryIdMap[$name]
                 : null;
 
-        $resolveCategoryType = fn (?string $name): ?string =>
-            ($name !== null && $name !== '' && isset($categoryTypeMap[$name]))
+        $resolveCategoryType = fn (?string $name): ?string => ($name !== null && $name !== '' && isset($categoryTypeMap[$name]))
                 ? $categoryTypeMap[$name]
                 : null;
 
         // Risolvi i mapping dei conti dal file (nome → account_id)
         $accountNameIdMap = [];
-        if (!empty($this->validated['account_mappings'])) {
+        if (! empty($this->validated['account_mappings'])) {
             foreach ($this->validated['account_mappings'] as $accMapping) {
-                $accName   = $accMapping['name'];
+                $accName = $accMapping['name'];
                 $accAction = $accMapping['action'];
                 if ($accAction === 'existing') {
                     $accountNameIdMap[$accName] = isset($accMapping['account_id']) ? (int) $accMapping['account_id'] : null;
                 } elseif ($accAction === 'create') {
                     $newAcc = Account::create([
-                        'household_id'    => $this->householdId,
-                        'name'            => $accName,
-                        'type'            => $accMapping['type'] ?? 'bank',
-                        'currency_code'   => $accMapping['currency_code'] ?? 'EUR',
+                        'household_id' => $this->householdId,
+                        'name' => $accName,
+                        'type' => $accMapping['type'] ?? 'bank',
+                        'currency_code' => $accMapping['currency_code'] ?? 'EUR',
                         'initial_balance' => 0,
                         'current_balance' => 0,
-                        'active'          => true,
-                        'is_private'      => false,
+                        'active' => true,
+                        'is_private' => false,
                     ]);
-                    $accountsCache[$newAcc->id]  = $newAcc;
+                    $accountsCache[$newAcc->id] = $newAcc;
                     $balanceChanges[$newAcc->id] = 0.0;
-                    $accountNameIdMap[$accName]  = $newAcc->id;
+                    $accountNameIdMap[$accName] = $newAcc->id;
                 }
             }
         }
@@ -133,32 +132,34 @@ class ImportTransactionsJob implements ShouldQueue
             if ($accountName !== null && isset($accountNameIdMap[$accountName])) {
                 return $loadAccount($accountNameIdMap[$accountName]);
             }
-            $id = !empty($row['account_id']) ? (int) $row['account_id'] : $globalAccountId;
+            $id = ! empty($row['account_id']) ? (int) $row['account_id'] : $globalAccountId;
+
             return $id !== null ? $loadAccount($id) : null;
         };
 
         foreach ($this->validated['rows'] as $row) {
-            $action  = $row['duplicate_action'] ?? 'import';
+            $action = $row['duplicate_action'] ?? 'import';
             $account = $resolveAccount($row);
 
             if ($action === 'ignore' || $account === null) {
                 $skipped++;
+
                 continue;
             }
 
-            $amount      = abs((float) $row['amount']);
-            $catName     = $row['category_name'] ?? null;
-            $catType     = $resolveCategoryType($catName);
+            $amount = abs((float) $row['amount']);
+            $catName = $row['category_name'] ?? null;
+            $catType = $resolveCategoryType($catName);
             if ($catType === 'expense') {
                 $amount = -$amount;
             }
             $description = $row['description'];
-            if (!empty($row['notes'])) {
-                $description .= ' - ' . $row['notes'];
+            if (! empty($row['notes'])) {
+                $description .= ' - '.$row['notes'];
             }
             $description = mb_substr($description, 0, 1000);
 
-            if (in_array($action, ['replace', 'update'], true) && !empty($row['duplicate_transaction_id'])) {
+            if (in_array($action, ['replace', 'update'], true) && ! empty($row['duplicate_transaction_id'])) {
                 $existing = Transaction::where('id', (int) $row['duplicate_transaction_id'])
                     ->where('account_id', $account->id)
                     ->first();
@@ -169,38 +170,39 @@ class ImportTransactionsJob implements ShouldQueue
                         $balanceChanges[$account->id] -= $oldAmount;
                         $existing->delete();
                         Transaction::create([
-                            'user_id'       => $this->userId,
-                            'account_id'    => $account->id,
-                            'category_id'   => $resolveCategoryId($row['category_name'] ?? null),
-                            'amount'        => $amount,
+                            'user_id' => $this->userId,
+                            'account_id' => $account->id,
+                            'category_id' => $resolveCategoryId($row['category_name'] ?? null),
+                            'amount' => $amount,
                             'currency_code' => $account->currency_code,
-                            'date'          => $row['date'],
-                            'description'   => $description,
-                            'is_private'    => false,
+                            'date' => $row['date'],
+                            'description' => $description,
+                            'is_private' => false,
                         ]);
                     } else {
                         $existing->update([
-                            'amount'      => $amount,
-                            'date'        => $row['date'],
+                            'amount' => $amount,
+                            'date' => $row['date'],
                             'description' => $description,
                         ]);
                         $balanceChanges[$account->id] -= $oldAmount;
                     }
                     $balanceChanges[$account->id] += $amount;
                     $imported++;
+
                     continue;
                 }
             }
 
             Transaction::create([
-                'user_id'       => $this->userId,
-                'account_id'    => $account->id,
-                'category_id'   => $resolveCategoryId($row['category_name'] ?? null),
-                'amount'        => $amount,
+                'user_id' => $this->userId,
+                'account_id' => $account->id,
+                'category_id' => $resolveCategoryId($row['category_name'] ?? null),
+                'amount' => $amount,
                 'currency_code' => $account->currency_code,
-                'date'          => $row['date'],
-                'description'   => $description,
-                'is_private'    => false,
+                'date' => $row['date'],
+                'description' => $description,
+                'is_private' => false,
             ]);
             $balanceChanges[$account->id] += $amount;
             $imported++;
@@ -214,25 +216,25 @@ class ImportTransactionsJob implements ShouldQueue
 
         if ($importRecord) {
             $importRecord->update([
-                'status'        => 'completed',
+                'status' => 'completed',
                 'rows_imported' => $imported,
-                'rows_skipped'  => $skipped,
-                'completed_at'  => now(),
+                'rows_skipped' => $skipped,
+                'completed_at' => now(),
             ]);
         }
 
         // Notifica in-app al completamento
-        $msg = "{$imported} " . ($imported === 1 ? 'transazione importata' : 'transazioni importate') . ' con successo.';
+        $msg = "{$imported} ".($imported === 1 ? 'transazione importata' : 'transazioni importate').' con successo.';
         if ($skipped > 0) {
-            $msg .= " {$skipped} " . ($skipped === 1 ? 'riga ignorata' : 'righe ignorate') . '.';
+            $msg .= " {$skipped} ".($skipped === 1 ? 'riga ignorata' : 'righe ignorate').'.';
         }
 
         AppNotification::create([
-            'user_id'          => $this->userId,
-            'title'            => '✅ Importazione completata',
-            'message'          => $msg,
-            'read'             => false,
-            'notification_key' => 'import_done_' . time() . '_' . $this->userId,
+            'user_id' => $this->userId,
+            'title' => '✅ Importazione completata',
+            'message' => $msg,
+            'read' => false,
+            'notification_key' => 'import_done_'.time().'_'.$this->userId,
         ]);
     }
 
@@ -244,18 +246,18 @@ class ImportTransactionsJob implements ShouldQueue
         $importRecord = $this->importId ? TransactionImport::find($this->importId) : null;
         if ($importRecord) {
             $importRecord->update([
-                'status'        => 'failed',
+                'status' => 'failed',
                 'error_message' => mb_substr($exception->getMessage(), 0, 500),
-                'completed_at'  => now(),
+                'completed_at' => now(),
             ]);
         }
 
         AppNotification::create([
-            'user_id'          => $this->userId,
-            'title'            => '❌ Importazione fallita',
-            'message'          => 'Si è verificato un errore durante l\'importazione delle transazioni. Riprova o contatta il supporto.',
-            'read'             => false,
-            'notification_key' => 'import_failed_' . time() . '_' . $this->userId,
+            'user_id' => $this->userId,
+            'title' => '❌ Importazione fallita',
+            'message' => 'Si è verificato un errore durante l\'importazione delle transazioni. Riprova o contatta il supporto.',
+            'read' => false,
+            'notification_key' => 'import_failed_'.time().'_'.$this->userId,
         ]);
     }
 }

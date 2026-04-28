@@ -15,26 +15,26 @@ class EnsureHasActiveHousehold
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         // Se l'utente non ha una household attiva, reindirizza alla selezione
-        if (!$user->active_household_id) {
+        if (! $user->active_household_id) {
             // Controlla se ha almeno una household
             $householdsCount = $user->households()->count();
-            
+
             if ($householdsCount === 0) {
                 // Nessuna household: vai alla creazione
                 return redirect()->route('households.create');
             }
-            
+
             // Ha household ma nessuna attiva: vai alla selezione
             return redirect()->route('households.select');
         }

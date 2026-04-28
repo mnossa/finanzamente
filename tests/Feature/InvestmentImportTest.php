@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\BankImportLayout;
 use App\Models\Household;
-use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -20,8 +19,11 @@ class InvestmentImportTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Household $household;
+
     private Account $account;
+
     private InvestmentAsset $asset;
 
     protected function setUp(): void
@@ -30,26 +32,26 @@ class InvestmentImportTest extends TestCase
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
 
-        $this->user      = User::factory()->create();
+        $this->user = User::factory()->create();
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, [
-            'role'        => 'owner',
+            'role' => 'owner',
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
 
         $this->account = Account::factory()->create([
-            'household_id'   => $this->household->id,
-            'owner_user_id'  => $this->user->id,
-            'current_balance'=> 10000.00,
-            'currency_code'  => 'EUR',
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'current_balance' => 10000.00,
+            'currency_code' => 'EUR',
         ]);
 
         $this->asset = InvestmentAsset::create([
-            'type'          => 'stock',
-            'symbol'        => 'AAPL',
-            'isin'          => 'US0378331005',
-            'name'          => 'Apple Inc.',
+            'type' => 'stock',
+            'symbol' => 'AAPL',
+            'isin' => 'US0378331005',
+            'name' => 'Apple Inc.',
             'currency_code' => 'USD',
         ]);
     }
@@ -85,15 +87,15 @@ class InvestmentImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('investments.csv', $csvContent);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'csv_file'     => $file,
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
+            'csv_file' => $file,
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ]);
@@ -103,7 +105,7 @@ class InvestmentImportTest extends TestCase
             'headers', 'valid', 'invalid', 'total', 'valid_count', 'invalid_count', 'missing_asset_count',
         ]);
         $response->assertJson([
-            'total'       => 1,
+            'total' => 1,
             'valid_count' => 1,
         ]);
     }
@@ -115,15 +117,15 @@ class InvestmentImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('investments.csv', $csvContent);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'csv_file'     => $file,
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
+            'csv_file' => $file,
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ]);
@@ -143,15 +145,15 @@ class InvestmentImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('investments.csv', $csvContent);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'csv_file'     => $file,
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
+            'csv_file' => $file,
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ]);
@@ -171,15 +173,15 @@ class InvestmentImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('investments.csv', $csvContent);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'csv_file'     => $file,
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
+            'csv_file' => $file,
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'isin'      => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'isin' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ]);
@@ -197,11 +199,11 @@ class InvestmentImportTest extends TestCase
         $file = UploadedFile::fake()->create('investments.pdf', 100, 'application/pdf');
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'csv_file'     => $file,
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
+            'csv_file' => $file,
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => ['buy_date' => 0, 'quantity' => 1, 'buy_price' => 2],
         ]);
 
@@ -214,12 +216,12 @@ class InvestmentImportTest extends TestCase
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa', [
             'rows' => [
                 [
-                    'buy_date'  => '2024-01-01',
-                    'quantity'  => 10,
+                    'buy_date' => '2024-01-01',
+                    'quantity' => 10,
                     'buy_price' => 180.50,
-                    'asset_id'  => $this->asset->id,
-                    'fees'      => 5.00,
-                    'notes'     => 'Test import',
+                    'asset_id' => $this->asset->id,
+                    'fees' => 5.00,
+                    'notes' => 'Test import',
                 ],
             ],
         ]);
@@ -227,9 +229,9 @@ class InvestmentImportTest extends TestCase
         $response->assertStatus(302);
         $this->assertDatabaseCount('investments', 1);
         $this->assertDatabaseHas('investments', [
-            'user_id'   => $this->user->id,
-            'asset_id'  => $this->asset->id,
-            'quantity'  => 10,
+            'user_id' => $this->user->id,
+            'asset_id' => $this->asset->id,
+            'quantity' => 10,
             'buy_price' => 180.50,
         ]);
     }
@@ -240,10 +242,10 @@ class InvestmentImportTest extends TestCase
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa', [
             'rows' => [
                 [
-                    'buy_date'  => '2024-01-01',
-                    'quantity'  => 5,
+                    'buy_date' => '2024-01-01',
+                    'quantity' => 5,
                     'buy_price' => 100.00,
-                    'asset_id'  => 9999, // Non-existent asset
+                    'asset_id' => 9999, // Non-existent asset
                 ],
             ],
         ]);
@@ -258,15 +260,15 @@ class InvestmentImportTest extends TestCase
         $initialBalance = $this->account->current_balance;
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa', [
-            'account_id'              => $this->account->id,
+            'account_id' => $this->account->id,
             'create_cash_transaction' => true,
             'rows' => [
                 [
-                    'buy_date'  => '2024-01-01',
-                    'quantity'  => 10,
+                    'buy_date' => '2024-01-01',
+                    'quantity' => 10,
                     'buy_price' => 100.00,
-                    'asset_id'  => $this->asset->id,
-                    'fees'      => 5.00,
+                    'asset_id' => $this->asset->id,
+                    'fees' => 5.00,
                 ],
             ],
         ]);
@@ -276,7 +278,7 @@ class InvestmentImportTest extends TestCase
         $this->assertDatabaseCount('transactions', 1);
         $this->assertDatabaseHas('transactions', [
             'account_id' => $this->account->id,
-            'amount'     => -1005.00, // 10 * 100 + 5 fees
+            'amount' => -1005.00, // 10 * 100 + 5 fees
         ]);
 
         // Verifica che il saldo sia stato aggiornato
@@ -288,14 +290,14 @@ class InvestmentImportTest extends TestCase
     public function import_without_cash_transaction_does_not_create_transaction(): void
     {
         $this->actingAs($this->user)->postJson('/investimenti/importa', [
-            'account_id'              => $this->account->id,
+            'account_id' => $this->account->id,
             'create_cash_transaction' => false,
             'rows' => [
                 [
-                    'buy_date'  => '2024-01-01',
-                    'quantity'  => 10,
+                    'buy_date' => '2024-01-01',
+                    'quantity' => 10,
                     'buy_price' => 100.00,
-                    'asset_id'  => $this->asset->id,
+                    'asset_id' => $this->asset->id,
                 ],
             ],
         ]);
@@ -318,25 +320,25 @@ class InvestmentImportTest extends TestCase
     public function user_can_save_investment_import_layout(): void
     {
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/layout', [
-            'name'           => 'Il mio broker',
-            'bank_name'      => 'custom',
-            'delimiter'      => ';',
-            'date_format'    => 'd/m/Y',
-            'has_header'     => true,
-            'encoding'       => 'UTF-8',
+            'name' => 'Il mio broker',
+            'bank_name' => 'custom',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
             'column_mapping' => [
-                'buy_date'  => 0,
-                'quantity'  => 1,
+                'buy_date' => 0,
+                'quantity' => 1,
                 'buy_price' => 2,
-                'ticker'    => 3,
+                'ticker' => 3,
             ],
         ]);
 
         $response->assertStatus(200);
         $response->assertJson(['success' => true]);
         $this->assertDatabaseHas('bank_import_layouts', [
-            'user_id'    => $this->user->id,
-            'name'       => 'Il mio broker',
+            'user_id' => $this->user->id,
+            'name' => 'Il mio broker',
             'model_type' => 'investment',
         ]);
     }
@@ -345,8 +347,8 @@ class InvestmentImportTest extends TestCase
     public function user_cannot_delete_another_users_layout(): void
     {
         $otherUser = User::factory()->create();
-        $layout    = BankImportLayout::factory()->create([
-            'user_id'    => $otherUser->id,
+        $layout = BankImportLayout::factory()->create([
+            'user_id' => $otherUser->id,
             'model_type' => 'investment',
         ]);
 
@@ -360,16 +362,16 @@ class InvestmentImportTest extends TestCase
     {
         // Crea un layout transazione
         BankImportLayout::factory()->create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'model_type' => 'transaction',
-            'name'       => 'Layout Transazioni',
+            'name' => 'Layout Transazioni',
         ]);
 
         // Crea un layout investimento
         BankImportLayout::factory()->create([
-            'user_id'    => $this->user->id,
+            'user_id' => $this->user->id,
             'model_type' => 'investment',
-            'name'       => 'Layout Investimenti',
+            'name' => 'Layout Investimenti',
         ]);
 
         $this->withoutVite();
@@ -412,16 +414,16 @@ class InvestmentImportTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('investments.csv', $csvContent);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'csv_file'     => $file,
-            'delimiter'    => ';',
-            'date_format'  => 'd/m/Y',
-            'has_header'   => true,
-            'encoding'     => 'UTF-8',
-            'sheet_index'  => 0,
+            'csv_file' => $file,
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'sheet_index' => 0,
             'column_mapping' => [
-                'buy_date'  => 0,
-                'ticker'    => 1,
-                'quantity'  => 2,
+                'buy_date' => 0,
+                'ticker' => 1,
+                'quantity' => 2,
                 'buy_price' => 3,
             ],
         ]);
@@ -451,10 +453,10 @@ class InvestmentImportTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa/anteprima', [
-            'google_drive_file_id'      => 'fake-file-id',
+            'google_drive_file_id' => 'fake-file-id',
             'google_drive_access_token' => 'fake-token',
-            'google_drive_mime_type'    => 'text/csv',
-            'column_mapping'            => ['buy_date' => 0, 'quantity' => 1, 'buy_price' => 2, 'ticker' => 3],
+            'google_drive_mime_type' => 'text/csv',
+            'column_mapping' => ['buy_date' => 0, 'quantity' => 1, 'buy_price' => 2, 'ticker' => 3],
         ]);
 
         $response->assertStatus(422);

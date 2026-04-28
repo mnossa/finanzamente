@@ -1,12 +1,13 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app = require_once __DIR__.'/bootstrap/app.php';
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\InterHouseholdTransfer;
 use App\Models\Transaction;
+use Illuminate\Contracts\Console\Kernel;
 
 echo "=== Ultimi 3 trasferimenti inter-household ===\n\n";
 
@@ -19,17 +20,17 @@ foreach ($transfers as $transfer) {
     echo "Source Transaction ID: {$transfer->source_transaction_id}\n";
     echo "Dest Transaction ID: {$transfer->dest_transaction_id}\n";
     echo "Created: {$transfer->created_at}\n";
-    
+
     if ($transfer->source_transaction_id) {
         $sourceTx = Transaction::find($transfer->source_transaction_id);
-        echo "  Source TX exists: " . ($sourceTx ? "YES (amount: {$sourceTx->amount})" : "NO") . "\n";
+        echo '  Source TX exists: '.($sourceTx ? "YES (amount: {$sourceTx->amount})" : 'NO')."\n";
     }
-    
+
     if ($transfer->dest_transaction_id) {
         $destTx = Transaction::find($transfer->dest_transaction_id);
-        echo "  Dest TX exists: " . ($destTx ? "YES (amount: {$destTx->amount})" : "NO") . "\n";
+        echo '  Dest TX exists: '.($destTx ? "YES (amount: {$destTx->amount})" : 'NO')."\n";
     }
-    
+
     echo "\n";
 }
 

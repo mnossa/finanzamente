@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Servizio per il download di file da Google Drive tramite access token OAuth2.
@@ -22,13 +22,13 @@ class GoogleDriveService
      * Scarica un file da Google Drive utilizzando l'access token OAuth2.
      * Se il file è un Google Sheets, lo esporta come XLSX.
      *
-     * @param  string $accessToken Token di accesso OAuth2 ottenuto lato frontend
-     * @param  string $fileId      ID del file su Google Drive
-     * @param  string $mimeType    MIME type originale del file
+     * @param  string  $accessToken  Token di accesso OAuth2 ottenuto lato frontend
+     * @param  string  $fileId  ID del file su Google Drive
+     * @param  string  $mimeType  MIME type originale del file
      * @return string Percorso assoluto al file temporaneo scaricato
      *
      * @throws InvalidArgumentException Se il tipo di file non è supportato
-     * @throws RuntimeException         Se il download fallisce
+     * @throws RuntimeException Se il download fallisce
      */
     public function downloadFile(string $accessToken, string $fileId, string $mimeType): string
     {
@@ -41,11 +41,11 @@ class GoogleDriveService
         if ($mimeType === self::GOOGLE_SHEETS_MIME) {
             // Esporta Google Sheets come XLSX
             $exportMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            $url        = "https://www.googleapis.com/drive/v3/files/{$fileId}/export?mimeType=" . urlencode($exportMime);
-            $extension  = 'xlsx';
+            $url = "https://www.googleapis.com/drive/v3/files/{$fileId}/export?mimeType=".urlencode($exportMime);
+            $extension = 'xlsx';
         } else {
             // Scarica il file direttamente
-            $url       = "https://www.googleapis.com/drive/v3/files/{$fileId}?alt=media";
+            $url = "https://www.googleapis.com/drive/v3/files/{$fileId}?alt=media";
             $extension = $this->extensionFromMimeType($mimeType);
         }
 
@@ -65,13 +65,13 @@ class GoogleDriveService
             throw new RuntimeException('File non trovato su Google Drive. Verifica che il file esista e sia accessibile.');
         }
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new RuntimeException(
-                'Impossibile scaricare il file da Google Drive (errore ' . $response->status() . ').'
+                'Impossibile scaricare il file da Google Drive (errore '.$response->status().').'
             );
         }
 
-        $tempPath = tempnam(sys_get_temp_dir(), 'gdrive_') . '.' . $extension;
+        $tempPath = tempnam(sys_get_temp_dir(), 'gdrive_').'.'.$extension;
         file_put_contents($tempPath, $response->body());
 
         return $tempPath;
@@ -83,10 +83,10 @@ class GoogleDriveService
     private function extensionFromMimeType(string $mimeType): string
     {
         return match (true) {
-            in_array($mimeType, ['text/csv', 'text/plain'], true)                                                               => 'csv',
-            $mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'                                   => 'xlsx',
-            $mimeType === 'application/vnd.ms-excel'                                                                            => 'xlsx',
-            default                                                                                                             => 'csv',
+            in_array($mimeType, ['text/csv', 'text/plain'], true) => 'csv',
+            $mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+            $mimeType === 'application/vnd.ms-excel' => 'xlsx',
+            default => 'csv',
         };
     }
 }

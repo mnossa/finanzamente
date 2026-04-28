@@ -13,7 +13,7 @@ class SimulationController extends Controller
     {
         return Inertia::render('Simulations/Index', [
             'presetScenarios' => $this->getPresetScenarios(),
-            'historicalData'  => $this->getHistoricalData(),
+            'historicalData' => $this->getHistoricalData(),
             'crisisScenarios' => $this->getCrisisScenarios(),
         ]);
     }
@@ -25,21 +25,21 @@ class SimulationController extends Controller
     {
         return [
             [
-                'id'          => 'conservative',
-                'name'        => 'Conservativo',
-                'return'      => 3.0,
+                'id' => 'conservative',
+                'name' => 'Conservativo',
+                'return' => 3.0,
                 'description' => 'Portafoglio a basso rischio (obbligazioni, liquidità)',
             ],
             [
-                'id'          => 'moderate',
-                'name'        => 'Moderato',
-                'return'      => 6.0,
+                'id' => 'moderate',
+                'name' => 'Moderato',
+                'return' => 6.0,
                 'description' => 'Portafoglio bilanciato (60% azioni, 40% obbligazioni)',
             ],
             [
-                'id'          => 'aggressive',
-                'name'        => 'Aggressivo',
-                'return'      => 9.0,
+                'id' => 'aggressive',
+                'name' => 'Aggressivo',
+                'return' => 9.0,
                 'description' => 'Portafoglio azionario (simile a S&P 500 storico)',
             ],
         ];
@@ -51,9 +51,9 @@ class SimulationController extends Controller
     private function getHistoricalData(): array
     {
         return [
-            'sp500_avg_return'    => 10.5,
+            'sp500_avg_return' => 10.5,
             'avg_inflation_italy' => 2.1,
-            'avg_bond_return'     => 3.5,
+            'avg_bond_return' => 3.5,
             'avg_savings_account' => 1.5,
         ];
     }
@@ -66,10 +66,10 @@ class SimulationController extends Controller
     {
         return [
             [
-                'id'             => 'crisis_2008',
-                'name'           => 'Crisi Finanziaria 2008',
-                'description'    => 'La grande crisi finanziaria globale causata dai mutui subprime americani.',
-                'peak_drop'      => -57,
+                'id' => 'crisis_2008',
+                'name' => 'Crisi Finanziaria 2008',
+                'description' => 'La grande crisi finanziaria globale causata dai mutui subprime americani.',
+                'peak_drop' => -57,
                 'recovery_months' => 49,
                 'monthly_returns' => [
                     // 2007
@@ -93,10 +93,10 @@ class SimulationController extends Controller
                 ],
             ],
             [
-                'id'             => 'covid_2020',
-                'name'           => 'Pandemia COVID-19',
-                'description'    => 'Il rapido crollo e rimbalzo dei mercati azionari durante la pandemia.',
-                'peak_drop'      => -34,
+                'id' => 'covid_2020',
+                'name' => 'Pandemia COVID-19',
+                'description' => 'Il rapido crollo e rimbalzo dei mercati azionari durante la pandemia.',
+                'peak_drop' => -34,
                 'recovery_months' => 5,
                 'monthly_returns' => [
                     // 2020
@@ -112,10 +112,10 @@ class SimulationController extends Controller
                 ],
             ],
             [
-                'id'             => 'dot_com',
-                'name'           => 'Bolla Dot-Com',
-                'description'    => 'Il crollo delle aziende tecnologiche dopo la bolla speculativa degli anni 2000.',
-                'peak_drop'      => -49,
+                'id' => 'dot_com',
+                'name' => 'Bolla Dot-Com',
+                'description' => 'Il crollo delle aziende tecnologiche dopo la bolla speculativa degli anni 2000.',
+                'peak_drop' => -49,
                 'recovery_months' => 85,
                 'monthly_returns' => [
                     // 1999
