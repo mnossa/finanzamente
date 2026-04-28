@@ -73,9 +73,13 @@ jobs:
 
       - name: Installa dipendenze PHP nel container
         run: |
-          docker compose exec -T app composer install \
+          docker compose exec -T \
+            -e HOME=/tmp \
+            -e COMPOSER_HOME=/tmp/composer \
+            -e COMPOSER_CACHE_DIR=/tmp/composer/cache \
+            app sh -lc 'mkdir -p /tmp/composer/cache && composer install \
             --optimize-autoloader \
-            --no-interaction
+            --no-interaction'
 
       - name: Verifica gate backend (Pint + test)
         run: make test-ci

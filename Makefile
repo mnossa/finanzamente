@@ -175,7 +175,11 @@ exec:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app $(cmd)
 
 composer-install:
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app composer install
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
+		-e HOME=/tmp \
+		-e COMPOSER_HOME=/tmp/composer \
+		-e COMPOSER_CACHE_DIR=/tmp/composer/cache \
+		app sh -lc 'mkdir -p /tmp/composer/cache && composer install'
 
 composer-update:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app composer update
@@ -382,7 +386,11 @@ ci:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm ci
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm run build
 	@echo "[CI] Step 3/6 - Installazione dipendenze PHP..."
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app composer install --optimize-autoloader --no-interaction
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T \
+		-e HOME=/tmp \
+		-e COMPOSER_HOME=/tmp/composer \
+		-e COMPOSER_CACHE_DIR=/tmp/composer/cache \
+		app sh -lc 'mkdir -p /tmp/composer/cache && composer install --optimize-autoloader --no-interaction'
 	@echo "[CI] Step 4/6 - Verifica coding style PHP (Pint)..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T app php ./vendor/bin/pint --test
 	@echo "[CI] Step 5/6 - Esecuzione suite di test..."
