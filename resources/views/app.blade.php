@@ -21,8 +21,6 @@
         @vite('resources/js/app.tsx')
         @inertiaHead
 
-        {{-- Umami Analytics --}}
-        <script defer src="https://cloud.umami.is/script.js" data-website-id="{{ env('UMAMI_ID') }}"></script>
     </head>
     <body class="font-sans antialiased">
         @inertia

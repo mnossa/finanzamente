@@ -7,7 +7,7 @@ import CardBox from '@/Components/CardBox';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import PageHeader from '@/Components/PageHeader';
-import { ModuleAccessInfo, LockedModuleCard } from '@/Components/ModuleAccess';
+import { LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
 import RevenueProgressCard from '@/Components/RevenueProgressCard';
 import TaxThermometer from '@/Components/TaxThermometer';
@@ -34,6 +34,7 @@ import {
     sortableKeyboardCoordinates,
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
+import { useState } from 'react';
 
 interface Account {
     id: number;
@@ -387,6 +388,7 @@ export default function Dashboard({
     financialGoals,
     expenseDistributionData,
 }: DashboardProps) {
+    const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
     const hasVat = auth.user.user_type === 'partita_iva';
@@ -402,6 +404,7 @@ export default function Dashboard({
         setWidgetSize,
         moveWidget,
         saveLayout,
+        hideWidgetsAndSave,
         resetLayout,
     } = useDashboardLayout(dashboardLayout);
 
@@ -428,11 +431,26 @@ export default function Dashboard({
         if (oldIndex !== -1 && newIndex !== -1) moveWidget(oldIndex, newIndex);
     }
 
+    async function hideLockedWidget(widgetIds: WidgetId[]): Promise<void> {
+        try {
+            await hideWidgetsAndSave(widgetIds);
+            setHideModuleMessage({
+                type: 'success',
+                text: 'Modulo nascosto dalla dashboard. Preferenza salvata.',
+            });
+        } catch {
+            setHideModuleMessage({
+                type: 'error',
+                text: 'Non sono riuscito a nascondere il modulo. Riprova.',
+            });
+        }
+    }
+
     function renderWidgetContent(widgetId: WidgetId, size: string): React.ReactNode {
         switch (widgetId) {
             case 'total_balance':
                 return (
-                    <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+                    <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                         <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
                         <p className="mt-2 text-4xl font-bold">{formatCurrency(totalBalance)}</p>
                         <p className="mt-1 text-sm text-slate-400">
@@ -475,7 +493,14 @@ export default function Dashboard({
             case 'lifestyle_widget':
                 return isModuleEnabled('lifestyle_score')
                     ? <LifestyleWidget data={lifestyleWidgetData} />
-                    : <LockedModuleCard moduleId="lifestyle_score" />;
+                    : (
+                        <LockedModuleCard
+                            moduleId="lifestyle_score"
+                            showHideButton
+                            onHideModule={() => hideLockedWidget(['lifestyle_widget'])}
+                            isHiding={isSaving}
+                        />
+                    );
 
             case 'accounts':
                 return (
@@ -527,7 +552,14 @@ export default function Dashboard({
                             )}
                         </div>
                     </div>
-                ) : <LockedModuleCard moduleId="budgets" />;
+                ) : (
+                    <LockedModuleCard
+                        moduleId="budgets"
+                        showHideButton
+                        onHideModule={() => hideLockedWidget(['active_budgets'])}
+                        isHiding={isSaving}
+                    />
+                );
 
             case 'debts_credits':
                 return isModuleEnabled('debts_credits') ? (
@@ -559,7 +591,14 @@ export default function Dashboard({
                             )}
                         </div>
                     </div>
-                ) : <LockedModuleCard moduleId="debts_credits" />;
+                ) : (
+                    <LockedModuleCard
+                        moduleId="debts_credits"
+                        showHideButton
+                        onHideModule={() => hideLockedWidget(['debts_credits'])}
+                        isHiding={isSaving}
+                    />
+                );
 
             case 'quick_actions': {
                 const compact = size === 'sm';
@@ -616,7 +655,7 @@ export default function Dashboard({
                                     <div className="flex flex-wrap gap-x-3 gap-y-1">
                                         {allocation.map(a => (
                                             <span key={a.asset_class} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                                                <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
+                                                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: a.color }} />
                                                 {a.label} {a.percentage.toFixed(0)}%
                                             </span>
                                         ))}
@@ -640,7 +679,14 @@ export default function Dashboard({
                             )}
                         </div>
                     </div>
-                ) : <LockedModuleCard moduleId="investments" />;
+                ) : (
+                    <LockedModuleCard
+                        moduleId="investments"
+                        showHideButton
+                        onHideModule={() => hideLockedWidget(['asset_allocation'])}
+                        isHiding={isSaving}
+                    />
+                );
             }
 
             case 'net_worth':
@@ -718,7 +764,14 @@ export default function Dashboard({
                             )}
                         </div>
                     </div>
-                ) : <LockedModuleCard moduleId="financial_goals" />;
+                ) : (
+                    <LockedModuleCard
+                        moduleId="financial_goals"
+                        showHideButton
+                        onHideModule={() => hideLockedWidget(['financial_goals'])}
+                        isHiding={isSaving}
+                    />
+                );
 
             case 'expense_distribution':
                 return <ExpenseDistributionWidget data={expenseDistributionData} />;
@@ -739,9 +792,49 @@ export default function Dashboard({
         }
     }
 
+    function isWidgetVisible(widgetId: WidgetId): boolean {
+        const widget = sortedWidgets.find((item) => item.id === widgetId);
+        return widget?.visible ?? false;
+    }
+
+    const shouldShowInvestmentsUpsell =
+        !isModuleEnabled('investments') &&
+        isModuleLocked('investments') &&
+        isWidgetVisible('asset_allocation');
+
+    const shouldShowVatUpsell =
+        !isModuleEnabled('vat_management') &&
+        isModuleLocked('vat_management') &&
+        (isWidgetVisible('annual_revenue') || isWidgetVisible('tax_thermometer'));
+
     return (
         <AuthenticatedLayout header={<PageHeader title="Dashboard" />}>
             <Head title="Dashboard" />
+            {hideModuleMessage && (
+                <div className="fixed right-4 top-4 z-50 max-w-sm">
+                    <div
+                        className={clsx(
+                            'rounded-lg border px-4 py-3 text-sm shadow-lg',
+                            hideModuleMessage.type === 'success'
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
+                                : 'border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-200'
+                        )}
+                        role="status"
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <span>{hideModuleMessage.text}</span>
+                            <button
+                                type="button"
+                                onClick={() => setHideModuleMessage(null)}
+                                className="text-xs font-semibold opacity-70 hover:opacity-100"
+                                aria-label="Chiudi notifica"
+                            >
+                                Chiudi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* FAB personalizzazione — non editing */}
             {!isEditing && (
@@ -760,8 +853,6 @@ export default function Dashboard({
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
-                    <ModuleAccessInfo />
-
                     {/* Barra personalizzazione dashboard — solo in editing */}
                     {isEditing && (
                         <div
@@ -842,12 +933,26 @@ export default function Dashboard({
                     </DndContext>
 
                     {/* Moduli Suggeriti (se bloccati) */}
-                    {(isModuleEnabled('investments') === false && isModuleLocked('investments') || isModuleEnabled('vat_management') === false && isModuleLocked('vat_management')) && !isEditing && (
+                    {(shouldShowInvestmentsUpsell || shouldShowVatUpsell) && !isEditing && (
                         <div>
                             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">✨ Sblocca Nuove Funzionalità</h3>
                             <div className="grid gap-6 lg:grid-cols-2">
-                                {!isModuleEnabled('investments') && isModuleLocked('investments') && <LockedModuleCard moduleId="investments" />}
-                                {!isModuleEnabled('vat_management') && isModuleLocked('vat_management') && <LockedModuleCard moduleId="vat_management" />}
+                                {shouldShowInvestmentsUpsell && (
+                                    <LockedModuleCard
+                                        moduleId="investments"
+                                        showHideButton
+                                        onHideModule={() => hideLockedWidget(['asset_allocation'])}
+                                        isHiding={isSaving}
+                                    />
+                                )}
+                                {shouldShowVatUpsell && (
+                                    <LockedModuleCard
+                                        moduleId="vat_management"
+                                        showHideButton
+                                        onHideModule={() => hideLockedWidget(['annual_revenue', 'tax_thermometer'])}
+                                        isHiding={isSaving}
+                                    />
+                                )}
                             </div>
                         </div>
                     )}

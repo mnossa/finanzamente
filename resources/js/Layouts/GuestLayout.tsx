@@ -2,15 +2,19 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import { PropsWithChildren, ReactNode } from 'react';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import clsx from 'clsx';
+import { PageProps } from '@/types';
+import { usePage } from '@inertiajs/react';
 
 interface GuestProps {
     sidebar?: ReactNode;
 }
 
 export default function Guest({ children, sidebar }: PropsWithChildren<GuestProps>) {
+    const { privacy } = usePage<PageProps>().props;
+
     return (
         <>
-            <UmamiAnalytics />
+            <UmamiAnalytics enabled={privacy?.analytics_enabled ?? false} />
             <div className="flex min-h-screen flex-col items-center bg-slate-50 pt-6 sm:justify-center sm:pt-0">
                 {/* Logo Section */}
                 <div className="mb-6">
@@ -36,7 +40,7 @@ export default function Guest({ children, sidebar }: PropsWithChildren<GuestProp
 
                     {/* Sidebar (es. riepilogo ordine) */}
                     {sidebar && (
-                        <div className="w-full lg:w-72 lg:flex-shrink-0">
+                        <div className="w-full lg:w-72 lg:shrink-0">
                             {sidebar}
                         </div>
                     )}

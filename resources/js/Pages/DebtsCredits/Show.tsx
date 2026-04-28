@@ -8,6 +8,8 @@ import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { StatusBadge } from '@/Components/StatusBadge';
 import PageHeader from '@/Components/PageHeader';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 
 interface Currency {
     code: string;
@@ -115,6 +117,14 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
             <Head title={`${debtCredit.type_label} - ${debtCredit.counterparty}`} />
 
             <PageContent maxWidth="2xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Dettaglio posizione" icon={<span className="text-sm leading-none">📌</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Monitora stato, pagamenti e movimenti collegati in un’unica vista.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {/* Card riepilogo */}
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">

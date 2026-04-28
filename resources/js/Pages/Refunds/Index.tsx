@@ -3,6 +3,8 @@ import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -207,11 +209,19 @@ export default function Index({ refunds }: IndexProps) {
                 onCancel={handleCancelDelete}
             />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">💸</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Traccia i rimborsi ricevuti e il loro impatto sulle spese originarie.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {/* Info Box */}
                     <div className="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20">
                         <div className="flex">
-                            <div className="flex-shrink-0">
+                            <div className="shrink-0">
                                 <span className="text-2xl">💡</span>
                             </div>
                             <div className="ml-3">

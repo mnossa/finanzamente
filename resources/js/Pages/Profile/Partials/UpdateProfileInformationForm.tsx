@@ -1,6 +1,9 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import InlineSuccessBadge from '@/Components/InlineSuccessBadge';
+import SectionBadge from '@/Components/SectionBadge';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
@@ -31,8 +34,16 @@ export default function UpdateProfileInformation({
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <header className="space-y-2">
+                <SectionBadge
+                    label="Profilo"
+                    icon={(
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10 2a4 4 0 100 8 4 4 0 000-8zm-6 15a6 6 0 1112 0H4z" />
+                        </svg>
+                    )}
+                />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Informazioni Profilo
                 </h2>
 
@@ -75,21 +86,22 @@ export default function UpdateProfileInformation({
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
-                    <div>
-                        <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                        <p className="text-sm text-amber-900 dark:text-amber-200">
                             Il tuo indirizzo email non è verificato.
+                            {' '}
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                                className="rounded-md text-sm font-medium text-amber-900 underline decoration-amber-400 underline-offset-2 hover:text-amber-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:text-amber-200 dark:hover:text-amber-100 dark:focus:ring-offset-gray-800"
                             >
                                 Clicca qui per inviare nuovamente l'email di verifica.
                             </Link>
                         </p>
 
                         {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
+                            <div className="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                                 Un nuovo link di verifica è stato inviato al tuo
                                 indirizzo email.
                             </div>
@@ -97,7 +109,7 @@ export default function UpdateProfileInformation({
                     </div>
                 )}
 
-                <div className="flex items-center gap-4">
+                <FormActionsBar>
                     <PrimaryButton disabled={processing}>Salva</PrimaryButton>
 
                     <Transition
@@ -107,11 +119,9 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Salvato.
-                        </p>
+                        <InlineSuccessBadge />
                     </Transition>
-                </div>
+                </FormActionsBar>
             </form>
         </section>
     );

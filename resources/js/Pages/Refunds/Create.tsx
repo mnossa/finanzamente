@@ -4,11 +4,13 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 import axios from 'axios';
 
@@ -176,7 +178,12 @@ export default function Create({ originalTransaction, refundableTransactions, to
             <Head title="Nuovo Rimborso" />
 
             <PageContent>
-                    <CardBox className="overflow-hidden p-6 shadow-sm">
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">➕</span>} />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo rimborso</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Seleziona una spesa e registra il rimborso ricevuto.</p>
+                        </header>
                         {refundableTransactions.length === 0 && !originalTransaction ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">💸</div>
@@ -436,7 +443,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
 
                                 {/* Anteprima */}
                                 {selectedTransaction && data.amount && Number(data.amount) > 0 && (
-                                    <CardBox className="bg-green-50 p-4 dark:bg-green-900/20">
+                                    <div className="rounded-xl bg-green-50 p-4 dark:bg-green-900/20">
                                         <p className="text-sm text-green-600 dark:text-green-400">
                                             Verrà creata una transazione di entrata:
                                         </p>
@@ -446,11 +453,11 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                         <p className="text-sm text-green-600 dark:text-green-400">
                                             sul conto {selectedTransaction.account.name}
                                         </p>
-                                    </CardBox>
+                                    </div>
                                 )}
 
                                 {/* Azioni */}
-                                <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                                <FormActionsBar className="justify-end pt-6">
                                     <Link
                                         href={route('refunds.index')}
                                         className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -468,10 +475,10 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                     >
                                         {processing ? 'Registrazione in corso...' : 'Registra Rimborso'}
                                     </PrimaryButton>
-                                </div>
+                                </FormActionsBar>
                             </form>
                         )}
-                    </CardBox>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

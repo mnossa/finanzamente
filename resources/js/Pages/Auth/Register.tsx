@@ -136,6 +136,8 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
         vat_number: '',
         selected_plan: selectedPlan,
         billing_cycle: billingCycle,
+        marketing_email: false,
+        analytics_tracking: false,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -284,6 +286,36 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
                                 required
                             />
                             <InputError message={errors.password_confirmation} className="mt-2" />
+                        </div>
+
+                        <div className="mt-6 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                Preferenze privacy (opzionali)
+                            </p>
+                            <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                Privacy policy e termini vengono accettati durante la registrazione. Qui puoi impostare i consensi opzionali.
+                            </p>
+
+                            <label className="mt-3 flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    checked={data.marketing_email}
+                                    onChange={(e) => setData('marketing_email', e.target.checked)}
+                                    className="mt-0.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <span>Ricevi email marketing e aggiornamenti prodotto.</span>
+                            </label>
+
+                            <label className="mt-2 flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <input
+                                    type="checkbox"
+                                    checked={data.analytics_tracking}
+                                    onChange={(e) => setData('analytics_tracking', e.target.checked)}
+                                    className="mt-0.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <span>Consenti analytics per miglioramento servizio.</span>
+                            </label>
+
                         </div>
 
                         <div className="mt-4 flex items-center justify-end">

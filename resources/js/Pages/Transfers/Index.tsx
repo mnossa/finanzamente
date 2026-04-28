@@ -3,6 +3,8 @@ import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency } from '@/utils/format';
@@ -169,7 +171,15 @@ export default function Index({ transfers }: IndexProps) {
                 variant="warning"
             />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Trasferimenti" icon={<span className="text-sm leading-none">🔄</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Sposta fondi tra conti con tracciamento completo importi, valute e commissioni.
+                            </p>
+                        </div>
+                    </SectionCard>
                     <CardBox className="overflow-hidden shadow-sm">
                         {transfers.data.length > 0 ? (
                             <>

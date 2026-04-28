@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Subscription;
+use App\Models\User;
 use App\Services\MollieService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -71,5 +73,46 @@ class MollieWebhookTest extends TestCase
         $response = $this->post(route('mollie.webhook'), []);
 
         $response->assertOk();
+    }
+
+    #[Test]
+    public function webhook_e2e_mock_can_activate_pending_subscription_without_mollie_call(): void
+    {
+        $this->app['env'] = 'e2e';
+
+        $user = User::factory()->create(['plan' => 'base']);
+        $subscription = Subscription::create([
+            'user_id' => $user->id,
+            'plan' => 'pro',
+            'billing_cycle' => 'monthly',
+            'status' => 'pending',
+            'currency' => 'EUR',
+            'amount_cents' => 990,
+        ]);
+
+        $this->mock(MollieService::class, function ($mock) {
+            $mock->shouldNotReceive('getPayment');
+        });
+
+        $response = $this->post(route('mollie.webhook'), [
+            'e2e_mock' => '1',
+            'subscription_id' => $subscription->id,
+            'status' => 'paid',
+            'sequence_type' => 'first',
+        ]);
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('subscriptions', [
+            'id' => $subscription->id,
+            'status' => 'active',
+            'mollie_mandate_id' => 'mdt_e2e_mock',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'plan' => 'pro',
+        ]);
+
+        $this->app['env'] = 'testing';
     }
 }

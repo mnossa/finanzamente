@@ -1,6 +1,9 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import InlineSuccessBadge from '@/Components/InlineSuccessBadge';
+import SectionBadge from '@/Components/SectionBadge';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
@@ -50,8 +53,16 @@ export default function UpdatePasswordForm({
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <header className="space-y-2">
+                <SectionBadge
+                    label="Sicurezza"
+                    icon={(
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5 8V6a5 5 0 1110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2a3 3 0 10-6 0v2h6V6z" clipRule="evenodd" />
+                        </svg>
+                    )}
+                />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Aggiorna Password
                 </h2>
 
@@ -125,7 +136,7 @@ export default function UpdatePasswordForm({
                     />
                 </div>
 
-                <div className="flex items-center gap-4">
+                <FormActionsBar>
                     <PrimaryButton disabled={processing}>Salva</PrimaryButton>
 
                     <Transition
@@ -135,11 +146,9 @@ export default function UpdatePasswordForm({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Salvato.
-                        </p>
+                        <InlineSuccessBadge />
                     </Transition>
-                </div>
+                </FormActionsBar>
             </form>
         </section>
     );

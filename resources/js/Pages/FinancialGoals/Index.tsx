@@ -3,6 +3,8 @@ import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -158,7 +160,15 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
         >
             <Head title="Obiettivi Finanziari" />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Obiettivi finanziari" icon={<span className="text-sm leading-none">🎯</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Pianifica i tuoi traguardi e segui avanzamento, importi e stato obiettivo.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <CardBox className="p-4 shadow-sm">

@@ -81,6 +81,50 @@ class RegistrationTest extends TestCase
             'user_type' => 'persona',
             'fiscal_code' => 'RSSMRA80A01H501U',
         ]);
+
+        $this->assertDatabaseHas('consents', [
+            'user_id' => auth()->id(),
+            'purpose' => 'privacy_policy_ack',
+            'status' => 'granted',
+        ]);
+        $this->assertDatabaseHas('consents', [
+            'user_id' => auth()->id(),
+            'purpose' => 'terms_ack',
+            'status' => 'granted',
+        ]);
+        $this->assertDatabaseHas('consents', [
+            'user_id' => auth()->id(),
+            'purpose' => 'marketing_email',
+            'status' => 'revoked',
+        ]);
+    }
+
+    public function test_optional_consents_can_be_granted_during_registration(): void
+    {
+        $response = $this->post('/registrati', [
+            'name' => 'Consent User',
+            'email' => 'consent@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'user_type' => 'persona',
+            'marketing_email' => true,
+            'analytics_tracking' => true,
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('verification.notice', absolute: false));
+
+        $userId = auth()->id();
+        $this->assertDatabaseHas('consents', [
+            'user_id' => $userId,
+            'purpose' => 'marketing_email',
+            'status' => 'granted',
+        ]);
+        $this->assertDatabaseHas('consents', [
+            'user_id' => $userId,
+            'purpose' => 'analytics_tracking',
+            'status' => 'granted',
+        ]);
     }
 
     public function test_new_users_with_vat_can_register(): void

@@ -3,11 +3,13 @@ import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
-import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
@@ -52,8 +54,13 @@ export default function Create({ currencies, types }: CreateProps) {
             <Head title="Nuovo Debito/Credito" />
 
             <PageContent maxWidth="2xl">
-                    <CardBox className="overflow-hidden shadow-sm">
-                        <form onSubmit={submit} className="p-6">
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge label="Debiti/Crediti" icon={<span className="text-sm leading-none">🤝</span>} />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo debito o credito</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Registra posizione aperta, importo e scadenza in modo tracciabile.</p>
+                        </header>
+                        <form onSubmit={submit} className="space-y-6">
                             <div className="space-y-6">
                                 {/* Tipo */}
                                 <div>
@@ -221,7 +228,7 @@ export default function Create({ currencies, types }: CreateProps) {
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex items-center justify-end space-x-4">
+                            <FormActionsBar className="justify-end pt-6">
                                 <Link
                                     href={route('debts-credits.index')}
                                     className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
@@ -231,9 +238,9 @@ export default function Create({ currencies, types }: CreateProps) {
                                 <PrimaryButton disabled={processing}>
                                     {data.type === 'debt' ? 'Aggiungi Debito' : 'Aggiungi Credito'}
                                 </PrimaryButton>
-                            </div>
+                            </FormActionsBar>
                         </form>
-                    </CardBox>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

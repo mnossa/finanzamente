@@ -134,7 +134,7 @@ Questo documento traduce le raccomandazioni emerse dall'analisi tecnica in task 
 - [x] Aggiungere smoke test su route critiche.
 - [x] Allineare target Makefile e comandi CI.
 - [ ] Integrare check a11y automatici (pianificato per futuro: richiede AXE_API_KEY/config operativa).
-- [ ] Eseguire dry run deploy con verifica rollback.
+- [x] Eseguire dry run deploy con verifica rollback.
 
 ## Board pronta (To Do / Doing / Done con priorita)
 

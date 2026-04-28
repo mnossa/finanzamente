@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\ConsentService;
+use App\Services\BrevoMarketingService;
 use App\Services\PlanService;
 use App\Services\WaitlistService;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +23,8 @@ class RegisteredUserController extends Controller
     public function __construct(
         private readonly PlanService $planService,
         private readonly WaitlistService $waitlistService,
+        private readonly ConsentService $consentService,
+        private readonly BrevoMarketingService $brevoMarketingService,
     ) {
         // Applica honeypot solo alla registrazione
         $this->middleware(ProtectAgainstSpam::class)->only('store');
@@ -104,6 +108,8 @@ class RegisteredUserController extends Controller
             'selected_plan' => 'nullable|string|in:base,pro',
             'billing_cycle' => 'nullable|string|in:monthly,annual',
             'sig' => 'nullable|string|size:64',
+            'marketing_email' => 'nullable|boolean',
+            'analytics_tracking' => 'nullable|boolean',
         ]);
 
         $selectedPlan = $request->input('selected_plan', 'base');
@@ -127,6 +133,12 @@ class RegisteredUserController extends Controller
             'is_early_bird' => $isEarlyBird,
         ]);
 
+        $this->persistRegistrationConsents($request, $user);
+        $this->brevoMarketingService->syncMarketingConsent(
+            $user->email,
+            $request->boolean('marketing_email')
+        );
+
         // Invia l'email di verifica manualmente invece di usare l'evento Registered
         // per evitare invii duplicati
         $user->sendEmailVerificationNotification();
@@ -141,6 +153,32 @@ class RegisteredUserController extends Controller
         }
 
         return redirect(route('verification.notice', absolute: false));
+    }
+
+    private function persistRegistrationConsents(Request $request, User $user): void
+    {
+        $contextBase = [
+            'source' => 'web_register',
+            'legal_basis' => 'consent',
+            'policy_version' => '2026-04-28-v1',
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ];
+
+        // Consensi obbligatori: registrazione implica accettazione policy e termini.
+        $this->consentService->setConsent($user, 'privacy_policy_ack', 'granted', $contextBase);
+        $this->consentService->setConsent($user, 'terms_ack', 'granted', $contextBase);
+
+        // Consensi opzionali: default revoked se non selezionati esplicitamente.
+        $optionalPurposes = ['marketing_email', 'analytics_tracking'];
+        foreach ($optionalPurposes as $purpose) {
+            $this->consentService->setConsent(
+                $user,
+                $purpose,
+                $request->boolean($purpose) ? 'granted' : 'revoked',
+                $contextBase
+            );
+        }
     }
 
     /**

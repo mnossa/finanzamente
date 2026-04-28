@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\AppNotification;
+use App\Models\Consent;
 use App\Services\HouseholdPermissionService;
 use App\Services\ModuleAccessService;
 use Illuminate\Http\Request;
@@ -99,6 +100,16 @@ class HandleInertiaRequests extends Middleware
             ] : null,
             'isEarlyBird' => fn () => $user ? (bool) $user->is_early_bird : false,
             'isAdmin' => fn () => $user ? strtolower($user->email) === strtolower(config('prelaunch.magazine_admin_email', '')) : false,
+            'privacy' => fn () => [
+                // Default prudente: analytics disabilitato finché non c'è consenso esplicito.
+                'analytics_enabled' => $user
+                    ? Consent::query()
+                        ->where('user_id', $user->id)
+                        ->where('purpose', 'analytics_tracking')
+                        ->where('status', 'granted')
+                        ->exists()
+                    : false,
+            ],
         ];
     }
 }

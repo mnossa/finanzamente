@@ -162,6 +162,7 @@ return [
     'brevo' => [
         'api_key' => env('BREVO_API_KEY'),
         'waitlist_list_id' => (int) env('BREVO_WAITLIST_LIST_ID', 0),
+        'marketing_list_id' => (int) env('BREVO_MARKETING_LIST_ID', 0),
         'double_optin_template_id' => (int) env('BREVO_DOUBLE_OPTIN_TEMPLATE_ID', 0),
         'double_optin_redirect_url' => env('BREVO_DOUBLE_OPTIN_REDIRECT_URL', ''),
     ],

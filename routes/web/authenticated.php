@@ -97,6 +97,10 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     // Profilo utente
     Route::get('/profilo', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profilo', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profilo/consensi', [ProfileController::class, 'updateConsents'])->name('profile.consents.update');
+    Route::post('/profilo/consensi/sync-analytics', [ProfileController::class, 'syncAnalyticsConsent'])->name('profile.consents.sync-analytics');
+    Route::post('/profilo/consensi/revoca-opzionali', [ProfileController::class, 'revokeOptionalConsents'])->name('profile.consents.revoke-optional');
+    Route::get('/profilo/consensi/export', [ProfileController::class, 'exportConsents'])->name('profile.consents.export');
     Route::delete('/profilo', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Preferenze tema utente

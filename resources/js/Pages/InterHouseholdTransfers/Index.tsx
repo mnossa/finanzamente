@@ -2,6 +2,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import PageHeader from '@/Components/PageHeader';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -114,7 +116,7 @@ function TransferRow({ transfer }: { transfer: InterHouseholdTransfer }) {
         >
             <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-2xl dark:bg-indigo-900/30">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-2xl dark:bg-indigo-900/30">
                         🏠
                     </div>
                     <div className="min-w-0 flex-1">
@@ -142,7 +144,7 @@ function TransferRow({ transfer }: { transfer: InterHouseholdTransfer }) {
                         </p>
                     </div>
                 </div>
-                <div className="ml-4 flex-shrink-0 text-right">
+                <div className="ml-4 shrink-0 text-right">
                     <div className="text-lg font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(transfer.source_amount, transfer.source_currency)}
                     </div>
@@ -207,7 +209,15 @@ export default function Index({ transfers, filters }: IndexProps) {
         >
             <Head title="Trasferimenti tra Households" />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Trasferimenti household" icon={<span className="text-sm leading-none">🏠</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Supervisiona movimenti tra household con stato e direzione sempre chiari.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {/* Filtri */}
                     <div className="mb-6 overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
                         <div className="p-6">

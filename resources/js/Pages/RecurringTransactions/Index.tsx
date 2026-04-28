@@ -7,6 +7,8 @@ import EyeIcon from '@/Components/Icons/EyeIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -236,7 +238,15 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                 onCancel={handleCancelDelete}
             />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Ricorrenze" icon={<span className="text-sm leading-none">🔁</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Gestisci operazioni periodiche automatiche e controlla le prossime scadenze.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {/* Riepilogo frequenze */}
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         {Object.entries(frequencies).map(([key, label]) => {

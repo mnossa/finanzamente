@@ -6,6 +6,8 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -191,7 +193,18 @@ export default function Index({ budgets }: IndexProps) {
                 onCancel={handleCancelDelete}
             />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge
+                                label="Pianificazione budget"
+                                icon={<span className="text-sm leading-none">📊</span>}
+                            />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Monitora spese, progressi e superamenti in tempo reale per ogni categoria.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {budgets.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -206,7 +219,7 @@ export default function Index({ budgets }: IndexProps) {
                         <>
                             {/* Riepilogo */}
                             <div className="grid gap-4 sm:grid-cols-3">
-                                <div className="overflow-hidden rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-slate-300">
                                         Budget Totale
                                     </h3>
@@ -217,7 +230,7 @@ export default function Index({ budgets }: IndexProps) {
                                         {activeBudgets.length} budget attivi
                                     </p>
                                 </div>
-                                <div className="overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg">
+                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-emerald-100">
                                         Speso Finora
                                     </h3>
@@ -235,8 +248,8 @@ export default function Index({ budgets }: IndexProps) {
                                     className={clsx(
                                         'overflow-hidden rounded-xl p-6 text-white shadow-lg',
                                         exceededCount > 0
-                                            ? 'bg-gradient-to-br from-red-500 to-orange-600'
-                                            : 'bg-gradient-to-br from-gray-500 to-gray-600'
+                                            ? 'bg-linear-to-br from-red-500 to-orange-600'
+                                            : 'bg-linear-to-br from-gray-500 to-gray-600'
                                     )}
                                 >
                                     <h3 className="text-sm font-medium opacity-80">

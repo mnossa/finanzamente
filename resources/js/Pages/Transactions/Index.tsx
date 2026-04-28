@@ -7,6 +7,8 @@ import EyeIcon from '@/Components/Icons/EyeIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
@@ -668,11 +670,22 @@ export default function Index({
                 onCancel={handleCancelBulkDelete}
             />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge
+                                label="Registro transazioni"
+                                icon={<span className="text-sm leading-none">📒</span>}
+                            />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Filtra, seleziona e gestisci i movimenti con operazioni singole o massive.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {/* Banner importazioni in corso */}
                     {pendingImports.length > 0 && (
                         <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                            <svg className="h-5 w-5 animate-spin flex-shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24">
+                            <svg className="h-5 w-5 shrink-0 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>

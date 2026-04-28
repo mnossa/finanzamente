@@ -2,10 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Household;
 use App\Models\MagazineArticle;
 use App\Models\MagazineCategory;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -40,10 +42,12 @@ class E2ESeeder extends Seeder
                 'password' => Hash::make($password),
                 'email_verified_at' => now(),
                 'profile_completed' => true,
+                'plan' => 'pro',
+                'plan_expires_at' => now()->addMonths(6),
                 'profile_settings' => [
                     'has_vat' => false,
                     'family_status' => 'single',
-                    'tracks_investments' => false,
+                    'tracks_investments' => true,
                     'completed_at' => now()->toISOString(),
                 ],
             ]
@@ -63,8 +67,65 @@ class E2ESeeder extends Seeder
             $user->households()->attach($household->id, ['role' => 'owner']);
         }
 
+        // Crea una seconda household per i test inter-household
+        $secondHousehold = Household::firstOrCreate(
+            [
+                'owner_user_id' => $user->id,
+                'name' => 'Casa E2E Secondaria',
+            ],
+            [
+                'financial_management_type' => Household::FINANCIAL_MANAGEMENT_DEBT_BALANCING,
+            ]
+        );
+
+        if (! $user->households()->where('household_id', $secondHousehold->id)->exists()) {
+            $user->households()->attach($secondHousehold->id, ['role' => 'owner']);
+        }
+
         // Imposta la household come attiva
         $user->update(['active_household_id' => $household->id]);
+
+        // Account di test per trasferimenti inter-household
+        Account::firstOrCreate(
+            ['household_id' => $household->id, 'name' => 'Conto E2E Principale'],
+            [
+                'type' => 'bank',
+                'initial_balance' => 1500,
+                'current_balance' => 1500,
+                'currency_code' => 'EUR',
+                'active' => true,
+                'is_private' => false,
+                'owner_user_id' => $user->id,
+            ]
+        );
+
+        Account::firstOrCreate(
+            ['household_id' => $secondHousehold->id, 'name' => 'Conto E2E Secondario'],
+            [
+                'type' => 'bank',
+                'initial_balance' => 500,
+                'current_balance' => 500,
+                'currency_code' => 'EUR',
+                'active' => true,
+                'is_private' => false,
+                'owner_user_id' => $user->id,
+            ]
+        );
+
+        // Subscription Pro attiva per test E2E dei flussi abbonamento
+        Subscription::updateOrCreate(
+            ['user_id' => $user->id, 'status' => 'active'],
+            [
+                'plan' => 'pro',
+                'billing_cycle' => 'monthly',
+                'currency' => 'EUR',
+                'amount_cents' => 990,
+                'next_payment_at' => now()->addMonth(),
+                'billing_name' => 'Utente E2E',
+                'billing_email' => $email,
+                'billing_country' => 'IT',
+            ]
+        );
 
         $this->command->info("Utente E2E pronto: {$email}");
         $this->command->info("Household: {$household->name} (ID: {$household->id})");

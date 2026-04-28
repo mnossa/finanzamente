@@ -1,8 +1,9 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import clsx from 'clsx';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
+import { PageProps } from '@/types';
 
 interface PlanData {
     key: string;
@@ -29,6 +30,7 @@ function formatPrice(cents: number): string {
 
 export default function SelectPlan({ plans, proEnabled, annualDiscountPercent }: Props) {
     const [isAnnual, setIsAnnual] = useState(false);
+    const { privacy } = usePage<PageProps>().props;
 
     const basePlan = plans['base'];
     const proPlan = plans['pro'];
@@ -40,7 +42,7 @@ export default function SelectPlan({ plans, proEnabled, annualDiscountPercent }:
 
     return (
         <>
-            <UmamiAnalytics />
+            <UmamiAnalytics enabled={privacy?.analytics_enabled ?? false} />
             <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4">
                 {/* Logo */}
                 <div className="mb-8">
@@ -115,7 +117,7 @@ export default function SelectPlan({ plans, proEnabled, annualDiscountPercent }:
                                 <ul className="space-y-3 mb-8 flex-1">
                                     {basePlan.features.map((feature) => (
                                         <li key={feature} className="flex items-start gap-2">
-                                            <svg className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
                                             <span className="text-slate-700 text-sm">{feature}</span>
@@ -135,7 +137,7 @@ export default function SelectPlan({ plans, proEnabled, annualDiscountPercent }:
 
                         {/* Piano Pro */}
                         {proPlan && proEnabled && (
-                            <div className="bg-gradient-to-b from-emerald-600 to-emerald-700 rounded-2xl shadow-lg p-8 flex flex-col relative overflow-hidden">
+                            <div className="bg-linear-to-b from-emerald-600 to-emerald-700 rounded-2xl shadow-lg p-8 flex flex-col relative overflow-hidden">
                                 <div className="absolute top-4 right-4">
                                     <span className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">
                                         Consigliato
@@ -178,7 +180,7 @@ export default function SelectPlan({ plans, proEnabled, annualDiscountPercent }:
                                 <ul className="space-y-3 mb-8 flex-1">
                                     {proPlan.features.map((feature) => (
                                         <li key={feature} className="flex items-start gap-2">
-                                            <svg className="w-5 h-5 text-white mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-5 h-5 text-white mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
                                             <span className="text-emerald-50 text-sm">{feature}</span>
@@ -210,7 +212,7 @@ export default function SelectPlan({ plans, proEnabled, annualDiscountPercent }:
                                 <ul className="space-y-3 mb-8 flex-1">
                                     {proPlan.features.map((feature) => (
                                         <li key={feature} className="flex items-start gap-2">
-                                            <svg className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
                                             <span className="text-slate-500 text-sm">{feature}</span>

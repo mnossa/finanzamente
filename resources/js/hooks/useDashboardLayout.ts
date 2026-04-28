@@ -3,6 +3,22 @@ import { arrayMove } from '@dnd-kit/sortable';
 import axios from 'axios';
 import { DashboardLayoutConfig, WidgetConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 
+interface UseDashboardLayoutReturn {
+    config: DashboardLayoutConfig;
+    sortedWidgets: WidgetConfig[];
+    isEditing: boolean;
+    isSaving: boolean;
+    saveError: string | null;
+    toggleEditing: () => void;
+    cancelEditing: () => void;
+    toggleWidgetVisibility: (id: WidgetId) => void;
+    setWidgetSize: (id: WidgetId, size: WidgetSize) => void;
+    moveWidget: (oldIndex: number, newIndex: number) => void;
+    saveLayout: () => Promise<void>;
+    hideWidgetsAndSave: (widgetIds: WidgetId[]) => Promise<void>;
+    resetLayout: () => void;
+}
+
 /**
  * Hook per gestire il layout personalizzabile della dashboard.
  *
@@ -13,7 +29,7 @@ import { DashboardLayoutConfig, WidgetConfig, WidgetId, WidgetSize } from '@/typ
  * - il resize dei widget
  * - il salvataggio e il ripristino del layout
  */
-export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
+export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDashboardLayoutReturn {
     const [config, setConfig] = useState<DashboardLayoutConfig>(() => ({
         widgets: [...initialConfig.widgets].sort((a, b) => a.position - b.position),
     }));
@@ -84,7 +100,7 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
     }, []);
 
     /** Salva la configurazione corrente sul server. */
-    const saveLayout = useCallback(async () => {
+    const saveLayout = useCallback(async (): Promise<void> => {
         setIsSaving(true);
         setSaveError(null);
 
@@ -128,6 +144,50 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
             });
     }, []);
 
+    /**
+     * Nasconde uno o più widget e salva subito il layout.
+     * Esegue rollback locale in caso di errore.
+     */
+    const hideWidgetsAndSave = useCallback(async (widgetIds: WidgetId[]): Promise<void> => {
+        const ids = new Set(widgetIds);
+        const currentWidgets = [...config.widgets].sort((a, b) => a.position - b.position);
+        const nextWidgets = currentWidgets.map((w) =>
+            ids.has(w.id) ? { ...w, visible: false } : w
+        );
+        const hasChanges = nextWidgets.some((widget, index) => widget.visible !== currentWidgets[index].visible);
+
+        if (!hasChanges) {
+            return;
+        }
+
+        setIsSaving(true);
+        setSaveError(null);
+        setConfig({ widgets: nextWidgets });
+
+        const normalizedWidgets: WidgetConfig[] = nextWidgets.map((w, i) => ({
+            ...w,
+            position: i,
+        }));
+
+        return axios
+            .post(route('dashboard.layout.store'), { config: { widgets: normalizedWidgets } })
+            .then(() => {
+                setSnapshot(null);
+                setIsEditing(false);
+                setIsSaving(false);
+            })
+            .catch((error) => {
+                const errors = error?.response?.data?.errors;
+                const msg = errors
+                    ? (Object.values(errors)[0] as string[])?.[0] ?? 'Errore durante il salvataggio del layout.'
+                    : 'Errore durante il salvataggio del layout.';
+                setConfig({ widgets: currentWidgets });
+                setSaveError(msg);
+                setIsSaving(false);
+                throw new Error(msg);
+            });
+    }, [config.widgets]);
+
     return {
         config,
         sortedWidgets,
@@ -140,6 +200,7 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig) {
         setWidgetSize,
         moveWidget,
         saveLayout,
+        hideWidgetsAndSave,
         resetLayout,
     };
 }

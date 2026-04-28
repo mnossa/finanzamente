@@ -1,5 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
 import SecondaryButton from '@/Components/SecondaryButton';
 
 interface Props {
@@ -18,8 +20,16 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
 
     return (
         <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <header className="space-y-2">
+                <SectionBadge
+                    label="Profilazione"
+                    icon={(
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10 2a1 1 0 01.894.553l1.382 2.8 3.089.449a1 1 0 01.554 1.706l-2.235 2.179.528 3.076a1 1 0 01-1.451 1.054L10 12.473l-2.761 1.452a1 1 0 01-1.451-1.054l.528-3.076L4.08 7.508a1 1 0 01.554-1.706l3.089-.449 1.382-2.8A1 1 0 0110 2z" />
+                        </svg>
+                    )}
+                />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Impostazioni di Profilazione
                 </h2>
 
@@ -33,7 +43,7 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
                 {profileSettings ? (
                     <>
                         <div className="grid gap-4 sm:grid-cols-3">
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
                                 <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                     Partita IVA
                                 </div>
@@ -53,7 +63,7 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
                                 </div>
                             </div>
 
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
                                 <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                     Situazione
                                 </div>
@@ -64,7 +74,7 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
                                 </div>
                             </div>
 
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
                                 <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                     Investimenti
                                 </div>
@@ -85,7 +95,7 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                        <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
                             <p className="text-sm text-blue-800 dark:text-blue-200">
                                 💡 Le impostazioni influenzano i moduli disponibili
                                 nella dashboard.
@@ -93,18 +103,18 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
                         </div>
                     </>
                 ) : (
-                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+                    <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
                         <p className="text-sm text-yellow-800 dark:text-yellow-200">
                             ⚠️ Non hai ancora completato il quiz di profilazione.
                         </p>
                     </div>
                 )}
 
-                <div className="flex items-center gap-4">
+                <FormActionsBar>
                     <Link href={route('profile.quiz-settings.edit')}>
                         <SecondaryButton>Modifica Impostazioni</SecondaryButton>
                     </Link>
-                </div>
+                </FormActionsBar>
             </div>
         </section>
     );

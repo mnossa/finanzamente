@@ -4,11 +4,13 @@ import CategoryPicker from '@/Components/CategoryPicker';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TagAutocomplete from '@/Components/TagAutocomplete';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
-import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import { useState } from 'react';
@@ -136,7 +138,12 @@ export default function Edit({ transaction, accounts, categories, debtsCredits }
             <Head title="Modifica Transazione" />
 
             <PageContent maxWidth="2xl">
-                    <CardBox>
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge label="Transazioni" icon={<span className="text-sm leading-none">✏️</span>} />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aggiorna transazione</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Modifica importo, descrizione, privacy e collegamenti disponibili.</p>
+                        </header>
                         {/* Avviso trasferimento inter-household */}
                         {isInterHouseholdTransfer && (
                             <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
@@ -461,7 +468,7 @@ export default function Edit({ transaction, accounts, categories, debtsCredits }
                             </div>
 
                             {/* Azioni */}
-                            <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                            <FormActionsBar className="justify-end pt-6">
                                 <Link
                                     href={route('transactions.index')}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -473,9 +480,9 @@ export default function Edit({ transaction, accounts, categories, debtsCredits }
                                         {processing ? 'Salvataggio...' : 'Salva Modifiche'}
                                     </PrimaryButton>
                                 )}
-                            </div>
+                            </FormActionsBar>
                         </form>
-                    </CardBox>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

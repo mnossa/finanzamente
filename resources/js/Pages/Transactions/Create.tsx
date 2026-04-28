@@ -5,13 +5,15 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TagAutocomplete from '@/Components/TagAutocomplete';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
-import CardBox from '@/Components/CardBox';
 import { useState } from 'react';
 
 interface Category {
@@ -121,7 +123,19 @@ export default function Create({ accounts, categories, defaultAccountId, default
             <Head title="Nuova Transazione" />
 
             <PageContent maxWidth="2xl">
-                    <CardBox>
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge
+                                label="Transazioni"
+                                icon={<span className="text-sm leading-none">💸</span>}
+                            />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Inserisci una nuova transazione
+                            </h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Registra entrate e uscite con categoria, privacy e tag in un unico flusso.
+                            </p>
+                        </header>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">🏦</div>
@@ -404,7 +418,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                 </div>
 
                                 {/* Azioni */}
-                                <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                                <FormActionsBar className="justify-end pt-6">
                                     <Link
                                         href={route('transactions.index')}
                                         className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -414,10 +428,10 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                     <PrimaryButton disabled={processing || !data.category_id}>
                                         {processing ? 'Salvataggio...' : 'Salva Transazione'}
                                     </PrimaryButton>
-                                </div>
+                                </FormActionsBar>
                             </form>
                         )}
-                    </CardBox>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

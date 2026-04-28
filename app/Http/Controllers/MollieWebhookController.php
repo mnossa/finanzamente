@@ -39,6 +39,10 @@ class MollieWebhookController extends Controller
         $mollieId = $request->input('id');
 
         if (! $mollieId) {
+            if (app()->environment('e2e') && $request->boolean('e2e_mock')) {
+                $this->processE2eMockWebhook($request);
+            }
+
             return response('', 200);
         }
 
@@ -62,6 +66,54 @@ class MollieWebhookController extends Controller
         }
 
         return response('', 200);
+    }
+
+    private function processE2eMockWebhook(Request $request): void
+    {
+        $subscriptionId = (int) $request->input('subscription_id', 0);
+        $status = (string) $request->input('status', 'paid');
+        $sequenceType = (string) $request->input('sequence_type', 'first');
+        $mandateId = (string) $request->input('mandate_id', 'mdt_e2e_mock');
+
+        if ($subscriptionId <= 0) {
+            return;
+        }
+
+        /** @var Subscription|null $subscription */
+        $subscription = Subscription::find($subscriptionId);
+        if (! $subscription) {
+            return;
+        }
+
+        $user = $subscription->user;
+
+        if ($status === 'paid') {
+            $nextPaymentAt = now()->add(
+                $subscription->billing_cycle === 'annual' ? '12 months' : '1 month'
+            );
+
+            $subscription->update([
+                'status' => 'active',
+                'mollie_mandate_id' => $mandateId,
+                'next_payment_at' => $nextPaymentAt,
+            ]);
+
+            $user->update([
+                'plan' => $subscription->plan,
+                'plan_expires_at' => null,
+            ]);
+
+            Log::info('Mollie E2E mock: subscription activated', [
+                'subscription_id' => $subscription->id,
+                'sequence_type' => $sequenceType,
+            ]);
+
+            return;
+        }
+
+        if (in_array($status, ['failed', 'canceled', 'expired'], true) && $subscription->status === 'pending') {
+            $subscription->update(['status' => 'cancelled']);
+        }
     }
 
     private function processPaymentWebhook(string $paymentId): void

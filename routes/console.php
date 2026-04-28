@@ -55,3 +55,8 @@ Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8, 15, 0);
  * I suggerimenti vengono inviati via email all'amministratore (config('mail.admin_address')) in formato leggibile.
  */
 Schedule::command('magazine:link-suggestions')->sundays()->twiceMonthly()->at('03:00');
+
+/**
+ * Applica retention su eventi consenso GDPR (anonymize + prune) ogni notte.
+ */
+Schedule::command('consents:enforce-retention')->dailyAt('03:30');

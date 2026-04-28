@@ -3,11 +3,13 @@ import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
-import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Currency {
@@ -69,9 +71,14 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
             <Head title="Nuovo Obiettivo" />
 
             <PageContent maxWidth="2xl">
-                    <form onSubmit={submit}>
-                        <CardBox className="overflow-hidden shadow-sm">
-                            <div className="p-6">
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge label="Obiettivi" icon={<span className="text-sm leading-none">🎯</span>} />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo obiettivo finanziario</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Definisci target, scadenza e stile visuale per il tuo traguardo.</p>
+                        </header>
+                        <form onSubmit={submit} className="space-y-6">
+                            <div>
                                 {/* Icon e Nome */}
                                 <div className="mb-6">
                                     <InputLabel value="Icona e Nome *" />
@@ -231,7 +238,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                             </div>
 
                             {/* Footer */}
-                            <div className="flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/50">
+                            <FormActionsBar className="justify-end pt-6">
                                 <Link
                                     href={route('financial-goals.index')}
                                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -241,9 +248,9 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                                 <PrimaryButton disabled={processing}>
                                     {processing ? 'Creazione...' : '🎯 Crea Obiettivo'}
                                 </PrimaryButton>
-                            </div>
-                        </CardBox>
-                    </form>
+                            </FormActionsBar>
+                        </form>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

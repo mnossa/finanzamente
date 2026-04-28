@@ -6,10 +6,12 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import ProBadge from '@/Components/ProBadge';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
-import CardBox from '@/Components/CardBox';
 
 interface Currency {
     code: string;
@@ -82,7 +84,19 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                             <ProBadge size="sm" />
                         </div>
                     )}
-                    <CardBox>
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge
+                                label="Conti"
+                                icon={<span className="text-sm leading-none">🏦</span>}
+                            />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Crea un nuovo conto
+                            </h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Imposta il conto iniziale per tracciare saldo e movimenti.
+                            </p>
+                        </header>
                         <form onSubmit={submit} className="space-y-6">
                             {/* Nome */}
                             <div>
@@ -191,7 +205,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                             </div>
 
                             {/* Azioni */}
-                            <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                            <FormActionsBar className="justify-end pt-6">
                                 <Link
                                     href={route('accounts.index')}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -201,9 +215,9 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                 <PrimaryButton disabled={processing}>
                                     {processing ? 'Salvataggio...' : 'Crea Conto'}
                                 </PrimaryButton>
-                            </div>
+                            </FormActionsBar>
                         </form>
-                    </CardBox>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

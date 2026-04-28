@@ -6,6 +6,8 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import ArchiveIcon from '@/Components/Icons/ArchiveIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -154,7 +156,18 @@ export default function Index({
         >
             <Head title="Conti" />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge
+                                label="Panoramica conti"
+                                icon={<span className="text-sm leading-none">🏦</span>}
+                            />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Visualizza saldo totale, ripartizione per tipo e stato dei conti attivi o archiviati.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {accounts.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -168,7 +181,7 @@ export default function Index({
                     ) : (
                         <>
                             {/* Saldo Totale */}
-                            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+                            <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                                 <h3 className="text-sm font-medium text-slate-300">
                                     Patrimonio Totale
                                 </h3>

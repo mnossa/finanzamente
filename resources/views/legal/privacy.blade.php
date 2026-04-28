@@ -134,6 +134,10 @@
     <section class="space-y-4">
         <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">7. Diritti dell’interessato</h2>
         <p>L’utente può chiedere accesso, rettifica, cancellazione, limitazione del trattamento, opposizione, portabilità dei dati e revoca del consenso per i trattamenti basati su consenso. Può inoltre proporre reclamo all’autorità di controllo competente.</p>
+        <p>Nell’implementazione attuale dell’app, l’utente autenticato può già:
+            revocare o aggiornare i consensi opzionali dal profilo,
+            esportare lo storico consensi in formato JSON,
+            richiedere la cancellazione dell’account dalla sezione profilo.</p>
         <p>Indica nella versione finale un canale semplice e stabile per esercitare tali diritti, ad esempio un indirizzo email privacy dedicato.</p>
     </section>
 

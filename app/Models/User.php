@@ -77,6 +77,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Subscription::class);
     }
 
+    public function consents()
+    {
+        return $this->hasMany(Consent::class);
+    }
+
+    public function consentEvents()
+    {
+        return $this->hasMany(ConsentEvent::class);
+    }
+
     /**
      * Restituisce la sottoscrizione attiva più recente (se presente).
      */

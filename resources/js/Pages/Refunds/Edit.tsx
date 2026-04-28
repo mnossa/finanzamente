@@ -3,9 +3,11 @@ import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
-import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 
 interface Category {
@@ -87,7 +89,12 @@ export default function Edit({ refund }: EditProps) {
             <Head title="Modifica Rimborso" />
 
             <PageContent maxWidth="2xl">
-                    <CardBox className="overflow-hidden p-6 shadow-sm">
+                    <SectionCard className="space-y-5">
+                        <header className="space-y-2">
+                            <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">✏️</span>} />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica rimborso</h2>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna importo, data e visibilità del rimborso registrato.</p>
+                        </header>
                         <form onSubmit={submit} className="space-y-6">
                             {/* Transazione originale (solo lettura) */}
                             <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
@@ -206,7 +213,7 @@ export default function Edit({ refund }: EditProps) {
                             </div>
 
                             {/* Azioni */}
-                            <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                            <FormActionsBar className="justify-end pt-6">
                                 <Link
                                     href={route('refunds.show', refund.id)}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -218,9 +225,9 @@ export default function Edit({ refund }: EditProps) {
                                 >
                                     {processing ? 'Salvataggio...' : 'Salva Modifiche'}
                                 </PrimaryButton>
-                            </div>
+                            </FormActionsBar>
                         </form>
-                    </CardBox>
+                    </SectionCard>
             </PageContent>
         </AuthenticatedLayout>
     );

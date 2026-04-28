@@ -11,6 +11,8 @@ import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import axios from 'axios';
 
+const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
+
 // Icone SVG inline per evitare dipendenze esterne
 const Icons = {
     Menu: () => (
@@ -464,7 +466,7 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { auth, activeHousehold, notifications, plan: planData, isAdmin } = usePage<PageProps>().props;
+    const { auth, activeHousehold, notifications, plan: planData, isAdmin, privacy } = usePage<PageProps>().props;
     const user = auth.user;
     const { isModuleEnabled, isPro } = useModules();
     const initialTheme = (user.preferences?.theme as string | undefined) ?? 'light';
@@ -473,6 +475,7 @@ export default function Authenticated({
     const [notifOpen, setNotifOpen] = useState(false);
     const [navSearch, setNavSearch] = useState('');
     const notifRef = useRef<HTMLDivElement>(null);
+    const analyticsSyncInFlight = useRef(false);
 
     const handleLogout = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -513,6 +516,40 @@ export default function Authenticated({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [notifOpen]);
+
+    useEffect(() => {
+        if (analyticsSyncInFlight.current) return;
+
+        const storedConsent = window.localStorage.getItem(BLADE_ANALYTICS_CONSENT_KEY);
+        if (storedConsent !== 'accepted' && storedConsent !== 'rejected') return;
+
+        const shouldEnableAnalytics = storedConsent === 'accepted';
+        const currentAnalyticsEnabled = privacy?.analytics_enabled ?? false;
+
+        if (shouldEnableAnalytics === currentAnalyticsEnabled) {
+            window.localStorage.removeItem(BLADE_ANALYTICS_CONSENT_KEY);
+            return;
+        }
+
+        analyticsSyncInFlight.current = true;
+        router.post(
+            route('profile.consents.sync-analytics'),
+            {
+                analytics_tracking: shouldEnableAnalytics,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    window.localStorage.removeItem(BLADE_ANALYTICS_CONSENT_KEY);
+                    analyticsSyncInFlight.current = false;
+                },
+                onError: () => {
+                    analyticsSyncInFlight.current = false;
+                },
+            }
+        );
+    }, [privacy?.analytics_enabled]);
 
     const isRouteActive = (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string): boolean => {
         if (excludeRouteMatch && route().current(excludeRouteMatch)) return false;
@@ -579,7 +616,7 @@ export default function Authenticated({
 
     return (
         <ThemeProvider initialTheme={initialTheme}>
-            <UmamiAnalytics />
+            <UmamiAnalytics enabled={privacy?.analytics_enabled ?? false} />
             <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
                 {/* Overlay Mobile */}
                 {sidebarOpen && (

@@ -96,6 +96,22 @@ Finanzamente è una webapp di gestione finanziaria personale e familiare, pensat
 
 - Gestione consensi privacy, policy di data retention e cancellazione
 
+#### Stato implementazione GDPR (MVP attuale)
+
+- Consensi obbligatori registrati automaticamente in fase di registrazione:
+  - `privacy_policy_ack`
+  - `terms_ack`
+- Consensi opzionali gestibili dall'utente dal profilo:
+  - `marketing_email`
+  - `analytics_tracking`
+- Revoca rapida: pulsante "Revoca tutti i consensi opzionali" nel profilo.
+- Portabilità dati: export JSON dello storico consensi da `/profilo/consensi/export`.
+- Cancellazione account: disponibile da sezione profilo (delete account flow).
+- Audit trail tecnico:
+  - eventi consenso/revoca in `consent_events`
+  - hash privacy-safe per IP/User-Agent con `ADV_THROTTLE_SALT`
+  - retention schedulata via comando `consents:enforce-retention`
+
 ## Flussi Utente Principali
 
 - Registrazione e validazione email

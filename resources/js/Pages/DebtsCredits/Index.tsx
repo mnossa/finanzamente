@@ -6,6 +6,8 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -196,7 +198,15 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
         >
             <Head title="Debiti e Crediti" />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Debiti e crediti" icon={<span className="text-sm leading-none">💸</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Controlla quanto devi e quanto devi ricevere con stato e scadenze sempre visibili.
+                            </p>
+                        </div>
+                    </SectionCard>
                     {debtsCredits.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -211,7 +221,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                         <>
                             {/* Riepilogo */}
                             <div className="grid gap-4 sm:grid-cols-3">
-                                <div className="overflow-hidden rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-6 text-white shadow-lg">
+                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-red-500 to-rose-600 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-red-100">
                                         Debiti Aperti
                                     </h3>
@@ -222,7 +232,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                         Soldi che devi
                                     </p>
                                 </div>
-                                <div className="overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg">
+                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-emerald-100">
                                         Crediti Aperti
                                     </h3>
@@ -237,8 +247,8 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     className={clsx(
                                         'overflow-hidden rounded-xl p-6 text-white shadow-lg',
                                         summary.total_credits - summary.total_debts >= 0
-                                            ? 'bg-gradient-to-br from-blue-500 to-emerald-600'
-                                            : 'bg-gradient-to-br from-amber-500 to-orange-600'
+                                            ? 'bg-linear-to-br from-blue-500 to-emerald-600'
+                                            : 'bg-linear-to-br from-amber-500 to-orange-600'
                                     )}
                                 >
                                     <h3 className="text-sm font-medium opacity-80">

@@ -211,6 +211,30 @@ class SubscriptionTest extends TestCase
         $response->assertSessionHas('error');
     }
 
+    public function test_checkout_in_e2e_environment_redirects_to_internal_return(): void
+    {
+        config(['plans.pro_enabled' => true]);
+
+        $user = User::factory()->create(['plan' => 'base']);
+        $this->actingAs($user);
+        $this->app['env'] = 'e2e';
+
+        $response = $this->post('/abbonamento/checkout', [
+            'billing_cycle' => 'monthly',
+        ]);
+
+        $subscription = Subscription::query()->latest('id')->first();
+        $this->assertNotNull($subscription);
+
+        $response->assertRedirect(route('subscription.return', ['subscription' => $subscription->id]));
+        $this->assertDatabaseHas('subscriptions', [
+            'id' => $subscription->id,
+            'status' => 'pending',
+        ]);
+
+        $this->app['env'] = 'testing';
+    }
+
     public function test_billing_update_requires_auth(): void
     {
         $response = $this->patch('/abbonamento/fatturazione', [

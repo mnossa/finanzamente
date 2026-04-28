@@ -60,6 +60,11 @@ class SubscriptionController extends Controller
         $redirectUrl = route('subscription.return', ['subscription' => $subscription->id]);
         $webhookUrl = route('mollie.webhook');
 
+        // E2E mode: evita redirect esterno verso Mollie e simula solo il callback di ritorno.
+        if (app()->environment('e2e')) {
+            return redirect()->route('subscription.return', ['subscription' => $subscription->id]);
+        }
+
         try {
             $checkoutUrl = $this->mollieService->createFirstPaymentUrl(
                 $user,
@@ -224,6 +229,14 @@ class SubscriptionController extends Controller
         $user = Auth::user();
         $subscription = $user->activeSubscription();
         $plans = $this->planService->getPlansForFrontend();
+        $latestPendingSubscriptionId = app()->environment('e2e')
+            ? optional(
+                $user->subscriptions()
+                    ->where('status', 'pending')
+                    ->latest('id')
+                    ->first()
+            )->id
+            : null;
 
         return Inertia::render('Profile/Subscription', [
             'fromFeature' => $request->query('from'),
@@ -250,6 +263,7 @@ class SubscriptionController extends Controller
             'plans' => $plans,
             'proEnabled' => $this->planService->isProEnabled(),
             'waitlistEnabled' => config('prelaunch.waitlist_enabled', false),
+            'e2ePendingSubscriptionId' => $latestPendingSubscriptionId,
         ]);
     }
 }

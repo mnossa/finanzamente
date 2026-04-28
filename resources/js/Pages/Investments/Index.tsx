@@ -4,6 +4,8 @@ import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
+import SectionBadge from '@/Components/SectionBadge';
+import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
@@ -213,7 +215,15 @@ export default function Index({
         >
             <Head title="Investimenti" />
 
-            <PageContent>
+            <PageContent maxWidth="7xl">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                        <div className="space-y-2">
+                            <SectionBadge label="Portafoglio investimenti" icon={<span className="text-sm leading-none">📊</span>} />
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                Monitora posizioni aperte e chiuse con metriche di rendimento e costi.
+                            </p>
+                        </div>
+                    </SectionCard>
 
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

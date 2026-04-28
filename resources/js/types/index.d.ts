@@ -107,6 +107,9 @@ export type PageProps<
     } | null;
     isEarlyBird?: boolean;
     isAdmin?: boolean;
+    privacy?: {
+        analytics_enabled: boolean;
+    };
 };
 
 export interface AppNotification {

@@ -31,11 +31,17 @@ test.describe('Transazioni', () => {
     });
 
     test('la lista transazioni mostra messaggio vuoto o righe', async ({ page }) => {
-        // Verifica che la pagina sia in uno stato coerente (empty state o tabella con dati)
-        await expect(
-            page.getByRole('heading', { name: /nessuna transazione trovata/i })
-                .or(page.getByRole('table'))
-        ).toBeVisible({ timeout: 10_000 });
+        // Stato coerente: empty state oppure almeno una riga transazione con azioni
+        const emptyState = page.getByText(/nessuna transazione trovata/i).first();
+        const rowActions = page.locator('[title="Visualizza"]');
+
+        await expect
+            .poll(async () => {
+                const emptyVisible = await emptyState.isVisible().catch(() => false);
+                const rowsCount = await rowActions.count();
+                return emptyVisible || rowsCount > 0;
+            }, { timeout: 10_000 })
+            .toBeTruthy();
     });
 
     test('i filtri di ricerca sono presenti', async ({ page }) => {
