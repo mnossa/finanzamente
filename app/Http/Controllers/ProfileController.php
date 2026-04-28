@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Consent;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Consent;
 use App\Services\BrevoMarketingService;
 use App\Services\ConsentService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
