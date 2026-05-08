@@ -29,7 +29,7 @@ class SuggestArticleLinksExtractSlugsTest extends TestCase
 
     public function test_extracts_link_with_query_string_and_anchor(): void
     {
-        $md = "[a](/magazine/budget-mensile?utm=feed) e [b](/magazine/spese-fisse#sezione-due)";
+        $md = '[a](/magazine/budget-mensile?utm=feed) e [b](/magazine/spese-fisse#sezione-due)';
 
         $slugs = SuggestArticleLinks::extractLinkedSlugs($md);
 
