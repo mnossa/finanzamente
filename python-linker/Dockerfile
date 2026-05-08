@@ -2,13 +2,17 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Installa dipendenze di sistema minime per sentence-transformers/torch
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Tutte le dipendenze (torch, numpy, scipy, scikit-learn, tokenizers, pydantic-core,
+# safetensors, regex, ecc.) sono distribuite come wheel manylinux pre-compilate:
+# nessun toolchain di build necessario. Saltando apt-get evitiamo flake da mirror
+# Debian transitori in CI.
+
+# Robustezza pip in CI: retry e timeout più alti.
+ENV PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=5
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --only-binary=:all: -r requirements.txt
 
 # Pre-scarica il modello nell'immagine (evita download a runtime)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
