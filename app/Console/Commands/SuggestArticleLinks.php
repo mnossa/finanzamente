@@ -14,7 +14,8 @@ class SuggestArticleLinks extends Command
     protected $signature = 'magazine:link-suggestions'
         .' {--max=100 : Numero massimo di suggerimenti totali}'
         .' {--per-article=5 : Max suggerimenti per articolo}'
-        .' {--min-score=0.45 : Score minimo di similarità semantica (0-1)}';
+        .' {--min-score=0.55 : Score minimo di similarità semantica (0-1)}'
+        .' {--max-score=0.95 : Score massimo: oltre questo valore considera duplicato e scarta}';
 
     protected $description = 'Scansiona gli articoli magazine e suggerisce link interni tramite similarità semantica (output via email)';
 
@@ -24,6 +25,7 @@ class SuggestArticleLinks extends Command
         $maxSuggestions = (int) $this->option('max');
         $maxPerArticle = (int) $this->option('per-article');
         $minScore = (float) $this->option('min-score');
+        $maxScore = (float) $this->option('max-score');
 
         $linkerUrl = rtrim(env('PYTHON_LINKER_URL', 'http://127.0.0.1:8000'), '/');
 
@@ -82,7 +84,7 @@ class SuggestArticleLinks extends Command
         // Costruisce la mappa dei link già presenti per ogni articolo
         $alreadyLinked = [];
         foreach ($articles as $a) {
-            $alreadyLinked[(string) $a->id] = $this->extractLinkedSlugs($a->content);
+            $alreadyLinked[(string) $a->id] = self::extractLinkedSlugs($a->content);
         }
 
         // Chiama il servizio Python
@@ -91,6 +93,7 @@ class SuggestArticleLinks extends Command
                 'articles' => $payload,
                 'top_k' => $maxPerArticle,
                 'min_score' => $minScore,
+                'max_score' => $maxScore,
                 'already_linked' => $alreadyLinked,
             ]);
 
@@ -161,12 +164,36 @@ class SuggestArticleLinks extends Command
 
     /**
      * Estrae gli slug di articoli magazine già linkati nel markdown sorgente.
+     *
+     * Cattura tutte le forme realistiche di link interno:
+     *  - markdown relativo:  [testo](/magazine/slug)
+     *  - markdown con query/anchor:  [testo](/magazine/slug?utm=...) oppure (/magazine/slug#sezione)
+     *  - markdown assoluto:  [testo](https://finanzamente.it/magazine/slug)
+     *  - HTML inline:  <a href="/magazine/slug"> o href="https://..."
      */
-    private function extractLinkedSlugs(string $markdown): array
+    public static function extractLinkedSlugs(string $markdown): array
     {
-        preg_match_all('/\[([^\]]+)\]\(\/magazine\/([a-z0-9\-]+)\)/i', $markdown, $matches);
+        $slugs = [];
 
-        return $matches[2] ?? [];
+        // Markdown link: [testo](URL) — URL può iniziare con http(s)://host oppure /
+        preg_match_all(
+            '~\[[^\]]+\]\(\s*(?:https?://[^/\s)]+)?/magazine/([a-z0-9\-]+)(?:[/?#][^)\s]*)?\s*\)~i',
+            $markdown,
+            $mdMatches
+        );
+
+        // HTML href="..."
+        preg_match_all(
+            '~href\s*=\s*[\'"](?:https?://[^/\'"\s]+)?/magazine/([a-z0-9\-]+)(?:[/?#][^\'"]*)?[\'"]~i',
+            $markdown,
+            $htmlMatches
+        );
+
+        foreach (array_merge($mdMatches[1] ?? [], $htmlMatches[1] ?? []) as $slug) {
+            $slugs[] = strtolower($slug);
+        }
+
+        return array_values(array_unique($slugs));
     }
 
     private function sendMail(array $suggestions, float $duration, float $memory, int $articlesProcessed): void
