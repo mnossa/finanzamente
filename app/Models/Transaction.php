@@ -19,12 +19,34 @@ class Transaction extends Model
 {
     use DispatchesModelEvents, HasFactory, SoftDeletes;
 
+    /**
+     * Default sicuri per la coerenza multi-currency: se chi salva la transazione
+     * non specifica i nuovi campi (chiamanti legacy), assumiamo "1:1 con EUR".
+     * Un Observer/saving listener qui rende la pipeline robusta senza dover
+     * aggiornare ogni singolo controller esistente in un colpo solo.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $tx): void {
+            if ($tx->exchange_rate_to_base === null || (float) $tx->exchange_rate_to_base <= 0) {
+                $tx->exchange_rate_to_base = 1;
+            }
+            if ($tx->amount_base === null || (float) $tx->amount_base === 0.0) {
+                $tx->amount_base = round((float) $tx->amount * (float) $tx->exchange_rate_to_base, 2);
+            }
+        });
+    }
+
     protected $fillable = [
         'user_id',
         'account_id',
         'category_id',
         'amount',
         'currency_code',
+        'exchange_rate_to_base',
+        'amount_base',
+        'original_amount',
+        'original_currency_code',
         'date',
         'description',
         'recurring',
@@ -42,6 +64,9 @@ class Transaction extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'exchange_rate_to_base' => 'decimal:10',
+        'amount_base' => 'decimal:2',
+        'original_amount' => 'decimal:2',
         'date' => 'date',
         'recurring' => 'boolean',
         'is_private' => 'boolean',

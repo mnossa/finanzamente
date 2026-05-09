@@ -57,6 +57,45 @@ test.describe('Profilo utente', () => {
         expect(value).toContain('@');
     });
 
+    test('il pulsante "Salva" è visibile nel form profilo', async ({ page }) => {
+        await expect(
+            page.getByRole('button', { name: /^salva$/i }).first()
+        ).toBeVisible();
+    });
+
+    test('mostra il selettore valuta predefinita e lo persiste dopo il salvataggio', async ({ page }) => {
+        const currencySelect = page.locator('#default_currency_code');
+        await expect(currencySelect).toBeVisible();
+
+        // Seleziona GBP
+        await currencySelect.selectOption('GBP');
+
+        await Promise.all([
+            page.waitForResponse((response) =>
+                response.url().includes('/profilo') &&
+                response.request().method() === 'PATCH' &&
+                response.status() >= 200 &&
+                response.status() < 400
+            ),
+            page.getByRole('button', { name: /^salva$/i }).first().click(),
+        ]);
+
+        await page.reload();
+        await expect(currencySelect).toHaveValue('GBP');
+
+        // Ripristina default (vuoto = EUR)
+        await currencySelect.selectOption('');
+        await Promise.all([
+            page.waitForResponse((response) =>
+                response.url().includes('/profilo') &&
+                response.request().method() === 'PATCH' &&
+                response.status() >= 200 &&
+                response.status() < 400
+            ),
+            page.getByRole('button', { name: /^salva$/i }).first().click(),
+        ]);
+    });
+
     test('aggiorna il nome profilo con successo', async ({ page }) => {
         await page.locator('input[name="name"]').fill('Utente E2E Aggiornato');
 

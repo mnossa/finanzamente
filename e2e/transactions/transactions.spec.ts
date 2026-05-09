@@ -53,4 +53,44 @@ test.describe('Transazioni', () => {
             }
         }
     });
+
+    test('il form di creazione espone il toggle "valuta diversa dal conto"', async ({ page }) => {
+        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
+        await expect(page).toHaveURL('/transazioni/crea');
+
+        const toggle = page.getByRole('button', { name: /valuta diversa dal conto/i });
+        await expect(toggle).toBeVisible();
+
+        // Apre la sezione FX e verifica che compaiano i tre campi di valuta
+        await toggle.click();
+        await expect(page.getByLabel(/importo originale/i)).toBeVisible();
+        await expect(page.getByLabel(/valuta originale/i)).toBeVisible();
+        await expect(page.getByLabel(/cambio manuale/i)).toBeVisible();
+    });
+
+    test('mostra l\'anteprima del cambio quando si seleziona una valuta diversa dal conto', async ({ page }) => {
+        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
+        await expect(page).toHaveURL('/transazioni/crea');
+
+        await page.getByRole('button', { name: /valuta diversa dal conto/i }).click();
+        // Default è la valuta dell'utente: forziamo GBP per garantire mismatch col conto principale (EUR)
+        await page.getByLabel(/valuta originale/i).selectOption('GBP');
+
+        // L'hint compare (eventualmente con stato "Calcolo cambio…" che si stabilizza)
+        const hint = page.getByTestId('fx-preview-hint');
+        await expect(hint).toBeVisible({ timeout: 5_000 });
+        await expect(hint).toContainText(/cambio del giorno|calcolo cambio/i, { timeout: 10_000 });
+    });
+
+    test('il conto in valuta estera "Revolut GBP" è visibile nella select del form', async ({ page }) => {
+        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
+        await expect(page).toHaveURL('/transazioni/crea');
+
+        const accountSelect = page.locator('#account_id');
+        await expect(accountSelect).toBeVisible();
+
+        // L'opzione esiste solo se il seeder E2E ha creato il conto Revolut GBP.
+        // Verifichiamo che il name dell'opzione contenga "Revolut" e mostri (GBP) come valuta.
+        await expect(accountSelect.locator('option', { hasText: /revolut/i })).toContainText(/gbp/i);
+    });
 });

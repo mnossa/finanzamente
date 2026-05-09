@@ -178,6 +178,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'preferences',
         'active_household_id',
         'telegram_chat_id',
+        'default_currency_code',
         'user_type',
         'fiscal_code',
         'vat_number',

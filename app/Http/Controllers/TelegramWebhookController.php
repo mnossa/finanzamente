@@ -9,6 +9,7 @@ use App\Models\InboxItem;
 use App\Models\TelegramLinkToken;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\CurrencyConverter;
 use App\Services\TelegramService;
 use App\Services\VisionService;
 use Carbon\Carbon;
@@ -45,7 +46,19 @@ class TelegramWebhookController extends Controller
     public function __construct(
         private TelegramService $telegram,
         private VisionService $vision,
+        private CurrencyConverter $currency,
     ) {}
+
+    /**
+     * Mappa simboli valuta → codici ISO 4217 supportati nel parser bot.
+     * `$` interpretato come USD (default plausibile italiano).
+     */
+    private const SYMBOL_TO_ISO = [
+        '€' => 'EUR',
+        '£' => 'GBP',
+        '$' => 'USD',
+        '¥' => 'JPY',
+    ];
 
     /**
      * Endpoint pubblico per il webhook di Telegram.
@@ -226,10 +239,16 @@ class TelegramWebhookController extends Controller
             ."<code>@NomeConto</code> → specifica il conto (es. <code>@Corrente</code>)\n"
             ."<code>#Categoria</code> → specifica la categoria (es. <code>#Alimentari</code>)\n"
             ."<code>DD/MM</code> → specifica la data (es. <code>01/03</code>)\n\n"
+            ."<b>💱 Valuta diversa da euro:</b>\n"
+            ."<code>30 GBP cena pub</code> → 30 sterline (cambio automatico)\n"
+            ."<code>£30 cena pub</code> → equivalente con simbolo\n"
+            ."<code>50 USD hotel</code> oppure <code>$50 hotel</code>\n"
+            ."<code>30 GBP cena ~1.18</code> → cambio fisso (1 GBP = 1.18 EUR)\n\n"
             ."<b>Esempi completi:</b>\n"
             ."<code>15 Pizza @Corrente #Cibo</code>\n"
             ."<code>+500 Rimborso @Corrente 15/03</code>\n"
-            ."<code>8.50 Bar #Svago 01/03</code>\n\n"
+            ."<code>8.50 Bar #Svago 01/03</code>\n"
+            ."<code>£30 cena pub @Revolut #Svago</code>\n\n"
             ."<b>📸 Scontrino fotografato:</b>\n"
             ."Invia direttamente la foto — l'OCR estrae importo e negozio automaticamente.\n\n"
             ."<b>⌨️ Comandi:</b>\n"
@@ -292,7 +311,9 @@ class TelegramWebhookController extends Controller
             $emoji = $amount >= 0 ? '📈' : '💸';
             $date = $tx->date ? Carbon::parse($tx->date)->format('d/m') : '';
             $desc = $tx->description ?? ($tx->category?->name ?? '—');
-            $lines[] = "{$emoji} {$date} <b>{$sign}".number_format(abs($amount), 2, ',', '.')." €</b> – {$desc}";
+            $currencyCode = $tx->currency_code ?: 'EUR';
+            $formatted = $this->formatAmount(abs($amount), $currencyCode);
+            $lines[] = "{$emoji} {$date} <b>{$sign}{$formatted}</b> – {$desc}";
         }
 
         $this->telegram->sendMessage($chatId, implode("\n", $lines));
@@ -351,7 +372,7 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        // Parsing avanzato: importo, descrizione, tipo, conto, categoria, data
+        // Parsing avanzato: importo, descrizione, tipo, conto, categoria, data, valuta
         $parsed = $this->parseTextMessage($text);
         $amount = $parsed['amount'];
         $description = $parsed['description'];
@@ -362,6 +383,22 @@ class TelegramWebhookController extends Controller
         [$accountId, $resolvedAccount] = $this->resolveAccountByName($parsed['account_name'], $user);
         [$categoryId, $resolvedCategory] = $this->resolveCategoryByName($parsed['category_name'], $user);
 
+        $effectiveCurrency = $this->resolveCurrencyForUser($parsed['currency'], $user);
+        $exchangeRate = null;
+        $amountBase = null;
+        if ($amount !== null) {
+            if ($parsed['manual_rate'] !== null && $parsed['manual_rate'] > 0) {
+                $exchangeRate = $effectiveCurrency === CurrencyConverter::BASE_CURRENCY
+                    ? 1.0
+                    : $parsed['manual_rate'];
+                $amountBase = round($amount * $exchangeRate, 2);
+            } else {
+                $snapshot = $this->currency->snapshot($amount, $effectiveCurrency, Carbon::parse($date));
+                $exchangeRate = $snapshot['exchange_rate_to_base'];
+                $amountBase = $snapshot['amount_base'];
+            }
+        }
+
         $item = InboxItem::create([
             'user_id' => $user->id,
             'household_id' => $user->active_household_id,
@@ -370,6 +407,9 @@ class TelegramWebhookController extends Controller
             'type' => $type,
             'raw_text' => $text,
             'amount' => $amount,
+            'currency_code' => $amount !== null ? $effectiveCurrency : null,
+            'exchange_rate_to_base' => $exchangeRate,
+            'amount_base' => $amountBase,
             'description' => $description,
             'transaction_date' => $date,
             'account_id' => $accountId,
@@ -380,18 +420,23 @@ class TelegramWebhookController extends Controller
             'user_id' => $user->id,
             'title' => $type === 'income' ? '📈 Nuova entrata in Inbox' : '💸 Nuova uscita in Inbox',
             'message' => $amount !== null
-                ? 'Ricevuto da Telegram: '.($description ?? $text).' — €'.number_format((float) $amount, 2, ',', '.')
+                ? 'Ricevuto da Telegram: '.($description ?? $text).' — '.$this->formatAmount((float) $amount, $effectiveCurrency)
                 : 'Messaggio Telegram salvato in Inbox: '.mb_strimwidth($text, 0, 80, '…'),
             'notification_key' => 'inbox_telegram_'.$item->id,
         ]);
 
         if ($amount !== null) {
-            $amountFormatted = '€'.number_format((float) $amount, 2, ',', '.');
+            $amountFormatted = $this->formatAmount((float) $amount, $effectiveCurrency);
             $typeEmoji = $type === 'income' ? '📈' : '💸';
             $typeLabel = $type === 'income' ? 'Entrata' : 'Uscita';
             $preview = "{$typeEmoji} <b>{$typeLabel}: {$amountFormatted}</b>".($description ? " – {$description}" : '');
 
             $extras = [];
+            if ($effectiveCurrency !== CurrencyConverter::BASE_CURRENCY && $amountBase !== null) {
+                $eurFormatted = '€'.number_format((float) $amountBase, 2, ',', '.');
+                $rateLabel = $parsed['manual_rate'] !== null ? ' (rate manuale)' : '';
+                $extras[] = "≈ {$eurFormatted}{$rateLabel}";
+            }
             if ($accountId && $resolvedAccount) {
                 $extras[] = "🏦 {$resolvedAccount->name}";
             } elseif ($parsed['account_name'] !== null) {
@@ -583,13 +628,20 @@ class TelegramWebhookController extends Controller
      *   "#Alimentari"                    → categoria "Alimentari"
      *   "01/03" o "01/03/2026"          → data
      *
-     * @return array{amount: float|null, description: string|null, type: string, account_name: string|null, category_name: string|null, date: string}
+     * Multi-currency:
+     *   "30 GBP cena"                → uscita 30 GBP
+     *   "£30 cena pub"               → uscita 30 GBP (simbolo)
+     *   "30 GBP cena ~1.18"          → uscita 30 GBP con rate manuale 1 GBP = 1.18 EUR
+     *
+     * @return array{amount: float|null, description: string|null, type: string, account_name: string|null, category_name: string|null, date: string, currency: string|null, manual_rate: float|null}
      */
     private function parseTextMessage(string $text): array
     {
         $type = 'expense';
         $account_name = null;
         $category_name = null;
+        $currency = null;
+        $manual_rate = null;
 
         // Prefisso + → entrata
         if (str_starts_with($text, '+')) {
@@ -614,6 +666,13 @@ class TelegramWebhookController extends Controller
             }
         }
 
+        // Override rate manuale: ~1.18 (1 unità valuta = 1.18 EUR).
+        // Va estratto PRIMA di @conto/#categoria per evitare interferenze.
+        if (preg_match('/(?:^|\s)~(\d+(?:[.,]\d+)?)/u', $text, $m)) {
+            $manual_rate = (float) str_replace(',', '.', $m[1]);
+            $text = trim(str_replace($m[0], ' ', $text));
+        }
+
         // Estrai @conto (es. @Corrente, @Banca Intesa)
         if (preg_match('/@([^\s#@]+(?:\s+[^\s#@]+)*)/u', $text, $m)) {
             $account_name = trim($m[1]);
@@ -626,14 +685,30 @@ class TelegramWebhookController extends Controller
             $text = trim(str_replace($m[0], '', $text));
         }
 
-        $text = trim($text);
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+
+        // Simbolo valuta prefisso davanti al numero: £30, $30, €30, ¥1000
+        if (preg_match('/(?<!\w)([£€$¥])\s*(?=\d)/u', $text, $m)) {
+            $currency = self::SYMBOL_TO_ISO[$m[1]] ?? null;
+            $text = trim(str_replace($m[1], '', $text));
+        }
+
+        // Codice ISO 3 lettere maiuscole subito dopo il numero (es. "30 GBP cena")
+        if (preg_match('/^(\d+(?:[.,]\d{1,2})?)\s+([A-Z]{3})\b\s*(.*)$/u', $text, $m)) {
+            $currency = $m[2];
+            $text = trim($m[1].($m[3] !== '' ? ' '.$m[3] : ''));
+        } elseif (preg_match('/^(.*?)\s+(\d+(?:[.,]\d{1,2})?)\s+([A-Z]{3})\b$/u', $text, $m)) {
+            // Forma "Pizza 30 GBP" (numero+codice in coda)
+            $currency = $m[3];
+            $text = trim($m[1].' '.$m[2]);
+        }
 
         // Pattern: numero (opzionale decimale con . o ,) seguito da testo
         if (preg_match('/^(\d+(?:[.,]\d{1,2})?)\s+(.+)$/u', $text, $matches)) {
             $amount = (float) str_replace(',', '.', $matches[1]);
             $description = trim($matches[2]);
 
-            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
+            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date', 'currency', 'manual_rate');
         }
 
         // Pattern: testo seguito da numero
@@ -642,7 +717,7 @@ class TelegramWebhookController extends Controller
             $description = trim($matches[1]);
             $description = $description !== '' ? $description : null;
 
-            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
+            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date', 'currency', 'manual_rate');
         }
 
         // Solo numero
@@ -650,13 +725,40 @@ class TelegramWebhookController extends Controller
             $amount = (float) str_replace(',', '.', $matches[1]);
             $description = null;
 
-            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
+            return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date', 'currency', 'manual_rate');
         }
 
         // Nessun importo trovato
         $amount = null;
         $description = $text !== '' ? $text : null;
 
-        return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date');
+        return compact('amount', 'description', 'type', 'account_name', 'category_name', 'date', 'currency', 'manual_rate');
+    }
+
+    /**
+     * Restituisce la valuta effettiva per un parsing telegram in base alla
+     * preferenza utente, normalizzando a EUR se il default non è impostato.
+     */
+    private function resolveCurrencyForUser(?string $parsed, User $user): string
+    {
+        $candidate = $parsed ?? $user->default_currency_code ?? 'EUR';
+
+        return strtoupper($candidate);
+    }
+
+    /**
+     * Formatta un importo per i messaggi del bot anteponendo il simbolo
+     * della valuta quando disponibile, altrimenti usando il codice ISO.
+     */
+    private function formatAmount(float $amount, string $currencyCode): string
+    {
+        $isoToSymbol = array_flip(self::SYMBOL_TO_ISO);
+        $formatted = number_format($amount, 2, ',', '.');
+
+        if (isset($isoToSymbol[$currencyCode])) {
+            return $isoToSymbol[$currencyCode].$formatted;
+        }
+
+        return $formatted.' '.$currencyCode;
     }
 }

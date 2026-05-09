@@ -36,6 +36,11 @@ interface InboxItem {
     image_path: string | null;
     ai_payload: { amt: number | null; shop: string | null; dt: string | null } | null;
     amount: string | null;
+    currency_code: string | null;
+    exchange_rate_to_base: string | null;
+    amount_base: string | null;
+    original_amount: string | null;
+    original_currency_code: string | null;
     description: string | null;
     transaction_date: string | null;
     category: Category | null;
@@ -91,6 +96,69 @@ function SourceBadge({ source }: { source: InboxItem['source'] }) {
         return <span className="text-xs text-sky-500 font-medium">📸 Telegram foto</span>;
     }
     return <span className="text-xs text-slate-400">Manuale</span>;
+}
+
+// -------------------------------------------------------------------------
+// Helper formattazione importo multi-currency
+// -------------------------------------------------------------------------
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+    EUR: '€',
+    GBP: '£',
+    USD: '$',
+    JPY: '¥',
+    CHF: 'CHF',
+};
+
+function formatAmountWithCurrency(value: number, code: string | null | undefined): string {
+    const formatted = formatCurrency(value);
+    if (!code || code === 'EUR') {
+        return formatted;
+    }
+    const symbol = CURRENCY_SYMBOLS[code];
+    // formatCurrency restituisce "1.234,56 €" per EUR italiano. Per valute diverse
+    // sostituiamo il simbolo €/append con il simbolo/codice della valuta.
+    const numericPart = formatted.replace(/[€\s]/g, '');
+    return symbol ? `${symbol}${numericPart}` : `${numericPart} ${code}`;
+}
+
+/**
+ * Renderizza l'importo dell'inbox item nella sua valuta nativa, e — se diversa
+ * da EUR — anche l'equivalente in EUR sotto. Se l'utente ha digitato la spesa
+ * in valuta diversa dal conto (`original_*`), mostriamo come info ulteriore
+ * "originale: 30 GBP" sotto l'importo principale.
+ */
+function ItemAmount({ item }: { item: InboxItem }) {
+    if (item.amount === null) {
+        return <span className="text-sm text-amber-600 font-medium">⚠ Importo mancante</span>;
+    }
+    const sign = item.type === 'income' ? '+' : '−';
+    const amountValue = Math.abs(parseFloat(item.amount));
+    const currency = item.currency_code ?? 'EUR';
+    const colorClass = item.type === 'income'
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-rose-600 dark:text-rose-400';
+
+    const showEurEquivalent = currency !== 'EUR' && item.amount_base !== null;
+    const showOriginal = item.original_amount !== null && item.original_currency_code && item.original_currency_code !== currency;
+
+    return (
+        <div className="flex flex-col items-end leading-tight">
+            <span className={clsx('text-base font-bold whitespace-nowrap', colorClass)}>
+                {sign}{formatAmountWithCurrency(amountValue, currency)}
+            </span>
+            {showEurEquivalent && (
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                    ≈ {sign}{formatCurrency(Math.abs(parseFloat(item.amount_base!)))}
+                </span>
+            )}
+            {showOriginal && (
+                <span className="text-xs text-slate-400 dark:text-slate-500" title="Importo originale digitato">
+                    orig. {formatAmountWithCurrency(Math.abs(parseFloat(item.original_amount!)), item.original_currency_code)}
+                </span>
+            )}
+        </div>
+    );
 }
 
 // -------------------------------------------------------------------------
@@ -294,18 +362,11 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
 
                 {/* Riepilogo voce */}
                 <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 p-3 space-y-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between gap-3">
                         <span className="text-sm text-slate-600 dark:text-slate-400">
                             {item.description ?? item.raw_text ?? '(nessuna descrizione)'}
                         </span>
-                        <span className={clsx(
-                            'text-base font-bold',
-                            item.type === 'income'
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-rose-600 dark:text-rose-400'
-                        )}>
-                            {item.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(parseFloat(item.amount!)))}
-                        </span>
+                        <ItemAmount item={item} />
                     </div>
                     {item.transaction_date && (
                         <p className="text-xs text-slate-500">{formatDate(item.transaction_date)}</p>
@@ -452,18 +513,7 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {item.amount !== null ? (
-                            <span className={clsx(
-                                'text-lg font-bold',
-                                item.type === 'income'
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : 'text-rose-600 dark:text-rose-400'
-                            )}>
-                                {item.type === 'income' ? '+' : '-'}{formatCurrency(Math.abs(parseFloat(item.amount)))}
-                            </span>
-                        ) : (
-                            <span className="text-sm text-amber-600 font-medium">⚠ Importo mancante</span>
-                        )}
+                        <ItemAmount item={item} />
                     </div>
                 </div>
 

@@ -10,10 +10,17 @@ import ConsentPreferencesForm from './Partials/ConsentPreferencesForm';
 import PageHeader from '@/Components/PageHeader';
 import SectionCard from '@/Components/SectionCard';
 
+interface CurrencyOption {
+    code: string;
+    name: string;
+    symbol: string | null;
+}
+
 export default function Edit({
     mustVerifyEmail,
     status,
     consents,
+    currencies = [],
 }: PageProps<{
     mustVerifyEmail: boolean;
     status?: string;
@@ -21,6 +28,7 @@ export default function Edit({
         marketing_email: boolean;
         analytics_tracking: boolean;
     };
+    currencies?: CurrencyOption[];
 }>) {
     return (
         <AuthenticatedLayout
@@ -43,6 +51,7 @@ export default function Edit({
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
+                            currencies={currencies}
                             className="w-full"
                         />
                     </SectionCard>

@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -433,5 +434,77 @@ class InboxItemTest extends TestCase
         $pending = InboxItem::pending()->get();
         $this->assertCount(2, $pending);
         $this->assertTrue($pending->every(fn ($i) => in_array($i->status, ['draft', 'needs_review'])));
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-currency
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function confirming_foreign_currency_item_converts_to_account_currency_with_manual_rate(): void
+    {
+        Http::fake();
+
+        // Item GBP con override rate manuale 1 GBP = 1.18 EUR.
+        // L'account è in EUR → la transazione finale deve essere in EUR (35.40)
+        // con tracciatura dell'originale 30 GBP.
+        $item = InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'type' => 'expense',
+            'raw_text' => '30 GBP cena pub ~1.18',
+            'amount' => 30.00,
+            'currency_code' => 'GBP',
+            'exchange_rate_to_base' => 1.18,
+            'amount_base' => 35.40,
+            'description' => 'cena pub',
+            'transaction_date' => now()->toDateString(),
+            'account_id' => $this->account->id,
+        ]);
+
+        $this->actingAs($this->user)->post(route('inbox.confirm', $item->id))->assertRedirect();
+
+        $tx = Transaction::where('user_id', $this->user->id)->first();
+        $this->assertNotNull($tx);
+        $this->assertEqualsWithDelta(-35.40, (float) $tx->amount, 0.05);
+        $this->assertEquals('EUR', $tx->currency_code);
+        $this->assertEqualsWithDelta(1.0, (float) $tx->exchange_rate_to_base, 0.001);
+        $this->assertEqualsWithDelta(-35.40, (float) $tx->amount_base, 0.05);
+        $this->assertEquals(30.0, (float) $tx->original_amount);
+        $this->assertEquals('GBP', $tx->original_currency_code);
+
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'frankfurter'));
+    }
+
+    #[Test]
+    public function confirming_eur_item_keeps_amount_unchanged(): void
+    {
+        Http::fake();
+
+        $item = InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'type' => 'expense',
+            'raw_text' => '15 Pizza',
+            'amount' => 15.00,
+            'currency_code' => 'EUR',
+            'exchange_rate_to_base' => 1.0,
+            'amount_base' => 15.00,
+            'description' => 'Pizza',
+            'transaction_date' => now()->toDateString(),
+            'account_id' => $this->account->id,
+        ]);
+
+        $this->actingAs($this->user)->post(route('inbox.confirm', $item->id))->assertRedirect();
+
+        $tx = Transaction::where('user_id', $this->user->id)->first();
+        $this->assertEquals(-15.00, (float) $tx->amount);
+        $this->assertEquals('EUR', $tx->currency_code);
+        $this->assertNull($tx->original_amount);
+        $this->assertNull($tx->original_currency_code);
     }
 }

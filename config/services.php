@@ -178,4 +178,19 @@ return [
         'webhook_secret' => env('TALLY_WEBHOOK_SECRET', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Frankfurter — Tassi di cambio (FX)
+    |--------------------------------------------------------------------------
+    |
+    | https://frankfurter.dev — API gratuita basata sui dati BCE, no API key.
+    | Restituisce automaticamente il tasso del giorno feriale precedente quando
+    | si chiede un weekend o festivo. URL configurabile per facilitare i test
+    | (Http::fake) ed eventuale mirror self-hosted.
+    |
+    */
+    'frankfurter' => [
+        'base_url' => env('FRANKFURTER_BASE_URL', 'https://api.frankfurter.dev/v1'),
+    ],
+
 ];

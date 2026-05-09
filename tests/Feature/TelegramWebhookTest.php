@@ -276,6 +276,115 @@ class TelegramWebhookTest extends TestCase
         $this->assertDatabaseCount('inbox_items', 1);
     }
 
+    #[Test]
+    public function webhook_parses_iso_currency_code_with_automatic_rate(): void
+    {
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true], 200),
+            'api.frankfurter.dev/v1/*' => Http::response([
+                'amount' => 1.0,
+                'base' => 'EUR',
+                'date' => now()->toDateString(),
+                'rates' => ['GBP' => 0.85],
+            ], 200),
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '30 GBP cena pub');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals(30.0, (float) $item->amount);
+        $this->assertEquals('GBP', $item->currency_code);
+        $this->assertEquals('cena pub', $item->description);
+        $this->assertNotNull($item->exchange_rate_to_base);
+        $this->assertEqualsWithDelta(35.29, (float) $item->amount_base, 0.05);
+    }
+
+    #[Test]
+    public function webhook_parses_currency_symbol_pound(): void
+    {
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true], 200),
+            'api.frankfurter.dev/v1/*' => Http::response([
+                'amount' => 1.0,
+                'base' => 'EUR',
+                'date' => now()->toDateString(),
+                'rates' => ['GBP' => 0.85],
+            ], 200),
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '£30 cena pub');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals(30.0, (float) $item->amount);
+        $this->assertEquals('GBP', $item->currency_code);
+        $this->assertEquals('cena pub', $item->description);
+    }
+
+    #[Test]
+    public function webhook_parses_manual_rate_override(): void
+    {
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '30 GBP cena ~1.18');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals(30.0, (float) $item->amount);
+        $this->assertEquals('GBP', $item->currency_code);
+        $this->assertEqualsWithDelta(1.18, (float) $item->exchange_rate_to_base, 0.001);
+        $this->assertEqualsWithDelta(35.40, (float) $item->amount_base, 0.01);
+        $this->assertEquals('cena', $item->description);
+        // Con override manuale non deve essere stata fatta nessuna chiamata Frankfurter
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'frankfurter'));
+    }
+
+    #[Test]
+    public function webhook_uses_user_default_currency_when_none_specified(): void
+    {
+        $this->user->update(['default_currency_code' => 'GBP']);
+
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true], 200),
+            'api.frankfurter.dev/v1/*' => Http::response([
+                'amount' => 1.0,
+                'base' => 'EUR',
+                'date' => now()->toDateString(),
+                'rates' => ['GBP' => 0.85],
+            ], 200),
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '15 Pizza');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals('GBP', $item->currency_code);
+    }
+
+    #[Test]
+    public function webhook_defaults_to_eur_when_no_user_preference(): void
+    {
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        $payload = $this->buildTextPayload('987654321', '15 Pizza');
+
+        $this->postJson(route('telegram.webhook'), $payload);
+
+        $item = InboxItem::where('user_id', $this->user->id)->first();
+        $this->assertEquals('EUR', $item->currency_code);
+        $this->assertEquals(1.0, (float) $item->exchange_rate_to_base);
+        $this->assertEquals(15.0, (float) $item->amount_base);
+    }
+
     // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------
