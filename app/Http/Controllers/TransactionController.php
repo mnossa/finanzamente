@@ -6,12 +6,15 @@ use App\Http\Requests\StoreTransactionRequest;
 use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\Currency;
 use App\Models\DebtCredit;
 use App\Models\InterHouseholdTransfer;
 use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\TransactionImport;
+use App\Services\CurrencyConverter;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +23,60 @@ use Inertia\Response;
 
 class TransactionController extends Controller
 {
+    public function __construct(private CurrencyConverter $currency) {}
+
+    /**
+     * Calcola i campi multi-currency da salvare sulla transazione, gestendo
+     * il caso in cui l'utente abbia indicato di aver pagato in valuta diversa
+     * (campi `original_amount` + `original_currency_code` + `manual_rate` opzionale
+     * provenienti dal form). Se non c'è override, fa solo lo snapshot del rate
+     * verso EUR per la valuta del conto.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed> Sotto-payload da fondere con i campi base.
+     */
+    private function applyCurrencyFields(array $validated, Account $account, Carbon $date, float $signedAmount): array
+    {
+        $accountCurrency = $account->currency_code ?: CurrencyConverter::BASE_CURRENCY;
+
+        // Caso "ho pagato in valuta diversa dal conto"
+        if (! empty($validated['original_amount']) && ! empty($validated['original_currency_code'])) {
+            $converted = $this->currency->convertToAccountCurrency(
+                originalAmount: (float) $validated['original_amount'],
+                originalCurrency: (string) $validated['original_currency_code'],
+                accountCurrency: $accountCurrency,
+                date: $date,
+                manualRate: ! empty($validated['manual_rate']) ? (float) $validated['manual_rate'] : null,
+            );
+
+            // Il `signedAmount` calcolato dal controller è già nella valuta del conto
+            // (l'utente ha digitato l'importo che la banca ha addebitato/accreditato).
+            // `original_*` è informativo. Il rate-to-base resta legato a accountCurrency.
+            return [
+                'currency_code' => $accountCurrency,
+                'exchange_rate_to_base' => $converted['exchange_rate_to_base'],
+                'amount_base' => $signedAmount >= 0
+                    ? abs((float) $signedAmount * (float) $converted['exchange_rate_to_base'])
+                    : -abs((float) $signedAmount * (float) $converted['exchange_rate_to_base']),
+                'original_amount' => round((float) $validated['original_amount'], 2),
+                'original_currency_code' => strtoupper((string) $validated['original_currency_code']),
+            ];
+        }
+
+        // Caso normale: importo già nella valuta del conto, niente origine alternativa
+        $snapshot = $this->currency->snapshot(abs($signedAmount), $accountCurrency, $date);
+
+        return [
+            'currency_code' => $accountCurrency,
+            'exchange_rate_to_base' => $snapshot['exchange_rate_to_base'],
+            'amount_base' => $signedAmount >= 0
+                ? abs((float) $signedAmount * (float) $snapshot['exchange_rate_to_base'])
+                : -abs((float) $signedAmount * (float) $snapshot['exchange_rate_to_base']),
+            'original_amount' => null,
+            'original_currency_code' => null,
+        ];
+    }
+
     /**
      * Mostra l'elenco delle transazioni della household attiva.
      */
@@ -209,8 +266,69 @@ class TransactionController extends Controller
             'categories' => $categories,
             'tags' => $tags,
             'debtsCredits' => $debtsCredits,
+            'currencies' => $this->currencyOptions(),
+            'userDefaultCurrency' => $user->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
             'defaultAccountId' => $request->query('account_id'),
             'defaultDebtCreditId' => $request->query('debt_credit_id'),
+        ]);
+    }
+
+    /**
+     * Lista delle valute esposte ai form: { code, name, symbol }.
+     *
+     * @return array<int, array{code: string, name: string, symbol: ?string}>
+     */
+    private function currencyOptions(): array
+    {
+        return Currency::orderBy('code')
+            ->get(['code', 'name', 'symbol'])
+            ->map(fn ($c) => [
+                'code' => $c->code,
+                'name' => $c->name,
+                'symbol' => $c->symbol,
+            ])
+            ->all();
+    }
+
+    /**
+     * Anteprima rate di cambio per il form transazioni (chiamata AJAX).
+     *
+     * Ritorna il tasso 1 unità di `from` → `to` alla data indicata, sfruttando
+     * la cache `exchange_rates` (e Frankfurter solo in caso di cache miss). Il
+     * frontend usa questo valore come hint per il campo "Cambio manuale" così
+     * l'utente vede subito il rate suggerito prima del submit.
+     *
+     * Risposta JSON:
+     *   { rate, source, effective_date, from, to }
+     */
+    public function fxPreview(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'from' => ['required', 'string', 'size:3', 'exists:currencies,code'],
+            'to' => ['required', 'string', 'size:3', 'exists:currencies,code'],
+            'date' => ['nullable', 'date'],
+        ]);
+
+        $from = strtoupper($validated['from']);
+        $to = strtoupper($validated['to']);
+        $date = isset($validated['date']) ? Carbon::parse($validated['date']) : Carbon::today();
+
+        $conversion = $this->currency->convertToAccountCurrency(
+            originalAmount: 1.0,
+            originalCurrency: $from,
+            accountCurrency: $to,
+            date: $date,
+        );
+
+        // `convertToAccountCurrency` restituisce `amount` = 1 unità di `from`
+        // espresso in `to`. Quando le due valute coincidono il rate è 1 per
+        // costruzione e non c'è bisogno di alcuna chiamata esterna.
+        return response()->json([
+            'from' => $from,
+            'to' => $to,
+            'date' => $date->toDateString(),
+            'rate' => (float) $conversion['amount'],
+            'source' => $from === $to ? 'identity' : 'exchange_rates',
         ]);
     }
 
@@ -347,13 +465,18 @@ class TransactionController extends Controller
         }
 
         $account = Account::find($validated['account_id']);
+        $currencyFields = $this->applyCurrencyFields(
+            $validated,
+            $account,
+            Carbon::parse($validated['date']),
+            $amount,
+        );
 
         $transaction = Transaction::create([
             'user_id' => $user->id,
             'account_id' => $validated['account_id'],
             'category_id' => $validated['category_id'],
             'amount' => $amount,
-            'currency_code' => $account->currency_code,
             'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
@@ -362,6 +485,7 @@ class TransactionController extends Controller
             'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
             'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
             'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? Carbon::parse($validated['date'])->year : null),
+            ...$currencyFields,
         ]);
 
         // Sincronizza i tag (esistenti + nuovi da creare)
@@ -529,11 +653,16 @@ class TransactionController extends Controller
                 'debt_credit_id' => $transaction->debt_credit_id,
                 'transfer_id' => $transaction->transfer_id,
                 'is_inter_household_transfer' => $isInterHouseholdTransfer,
+                'currency_code' => $transaction->currency_code,
+                'original_amount' => $transaction->original_amount !== null ? (float) $transaction->original_amount : null,
+                'original_currency_code' => $transaction->original_currency_code,
             ],
             'accounts' => $accounts,
             'categories' => $categories,
             'tags' => $tags,
             'debtsCredits' => $debtsCredits,
+            'currencies' => $this->currencyOptions(),
+            'userDefaultCurrency' => Auth::user()->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
         ]);
     }
 
@@ -584,6 +713,14 @@ class TransactionController extends Controller
             $newAmount = -$newAmount;
         }
 
+        $newAccount = Account::find($validated['account_id']);
+        $currencyFields = $this->applyCurrencyFields(
+            $validated,
+            $newAccount,
+            Carbon::parse($validated['date']),
+            $newAmount,
+        );
+
         // Aggiorna la transazione
         $transaction->update([
             'account_id' => $validated['account_id'],
@@ -597,6 +734,7 @@ class TransactionController extends Controller
             'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
             'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
             'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? Carbon::parse($validated['date'])->year : null),
+            ...$currencyFields,
         ]);
 
         // Sincronizza i tag (esistenti + nuovi da creare)

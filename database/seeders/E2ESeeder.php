@@ -112,6 +112,22 @@ class E2ESeeder extends Seeder
             ]
         );
 
+        // Conto in valuta estera (GBP) per testare flussi multi-currency end-to-end:
+        // dashboard cross-conto, transazioni in valuta nativa, conferme Inbox da Telegram
+        // con `original_amount` in £.
+        Account::firstOrCreate(
+            ['household_id' => $household->id, 'name' => 'Revolut GBP E2E'],
+            [
+                'type' => 'bank',
+                'initial_balance' => 800,
+                'current_balance' => 800,
+                'currency_code' => 'GBP',
+                'active' => true,
+                'is_private' => false,
+                'owner_user_id' => $user->id,
+            ]
+        );
+
         // Subscription Pro attiva per test E2E dei flussi abbonamento
         Subscription::updateOrCreate(
             ['user_id' => $user->id, 'status' => 'active'],

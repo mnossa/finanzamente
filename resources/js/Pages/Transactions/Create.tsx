@@ -14,6 +14,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
+import { useFxPreview } from '@/hooks/useFxPreview';
 import { useState } from 'react';
 
 interface Category {
@@ -45,15 +46,23 @@ interface DebtCredit {
     currency_code: string;
 }
 
+interface Currency {
+    code: string;
+    name: string;
+    symbol: string | null;
+}
+
 interface CreateProps {
     accounts: Account[];
     categories: Category[];
     defaultAccountId?: string;
     defaultDebtCreditId?: string;
     debtsCredits: DebtCredit[];
+    currencies: Currency[];
+    userDefaultCurrency: string;
 }
 
-export default function Create({ accounts, categories, defaultAccountId, defaultDebtCreditId, debtsCredits }: CreateProps) {
+export default function Create({ accounts, categories, defaultAccountId, defaultDebtCreditId, debtsCredits, currencies, userDefaultCurrency }: CreateProps) {
     const today = new Date().toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors } = useForm({
@@ -70,6 +79,20 @@ export default function Create({ accounts, categories, defaultAccountId, default
         tag_ids: [] as number[],
         new_tag_names: [] as string[],
         debt_credit_id: defaultDebtCreditId || '',
+        original_amount: '',
+        original_currency_code: '',
+        manual_rate: '',
+    });
+
+    const [showFx, setShowFx] = useState(false);
+    const selectedAccount = accounts.find((a) => a.id === Number(data.account_id));
+    const accountCurrency = selectedAccount?.currency_code ?? 'EUR';
+
+    const fxPreview = useFxPreview({
+        enabled: showFx && !!data.original_currency_code && !!accountCurrency && data.original_currency_code !== accountCurrency,
+        from: data.original_currency_code,
+        to: accountCurrency,
+        date: data.date,
     });
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
@@ -235,6 +258,95 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                         />
                                         <InputError message={errors.date} className="mt-2" />
                                     </div>
+                                </div>
+
+                                {/* Valuta diversa dal conto (opzionale) */}
+                                <div className="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-600">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const next = !showFx;
+                                            setShowFx(next);
+                                            if (!next) {
+                                                setData('original_amount', '');
+                                                setData('original_currency_code', '');
+                                                setData('manual_rate', '');
+                                            } else if (!data.original_currency_code) {
+                                                setData('original_currency_code', userDefaultCurrency || 'EUR');
+                                            }
+                                        }}
+                                        className="flex w-full items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200"
+                                        aria-expanded={showFx}
+                                    >
+                                        <span>💱 Ho pagato in una valuta diversa dal conto ({accountCurrency})</span>
+                                        <span className="text-xs text-gray-500">{showFx ? '−' : '+'}</span>
+                                    </button>
+
+                                    {showFx && (
+                                        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                                            <div>
+                                                <InputLabel htmlFor="original_amount" value="Importo originale" />
+                                                <TextInput
+                                                    id="original_amount"
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.01"
+                                                    className="mt-1 block w-full"
+                                                    value={data.original_amount}
+                                                    onChange={(e) => setData('original_amount', e.target.value)}
+                                                    placeholder="es. 30"
+                                                />
+                                                <InputError message={errors.original_amount} className="mt-2" />
+                                            </div>
+                                            <div>
+                                                <InputLabel htmlFor="original_currency_code" value="Valuta originale" />
+                                                <select
+                                                    id="original_currency_code"
+                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                    value={data.original_currency_code}
+                                                    onChange={(e) => setData('original_currency_code', e.target.value)}
+                                                >
+                                                    <option value="">Seleziona…</option>
+                                                    {currencies.map((c) => (
+                                                        <option key={c.code} value={c.code}>
+                                                            {c.code} — {c.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <InputError message={errors.original_currency_code} className="mt-2" />
+                                            </div>
+                                            <div>
+                                                <InputLabel htmlFor="manual_rate" value="Cambio manuale (opz.)" />
+                                                <TextInput
+                                                    id="manual_rate"
+                                                    type="number"
+                                                    step="0.0001"
+                                                    min="0.0001"
+                                                    className="mt-1 block w-full"
+                                                    value={data.manual_rate}
+                                                    onChange={(e) => setData('manual_rate', e.target.value)}
+                                                    placeholder="lascia vuoto per cambio del giorno"
+                                                />
+                                                <InputError message={errors.manual_rate} className="mt-2" />
+                                                {data.original_currency_code && data.original_currency_code !== accountCurrency && (
+                                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400" data-testid="fx-preview-hint">
+                                                        {fxPreview.isLoading && 'Calcolo cambio…'}
+                                                        {!fxPreview.isLoading && fxPreview.rate !== null && (
+                                                            <>Cambio del giorno: 1 {data.original_currency_code} = {fxPreview.rate.toFixed(4)} {accountCurrency}</>
+                                                        )}
+                                                        {!fxPreview.isLoading && fxPreview.error && (
+                                                            <span className="text-amber-600 dark:text-amber-400">{fxPreview.error}</span>
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <p className="sm:col-span-3 text-xs text-gray-500 dark:text-gray-400">
+                                                L'importo principale (in alto) deve essere quello effettivamente addebitato sul conto in {accountCurrency}.
+                                                I campi qui sopra registrano la valuta originale del pagamento per memoria. Se lasci vuoto il cambio,
+                                                useremo il tasso BCE del giorno.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Descrizione */}

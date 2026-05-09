@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Consent;
+use App\Models\Currency;
 use App\Services\BrevoMarketingService;
 use App\Services\ConsentService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -43,6 +44,10 @@ class ProfileController extends Controller
                 'marketing_email' => optional($existing->get('marketing_email'))->status === 'granted',
                 'analytics_tracking' => optional($existing->get('analytics_tracking'))->status === 'granted',
             ],
+            'currencies' => Currency::orderBy('code')
+                ->get(['code', 'name', 'symbol'])
+                ->map(fn ($c) => ['code' => $c->code, 'name' => $c->name, 'symbol' => $c->symbol])
+                ->all(),
         ]);
     }
 

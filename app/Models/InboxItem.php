@@ -33,6 +33,11 @@ class InboxItem extends Model
         'image_path',
         'ai_payload',
         'amount',
+        'currency_code',
+        'exchange_rate_to_base',
+        'amount_base',
+        'original_amount',
+        'original_currency_code',
         'description',
         'transaction_date',
         'category_id',
@@ -43,6 +48,9 @@ class InboxItem extends Model
     protected $casts = [
         'ai_payload' => 'array',
         'amount' => 'decimal:2',
+        'exchange_rate_to_base' => 'decimal:10',
+        'amount_base' => 'decimal:2',
+        'original_amount' => 'decimal:2',
         'transaction_date' => 'date',
     ];
 

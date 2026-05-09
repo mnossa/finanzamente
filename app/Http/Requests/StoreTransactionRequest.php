@@ -45,6 +45,12 @@ class StoreTransactionRequest extends FormRequest
             'date' => ['required', 'date'],
             'description' => ['nullable', 'string', 'max:1000'],
             'is_private' => ['boolean'],
+            // Multi-currency: l'importo `amount` è sempre nella valuta del conto.
+            // I campi sotto sono opzionali e si compilano solo quando l'utente
+            // ha pagato in valuta diversa da quella del conto (es. £30 con carta EUR).
+            'original_amount' => ['nullable', 'numeric', 'min:0.01', 'max:999999999.99'],
+            'original_currency_code' => ['nullable', 'string', 'size:3', 'exists:currencies,code'],
+            'manual_rate' => ['nullable', 'numeric', 'min:0.0001', 'max:100000'],
             'is_tax_deductible' => ['boolean'],
             'tax_deduction_rate' => ['nullable', 'required_if:is_tax_deductible,true', 'numeric', 'min:0.01', 'max:100'],
             'tax_deduction_type' => ['nullable', 'required_if:is_tax_deductible,true', 'string', 'max:50', Rule::in(['mediche', 'veterinarie', 'istruzione', 'mutuo', 'ristrutturazione', 'assicurazioni', 'previdenza', 'donazioni', 'altro'])],

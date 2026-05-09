@@ -7,6 +7,8 @@ use App\Models\AppNotification;
 use App\Models\Category;
 use App\Models\InboxItem;
 use App\Models\Transaction;
+use App\Services\CurrencyConverter;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +24,8 @@ use Inertia\Response;
  */
 class InboxController extends Controller
 {
+    public function __construct(private CurrencyConverter $currency) {}
+
     /**
      * Mostra l'elenco delle voci in Inbox.
      * Vengono mostrate prima le voci in attesa (draft/needs_review), poi le confermate.
@@ -122,18 +126,10 @@ class InboxController extends Controller
             return back()->with('error', 'Nessun conto disponibile. Crea prima un conto.');
         }
 
-        // Crea la transazione definitiva
-        $transaction = Transaction::create([
-            'user_id' => $inboxItem->user_id,
-            'account_id' => $accountId,
-            'category_id' => $inboxItem->category_id,
-            'amount' => $inboxItem->type === 'income'
-                ? abs((float) $inboxItem->amount)   // entrata: positivo
-                : -abs((float) $inboxItem->amount),  // uscita: negativo
-            'currency_code' => 'EUR',
-            'date' => $inboxItem->transaction_date ?? now()->toDateString(),
-            'description' => $inboxItem->description ?? $inboxItem->raw_text,
-        ]);
+        $account = Account::find($accountId);
+
+        // Crea la transazione definitiva (con eventuale conversione di valuta)
+        $transaction = Transaction::create($this->buildTransactionPayload($inboxItem, $account));
 
         // Marca la voce come confermata
         $inboxItem->update([
@@ -188,17 +184,8 @@ class InboxController extends Controller
                 continue;
             }
 
-            $transaction = Transaction::create([
-                'user_id' => $item->user_id,
-                'account_id' => $accountId,
-                'category_id' => $item->category_id,
-                'amount' => $item->type === 'income'
-                    ? abs((float) $item->amount)
-                    : -abs((float) $item->amount),
-                'currency_code' => 'EUR',
-                'date' => $item->transaction_date ?? now()->toDateString(),
-                'description' => $item->description ?? $item->raw_text,
-            ]);
+            $account = Account::find($accountId);
+            $transaction = Transaction::create($this->buildTransactionPayload($item, $account));
 
             $item->update([
                 'status' => 'confirmed',
@@ -270,6 +257,61 @@ class InboxController extends Controller
         $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->buffer($content) ?: 'image/jpeg';
 
         return response($content, 200)->header('Content-Type', $mimeType);
+    }
+
+    /**
+     * Costruisce il payload di una `transactions` a partire da una voce Inbox.
+     *
+     * Regola architetturale: la transazione è sempre nella valuta del conto
+     * (`account.currency_code`). Se la voce Inbox è in valuta diversa (es. l'utente
+     * ha scritto "30 GBP" via Telegram ma il conto è EUR), convertiamo l'importo
+     * applicando il rate manuale eventualmente scelto dall'utente o, in mancanza,
+     * il rate del giorno via Frankfurter. La valuta originale viene comunque
+     * tracciata in `original_amount` / `original_currency_code` per riconciliazione.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildTransactionPayload(InboxItem $item, Account $account): array
+    {
+        $accountCurrency = $account->currency_code ?: CurrencyConverter::BASE_CURRENCY;
+        $itemCurrency = $item->currency_code ?: CurrencyConverter::BASE_CURRENCY;
+        $rawAmount = abs((float) $item->amount);
+        $date = $item->transaction_date ? Carbon::parse($item->transaction_date) : now();
+
+        // Manual rate ricavato dall'inbox (se presente): "1 itemCurrency = X EUR".
+        // Lo deduciamo da exchange_rate_to_base se la voce stessa l'aveva impostato.
+        $manualRate = null;
+        if ($item->exchange_rate_to_base !== null && $itemCurrency !== CurrencyConverter::BASE_CURRENCY) {
+            $manualRate = (float) $item->exchange_rate_to_base;
+        }
+
+        $converted = $this->currency->convertToAccountCurrency(
+            originalAmount: $rawAmount,
+            originalCurrency: $itemCurrency,
+            accountCurrency: $accountCurrency,
+            date: $date,
+            manualRate: $manualRate,
+        );
+
+        $signedAmount = $item->type === 'income'
+            ? abs($converted['amount'])
+            : -abs($converted['amount']);
+
+        return [
+            'user_id' => $item->user_id,
+            'account_id' => $account->id,
+            'category_id' => $item->category_id,
+            'amount' => $signedAmount,
+            'currency_code' => $converted['currency_code'],
+            'exchange_rate_to_base' => $converted['exchange_rate_to_base'],
+            'amount_base' => $item->type === 'income'
+                ? abs($converted['amount_base'])
+                : -abs($converted['amount_base']),
+            'original_amount' => $converted['original_amount'],
+            'original_currency_code' => $converted['original_currency_code'],
+            'date' => $date->toDateString(),
+            'description' => $item->description ?? $item->raw_text,
+        ];
     }
 
     // -------------------------------------------------------------------------

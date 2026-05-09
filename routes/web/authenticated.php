@@ -142,6 +142,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::get('/transazioni/sessione-rapida', [TransactionController::class, 'quickSession'])->name('transactions.quick-session');
         Route::post('/transazioni/sessione-rapida', [TransactionController::class, 'quickStore'])->name('transactions.quick-store');
         Route::delete('/transazioni/sessione-rapida', [TransactionController::class, 'clearQuickSession'])->name('transactions.quick-session.clear');
+        Route::get('/transazioni/anteprima-cambio', [TransactionController::class, 'fxPreview'])->name('transactions.fx-preview');
         Route::get('/transazioni/crea', [TransactionController::class, 'create'])->name('transactions.create');
         Route::post('/transazioni', [TransactionController::class, 'store'])->name('transactions.store');
         Route::delete('/transazioni/in-blocco', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
