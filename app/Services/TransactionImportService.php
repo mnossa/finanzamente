@@ -74,22 +74,13 @@ class TransactionImportService
         $errors = [];
         $warnings = [];
 
-        // Extract fields using column indices
         $dateRaw = $this->getColumn($cols, $mapping['date'] ?? null);
         $amountRaw = $this->getColumn($cols, $mapping['amount'] ?? null);
         $descriptionRaw = $this->getColumn($cols, $mapping['description'] ?? null);
-        $notesRaw = isset($mapping['notes']) && $mapping['notes'] !== null
-            ? $this->getColumn($cols, $mapping['notes'])
-            : null;
-        $categoryRaw = isset($mapping['category']) && $mapping['category'] !== null
-            ? $this->getColumn($cols, $mapping['category'])
-            : null;
-        $accountRaw = isset($mapping['account']) && $mapping['account'] !== null
-            ? $this->getColumn($cols, $mapping['account'])
-            : null;
-        $currencyRaw = isset($mapping['currency']) && $mapping['currency'] !== null
-            ? $this->getColumn($cols, $mapping['currency'])
-            : null;
+        $notesRaw = $this->getColumn($cols, $mapping['notes'] ?? null);
+        $categoryRaw = $this->getColumn($cols, $mapping['category'] ?? null);
+        $accountRaw = $this->getColumn($cols, $mapping['account'] ?? null);
+        $currencyRaw = $this->getColumn($cols, $mapping['currency'] ?? null);
 
         // Parse date
         $date = null;
@@ -345,18 +336,10 @@ class TransactionImportService
         $dateCell = $getCell($mapping['date'] ?? 0);
         $amountCell = $getCell($mapping['amount'] ?? 1);
         $descCell = $getCell($mapping['description'] ?? 2);
-        $notesCell = $getCell(
-            (isset($mapping['notes']) && $mapping['notes'] !== null) ? (int) $mapping['notes'] : null
-        );
-        $categoryCell = $getCell(
-            (isset($mapping['category']) && $mapping['category'] !== null) ? (int) $mapping['category'] : null
-        );
-        $accountCell = $getCell(
-            (isset($mapping['account']) && $mapping['account'] !== null) ? (int) $mapping['account'] : null
-        );
-        $currencyCell = $getCell(
-            (isset($mapping['currency']) && $mapping['currency'] !== null) ? (int) $mapping['currency'] : null
-        );
+        $notesCell = $getCell(isset($mapping['notes']) ? (int) $mapping['notes'] : null);
+        $categoryCell = $getCell(isset($mapping['category']) ? (int) $mapping['category'] : null);
+        $accountCell = $getCell(isset($mapping['account']) ? (int) $mapping['account'] : null);
+        $currencyCell = $getCell(isset($mapping['currency']) ? (int) $mapping['currency'] : null);
 
         // ── Data ────────────────────────────────────────────────────────────
         $date = null;
