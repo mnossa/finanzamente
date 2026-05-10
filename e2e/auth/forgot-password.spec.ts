@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { e2eCredentials } from '../helpers';
 
 /**
  * Test E2E — Recupero Password
@@ -11,14 +12,13 @@ test.describe('Autenticazione — Recupero Password', () => {
     });
 
     test('mostra il form di recupero password', async ({ page }) => {
-        await expect(page.locator('#email')).toBeVisible();
+        // Il form non ha label esplicita: si usa getByRole('textbox') - unico input nel form
+        await expect(page.getByRole('textbox')).toBeVisible();
         await expect(page.getByRole('button', { name: /invia link di reset/i })).toBeVisible();
     });
 
     test('mostra messaggio di conferma dopo l\'invio per email esistente', async ({ page }) => {
-        const email = process.env.E2E_USER_EMAIL ?? 'e2e@finanzamente.test';
-
-        await page.locator('#email').fill(email);
+        await page.getByRole('textbox').fill(e2eCredentials.email);
         await page.getByRole('button', { name: /invia link di reset/i }).click();
 
         // Dovrebbe apparire un messaggio di successo (o di status)

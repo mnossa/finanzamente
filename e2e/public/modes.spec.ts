@@ -47,8 +47,8 @@ test.describe('Modalità app — Comportamento comune', () => {
     test('la pagina di login è accessibile in qualsiasi modalità', async ({ page }) => {
         const response = await page.goto('/accedi');
         expect(response?.status()).toBe(200);
-        await expect(page.locator('#email')).toBeVisible();
-        await expect(page.locator('#password')).toBeVisible();
+        await expect(page.getByLabel('Email')).toBeVisible();
+        await expect(page.getByLabel('Password')).toBeVisible();
     });
 
     test('un utente non autenticato viene reindirizzato al login dalla dashboard', async ({ page }) => {
@@ -137,10 +137,10 @@ test.describe('Modalità PRE-LANCIO — Accesso limitato al proprietario', () =>
             await page.goto(`/registrati?email=${encodeURIComponent(ownerEmail)}`);
             await expect(page).toHaveTitle(/Registrati/i);
 
-            await page.locator('#name').fill('Proprietario E2E');
-            await page.locator('#email').fill(ownerEmail);
-            await page.locator('#password').fill('password123!');
-            await page.locator('#password_confirmation').fill('password123!');
+            await page.getByLabel(/nome/i).fill('Proprietario E2E');
+            await page.getByLabel(/^email/i).fill(ownerEmail);
+            await page.getByLabel(/^password \*/i).fill('password123!');
+            await page.getByLabel(/conferma password/i).fill('password123!');
             await page.getByRole('button', { name: 'Registrati' }).click();
 
             // Deve procedere senza reindirizzamento alla home

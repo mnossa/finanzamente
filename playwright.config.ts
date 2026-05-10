@@ -28,15 +28,27 @@ const appMode = process.env.E2E_APP_MODE ?? "normal";
 export default defineConfig({
   testDir: "./e2e",
 
-  /* Esecuzione sequenziale per evitare race condition sullo stato condiviso */
+  /* Esecuzione sequenziale: i test condividono il medesimo DB E2E */
   fullyParallel: false,
   workers: 1,
 
   /* Blocca l'uso di .only in CI */
   forbidOnly: !!process.env.CI,
 
-  /* Riprova in caso di flakiness (solo in CI) */
-  retries: process.env.CI ? 2 : 0,
+  /**
+   * Retry policy:
+   *   - 1 retry in CI (abbastanza per isolare flakiness occasionale, senza sprecare tempo)
+   *   - 0 retry in locale (fallimento immediato = feedback veloce durante sviluppo)
+   */
+  retries: process.env.CI ? 1 : 0,
+
+  /** Timeout per singolo test: 30 secondi (include attese di rete e render) */
+  timeout: 30_000,
+
+  /** Timeout per singola asserzione expect() */
+  expect: {
+    timeout: 6_000,
+  },
 
   reporter: [["html", { open: "never" }], ["list"]],
 
@@ -47,6 +59,10 @@ export default defineConfig({
     video: "retain-on-failure",
     locale: "it-IT",
     timezoneId: "Europe/Rome",
+    /** Timeout azioni (click, fill, ecc.) */
+    actionTimeout: 10_000,
+    /** Timeout navigazione (goto, waitForURL, ecc.) */
+    navigationTimeout: 20_000,
   },
 
   projects: [

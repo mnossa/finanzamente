@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { selectOptionByText } from '../helpers';
 
 async function ensureAssetExists(page: Page): Promise<string> {
     await page.goto('/investimenti');
@@ -15,8 +16,8 @@ async function ensureAssetExists(page: Page): Promise<string> {
     await page.getByRole('link', { name: /crea asset/i }).click();
     await expect(page).toHaveURL('/asset-investimento/crea');
 
-    await page.locator('#name').fill(assetName);
-    await page.locator('#symbol').fill(`E2E${Date.now().toString().slice(-4)}`);
+    await page.getByLabel(/nome asset/i).fill(assetName);
+    await page.getByLabel(/simbolo|ticker/i).fill(`E2E${Date.now().toString().slice(-4)}`);
     await page.getByRole('button', { name: /crea asset/i }).click();
 
     await expect(page).toHaveURL(/\/asset-investimento/, { timeout: 15_000 });
@@ -37,8 +38,8 @@ async function ensureAssetInCreateSelect(page: Page): Promise<void> {
     await page.goto('/asset-investimento/crea');
     await expect(page).toHaveURL('/asset-investimento/crea');
 
-    await page.locator('#name').fill(assetName);
-    await page.locator('#symbol').fill(`AF${Date.now().toString().slice(-4)}`);
+    await page.getByLabel(/nome asset/i).fill(assetName);
+    await page.getByLabel(/simbolo|ticker/i).fill(`AF${Date.now().toString().slice(-4)}`);
     await page.getByRole('button', { name: /crea asset/i }).click();
 
     await expect(page).toHaveURL(/\/asset-investimento/, { timeout: 15_000 });
@@ -74,25 +75,10 @@ test.describe('Investimenti', () => {
         await page.goto('/investimenti/crea');
         await ensureAssetInCreateSelect(page);
 
-        const assetSelect = page.locator('#asset_id');
+        await selectOptionByText(page, '#asset_id', new RegExp(ensuredAssetName, 'i'));
 
-        const targetOption = assetSelect
-            .locator('option')
-            .filter({ hasText: new RegExp(ensuredAssetName, 'i') })
-            .first();
-
-        const hasTarget = await targetOption.isVisible().catch(() => false);
-        if (hasTarget) {
-            const value = await targetOption.getAttribute('value');
-            if (value) {
-                await assetSelect.selectOption(value);
-            }
-        } else {
-            await assetSelect.selectOption({ index: 1 });
-        }
-
-        await page.locator('#quantity').fill('2');
-        await page.locator('#buy_price').fill('150');
+        await page.getByLabel(/quantità/i).fill('2');
+        await page.getByLabel(/prezzo.*acquisto/i).fill('150');
         await page.getByRole('button', { name: /registra investimento/i }).click();
 
         await expect(page).toHaveURL(/\/investimenti/, { timeout: 15_000 });

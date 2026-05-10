@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { e2eCredentials } from '../helpers';
 
 /**
  * Test E2E — Registrazione
@@ -13,29 +14,29 @@ test.describe('Autenticazione — Registrazione', () => {
 
     test('mostra il form di registrazione con tutti i campi base', async ({ page }) => {
         await expect(page).toHaveTitle(/Registrati/i);
-        await expect(page.locator('#name')).toBeVisible();
-        await expect(page.locator('#email')).toBeVisible();
-        await expect(page.locator('#password')).toBeVisible();
-        await expect(page.locator('#password_confirmation')).toBeVisible();
+        await expect(page.getByLabel(/nome/i)).toBeVisible();
+        await expect(page.getByLabel(/^email/i)).toBeVisible();
+        await expect(page.getByLabel(/^password \*/i)).toBeVisible();
+        await expect(page.getByLabel(/conferma password/i)).toBeVisible();
         await expect(page.getByRole('button', { name: 'Registrati' })).toBeVisible();
     });
 
     test('mostra il campo Codice Fiscale per persona fisica (default)', async ({ page }) => {
-        await expect(page.locator('#fiscal_code')).toBeVisible();
-        await expect(page.locator('#vat_number')).not.toBeVisible();
+        await expect(page.getByLabel(/codice fiscale/i)).toBeVisible();
+        await expect(page.getByLabel(/partita iva/i)).not.toBeVisible();
     });
 
     test('mostra il campo Partita IVA selezionando "Partita IVA"', async ({ page }) => {
-        await page.locator('#user_type').selectOption('partita_iva');
-        await expect(page.locator('#vat_number')).toBeVisible();
-        await expect(page.locator('#fiscal_code')).not.toBeVisible();
+        await page.getByLabel(/tipo utente/i).selectOption('partita_iva');
+        await expect(page.getByLabel(/partita iva/i)).toBeVisible();
+        await expect(page.getByLabel(/codice fiscale/i)).not.toBeVisible();
     });
 
     test('validazione: errore se le password non corrispondono', async ({ page }) => {
-        await page.locator('#name').fill('Mario Rossi');
-        await page.locator('#email').fill(`e2e-${Date.now()}@esempio.it`);
-        await page.locator('#password').fill('password123!');
-        await page.locator('#password_confirmation').fill('passwordDiversa999!');
+        await page.getByLabel(/nome/i).fill('Mario Rossi');
+        await page.getByLabel(/^email/i).fill(`e2e-${Date.now()}@esempio.it`);
+        await page.getByLabel(/^password \*/i).fill('password123!');
+        await page.getByLabel(/conferma password/i).fill('passwordDiversa999!');
         await page.getByRole('button', { name: 'Registrati' }).click();
 
         await expect(
@@ -44,12 +45,12 @@ test.describe('Autenticazione — Registrazione', () => {
     });
 
     test('validazione: errore se email già in uso', async ({ page }) => {
-        const existingEmail = process.env.E2E_USER_EMAIL ?? 'e2e@finanzamente.test';
+        const existingEmail = e2eCredentials.email;
 
-        await page.locator('#name').fill('Utente Duplicato');
-        await page.locator('#email').fill(existingEmail);
-        await page.locator('#password').fill('password');
-        await page.locator('#password_confirmation').fill('password');
+        await page.getByLabel(/nome/i).fill('Utente Duplicato');
+        await page.getByLabel(/^email/i).fill(existingEmail);
+        await page.getByLabel(/^password \*/i).fill('password');
+        await page.getByLabel(/conferma password/i).fill('password');
         await page.getByRole('button', { name: 'Registrati' }).click();
 
         await expect(

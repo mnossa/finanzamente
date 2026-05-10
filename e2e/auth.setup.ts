@@ -2,6 +2,7 @@ import { test as setup, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { e2eCredentials } from './helpers';
 
 /**
  * File dove viene salvato lo stato di autenticazione (cookie + localStorage).
@@ -12,8 +13,7 @@ const __dirname  = path.dirname(__filename);
 const authFile   = path.join(__dirname, '.auth/user.json');
 
 setup('autenticazione e salvataggio stato sessione', async ({ page }) => {
-    const email    = process.env.E2E_USER_EMAIL    ?? 'e2e@finanzamente.test';
-    const password = process.env.E2E_USER_PASSWORD ?? 'password';
+    const { email, password } = e2eCredentials;
 
     // Assicura che la directory esista
     fs.mkdirSync(path.dirname(authFile), { recursive: true });
@@ -21,8 +21,8 @@ setup('autenticazione e salvataggio stato sessione', async ({ page }) => {
     await page.goto('/accedi');
     await expect(page).toHaveTitle(/Accedi/i);
 
-    await page.locator('#email').fill(email);
-    await page.locator('#password').fill(password);
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Accedi' }).click();
 
     // Dopo il login può esserci un redirect a /households o direttamente /dashboard

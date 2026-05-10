@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { e2eCredentials } from '../helpers';
 
 /**
  * Test E2E — Accesso (Login)
@@ -13,14 +14,14 @@ test.describe('Autenticazione — Login', () => {
 
     test('mostra il form di login con tutti i campi', async ({ page }) => {
         await expect(page).toHaveTitle(/Accedi/i);
-        await expect(page.locator('#email')).toBeVisible();
-        await expect(page.locator('#password')).toBeVisible();
+        await expect(page.getByLabel('Email')).toBeVisible();
+        await expect(page.getByLabel('Password')).toBeVisible();
         await expect(page.getByRole('button', { name: 'Accedi' })).toBeVisible();
     });
 
     test('mostra errore per credenziali non valide', async ({ page }) => {
-        await page.locator('#email').fill('nonvalido@esempio.it');
-        await page.locator('#password').fill('passworderrata123');
+        await page.getByLabel('Email').fill('nonvalido@esempio.it');
+        await page.getByLabel('Password').fill('passworderrata123');
         await page.getByRole('button', { name: 'Accedi' }).click();
 
         // L'errore Laravel su credenziali errate
@@ -30,11 +31,10 @@ test.describe('Autenticazione — Login', () => {
     });
 
     test('effettua il login con credenziali corrette e va in dashboard', async ({ page }) => {
-        const email    = process.env.E2E_USER_EMAIL    ?? 'e2e@finanzamente.test';
-        const password = process.env.E2E_USER_PASSWORD ?? 'password';
+        const { email, password } = e2eCredentials;
 
-        await page.locator('#email').fill(email);
-        await page.locator('#password').fill(password);
+        await page.getByLabel('Email').fill(email);
+        await page.getByLabel('Password').fill(password);
         await page.getByRole('button', { name: 'Accedi' }).click();
 
         await expect(page).toHaveURL('/dashboard', { timeout: 15_000 });

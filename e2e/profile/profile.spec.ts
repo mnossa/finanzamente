@@ -41,19 +41,17 @@ test.describe('Profilo utente', () => {
     });
 
     test('mostra il form di aggiornamento informazioni profilo', async ({ page }) => {
-        await expect(page.locator('#name')).toBeVisible();
-        await expect(page.locator('#email')).toBeVisible();
+        await expect(page.getByLabel('Nome')).toBeVisible();
+        await expect(page.getByLabel('Email')).toBeVisible();
     });
 
     test('il campo nome è precompilato con il nome utente corrente', async ({ page }) => {
-        const nameField = page.locator('#name');
-        const value = await nameField.inputValue();
+        const value = await page.getByLabel('Nome').inputValue();
         expect(value.length).toBeGreaterThan(0);
     });
 
     test('il campo email è precompilato con l\'email dell\'utente', async ({ page }) => {
-        const emailField = page.locator('#email');
-        const value = await emailField.inputValue();
+        const value = await page.getByLabel('Email').inputValue();
         expect(value).toContain('@');
     });
 
@@ -64,7 +62,7 @@ test.describe('Profilo utente', () => {
     });
 
     test('aggiorna il nome profilo con successo', async ({ page }) => {
-        const nameField = page.locator('#name');
+        const nameField = page.getByLabel('Nome');
         await nameField.fill('Utente E2E Aggiornato');
 
         await Promise.all([
@@ -78,10 +76,10 @@ test.describe('Profilo utente', () => {
         ]);
 
         await page.reload();
-        await expect(nameField).toHaveValue('Utente E2E Aggiornato');
+        await expect(page.getByLabel('Nome')).toHaveValue('Utente E2E Aggiornato');
 
         // Ripristina il nome originale
-        await nameField.fill('Utente E2E');
+        await page.getByLabel('Nome').fill('Utente E2E');
         await Promise.all([
             page.waitForResponse((response) =>
                 response.url().includes('/profilo') &&
@@ -94,8 +92,10 @@ test.describe('Profilo utente', () => {
     });
 
     test('mostra il form di cambio password', async ({ page }) => {
-        const passwordSection = page.getByText(/aggiorna password|cambio password/i).first();
-        await expect(passwordSection).toBeVisible();
+        // Testa la struttura: c'è una sezione/heading relativa alla password
+        await expect(
+            page.getByRole('heading', { name: /password/i }).first()
+        ).toBeVisible();
     });
 
     test('sincronizza analytics da scelta anonima su pagine open dopo accesso autenticato', async ({ page }) => {

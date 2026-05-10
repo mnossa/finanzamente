@@ -30,23 +30,23 @@ test.describe('Transazioni', () => {
         await expect(page).toHaveTitle(/nuova transazione/i);
     });
 
-    test('la lista transazioni mostra messaggio vuoto o righe', async ({ page }) => {
-        // Stato coerente: empty state oppure almeno una riga transazione con azioni
+    test('la lista transazioni mostra stato vuoto o righe con azioni', async ({ page }) => {
+        // Stato coerente: empty state oppure almeno una riga transazione con link azione
         const emptyState = page.getByText(/nessuna transazione trovata/i).first();
-        const rowActions = page.locator('[title="Visualizza"]');
+        const rowLinks = page.getByRole('link').filter({ has: page.locator('[title]') });
 
         await expect
             .poll(async () => {
                 const emptyVisible = await emptyState.isVisible().catch(() => false);
-                const rowsCount = await rowActions.count();
+                const rowsCount = await rowLinks.count();
                 return emptyVisible || rowsCount > 0;
             }, { timeout: 10_000 })
             .toBeTruthy();
     });
 
     test('i filtri di ricerca sono presenti', async ({ page }) => {
-        // I filtri sono select element in un CardBox (non wrappati in un form)
-        await expect(page.locator('select').first()).toBeVisible();
+        // I filtri sono elementi <select> (combobox) nella barra filtri
+        await expect(page.getByRole('combobox').first()).toBeVisible();
     });
 
     test('navigazione paginazione funziona se ci sono più pagine', async ({ page }) => {

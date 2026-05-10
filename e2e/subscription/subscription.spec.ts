@@ -21,11 +21,11 @@ test.describe('Abbonamento', () => {
     test('apre e salva form dati fatturazione', async ({ page }) => {
         await page.getByRole('button', { name: /modifica/i }).click();
 
-        await expect(page.locator('#billing_name')).toBeVisible();
-        await expect(page.locator('#billing_email')).toBeVisible();
+        await expect(page.getByLabel(/nome.*ragione sociale/i)).toBeVisible();
+        await expect(page.getByLabel(/email fatturazione/i)).toBeVisible();
 
-        await page.locator('#billing_name').fill('Utente E2E Billing');
-        await page.locator('#billing_email').fill('e2e@finanzamente.test');
+        await page.getByLabel(/nome.*ragione sociale/i).fill('Utente E2E Billing');
+        await page.getByLabel(/email fatturazione/i).fill('e2e@finanzamente.test');
 
         await page.getByRole('button', { name: /salva dati fatturazione/i }).click();
         await expect(page.getByText(/salvato/i)).toBeVisible({ timeout: 10_000 });
@@ -62,7 +62,8 @@ test.describe('Abbonamento', () => {
         expect(webhookResponse.ok()).toBeTruthy();
 
         await page.goto('/profilo/abbonamento');
-        await expect(page.getByText('Attivo', { exact: true })).toBeVisible();
+        // Usa regex per non dipendere dalla capitalizzazione esatta dello stato
+        await expect(page.getByText(/^attivo$/i).first()).toBeVisible();
         await expect(page.getByRole('heading', { name: /gestione abbonamento/i })).toBeVisible();
     });
 });

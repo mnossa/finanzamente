@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { e2eCredentials } from '../helpers';
 
 /**
  * Test E2E — Logout
@@ -11,13 +12,12 @@ import { test, expect } from '@playwright/test';
  * autenticati.
  */
 test('logout esegue il logout e reindirizza alla homepage', async ({ page }) => {
-    const email    = process.env.E2E_USER_EMAIL    ?? 'e2e@finanzamente.test';
-    const password = process.env.E2E_USER_PASSWORD ?? 'password';
+    const { email, password } = e2eCredentials;
 
     // Login manuale
     await page.goto('/accedi');
-    await page.locator('#email').fill(email);
-    await page.locator('#password').fill(password);
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Accedi' }).click();
 
     // Attendi il completamento del login e della navigazione al dashboard

@@ -1,41 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-async function selectOptionContainingText(
-    page: import('@playwright/test').Page,
-    selectId: string,
-    textPattern: RegExp
-): Promise<void> {
-    const select = page.locator(selectId);
-    const options = select.locator('option');
-    await expect(select).toBeVisible();
-    await expect.poll(async () => options.count(), { timeout: 10_000 }).toBeGreaterThan(1);
-
-    const count = await options.count();
-
-    for (let i = 0; i < count; i++) {
-        const option = options.nth(i);
-        const text = (await option.textContent()) ?? '';
-        if (textPattern.test(text)) {
-            const value = await option.getAttribute('value');
-            if (value) {
-                await select.selectOption(value);
-                return;
-            }
-        }
-    }
-
-    // Fallback robusto: prima opzione non vuota
-    for (let i = 0; i < count; i++) {
-        const option = options.nth(i);
-        const value = await option.getAttribute('value');
-        if (value) {
-            await select.selectOption(value);
-            return;
-        }
-    }
-
-    throw new Error(`Opzione selezionabile non trovata per ${selectId}`);
-}
+import { selectOptionByText } from '../helpers';
 
 test.describe('Trasferimenti Inter-Household', () => {
     test.beforeEach(async ({ page }) => {
@@ -58,10 +22,10 @@ test.describe('Trasferimenti Inter-Household', () => {
 
         await page.goto('/trasferimenti-tra-nuclei/crea');
 
-        await selectOptionContainingText(page, '#source_account_id', /Conto E2E Principale/i);
-        await selectOptionContainingText(page, '#dest_household_id', /Casa E2E Secondaria/i);
+        await selectOptionByText(page, '#source_account_id', /Conto E2E Principale/i);
+        await selectOptionByText(page, '#dest_household_id', /Casa E2E Secondaria/i);
         await expect(page.locator('#dest_account_id')).toBeEnabled({ timeout: 10_000 });
-        await selectOptionContainingText(page, '#dest_account_id', /Conto E2E Secondario/i);
+        await selectOptionByText(page, '#dest_account_id', /Conto E2E Secondario/i);
         await page.locator('#source_amount').fill('25');
         await page.locator('#description').fill(descrizione);
 

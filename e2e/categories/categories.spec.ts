@@ -29,7 +29,7 @@ test.describe('Categorie', () => {
 
     test('il form di creazione ha i campi obbligatori', async ({ page }) => {
         await page.goto('/categorie/crea');
-        await expect(page.locator('#name')).toBeVisible();
+        await expect(page.getByLabel(/nome della categoria/i)).toBeVisible();
         // Il tipo è selezionato tramite pulsanti (Entrata/Uscita), non un <select id="type">
         await expect(
             page.getByRole('button', { name: /entrata|uscita/i }).first()
@@ -41,9 +41,9 @@ test.describe('Categorie', () => {
         const nomeCategoria = `Categoria E2E ${Date.now()}`;
 
         await page.goto('/categorie/crea');
-        await page.locator('#name').fill(nomeCategoria);
+        await page.getByLabel(/nome della categoria/i).fill(nomeCategoria);
 
-        // Seleziona tipo (default o esplicito)
+        // Seleziona tipo se presente come select nativo
         const typeSelect = page.locator('#type');
         if (await typeSelect.isVisible()) {
             await typeSelect.selectOption('expense');
@@ -59,7 +59,6 @@ test.describe('Categorie', () => {
     test('le categorie di sistema (seed) sono presenti nella lista', async ({ page }) => {
         // Almeno una categoria dovrebbe essere presente dopo il seeder
         const isEmpty = await page.getByText(/nessuna categoria/i).isVisible().catch(() => false);
-        // Se il seeder ha creato categorie, la lista non sarà vuota
         if (!isEmpty) {
             expect(await page.getByRole('listitem').count()).toBeGreaterThanOrEqual(0);
         }

@@ -30,7 +30,7 @@ test.describe('Conti', () => {
 
     test('il form di creazione conto ha i campi necessari', async ({ page }) => {
         await page.goto('/conti/crea');
-        await expect(page.locator('#name')).toBeVisible();
+        await expect(page.getByLabel(/nome del conto/i)).toBeVisible();
         await expect(page.getByRole('button', { name: /crea conto/i })).toBeVisible();
     });
 
@@ -46,10 +46,10 @@ test.describe('Conti', () => {
             return;
         }
 
-        await page.locator('#name').fill(nomeConto);
+        await page.getByLabel(/nome del conto/i).fill(nomeConto);
 
         // Saldo iniziale: campo opzionale, imposta 0 se non valorizzato
-        const saldoInput = page.locator('#initial_balance');
+        const saldoInput = page.getByLabel(/saldo iniziale/i);
         if (await saldoInput.isVisible()) {
             await saldoInput.fill('100');
         }
@@ -69,11 +69,8 @@ test.describe('Conti', () => {
         await page.goto('/conti/crea');
         await page.getByRole('button', { name: /crea conto/i }).click();
 
-        // Errore HTML5 o messaggio di validazione
-        const nameInput = page.locator('#name');
-        await expect(nameInput).toBeVisible();
-        // Il browser non permette l'invio senza nome se il campo è required
-        const url = page.url();
-        expect(url).toContain('/crea');
+        // Il campo deve rimanere sulla pagina di creazione (required HTML o validazione server)
+        await expect(page.getByLabel(/nome del conto/i)).toBeVisible();
+        expect(page.url()).toContain('/crea');
     });
 });

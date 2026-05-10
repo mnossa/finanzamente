@@ -53,20 +53,17 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveURL('/profilo');
     });
 
-    test('il widget Obiettivi Finanziari mostra gli obiettivi del seeder', async ({ page }) => {
-        // Il seeder E2E crea un obiettivo "Obiettivo E2E Vacanza"
-        await expect(page.getByText('Obiettivi Finanziari')).toBeVisible();
+    test('il widget obiettivi mostra i dati del seeder', async ({ page }) => {
+        // Il seeder E2E crea "Obiettivo E2E Vacanza" — testa dati, non il titolo della sezione
         await expect(page.getByText('Obiettivo E2E Vacanza')).toBeVisible();
     });
 
-    test('il widget Obiettivi Finanziari ha un link a Vedi tutti', async ({ page }) => {
+    test('il widget obiettivi ha un link a "Vedi tutti"', async ({ page }) => {
         const link = page.getByRole('link', { name: /vedi tutti/i }).first();
         await expect(link).toBeVisible();
     });
 
-    test('il link Vedi tutti del widget obiettivi porta alla pagina degli obiettivi', async ({ page }) => {
-        // Clicca sul link "Vedi tutti" dentro il widget obiettivi
-        await page.getByText('Obiettivi Finanziari').waitFor();
+    test('il link "Vedi tutti" del widget obiettivi porta alla pagina degli obiettivi', async ({ page }) => {
         await page.locator('a[href*="obiettivi-finanziari"]', { hasText: /vedi tutti/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });

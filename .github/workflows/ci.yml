@@ -1,0 +1,92 @@
+name: CI — Verifica Codice
+
+# Esegue su tutte le PR verso main/staging e su push di branch feature (cursor/*)
+# NON su push a main e staging (quelli hanno già deploy.yml e deploy-staging.yml)
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+  push:
+    branches:
+      - 'cursor/**'
+      - 'feature/**'
+      - 'fix/**'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ── Job 1: PHP — Stile + Test ──────────────────────────────────────────────
+  php:
+    name: PHP (Pint + PHPUnit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codice sorgente
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, sqlite3, mbstring, bcmath, intl, fileinfo, curl, gd, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Installa dipendenze PHP
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Genera chiave applicazione
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+
+      - name: Pint — verifica stile codice
+        run: vendor/bin/pint --test
+
+      - name: PHPUnit — esegui suite di test
+        run: php artisan test --no-coverage
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
+          ADV_THROTTLE_SALT: ci-test-salt-${{ github.run_id }}
+
+  # ── Job 2: Frontend — TypeScript typecheck ─────────────────────────────────
+  frontend:
+    name: Frontend (TypeScript)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codice sorgente
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Installa dipendenze Node.js
+        run: npm ci
+
+      - name: TypeScript — verifica tipi
+        run: npm run typecheck
