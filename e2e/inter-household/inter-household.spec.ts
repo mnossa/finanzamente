@@ -24,10 +24,10 @@ test.describe('Trasferimenti Inter-Household', () => {
 
         await selectOptionByText(page, '#source_account_id', /Conto E2E Principale/i);
         await selectOptionByText(page, '#dest_household_id', /Casa E2E Secondaria/i);
-        await expect(page.locator('#dest_account_id')).toBeEnabled({ timeout: 10_000 });
+        await expect(page.locator('select[name="dest_account_id"]')).toBeEnabled({ timeout: 10_000 });
         await selectOptionByText(page, '#dest_account_id', /Conto E2E Secondario/i);
-        await page.locator('#source_amount').fill('25');
-        await page.locator('#description').fill(descrizione);
+        await page.locator('input[name="source_amount"]').fill('25');
+        await page.locator('input[name="description"], textarea[name="description"]').first().fill(descrizione);
 
         await page.getByRole('button', { name: /crea trasferimento/i }).click();
 

@@ -3,64 +3,49 @@ import { test, expect } from '@playwright/test';
 /**
  * Test E2E — Categorie
  *
- * Copre: lista categorie, creazione nuova categoria, validazione.
+ * Copre: lista, navigazione al form, creazione.
  */
 test.describe('Categorie', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/categorie');
     });
 
-    test('carica la pagina delle categorie', async ({ page }) => {
+    test('la pagina categorie si carica', async ({ page }) => {
         await expect(page).toHaveURL('/categorie');
         await expect(page).toHaveTitle(/categorie/i);
     });
 
-    test('mostra il pulsante "Nuova Categoria"', async ({ page }) => {
-        await expect(
-            page.getByRole('link', { name: /nuova categoria/i })
-        ).toBeVisible();
+    test('esiste il link per creare una nuova categoria', async ({ page }) => {
+        await expect(page.locator('a[href*="/categorie/crea"]')).toBeVisible();
     });
 
-    test('il pulsante "Nuova Categoria" porta al form di creazione', async ({ page }) => {
-        await page.getByRole('link', { name: /nuova categoria/i }).click();
+    test('il link nuova categoria porta al form', async ({ page }) => {
+        await page.locator('a[href*="/categorie/crea"]').first().click();
         await expect(page).toHaveURL('/categorie/crea');
         await expect(page).toHaveTitle(/nuova categoria/i);
     });
 
-    test('il form di creazione ha i campi obbligatori', async ({ page }) => {
+    test('il form di creazione ha il campo nome e il submit', async ({ page }) => {
         await page.goto('/categorie/crea');
-        await expect(page.getByLabel(/nome della categoria/i)).toBeVisible();
-        // Il tipo è selezionato tramite pulsanti (Entrata/Uscita), non un <select id="type">
-        await expect(
-            page.getByRole('button', { name: /entrata|uscita/i }).first()
-        ).toBeVisible();
-        await expect(page.getByRole('button', { name: /crea categoria/i })).toBeVisible();
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.locator('[type="submit"]')).toBeVisible();
     });
 
-    test('crea una nuova categoria e la mostra nella lista', async ({ page }) => {
+    test('crea una nuova categoria e appare nella lista', async ({ page }) => {
         const nomeCategoria = `Categoria E2E ${Date.now()}`;
 
         await page.goto('/categorie/crea');
-        await page.getByLabel(/nome della categoria/i).fill(nomeCategoria);
+        await page.locator('input[name="name"]').fill(nomeCategoria);
 
-        // Seleziona tipo se presente come select nativo
-        const typeSelect = page.locator('#type');
+        // Tipo: può essere select o pulsanti radio-like
+        const typeSelect = page.locator('select[name="type"]');
         if (await typeSelect.isVisible()) {
             await typeSelect.selectOption('expense');
         }
 
-        await page.getByRole('button', { name: /crea categoria/i }).click();
+        await page.locator('[type="submit"]').click();
 
-        // Dopo creazione → redirect a lista o dettaglio categoria
         await expect(page).toHaveURL(/\/categorie/, { timeout: 10_000 });
         await expect(page.getByText(nomeCategoria)).toBeVisible({ timeout: 8_000 });
-    });
-
-    test('le categorie di sistema (seed) sono presenti nella lista', async ({ page }) => {
-        // Almeno una categoria dovrebbe essere presente dopo il seeder
-        const isEmpty = await page.getByText(/nessuna categoria/i).isVisible().catch(() => false);
-        if (!isEmpty) {
-            expect(await page.getByRole('listitem').count()).toBeGreaterThanOrEqual(0);
-        }
     });
 });

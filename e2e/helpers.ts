@@ -10,6 +10,25 @@ export const e2eCredentials = {
 };
 
 /**
+ * Esegue il login programmatico compilando il form di accesso.
+ * Usa selettori strutturali (type/name) che non dipendono da testo UI.
+ */
+export async function loginAs(
+    page: Page,
+    email = e2eCredentials.email,
+    password = e2eCredentials.password
+): Promise<void> {
+    await page.goto('/accedi');
+    await page.locator('input[type="email"]').fill(email);
+    await page.locator('input[type="password"]').fill(password);
+    await page.locator('[type="submit"]').click();
+    await page.waitForURL(/\/(dashboard|households)/, { timeout: 15_000 });
+    if (page.url().includes('/households')) {
+        await page.waitForURL('/dashboard', { timeout: 10_000 });
+    }
+}
+
+/**
  * Seleziona un'opzione da una <select> tramite il suo CSS selector (es. '#field_id'),
  * cercando un'opzione il cui testo corrisponde alla regex.
  * Se nessuna opzione corrisponde, seleziona la prima opzione valorizzata (fallback).

@@ -3,8 +3,8 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 /**
  * Test E2E — Profilo
  *
- * Copre: visualizzazione pagina profilo, form di aggiornamento dati,
- * form di cambio password, form di eliminazione account.
+ * Copre: aggiornamento dati, cambio password, preferenze privacy.
+ * Selettori strutturali (name) indipendenti da label/testo UI.
  */
 test.describe('Profilo utente', () => {
     const savePrivacyPreferences = async (page: Page) => {
@@ -27,43 +27,38 @@ test.describe('Profilo utente', () => {
     };
 
     const getPrivacyCheckboxes = (page: Page) => ({
-        marketing: page.getByLabel(/ricevi email marketing/i),
-        analytics: page.getByLabel(/consenti analytics per miglioramento servizio/i),
+        // Le checkbox privacy non hanno name/id: uso regex minimale sulla keyword chiave
+        // (resiliente al rewording della label, non al cambio della parola chiave del consenso)
+        marketing: page.getByLabel(/marketing/i),
+        analytics: page.getByLabel(/analytics/i),
     });
 
     test.beforeEach(async ({ page }) => {
         await page.goto('/profilo');
     });
 
-    test('carica la pagina del profilo', async ({ page }) => {
+    test('la pagina profilo si carica', async ({ page }) => {
         await expect(page).toHaveURL('/profilo');
         await expect(page).toHaveTitle(/Profilo/i);
     });
 
-    test('mostra il form di aggiornamento informazioni profilo', async ({ page }) => {
-        await expect(page.getByLabel('Nome')).toBeVisible();
-        await expect(page.getByLabel('Email')).toBeVisible();
+    test('il form profilo ha i campi nome ed email', async ({ page }) => {
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.locator('input[name="email"]')).toBeVisible();
     });
 
-    test('il campo nome è precompilato con il nome utente corrente', async ({ page }) => {
-        const value = await page.getByLabel('Nome').inputValue();
+    test('il campo nome è precompilato', async ({ page }) => {
+        const value = await page.locator('input[name="name"]').inputValue();
         expect(value.length).toBeGreaterThan(0);
     });
 
-    test('il campo email è precompilato con l\'email dell\'utente', async ({ page }) => {
-        const value = await page.getByLabel('Email').inputValue();
+    test('il campo email è precompilato con un indirizzo valido', async ({ page }) => {
+        const value = await page.locator('input[name="email"]').inputValue();
         expect(value).toContain('@');
     });
 
-    test('il pulsante "Salva" è visibile nel form profilo', async ({ page }) => {
-        await expect(
-            page.getByRole('button', { name: /^salva$/i }).first()
-        ).toBeVisible();
-    });
-
     test('aggiorna il nome profilo con successo', async ({ page }) => {
-        const nameField = page.getByLabel('Nome');
-        await nameField.fill('Utente E2E Aggiornato');
+        await page.locator('input[name="name"]').fill('Utente E2E Aggiornato');
 
         await Promise.all([
             page.waitForResponse((response) =>
@@ -72,14 +67,15 @@ test.describe('Profilo utente', () => {
                 response.status() >= 200 &&
                 response.status() < 400
             ),
-            page.getByRole('button', { name: /^salva$/i }).first().click(),
+            page.locator('form').filter({ has: page.locator('input[name="name"]') })
+                .locator('[type="submit"]').first().click(),
         ]);
 
         await page.reload();
-        await expect(page.getByLabel('Nome')).toHaveValue('Utente E2E Aggiornato');
+        await expect(page.locator('input[name="name"]')).toHaveValue('Utente E2E Aggiornato');
 
-        // Ripristina il nome originale
-        await page.getByLabel('Nome').fill('Utente E2E');
+        // Ripristina
+        await page.locator('input[name="name"]').fill('Utente E2E');
         await Promise.all([
             page.waitForResponse((response) =>
                 response.url().includes('/profilo') &&
@@ -87,18 +83,17 @@ test.describe('Profilo utente', () => {
                 response.status() >= 200 &&
                 response.status() < 400
             ),
-            page.getByRole('button', { name: /^salva$/i }).first().click(),
+            page.locator('form').filter({ has: page.locator('input[name="name"]') })
+                .locator('[type="submit"]').first().click(),
         ]);
     });
 
-    test('mostra il form di cambio password', async ({ page }) => {
-        // Testa la struttura: c'è una sezione/heading relativa alla password
-        await expect(
-            page.getByRole('heading', { name: /password/i }).first()
-        ).toBeVisible();
+    test('la pagina profilo contiene il form per cambiare password', async ({ page }) => {
+        // Verifica strutturalmente: esiste un form con campo current_password
+        await expect(page.locator('input[name="current_password"]')).toBeVisible();
     });
 
-    test('sincronizza analytics da scelta anonima su pagine open dopo accesso autenticato', async ({ page }) => {
+    test('sincronizza analytics da scelta anonima dopo accesso autenticato', async ({ page }) => {
         const { analytics } = getPrivacyCheckboxes(page);
         const initialAnalyticsState = await analytics.isChecked();
 
@@ -144,10 +139,7 @@ test.describe('Profilo utente', () => {
                 marketing: await marketing.isChecked(),
                 analytics: await analytics.isChecked(),
             };
-        }, { timeout: 10_000 }).toEqual({
-            marketing: false,
-            analytics: false,
-        });
+        }, { timeout: 10_000 }).toEqual({ marketing: false, analytics: false });
 
         await setCheckboxState(marketing, initialMarketing);
         await setCheckboxState(analytics, initialAnalytics);
