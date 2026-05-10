@@ -308,6 +308,8 @@ def batch_suggest(req: BatchSuggestRequest):
                 continue
 
             target = req.articles[int(j)]
+            # Salta se il target è già linkato nel source (link esistente nel contenuto
+            # o suggerimento già proposto in precedenza, gestito lato chiamante).
             if target.slug in already:
                 continue
 
@@ -323,12 +325,20 @@ def batch_suggest(req: BatchSuggestRequest):
         snippet_cache[i] = (sents, sent_emb, clean_text(req.articles[i].text))
 
     # Step 3: costruisci la lista finale.
+    # La deduplicazione per coppia (source_id, target_id) è garantita dall'argsort
+    # (indici unici), ma viene applicata esplicitamente come guardrail nel caso in cui
+    # il payload contenga articoli con id duplicati.
     suggestions: List[Suggestion] = []
+    seen_pairs: set = set()
     for i, picks in candidates_per_source.items():
         source_art = req.articles[i]
         sents, sent_emb, fallback = snippet_cache[i]
         for j, score in picks:
             target = req.articles[j]
+            pair = (source_art.id, target.id)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
             snippet = best_snippet(sents, sent_emb, doc_embeddings[j], fallback)
             suggestions.append(Suggestion(
                 source_id=source_art.id,
