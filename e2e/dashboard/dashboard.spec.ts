@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 /**
  * Test E2E — Dashboard
  *
- * Verifica che la dashboard principale carichi correttamente
- * dopo l'autenticazione e contenga gli elementi fondamentali.
+ * Verifica che la dashboard carichi e che la navigazione principale funzioni.
+ * Non si testa il testo dei link ma la presenza di href semantici e il comportamento.
  */
 test.describe('Dashboard principale', () => {
     test.beforeEach(async ({ page }) => {
@@ -12,61 +12,50 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveURL('/dashboard');
     });
 
-    test('carica la dashboard con titolo corretto', async ({ page }) => {
+    test('la dashboard si carica correttamente', async ({ page }) => {
         await expect(page).toHaveTitle(/Dashboard/i);
     });
 
-    test('mostra la navigazione laterale/superiore', async ({ page }) => {
+    test('la navigazione principale è presente', async ({ page }) => {
         await expect(page.getByRole('navigation')).toBeVisible();
     });
 
-    test('la navigazione contiene il link alla Dashboard', async ({ page }) => {
+    test('la navigazione ha un link alla dashboard', async ({ page }) => {
         await expect(
-            page.getByRole('link', { name: /^dashboard$/i })
+            page.getByRole('navigation').locator('a[href*="/dashboard"]').first()
         ).toBeVisible();
     });
 
-    test('la navigazione contiene il link ai Conti', async ({ page }) => {
+    test('la navigazione ha un link ai conti', async ({ page }) => {
         await expect(
-            page.getByRole('link', { name: /^conti$/i })
+            page.getByRole('navigation').locator('a[href*="/conti"]').first()
         ).toBeVisible();
     });
 
-    test('la navigazione contiene il link alle Transazioni', async ({ page }) => {
+    test('la navigazione ha un link alle transazioni', async ({ page }) => {
         await expect(
-            page.getByRole('link', { name: /^transazioni$/i })
+            page.getByRole('navigation').locator('a[href*="/transazioni"]').first()
         ).toBeVisible();
     });
 
-    test('la navigazione contiene il link alle Categorie', async ({ page }) => {
+    test('la navigazione ha un link alle categorie', async ({ page }) => {
         await expect(
-            page.getByRole('link', { name: /^categorie$/i })
+            page.getByRole('navigation').locator('a[href*="/categorie"]').first()
         ).toBeVisible();
     });
 
-    test('il link al profilo nel dropdown funziona', async ({ page }) => {
-        // Apri il menu utente tramite aria-label (funziona su desktop e mobile)
-        const userMenu = page.getByRole('button', { name: /menu utente/i });
-        await userMenu.click();
-
-        await page.getByRole('link', { name: /^profilo$/i }).click();
+    test('il menu utente apre e naviga al profilo', async ({ page }) => {
+        await page.locator('[aria-label*="Menu utente"], [aria-label*="menu utente"]').click();
+        await page.locator('a[href*="/profilo"]').first().click();
         await expect(page).toHaveURL('/profilo');
     });
 
-    test('il widget Obiettivi Finanziari mostra gli obiettivi del seeder', async ({ page }) => {
-        // Il seeder E2E crea un obiettivo "Obiettivo E2E Vacanza"
-        await expect(page.getByText('Obiettivi Finanziari')).toBeVisible();
+    test('il widget obiettivi mostra i dati del seeder', async ({ page }) => {
+        // Dati del seeder: "Obiettivo E2E Vacanza" — verificare che il dato esista
         await expect(page.getByText('Obiettivo E2E Vacanza')).toBeVisible();
     });
 
-    test('il widget Obiettivi Finanziari ha un link a Vedi tutti', async ({ page }) => {
-        const link = page.getByRole('link', { name: /vedi tutti/i }).first();
-        await expect(link).toBeVisible();
-    });
-
-    test('il link Vedi tutti del widget obiettivi porta alla pagina degli obiettivi', async ({ page }) => {
-        // Clicca sul link "Vedi tutti" dentro il widget obiettivi
-        await page.getByText('Obiettivi Finanziari').waitFor();
+    test('il link "vedi tutti" del widget obiettivi porta alla pagina obiettivi', async ({ page }) => {
         await page.locator('a[href*="obiettivi-finanziari"]', { hasText: /vedi tutti/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });

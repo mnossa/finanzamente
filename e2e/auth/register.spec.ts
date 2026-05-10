@@ -1,64 +1,66 @@
 import { test, expect } from '@playwright/test';
+import { e2eCredentials } from '../helpers';
 
 /**
  * Test E2E — Registrazione
  *
- * Copre: visualizzazione del form, campi condizionali (persona fisica / P.IVA),
- * validazione lato client e server, link alla pagina di login.
+ * Testa il comportamento del flusso di registrazione.
+ * Selettori: name/type degli input (legati al form HTTP e alla validazione backend),
+ * non al testo UI che può cambiare liberamente.
  */
 test.describe('Autenticazione — Registrazione', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/registrati');
     });
 
-    test('mostra il form di registrazione con tutti i campi base', async ({ page }) => {
+    test('il form di registrazione è presente e accetta l\'input', async ({ page }) => {
         await expect(page).toHaveTitle(/Registrati/i);
-        await expect(page.locator('#name')).toBeVisible();
-        await expect(page.locator('#email')).toBeVisible();
-        await expect(page.locator('#password')).toBeVisible();
-        await expect(page.locator('#password_confirmation')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Registrati' })).toBeVisible();
+        await expect(page.locator('input[name="name"]')).toBeVisible();
+        await expect(page.locator('input[name="email"]')).toBeVisible();
+        await expect(page.locator('input[name="password"]')).toBeVisible();
+        await expect(page.locator('input[name="password_confirmation"]')).toBeVisible();
+        await expect(page.locator('[type="submit"]')).toBeVisible();
     });
 
-    test('mostra il campo Codice Fiscale per persona fisica (default)', async ({ page }) => {
-        await expect(page.locator('#fiscal_code')).toBeVisible();
-        await expect(page.locator('#vat_number')).not.toBeVisible();
+    test('il campo fiscal_code è visibile per il tipo persona (default)', async ({ page }) => {
+        await expect(page.locator('input[name="fiscal_code"]')).toBeVisible();
+        await expect(page.locator('input[name="vat_number"]')).not.toBeVisible();
     });
 
-    test('mostra il campo Partita IVA selezionando "Partita IVA"', async ({ page }) => {
-        await page.locator('#user_type').selectOption('partita_iva');
-        await expect(page.locator('#vat_number')).toBeVisible();
-        await expect(page.locator('#fiscal_code')).not.toBeVisible();
+    test('selezionando partita_iva cambia il campo fiscale', async ({ page }) => {
+        await page.locator('select[name="user_type"]').selectOption('partita_iva');
+        await expect(page.locator('input[name="vat_number"]')).toBeVisible();
+        await expect(page.locator('input[name="fiscal_code"]')).not.toBeVisible();
     });
 
-    test('validazione: errore se le password non corrispondono', async ({ page }) => {
-        await page.locator('#name').fill('Mario Rossi');
-        await page.locator('#email').fill(`e2e-${Date.now()}@esempio.it`);
-        await page.locator('#password').fill('password123!');
-        await page.locator('#password_confirmation').fill('passwordDiversa999!');
-        await page.getByRole('button', { name: 'Registrati' }).click();
+    test('password e conferma non coincidenti producono un errore', async ({ page }) => {
+        await page.locator('input[name="name"]').fill('Mario Rossi');
+        await page.locator('input[name="email"]').fill(`e2e-${Date.now()}@esempio.it`);
+        await page.locator('input[name="password"]').fill('password123!');
+        await page.locator('input[name="password_confirmation"]').fill('passwordDiversa999!');
+        await page.locator('[type="submit"]').click();
 
-        await expect(
-            page.getByText(/conferma password|non corrispond/i)
-        ).toBeVisible({ timeout: 8_000 });
+        // Dopo submit fallito l'URL rimane su /registrati (nessun redirect a dashboard)
+        await expect(page).toHaveURL(/registrati/, { timeout: 8_000 });
+        // E compare un messaggio di errore nel DOM
+        await expect(page.locator('form [class*="text-red"], form [class*="error"], [role="alert"]').first())
+            .toBeVisible({ timeout: 8_000 });
     });
 
-    test('validazione: errore se email già in uso', async ({ page }) => {
-        const existingEmail = process.env.E2E_USER_EMAIL ?? 'e2e@finanzamente.test';
+    test('email già in uso produce un errore', async ({ page }) => {
+        await page.locator('input[name="name"]').fill('Utente Duplicato');
+        await page.locator('input[name="email"]').fill(e2eCredentials.email);
+        await page.locator('input[name="password"]').fill('password');
+        await page.locator('input[name="password_confirmation"]').fill('password');
+        await page.locator('[type="submit"]').click();
 
-        await page.locator('#name').fill('Utente Duplicato');
-        await page.locator('#email').fill(existingEmail);
-        await page.locator('#password').fill('password');
-        await page.locator('#password_confirmation').fill('password');
-        await page.getByRole('button', { name: 'Registrati' }).click();
-
-        await expect(
-            page.getByText(/email.*già.*registrat|email.*già.*utilizz|già stato preso/i)
-        ).toBeVisible({ timeout: 8_000 });
+        await expect(page).toHaveURL(/registrati/, { timeout: 8_000 });
+        await expect(page.locator('form [class*="text-red"], form [class*="error"], [role="alert"]').first())
+            .toBeVisible({ timeout: 8_000 });
     });
 
-    test('il link "Hai già un account?" porta a /login', async ({ page }) => {
-        await page.getByRole('link', { name: /hai.*account/i }).click();
+    test('il link "torna al login" porta a /accedi', async ({ page }) => {
+        await page.locator('a[href*="accedi"], a[href*="login"]').click();
         await expect(page).toHaveURL('/accedi');
     });
 });
