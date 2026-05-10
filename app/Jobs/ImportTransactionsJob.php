@@ -168,25 +168,12 @@ class ImportTransactionsJob implements ShouldQueue
             $accountCurrency = $account->currency_code ?? 'EUR';
             $txDate = Carbon::parse($row['date']);
 
-            $fxData = [];
-            if ($rowCurrency !== null && $rowCurrency !== $accountCurrency) {
-                $fxData = $converter->convertToAccountCurrency(
-                    $amount,
-                    $rowCurrency,
-                    $accountCurrency,
-                    $txDate,
-                );
-            } else {
-                $snapshot = $converter->snapshot($amount, $accountCurrency, $txDate);
-                $fxData = [
-                    'amount' => round($amount, 2),
-                    'currency_code' => $accountCurrency,
-                    'exchange_rate_to_base' => $snapshot['exchange_rate_to_base'],
-                    'amount_base' => $snapshot['amount_base'],
-                    'original_amount' => null,
-                    'original_currency_code' => null,
-                ];
-            }
+            $fxData = $converter->convertToAccountCurrency(
+                $amount,
+                $rowCurrency ?? $accountCurrency,
+                $accountCurrency,
+                $txDate,
+            );
 
             if (in_array($action, ['replace', 'update'], true) && ! empty($row['duplicate_transaction_id'])) {
                 $existing = Transaction::where('id', (int) $row['duplicate_transaction_id'])
@@ -206,8 +193,8 @@ class ImportTransactionsJob implements ShouldQueue
                             'currency_code' => $fxData['currency_code'],
                             'exchange_rate_to_base' => $fxData['exchange_rate_to_base'],
                             'amount_base' => $fxData['amount_base'],
-                            'original_amount' => $fxData['original_amount'] ?? null,
-                            'original_currency_code' => $fxData['original_currency_code'] ?? null,
+                            'original_amount' => $fxData['original_amount'],
+                            'original_currency_code' => $fxData['original_currency_code'],
                             'date' => $row['date'],
                             'description' => $description,
                             'is_private' => false,
@@ -220,7 +207,7 @@ class ImportTransactionsJob implements ShouldQueue
                         ]);
                         $balanceChanges[$account->id] -= $oldAmount;
                     }
-                    $balanceChanges[$account->id] += (float) $fxData['amount'];
+                    $balanceChanges[$account->id] += $fxData['amount'];
                     $imported++;
 
                     continue;
@@ -235,13 +222,13 @@ class ImportTransactionsJob implements ShouldQueue
                 'currency_code' => $fxData['currency_code'],
                 'exchange_rate_to_base' => $fxData['exchange_rate_to_base'],
                 'amount_base' => $fxData['amount_base'],
-                'original_amount' => $fxData['original_amount'] ?? null,
-                'original_currency_code' => $fxData['original_currency_code'] ?? null,
+                'original_amount' => $fxData['original_amount'],
+                'original_currency_code' => $fxData['original_currency_code'],
                 'date' => $row['date'],
                 'description' => $description,
                 'is_private' => false,
             ]);
-            $balanceChanges[$account->id] += (float) $fxData['amount'];
+            $balanceChanges[$account->id] += $fxData['amount'];
             $imported++;
         }
 
