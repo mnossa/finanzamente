@@ -162,4 +162,58 @@ class TransactionImportServiceTest extends TestCase
     {
         $this->assertEquals(1234.0, $this->service->parseAmount('1,234'));
     }
+
+    #[Test]
+    public function it_extracts_currency_code_from_csv(): void
+    {
+        $csv = "Data;Descrizione;Importo;Valuta\n01/01/2024;Supermercato;-50,00;EUR\n05/01/2024;Hotel;-120,00;USD\n";
+        $layout = [
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => ['date' => 0, 'description' => 1, 'amount' => 2, 'notes' => null, 'currency' => 3],
+        ];
+
+        $rows = $this->service->parseCsv($csv, $layout);
+
+        $this->assertCount(2, $rows);
+        $this->assertEquals('EUR', $rows[0]['currency_code']);
+        $this->assertEquals('USD', $rows[1]['currency_code']);
+    }
+
+    #[Test]
+    public function it_returns_null_currency_when_column_not_mapped(): void
+    {
+        $csv = "Data;Descrizione;Importo\n01/01/2024;Supermercato;-50,00\n";
+        $layout = [
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => ['date' => 0, 'description' => 1, 'amount' => 2, 'notes' => null],
+        ];
+
+        $rows = $this->service->parseCsv($csv, $layout);
+
+        $this->assertCount(1, $rows);
+        $this->assertNull($rows[0]['currency_code']);
+    }
+
+    #[Test]
+    public function it_normalizes_currency_code_to_uppercase(): void
+    {
+        $csv = "Data;Descrizione;Importo;Valuta\n01/01/2024;Test;100,00;usd\n";
+        $layout = [
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => ['date' => 0, 'description' => 1, 'amount' => 2, 'notes' => null, 'currency' => 3],
+        ];
+
+        $rows = $this->service->parseCsv($csv, $layout);
+
+        $this->assertEquals('USD', $rows[0]['currency_code']);
+    }
 }

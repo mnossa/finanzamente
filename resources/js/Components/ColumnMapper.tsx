@@ -8,6 +8,7 @@ interface ColumnMapping {
     notes: number | null;
     category?: number | null;
     account?: number | null;
+    currency?: number | null;
 }
 
 interface ColumnMapperProps {
@@ -39,6 +40,7 @@ export default function ColumnMapper({ headers, columnCount, mapping, onChange, 
         { key: 'notes', label: 'Note (opzionale)', required: false },
         { key: 'category', label: 'Categoria (opzionale)', required: false },
         { key: 'account', label: 'Conto (opzionale)', required: false },
+        { key: 'currency', label: 'Valuta (opzionale)', required: false },
     ];
 
     return (
