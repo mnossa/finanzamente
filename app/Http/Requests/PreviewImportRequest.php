@@ -37,6 +37,7 @@ class PreviewImportRequest extends FormRequest
             'column_mapping.notes' => ['nullable', 'integer', 'min:0'],
             'column_mapping.category' => ['nullable', 'integer', 'min:0'],
             'column_mapping.account' => ['nullable', 'integer', 'min:0'],
+            'column_mapping.currency' => ['nullable', 'integer', 'min:0'],
         ];
     }
 

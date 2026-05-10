@@ -8,6 +8,8 @@ use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Models\User;
+use App\Services\CurrencyConverter;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -32,9 +34,12 @@ class ImportTransactionsJob implements ShouldQueue
         private readonly int $importId = 0,
     ) {}
 
-    public function handle(): void
+    public function handle(CurrencyConverter $converter): void
     {
         $user = User::findOrFail($this->userId);
+        $defaultCurrency = ! empty($this->validated['default_currency'])
+            ? strtoupper($this->validated['default_currency'])
+            : null;
 
         $importRecord = $this->importId ? TransactionImport::find($this->importId) : null;
         if ($importRecord) {
@@ -159,6 +164,30 @@ class ImportTransactionsJob implements ShouldQueue
             }
             $description = mb_substr($description, 0, 1000);
 
+            $rowCurrency = ! empty($row['currency_code']) ? strtoupper($row['currency_code']) : $defaultCurrency;
+            $accountCurrency = $account->currency_code ?? 'EUR';
+            $txDate = Carbon::parse($row['date']);
+
+            $fxData = [];
+            if ($rowCurrency !== null && $rowCurrency !== $accountCurrency) {
+                $fxData = $converter->convertToAccountCurrency(
+                    $amount,
+                    $rowCurrency,
+                    $accountCurrency,
+                    $txDate,
+                );
+            } else {
+                $snapshot = $converter->snapshot($amount, $accountCurrency, $txDate);
+                $fxData = [
+                    'amount' => round($amount, 2),
+                    'currency_code' => $accountCurrency,
+                    'exchange_rate_to_base' => $snapshot['exchange_rate_to_base'],
+                    'amount_base' => $snapshot['amount_base'],
+                    'original_amount' => null,
+                    'original_currency_code' => null,
+                ];
+            }
+
             if (in_array($action, ['replace', 'update'], true) && ! empty($row['duplicate_transaction_id'])) {
                 $existing = Transaction::where('id', (int) $row['duplicate_transaction_id'])
                     ->where('account_id', $account->id)
@@ -173,21 +202,25 @@ class ImportTransactionsJob implements ShouldQueue
                             'user_id' => $this->userId,
                             'account_id' => $account->id,
                             'category_id' => $resolveCategoryId($row['category_name'] ?? null),
-                            'amount' => $amount,
-                            'currency_code' => $account->currency_code,
+                            'amount' => $fxData['amount'],
+                            'currency_code' => $fxData['currency_code'],
+                            'exchange_rate_to_base' => $fxData['exchange_rate_to_base'],
+                            'amount_base' => $fxData['amount_base'],
+                            'original_amount' => $fxData['original_amount'] ?? null,
+                            'original_currency_code' => $fxData['original_currency_code'] ?? null,
                             'date' => $row['date'],
                             'description' => $description,
                             'is_private' => false,
                         ]);
                     } else {
                         $existing->update([
-                            'amount' => $amount,
+                            'amount' => $fxData['amount'],
                             'date' => $row['date'],
                             'description' => $description,
                         ]);
                         $balanceChanges[$account->id] -= $oldAmount;
                     }
-                    $balanceChanges[$account->id] += $amount;
+                    $balanceChanges[$account->id] += (float) $fxData['amount'];
                     $imported++;
 
                     continue;
@@ -198,13 +231,17 @@ class ImportTransactionsJob implements ShouldQueue
                 'user_id' => $this->userId,
                 'account_id' => $account->id,
                 'category_id' => $resolveCategoryId($row['category_name'] ?? null),
-                'amount' => $amount,
-                'currency_code' => $account->currency_code,
+                'amount' => $fxData['amount'],
+                'currency_code' => $fxData['currency_code'],
+                'exchange_rate_to_base' => $fxData['exchange_rate_to_base'],
+                'amount_base' => $fxData['amount_base'],
+                'original_amount' => $fxData['original_amount'] ?? null,
+                'original_currency_code' => $fxData['original_currency_code'] ?? null,
                 'date' => $row['date'],
                 'description' => $description,
                 'is_private' => false,
             ]);
-            $balanceChanges[$account->id] += $amount;
+            $balanceChanges[$account->id] += (float) $fxData['amount'];
             $imported++;
         }
 
