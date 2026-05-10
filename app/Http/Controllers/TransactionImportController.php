@@ -165,26 +165,9 @@ class TransactionImportController extends Controller
 
             $validated = $this->importService->validateRows($rows);
 
-            $uniqueCategories = collect($validated['valid'])
-                ->pluck('category_name')
-                ->filter(fn ($v) => $v !== null && $v !== '')
-                ->unique()
-                ->values()
-                ->toArray();
-
-            $uniqueAccounts = collect($validated['valid'])
-                ->pluck('account_name')
-                ->filter(fn ($v) => $v !== null && $v !== '')
-                ->unique()
-                ->values()
-                ->toArray();
-
-            $uniqueCurrencies = collect($validated['valid'])
-                ->pluck('currency_code')
-                ->filter(fn ($v) => $v !== null && $v !== '')
-                ->unique()
-                ->values()
-                ->toArray();
+            $uniqueCategories = $this->uniqueField($validated['valid'], 'category_name');
+            $uniqueAccounts = $this->uniqueField($validated['valid'], 'account_name');
+            $uniqueCurrencies = $this->uniqueField($validated['valid'], 'currency_code');
 
             return response()->json([
                 'headers' => $headers,
@@ -204,6 +187,19 @@ class TransactionImportController extends Controller
                 @unlink($tempPath);
             }
         }
+    }
+
+    /**
+     * Raccoglie i valori distinti e non-vuoti di un campo da un array di righe validate.
+     */
+    private function uniqueField(array $rows, string $key): array
+    {
+        return collect($rows)
+            ->pluck($key)
+            ->filter(fn ($v) => $v !== null && $v !== '')
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     /**
