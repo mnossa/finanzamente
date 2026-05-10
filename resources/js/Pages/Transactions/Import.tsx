@@ -39,6 +39,7 @@ interface UserLayout {
         description: number;
         notes: number | null;
         category?: number | null;
+        currency?: number | null;
     };
     delimiter: string;
     date_format: string;
@@ -54,6 +55,7 @@ interface ImportRow {
     notes: string | null;
     category_name: string | null;
     account_name: string | null;
+    currency_code: string | null;
     raw: string;
     errors: string[];
     warnings: string[];
@@ -68,6 +70,7 @@ interface PreviewResponse {
     invalid_count: number;
     unique_categories: string[];
     unique_accounts: string[];
+    unique_currencies: string[];
 }
 
 interface ColumnMapping {
@@ -77,6 +80,7 @@ interface ColumnMapping {
     notes: number | null;
     category: number | null;
     account: number | null;
+    currency: number | null;
 }
 
 interface CategoryMappingEntry {
@@ -328,7 +332,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         notes: null,
         category: null,
         account: null,
+        currency: null,
     });
+    const [defaultCurrency, setDefaultCurrency] = useState('EUR');
     const [categoryMappings, setCategoryMappings] = useState<Record<string, CategoryMappingEntry>>({});
     const [accountMappings, setAccountMappings] = useState<Record<string, AccountMappingEntry>>({});
     const [showInvalidRows, setShowInvalidRows] = useState(false);
@@ -408,6 +414,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         description: columnMapping.description ?? 2,
                         notes: columnMapping.notes ?? null,
                         category: columnMapping.category ?? null,
+                        currency: columnMapping.currency ?? null,
                     },
                 },
                 { headers: { Accept: 'application/json' } },
@@ -444,6 +451,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             notes: layout.column_mapping.notes ?? null,
             category: layout.column_mapping.category ?? null,
             account: null,
+            currency: layout.column_mapping.currency ?? null,
         });
         // Pre-compila il campo "Salva layout" con i dati del layout applicato
         setSaveLayoutName(layout.name);
@@ -487,6 +495,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         description: columnMapping.description ?? 2,
                         notes: columnMapping.notes ?? null,
                         category: columnMapping.category ?? null,
+                        currency: columnMapping.currency ?? null,
                     },
                 },
                 { headers: { Accept: 'application/json' } },
@@ -629,6 +638,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         if (columnMapping.account != null) {
             formData.append('column_mapping[account]', String(columnMapping.account));
         }
+        if (columnMapping.currency != null) {
+            formData.append('column_mapping[currency]', String(columnMapping.currency));
+        }
 
         try {
             const response = await axios.post<PreviewResponse>(route('transactions.import.preview'), formData, {
@@ -768,8 +780,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                 description: row.description,
                 notes: row.notes,
                 ...(row.category_name ? { category_name: row.category_name } : {}),
-                // Passa account_name per la risoluzione server-side tramite account_mappings
                 ...(columnMapping.account != null && row.account_name ? { account_name: row.account_name } : {}),
+                ...(row.currency_code ? { currency_code: row.currency_code } : {}),
             }));
     };
 
@@ -806,8 +818,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         router.post(
             route('transactions.import.store'),
             {
-                // account_id globale solo se non c'è la colonna conto nel file
                 ...(columnMapping.account === null ? { account_id: data.account_id } : {}),
+                default_currency: defaultCurrency,
                 rows: rowsWithResolutions,
                 category_mappings: categoryMappingsArray,
                 ...(accountMappingsArray.length > 0 ? { account_mappings: accountMappingsArray } : {}),
@@ -1171,7 +1183,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 headers={previewData?.headers ?? []}
                                 columnCount={6}
                                 mapping={columnMapping}
-                                onChange={(m) => setColumnMapping({ ...m, category: m.category ?? null, account: m.account ?? null })}
+                                onChange={(m) => setColumnMapping({ ...m, category: m.category ?? null, account: m.account ?? null, currency: m.currency ?? null })}
                             />
                             <PrimaryButton
                                 type="button"
@@ -1409,6 +1421,42 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 <InputError message={importErrors.account_id} className="mt-1" />
                             </div>
                             )}
+
+                            {/* Valuta predefinita / riepilogo valute */}
+                            <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-semibold text-gray-800">
+                                            💱 Valuta {columnMapping.currency != null ? 'predefinita' : 'delle transazioni'}
+                                        </h3>
+                                        <p className="mt-0.5 text-xs text-gray-500">
+                                            {columnMapping.currency != null
+                                                ? 'Usata per le righe senza valuta specificata nel file. Le altre righe useranno la valuta indicata nella colonna mappata.'
+                                                : 'Tutte le transazioni importate saranno registrate con questa valuta.'}
+                                        </p>
+                                    </div>
+                                    <select
+                                        value={defaultCurrency}
+                                        onChange={(e) => setDefaultCurrency(e.target.value)}
+                                        className="w-full sm:w-auto rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+                                        aria-label="Valuta predefinita"
+                                    >
+                                        {currencies.map((c) => (
+                                            <option key={c.code} value={c.code}>{c.symbol} {c.code} – {c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {columnMapping.currency != null && previewData && (previewData.unique_currencies ?? []).length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                        <span className="text-xs text-gray-500 mr-1">Valute nel file:</span>
+                                        {(previewData.unique_currencies ?? []).map((code) => (
+                                            <span key={code} className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                                                {code}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Mappatura conti da colonna file */}
                             {columnMapping.account != null && previewData && (previewData.unique_accounts ?? []).length > 0 && (
@@ -1657,6 +1705,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                 {columnMapping.account != null && (
                                                     <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600 hidden md:table-cell">Conto</th>
                                                 )}
+                                                {columnMapping.currency != null && (
+                                                    <th className="px-3 py-1.5 text-left text-xs font-medium text-gray-600 hidden sm:table-cell">Valuta</th>
+                                                )}
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-100 text-sm">
@@ -1713,6 +1764,20 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                                     {row.account_name}
                                                                 </span>
                                                             ) : '—'}
+                                                        </td>
+                                                    )}
+                                                    {columnMapping.currency != null && (
+                                                        <td className="px-3 py-1 hidden sm:table-cell">
+                                                            {row.currency_code ? (
+                                                                <span className={clsx(
+                                                                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                                                                    row.currency_code === 'EUR' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-800',
+                                                                )}>
+                                                                    {row.currency_code}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400">{defaultCurrency}</span>
+                                                            )}
                                                         </td>
                                                     )}
                                                 </tr>

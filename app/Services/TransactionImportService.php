@@ -87,6 +87,9 @@ class TransactionImportService
         $accountRaw = isset($mapping['account']) && $mapping['account'] !== null
             ? $this->getColumn($cols, $mapping['account'])
             : null;
+        $currencyRaw = isset($mapping['currency']) && $mapping['currency'] !== null
+            ? $this->getColumn($cols, $mapping['currency'])
+            : null;
 
         // Parse date
         $date = null;
@@ -125,6 +128,7 @@ class TransactionImportService
             'notes' => $notesRaw !== null ? trim($notesRaw) : null,
             'category_name' => ($categoryRaw !== null && trim($categoryRaw) !== '') ? trim($categoryRaw) : null,
             'account_name' => ($accountRaw !== null && trim($accountRaw) !== '') ? trim($accountRaw) : null,
+            'currency_code' => ($currencyRaw !== null && trim($currencyRaw) !== '') ? strtoupper(trim($currencyRaw)) : null,
             'raw' => $raw,
             'errors' => $errors,
             'warnings' => $warnings,
@@ -350,6 +354,9 @@ class TransactionImportService
         $accountCell = $getCell(
             (isset($mapping['account']) && $mapping['account'] !== null) ? (int) $mapping['account'] : null
         );
+        $currencyCell = $getCell(
+            (isset($mapping['currency']) && $mapping['currency'] !== null) ? (int) $mapping['currency'] : null
+        );
 
         // ── Data ────────────────────────────────────────────────────────────
         $date = null;
@@ -395,6 +402,7 @@ class TransactionImportService
         $notesRaw = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
         $categoryRaw = $categoryCell !== null ? trim($this->cellValueToString($categoryCell->getValue())) : null;
         $accountRaw = $accountCell !== null ? trim($this->cellValueToString($accountCell->getValue())) : null;
+        $currencyRaw = $currencyCell !== null ? trim($this->cellValueToString($currencyCell->getValue())) : null;
 
         return [
             'line_number' => $lineNumber,
@@ -404,6 +412,7 @@ class TransactionImportService
             'notes' => ($notesRaw !== null && $notesRaw !== '') ? $notesRaw : null,
             'category_name' => ($categoryRaw !== null && $categoryRaw !== '') ? $categoryRaw : null,
             'account_name' => ($accountRaw !== null && $accountRaw !== '') ? $accountRaw : null,
+            'currency_code' => ($currencyRaw !== null && $currencyRaw !== '') ? strtoupper($currencyRaw) : null,
             'raw' => "Riga {$lineNumber}",
             'errors' => $errors,
         ];

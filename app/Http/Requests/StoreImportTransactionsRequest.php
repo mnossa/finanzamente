@@ -30,11 +30,13 @@ class StoreImportTransactionsRequest extends FormRequest
 
         return [
             'account_id' => ['nullable', 'integer', Rule::in($accessibleAccountIds)],
+            'default_currency' => ['nullable', 'string', 'max:10', 'exists:currencies,code'],
             'rows' => ['required', 'array', 'min:1'],
             'rows.*.date' => ['required', 'date'],
             'rows.*.amount' => ['required', 'numeric'],
             'rows.*.description' => ['nullable', 'string', 'max:1000'],
             'rows.*.notes' => ['nullable', 'string', 'max:1000'],
+            'rows.*.currency_code' => ['nullable', 'string', 'max:10'],
             'rows.*.account_id' => ['nullable', 'integer', Rule::in(array_merge([0], $accessibleAccountIds))],
             'rows.*.account_name' => ['nullable', 'string', 'max:255'],
             'rows.*.duplicate_action' => ['nullable', 'string', Rule::in(['import', 'ignore', 'replace', 'update'])],

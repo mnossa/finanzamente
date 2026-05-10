@@ -179,6 +179,13 @@ class TransactionImportController extends Controller
                 ->values()
                 ->toArray();
 
+            $uniqueCurrencies = collect($validated['valid'])
+                ->pluck('currency_code')
+                ->filter(fn ($v) => $v !== null && $v !== '')
+                ->unique()
+                ->values()
+                ->toArray();
+
             return response()->json([
                 'headers' => $headers,
                 'valid' => $validated['valid'],
@@ -188,6 +195,7 @@ class TransactionImportController extends Controller
                 'invalid_count' => count($validated['invalid']),
                 'unique_categories' => $uniqueCategories,
                 'unique_accounts' => $uniqueAccounts,
+                'unique_currencies' => $uniqueCurrencies,
             ]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);

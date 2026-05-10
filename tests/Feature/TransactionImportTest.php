@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\BankImportLayout;
+use App\Models\Currency;
 use App\Models\Household;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -231,6 +233,107 @@ class TransactionImportTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['google_drive_access_token']);
+    }
+
+    #[Test]
+    public function preview_csv_with_currency_column_returns_unique_currencies(): void
+    {
+        $csvContent = "Data;Descrizione;Importo;Valuta\n01/01/2024;Supermercato;-50,00;EUR\n05/01/2024;Hotel NY;-120,00;USD\n06/01/2024;Pub London;-30,00;GBP\n";
+        $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
+            'csv_file' => $file,
+            'bank_name' => 'custom',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => [
+                'date' => 0,
+                'description' => 1,
+                'amount' => 2,
+                'notes' => null,
+                'currency' => 3,
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['total' => 3, 'valid_count' => 3]);
+        $response->assertJsonStructure(['unique_currencies']);
+        $currencies = $response->json('unique_currencies');
+        $this->assertContains('EUR', $currencies);
+        $this->assertContains('USD', $currencies);
+        $this->assertContains('GBP', $currencies);
+    }
+
+    #[Test]
+    public function import_with_default_currency_sets_currency_on_transactions(): void
+    {
+        Currency::firstOrCreate(['code' => 'EUR'], ['name' => 'Euro', 'symbol' => '€']);
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
+            'account_id' => $this->account->id,
+            'default_currency' => 'EUR',
+            'rows' => [
+                ['date' => '2024-01-01', 'amount' => -50.00, 'description' => 'Supermercato'],
+                ['date' => '2024-01-05', 'amount' => 1500.00, 'description' => 'Stipendio'],
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseCount('transactions', 2);
+        $this->assertDatabaseHas('transactions', [
+            'description' => 'Supermercato',
+            'currency_code' => $this->account->currency_code,
+        ]);
+    }
+
+    #[Test]
+    public function import_with_per_row_currency_code_creates_transactions(): void
+    {
+        Currency::firstOrCreate(['code' => 'EUR'], ['name' => 'Euro', 'symbol' => '€']);
+        Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
+            'account_id' => $this->account->id,
+            'default_currency' => 'EUR',
+            'rows' => [
+                ['date' => '2024-01-01', 'amount' => -50.00, 'description' => 'Locale EUR'],
+                ['date' => '2024-01-05', 'amount' => -120.00, 'description' => 'Hotel USD', 'currency_code' => 'USD'],
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseCount('transactions', 2);
+        $this->assertDatabaseHas('transactions', [
+            'description' => 'Locale EUR',
+            'original_currency_code' => null,
+        ]);
+        $tx = Transaction::where('description', 'Hotel USD')->first();
+        $this->assertNotNull($tx);
+        $this->assertEquals('USD', $tx->original_currency_code);
+    }
+
+    #[Test]
+    public function layout_can_include_currency_column_mapping(): void
+    {
+        $response = $this->actingAs($this->user)->postJson('/layout-banca', [
+            'name' => 'Layout multi-valuta',
+            'bank_name' => 'custom',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => ['date' => 0, 'description' => 1, 'amount' => 2, 'notes' => null, 'currency' => 3],
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('bank_import_layouts', [
+            'user_id' => $this->user->id,
+            'name' => 'Layout multi-valuta',
+        ]);
+        $layout = BankImportLayout::where('name', 'Layout multi-valuta')->first();
+        $this->assertEquals(3, $layout->column_mapping['currency']);
     }
 
     #[Test]
