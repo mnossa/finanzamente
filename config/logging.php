@@ -51,9 +51,10 @@ return [
     */
 
     'channels' => [
+
         'security' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/security.log'),
+            'path' => storage_path('logs/security-'.env('APP_ENV', 'local').'.log'),
             'level' => 'info',
             'days' => 30,
             'replace_placeholders' => true,
@@ -74,7 +75,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/laravel-'.env('APP_ENV', 'local').'.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
