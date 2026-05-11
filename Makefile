@@ -11,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-copilot-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -293,14 +293,14 @@ rebase-staging-from-main:
 	git rebase main && \
 	git push --force-with-lease origin staging
 
-# Elimina tutti i branch locali e remoti con prefisso copilot/
-prune-copilot-branches:
+# Elimina tutti i branch locali e remoti con prefisso cursor/
+prune-cursor-branches:
 	@current_branch=$$(git branch --show-current); \
-	local_branches=$$(git for-each-ref --format='%(refname:short)' refs/heads/copilot/); \
+	local_branches=$$(git for-each-ref --format='%(refname:short)' refs/heads/cursor/); \
 	if [ -z "$$local_branches" ]; then \
-		echo "[+] Nessun branch locale copilot/* da eliminare"; \
+		echo "[+] Nessun branch locale cursor/* da eliminare"; \
 	else \
-		echo "[+] Eliminazione branch locali copilot/*"; \
+		echo "[+] Eliminazione branch locali cursor/*"; \
 		for branch in $$local_branches; do \
 			if [ "$$branch" = "$$current_branch" ]; then \
 				echo "[!] Salto $$branch perche' e' il branch corrente"; \
@@ -310,11 +310,11 @@ prune-copilot-branches:
 		done; \
 	fi; \
 	git fetch origin --prune; \
-	remote_branches=$$(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin/copilot/); \
+	remote_branches=$$(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin/cursor/); \
 	if [ -z "$$remote_branches" ]; then \
-		echo "[+] Nessun branch remoto origin/copilot/* da eliminare"; \
+		echo "[+] Nessun branch remoto origin/cursor/* da eliminare"; \
 	else \
-		echo "[+] Eliminazione branch remoti origin/copilot/*"; \
+		echo "[+] Eliminazione branch remoti origin/cursor/*"; \
 		for branch in $$remote_branches; do \
 			git push origin --delete "$$branch"; \
 		done; \
