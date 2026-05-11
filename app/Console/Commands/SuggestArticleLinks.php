@@ -189,7 +189,7 @@ class SuggestArticleLinks extends Command
      * Auto-rileva quali suggerimenti "pending" sono stati implementati dall'editore:
      * un suggerimento è implementato se lo slug del target è ora presente tra i link del source.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection<int, MagazineArticle>  $articles
+     * @param  Collection<int, MagazineArticle>  $articles
      * @param  array<string, string[]>  $alreadyLinked
      */
     private function detectImplementedSuggestions(Collection $articles, array $alreadyLinked): int
@@ -225,7 +225,7 @@ class SuggestArticleLinks extends Command
      * per evitare che il servizio Python ri-proponga coppie già suggerite e non ancora risolte.
      *
      * @param  array<string, string[]>  $alreadyLinked
-     * @param  \Illuminate\Database\Eloquent\Collection<int, MagazineArticle>  $articles
+     * @param  Collection<int, MagazineArticle>  $articles
      * @return array<string, string[]>
      */
     private function mergeHistoryIntoAlreadyLinked(array $alreadyLinked, Collection $articles): array

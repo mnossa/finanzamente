@@ -143,7 +143,7 @@ class SuggestArticleLinksTest extends TestCase
         $capturedAlreadyLinked = null;
         Http::fake([
             '*/health' => Http::response(['status' => 'ok', 'model' => 'test'], 200),
-            '*/batch-suggest' => function ($request) use (&$capturedAlreadyLinked, $articles) {
+            '*/batch-suggest' => function ($request) use (&$capturedAlreadyLinked) {
                 $capturedAlreadyLinked = $request->data()['already_linked'] ?? [];
 
                 return Http::response([
