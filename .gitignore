@@ -17,6 +17,9 @@
 /.zed
 /auth.json
 /node_modules
+python-services/.venv/
+python-services/.pyright-deps/
+
 /public/build
 /public/hot
 /public/storage

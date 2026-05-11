@@ -133,7 +133,7 @@ class ProfileTest extends TestCase
         $service = app(ConsentService::class);
         $service->setConsent($user, 'marketing_email', 'granted', [
             'source' => 'profile_settings',
-            'policy_version' => '2026-04-28-v1',
+            'policy_version' => config('legal.privacy_policy_version'),
         ]);
 
         $response = $this

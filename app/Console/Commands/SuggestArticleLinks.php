@@ -30,7 +30,7 @@ class SuggestArticleLinks extends Command
         $minScore = (float) $this->option('min-score');
         $maxScore = (float) $this->option('max-score');
 
-        $linkerUrl = rtrim(env('PYTHON_LINKER_URL', 'http://127.0.0.1:8000'), '/');
+        $pythonServicesUrl = rtrim((string) config('services.python_services.url'), '/');
 
         // Verifica che il servizio Python sia raggiungibile (max 3 tentativi con backoff)
         $maxRetries = 3;
@@ -38,7 +38,7 @@ class SuggestArticleLinks extends Command
         $lastError = null;
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
-                $health = Http::timeout(5)->get("{$linkerUrl}/health");
+                $health = Http::timeout(5)->get("{$pythonServicesUrl}/health");
                 if ($health->successful()) {
                     $lastError = null;
                     break;
@@ -48,13 +48,13 @@ class SuggestArticleLinks extends Command
                 $lastError = $e;
             }
             if ($attempt < $maxRetries) {
-                $this->warn("Tentativo {$attempt}/{$maxRetries}: python-linker non raggiungibile, attendo {$retryDelay}s...");
+                $this->warn("Tentativo {$attempt}/{$maxRetries}: servizio Python non raggiungibile, attendo {$retryDelay}s...");
                 sleep($retryDelay);
             }
         }
         if ($lastError !== null) {
-            $this->error("Servizio python-linker non raggiungibile ({$linkerUrl}): ".$lastError->getMessage());
-            Log::error('magazine:link-suggestions — python-linker non raggiungibile', ['error' => $lastError->getMessage()]);
+            $this->error("Servizio Python non raggiungibile ({$pythonServicesUrl}): ".$lastError->getMessage());
+            Log::error('magazine:link-suggestions — servizio Python non raggiungibile', ['error' => $lastError->getMessage()]);
 
             return 1;
         }
@@ -102,7 +102,7 @@ class SuggestArticleLinks extends Command
 
         // Chiama il servizio Python
         try {
-            $response = Http::timeout(120)->post("{$linkerUrl}/batch-suggest", [
+            $response = Http::timeout(120)->post("{$pythonServicesUrl}/batch-suggest", [
                 'articles' => $payload,
                 'top_k' => $maxPerArticle,
                 'min_score' => $minScore,
@@ -114,8 +114,8 @@ class SuggestArticleLinks extends Command
                 throw new \RuntimeException("HTTP {$response->status()}: ".$response->body());
             }
         } catch (\Throwable $e) {
-            $this->error('Errore chiamata python-linker: '.$e->getMessage());
-            Log::error('magazine:link-suggestions — errore python-linker', ['error' => $e->getMessage()]);
+            $this->error('Errore chiamata servizio Python: '.$e->getMessage());
+            Log::error('magazine:link-suggestions — errore servizio Python', ['error' => $e->getMessage()]);
 
             return 1;
         }

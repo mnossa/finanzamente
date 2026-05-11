@@ -193,4 +193,15 @@ return [
         'base_url' => env('FRANKFURTER_BASE_URL', 'https://api.frankfurter.dev/v1'),
     ],
 
+    /*
+    | Servizio FastAPI ausiliario (cartella python-services). Variabile: PYTHON_SERVICES_URL.
+    | Fallback PYTHON_LINKER_URL: deprecato, rimuovere dopo migrazione .env.
+    */
+    'python_services' => [
+        'url' => env(
+            'PYTHON_SERVICES_URL',
+            env('PYTHON_LINKER_URL', 'http://127.0.0.1:8000')
+        ),
+    ],
+
 ];

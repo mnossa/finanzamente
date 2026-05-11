@@ -37,9 +37,22 @@ class ProfileController extends Controller
             ->get()
             ->keyBy('purpose');
 
+        $incomeBands = collect(config('cohort_insights.income_bands', []))
+            ->map(fn (string $label, string $key) => ['value' => $key, 'label' => $label])
+            ->values()
+            ->all();
+
+        $macroRegions = collect(config('cohort_insights.macro_regions', []))
+            ->map(fn (string $label, string $key) => ['value' => $key, 'label' => $label])
+            ->values()
+            ->all();
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'cohortProfileHelp' => __('cohort_insights.profile_help'),
+            'cohortIncomeBands' => $incomeBands,
+            'cohortMacroRegions' => $macroRegions,
             'consents' => [
                 'marketing_email' => optional($existing->get('marketing_email'))->status === 'granted',
                 'analytics_tracking' => optional($existing->get('analytics_tracking'))->status === 'granted',
@@ -99,7 +112,7 @@ class ProfileController extends Controller
         $context = [
             'source' => 'profile_settings',
             'legal_basis' => 'consent',
-            'policy_version' => '2026-04-28-v1',
+            'policy_version' => config('legal.privacy_policy_version'),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ];
@@ -175,7 +188,7 @@ class ProfileController extends Controller
         $context = [
             'source' => 'profile_settings',
             'legal_basis' => 'consent',
-            'policy_version' => '2026-04-28-v1',
+            'policy_version' => config('legal.privacy_policy_version'),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ];
@@ -202,7 +215,7 @@ class ProfileController extends Controller
             [
                 'source' => 'public_blade_sync',
                 'legal_basis' => 'consent',
-                'policy_version' => '2026-04-28-v1',
+                'policy_version' => config('legal.privacy_policy_version'),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]

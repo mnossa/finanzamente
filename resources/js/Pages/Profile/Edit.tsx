@@ -16,11 +16,19 @@ interface CurrencyOption {
     symbol: string | null;
 }
 
+interface CohortSelectOption {
+    value: string;
+    label: string;
+}
+
 export default function Edit({
     mustVerifyEmail,
     status,
     consents,
     currencies = [],
+    cohortProfileHelp = '',
+    cohortIncomeBands = [],
+    cohortMacroRegions = [],
 }: PageProps<{
     mustVerifyEmail: boolean;
     status?: string;
@@ -29,6 +37,9 @@ export default function Edit({
         analytics_tracking: boolean;
     };
     currencies?: CurrencyOption[];
+    cohortProfileHelp?: string;
+    cohortIncomeBands?: CohortSelectOption[];
+    cohortMacroRegions?: CohortSelectOption[];
 }>) {
     return (
         <AuthenticatedLayout
@@ -52,6 +63,9 @@ export default function Edit({
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
                             currencies={currencies}
+                            cohortProfileHelp={cohortProfileHelp}
+                            cohortIncomeBands={cohortIncomeBands}
+                            cohortMacroRegions={cohortMacroRegions}
                             className="w-full"
                         />
                     </SectionCard>

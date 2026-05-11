@@ -11,14 +11,14 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update linker-build linker-logs linker-shell link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d --remove-orphans
 
 down:
-	docker compose down
+	docker compose down --remove-orphans
 
 restart: down up
 
@@ -459,22 +459,32 @@ magazine-demo:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=MagazineArticleDemoSeeder --force
 	@echo [+] Articoli demo magazine generati.
 
-# ---------- Python Semantic Linker ----------
+# ---------- Servizi Python ausiliari (FastAPI: magazine, cohort, …) ----------
 
-# Builda (o rebuilda) l'immagine del servizio python-linker
-linker-build:
-	@echo [+] Build python-linker...
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose build python-linker
+python-services-build:
+	@echo [+] Build python-services...
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose build python-services
 	@echo [+] Build completata. Riavvio del servizio...
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d python-linker
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d python-services
 
-# Log del container python-linker
-linker-logs:
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose logs -f python-linker
+python-services-logs:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose logs -f python-services
 
-# Shell nel container python-linker
-linker-shell:
-	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec python-linker bash
+python-services-shell:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec python-services bash
+
+# Dipendenze leggere in python-services/.pyright-deps (gitignored) per Pyright/Pylance su pydantic.
+python-services-pyright-deps:
+	cd python-services && rm -rf .pyright-deps && python3 -m pip install -q --target .pyright-deps "pydantic>=2.7"
+
+# Alias retrocompatibilità (nome servizio precedente)
+linker-build: python-services-build
+
+linker-logs: python-services-logs
+
+linker-shell: python-services-shell
+
+linker-pyright-deps: python-services-pyright-deps
 
 # Esegui manualmente il comando di suggerimento link
 link-suggestions:

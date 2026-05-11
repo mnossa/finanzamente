@@ -60,3 +60,9 @@ Schedule::command('magazine:link-suggestions')->sundays()->twiceMonthly()->at('0
  * Applica retention su eventi consenso GDPR (anonymize + prune) ogni notte.
  */
 Schedule::command('consents:enforce-retention')->dailyAt('03:30');
+
+/**
+ * Insight di cohort anonimi (Extra vs mediana profili simili) tramite servizio Python.
+ * Dati inviati al servizio Python sono solo bucket numerici, senza accesso al DB.
+ */
+Schedule::command('insights:cohort-analyze')->dailyAt('04:15');

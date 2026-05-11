@@ -86,11 +86,13 @@ class RegistrationTest extends TestCase
             'user_id' => auth()->id(),
             'purpose' => 'privacy_policy_ack',
             'status' => 'granted',
+            'policy_version' => config('legal.privacy_policy_version'),
         ]);
         $this->assertDatabaseHas('consents', [
             'user_id' => auth()->id(),
             'purpose' => 'terms_ack',
             'status' => 'granted',
+            'policy_version' => config('legal.privacy_policy_version'),
         ]);
         $this->assertDatabaseHas('consents', [
             'user_id' => auth()->id(),

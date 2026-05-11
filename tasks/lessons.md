@@ -177,7 +177,7 @@
 
 ### Problema 2: push su GHCR fallisce con 403
 - Il workflow tentava di fare push su `ghcr.io/mnossa/finanzamente-python-linker` senza autenticazione GHCR.
-- In realtà il python-linker è già incluso nel `Dockerfile.prod` principale (via `COPY python-linker/`): non esiste un'immagine separata.
+- In realtà il servizio Python è già incluso nel `Dockerfile.prod` principale (via `COPY python-services/`): non esiste un'immagine separata.
 - **Fix**: rimossi completamente i due step per python-linker (calcola tag + build/push). Tutto finisce nell'unica immagine `mnossa/finanzamente` su Docker Hub.
 - **Regola**: prima di aggiungere step di build per un'immagine separata, verificare se il codice è già incluso nel Dockerfile principale.
 
@@ -281,7 +281,7 @@
 - **Regola**: per query cross-DB, preferire funzioni SQL standard o gestire la differenza a livello di codice.
 
 ### 2. Test Feature con dipendenze esterne (HTTP)
-- I test che invocano servizi esterni (es. FastAPI python-linker) vanno sempre mockati con `Http::fake()`.
+- I test che invocano servizi esterni (es. FastAPI python-services) vanno sempre mockati con `Http::fake()`.
 - **Regola**: ogni test Feature deve essere isolato e non dipendere da servizi reali o dalla rete.
 
 ### 3. Factory e Foreign Key
@@ -293,7 +293,7 @@
 - **Regola**: 1.5GB è sufficiente per modelli tipo MiniLM; testare sempre il consumo reale.
 
 ### 5. Pipeline CI/CD multi-immagine
-- Se il deploy richiede più immagini custom (es. app + python-linker), la pipeline deve buildare, pushare e pullare tutte le immagini, con cache separata per layer pesanti (modelli ML).
+- Se il deploy richiede più immagini custom (es. app + python-services), la pipeline deve buildare, pushare e pullare tutte le immagini, con cache separata per layer pesanti (modelli ML).
 - **Regola**: usare `docker/metadata-action` e `docker/build-push-action` con scope diversi per ogni immagine.
 
 ### 6. Rollback robusto in deploy

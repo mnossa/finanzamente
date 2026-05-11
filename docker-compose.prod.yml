@@ -7,6 +7,7 @@
 # VARIABILI d'ambiente richieste nel file .env (sul server):
 #   APP_KEY, APP_URL, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
 #   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, BACKUP_ENCRYPTION_KEY, IMAGE_TAG
+#   (Opzionale) PYTHON_SERVICES_URL — in compose è fissata per servizio; vedi environment sotto.
 # =============================================================================
 
 services:
@@ -18,8 +19,8 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # python-linker gira nello stesso container via supervisord (localhost)
-      PYTHON_LINKER_URL: "http://127.0.0.1:8000"
+      # Servizio Python (uvicorn main:app) nello stesso container via supervisord (localhost)
+      PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     # Porta 80 gestita da Caddy: il container è raggiungibile solo internamente
     # ports:
     #   - "80:80"
@@ -54,8 +55,8 @@ services:
     environment:
       # Non rieseguire migrate/optimize: già fatto dal container app
       SKIP_INIT: "true"
-      # python-linker gira nel container app: raggiungibile via rete Docker interna
-      PYTHON_LINKER_URL: "http://finanzamente-app:8000"
+      # Servizio Python nel container app: raggiungibile via rete Docker interna
+      PYTHON_SERVICES_URL: "http://app:8000"
     volumes:
       - storage:/var/www/storage
       - bootstrap_cache:/var/www/bootstrap/cache
@@ -87,8 +88,8 @@ services:
     environment:
       # Non rieseguire migrate/optimize: già fatto dal container app
       SKIP_INIT: "true"
-      # python-linker gira nel container app: raggiungibile via rete Docker interna
-      PYTHON_LINKER_URL: "http://finanzamente-app:8000"
+      # Servizio Python nel container app: raggiungibile via rete Docker interna
+      PYTHON_SERVICES_URL: "http://app:8000"
     volumes:
       - storage:/var/www/storage
       - bootstrap_cache:/var/www/bootstrap/cache

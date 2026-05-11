@@ -1,5 +1,5 @@
 """
-Semantic Article Linker — FastAPI service
+Magazine — similarità semantica e suggerimenti link interni (sentence-transformers).
 
 Calcola similarità semantica tra articoli del magazine usando sentence-transformers
 e suggerisce link interni rilevanti (basati sul contenuto, non solo sul titolo).
@@ -26,14 +26,13 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pysbd
-from fastapi import FastAPI
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Semantic Article Linker", version="2.0.0")
+router = APIRouter(tags=["magazine"])
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 # Limite hard del modello: oltre questo i token vengono troncati.
@@ -249,7 +248,7 @@ def best_snippet(
 
 # ---------- Endpoints ----------
 
-@app.get("/health")
+@router.get("/health")
 def health():
     return {
         "status": "ok",
@@ -258,7 +257,7 @@ def health():
     }
 
 
-@app.post("/batch-suggest", response_model=BatchSuggestResponse)
+@router.post("/batch-suggest", response_model=BatchSuggestResponse)
 def batch_suggest(req: BatchSuggestRequest):
     if len(req.articles) < 2:
         return BatchSuggestResponse(suggestions=[], articles_processed=len(req.articles))

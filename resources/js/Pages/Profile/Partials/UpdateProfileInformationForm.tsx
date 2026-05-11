@@ -15,15 +15,26 @@ interface CurrencyOption {
     symbol: string | null;
 }
 
+interface CohortSelectOption {
+    value: string;
+    label: string;
+}
+
 export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
     currencies = [],
+    cohortProfileHelp = '',
+    cohortIncomeBands = [],
+    cohortMacroRegions = [],
     className = '',
 }: {
     mustVerifyEmail: boolean;
     status?: string;
     currencies?: CurrencyOption[];
+    cohortProfileHelp?: string;
+    cohortIncomeBands?: CohortSelectOption[];
+    cohortMacroRegions?: CohortSelectOption[];
     className?: string;
 }) {
     const user = usePage().props.auth.user;
@@ -32,7 +43,9 @@ export default function UpdateProfileInformation({
         useForm({
             name: user.name,
             email: user.email,
-            default_currency_code: (user as { default_currency_code?: string | null }).default_currency_code ?? '',
+            default_currency_code: user.default_currency_code ?? '',
+            income_band: user.income_band ?? '',
+            macro_region: user.macro_region ?? '',
         });
 
     const submit: FormEventHandler = (e) => {
@@ -114,6 +127,52 @@ export default function UpdateProfileInformation({
                     </p>
                     <InputError className="mt-2" message={errors.default_currency_code} />
                 </div>
+
+                {cohortIncomeBands.length > 0 && (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-800/40">
+                        <InputLabel htmlFor="income_band" value="Fascia di reddito (facoltativa)" />
+                        <select
+                            id="income_band"
+                            name="income_band"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            value={data.income_band}
+                            onChange={(e) => setData('income_band', e.target.value)}
+                        >
+                            <option value="">Non specificata</option>
+                            {cohortIncomeBands.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                    {o.label}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError className="mt-2" message={errors.income_band} />
+
+                        <div className="mt-4">
+                            <InputLabel htmlFor="macro_region" value="Macro-area (facoltativa)" />
+                            <select
+                                id="macro_region"
+                                name="macro_region"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                value={data.macro_region}
+                                onChange={(e) => setData('macro_region', e.target.value)}
+                            >
+                                <option value="">Non specificata</option>
+                                {cohortMacroRegions.map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                        {o.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError className="mt-2" message={errors.macro_region} />
+                        </div>
+
+                        {cohortProfileHelp && (
+                            <p className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                                {cohortProfileHelp}
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-800 dark:bg-amber-900/20">

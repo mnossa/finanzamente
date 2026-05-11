@@ -59,7 +59,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY python-linker/requirements.txt .
+COPY python-services/requirements.txt .
 
 # Installa PyTorch CPU-only PRIMA di requirements.txt:
 # sentence-transformers tirerebbe la variante CUDA (~2GB), quella CPU è ~200MB.
@@ -131,9 +131,9 @@ COPY --from=composer-builder --chown=www-data:www-data /app/vendor ./vendor
 # Copia pacchetti Python e modello pre-scaricato dallo stage python-builder
 COPY --from=python-builder /python-packages /python-packages
 COPY --from=python-builder /root/.cache /root/.cache
-COPY python-linker/app.py /python-linker/app.py
+COPY python-services/main.py python-services/magazine_linker.py python-services/cohort_insights.py /python-services/
 
-# Imposta PYTHONPATH per uvicorn/python-linker
+# Imposta PYTHONPATH per uvicorn (servizi Python ausiliari)
 ENV PYTHONPATH=/python-packages
 
 # Copia le configurazioni Docker

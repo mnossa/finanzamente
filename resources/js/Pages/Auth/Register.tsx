@@ -293,7 +293,9 @@ export default function Register({ selectedPlan = 'base', billingCycle = 'monthl
                                 Preferenze privacy (opzionali)
                             </p>
                             <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                                Privacy policy e termini vengono accettati durante la registrazione. Qui puoi impostare i consensi opzionali.
+                                Con la registrazione confermi l’informativa privacy e i termini di servizio in vigore (incluso l’uso di dati in
+                                forma aggregata o anonimizzata per migliorare il servizio, come descritto in privacy). Qui sotto solo i consensi
+                                opzionali.
                             </p>
 
                             <label className="mt-3 flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">

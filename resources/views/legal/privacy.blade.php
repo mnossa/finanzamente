@@ -24,7 +24,7 @@
 <x-legal-page-shell
     title="Privacy Policy"
     subtitle="Questa informativa descrive quali dati personali tratto in Finanzamente, per quali finalità e con quali fornitori esterni. I servizi senza credenziali attive nell’ambiente corrente sono indicati come futuri e non ancora operativi."
-    updated-at="09/04/2026"
+    updated-at="11/05/2026"
 >
     <section class="space-y-4">
         <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">1. Titolare del trattamento</h2>
@@ -76,6 +76,10 @@
                         <td class="px-4 py-3">Legittimo interesse o consenso, in base alla configurazione finale che sarà mantenuta online</td>
                     </tr>
                     <tr>
+                        <td class="px-4 py-3">Analisi interne in forma aggregata o anonimizzata (es. tendenze d’uso, qualità del servizio, sicurezza)</td>
+                        <td class="px-4 py-3">Legittimo interesse del titolare e, per le fasi che coinvolgono ancora dati personali, coerenza con le basi giuridiche indicate per analytics e sicurezza</td>
+                    </tr>
+                    <tr>
                         <td class="px-4 py-3">Pagamenti, rinnovi e fatturazione del piano Pro</td>
                         <td class="px-4 py-3">Esecuzione del contratto e obblighi legali fiscali</td>
                     </tr>
@@ -85,7 +89,14 @@
     </section>
 
     <section class="space-y-4">
-        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">4. Fornitori esterni e stato di attivazione</h2>
+        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">4. Statistiche aggregate, anonimizzazione e miglioramento del prodotto</h2>
+        <p>Finanzamente può utilizzare informazioni relative all’uso del servizio anche dopo averle <strong>aggregate</strong> (riepiloghi statistici che non consentono di risalire al singolo utente) oppure <strong>anonimizzate</strong> secondo tecniche che rendono i dati non più riconducibili a una persona fisica identificata o identificabile.</p>
+        <p>Queste elaborazioni servono a finalità come: miglioramento dell’esperienza utente, affidabilità e sicurezza del servizio, comprensione macroscopica di come vengono usate le funzionalità e pianificazione del prodotto. Quando il risultato è effettivamente <strong>non personale</strong>, non costituisce trattamento di dati personali ai sensi del GDPR (cfr. considerando 26 del Regolamento UE 2016/679).</p>
+        <p>Le fasi tecniche che precedono l’aggregazione o l’anonimizzazione possono comunque comportare il trattamento di dati personali (ad esempio log o eventi collegati all’account): per tali fasi si applicano le basi giuridiche già indicate in questa informativa per sicurezza, analytics e gestione del servizio. Non si effettuano decisioni che producono <strong>effetti giuridici o altri effetti significativi</strong> sull’interessato basate unicamente su trattamenti automatizzati di profilazione ai sensi dell’articolo 22 GDPR, salvo quanto diversamente previsto in futuro con informativa dedicata e, ove richiesto, consenso o altre misure di tutela.</p>
+    </section>
+
+    <section class="space-y-4">
+        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">5. Fornitori esterni e stato di attivazione</h2>
         <p>I servizi che non hanno ancora credenziali attive nell’ambiente corrente sono considerati <strong>futuri</strong>: il codice può già prevederli, ma il trattamento non risulta ancora operativo in questa configurazione.</p>
         <div class="overflow-x-auto rounded-2xl border border-surface-200">
             <table class="min-w-full text-left text-sm align-top">
@@ -116,7 +127,7 @@
     </section>
 
     <section class="space-y-4">
-        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">5. Conservazione dei dati</h2>
+        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">6. Conservazione dei dati</h2>
         <ul class="list-disc pl-5 space-y-2">
             <li>dati account e dati finanziari: per la durata dell’account e, dopo cancellazione, per il tempo strettamente necessario a backup, sicurezza e gestione di contestazioni;</li>
             <li>dati di fatturazione e documenti rilevanti fiscalmente: per i termini previsti dalla legge applicabile;</li>
@@ -127,12 +138,12 @@
     </section>
 
     <section class="space-y-4">
-        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">6. Trasferimenti verso Paesi terzi</h2>
+        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">7. Trasferimenti verso Paesi terzi</h2>
         <p>Alcuni fornitori elencati sopra possono trattare dati su infrastrutture situate fuori dallo Spazio Economico Europeo o appartenenti a gruppi internazionali. Prima della pubblicazione definitiva verifica per ogni fornitore il luogo di trattamento, l’eventuale adesione a framework applicabili e le clausole contrattuali standard eventualmente utilizzate.</p>
     </section>
 
     <section class="space-y-4">
-        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">7. Diritti dell’interessato</h2>
+        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">8. Diritti dell’interessato</h2>
         <p>L’utente può chiedere accesso, rettifica, cancellazione, limitazione del trattamento, opposizione, portabilità dei dati e revoca del consenso per i trattamenti basati su consenso. Può inoltre proporre reclamo all’autorità di controllo competente.</p>
         <p>Nell’implementazione attuale dell’app, l’utente autenticato può già:
             revocare o aggiornare i consensi opzionali dal profilo,
@@ -142,7 +153,7 @@
     </section>
 
     <section class="space-y-4">
-        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">8. Collegamenti utili</h2>
+        <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">9. Collegamenti utili</h2>
         <p>Per una descrizione specifica dei cookie e delle tecnologie equivalenti consulta anche la <a href="{{ route('legal.cookies') }}" class="font-semibold text-primary-700 hover:text-primary-800 underline underline-offset-2">Cookie Policy</a>. Per le regole di utilizzo del servizio consulta i <a href="{{ route('legal.terms') }}" class="font-semibold text-primary-700 hover:text-primary-800 underline underline-offset-2">Termini di servizio</a>.</p>
     </section>
 </x-legal-page-shell>

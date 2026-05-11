@@ -188,6 +188,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'plan_expires_at',
         'mollie_customer_id',
         'is_early_bird',
+        'income_band',
+        'macro_region',
     ];
 
     /**

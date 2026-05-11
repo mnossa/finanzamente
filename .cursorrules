@@ -57,6 +57,13 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
   - **Test di regressione per integrazioni di terze parti**: quando si wrappano o si delegano classi di librerie esterne (es. `League\CommonMark`, `League\Config`), il test deve verificare che l'oggetto delegante implementi tutte le interfacce richieste dalla libreria (es. `ConfigurationAwareInterface`) per evitare errori di proprietà non inizializzata in produzione.
 - **CI/CD**: Integrare pipeline di build, test e deploy.
 - **Sicurezza e GDPR**: Tutti i log di sicurezza e rate limiting devono anonimizzare l’IP tramite hash SHA256 e salt (`ADV_THROTTLE_SALT` in .env). Nessun dato personale viene loggato in chiaro.
+- **Aggiornamento Privacy Policy (processo obbligatorio per l’agente)**: ogni modifica **sostanziale** a `resources/views/legal/privacy.blade.php` deve essere completata nello stesso intervento con:
+  1. aggiornamento della data/versione visibile agli utenti (es. `updated-at` su `<x-legal-page-shell>`);
+  2. incremento di `privacy_policy_version` in `config/legal.php` (stringa univoca, es. `YYYY-MM-DD-v1`, `v2`, … coerente con la release);
+  3. verifica che i controller di consenso usino **solo** `config('legal.privacy_policy_version')` e mai stringhe duplicate;
+  4. adeguamento di testi UI o test automatici se citano esplicitamente la versione o i contenuti vincolanti della policy;
+  5. esecuzione di `make test` prima di considerare il task chiuso.
+  Non considerare concluso un task “solo testo legale” senza questo allineamento: la versione alimenta `consents` / `consent_events` per accountability GDPR.
 
 ## Comandi di Sviluppo
 

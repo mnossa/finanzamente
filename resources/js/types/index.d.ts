@@ -4,6 +4,9 @@ export interface User {
     first_name?: string;
     last_name?: string;
     email: string;
+    default_currency_code?: string | null;
+    income_band?: string | null;
+    macro_region?: string | null;
     email_verified_at?: string;
     active_household_id?: number;
     birth_date?: string;

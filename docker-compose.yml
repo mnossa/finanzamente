@@ -198,14 +198,13 @@ services:
     depends_on:
       - app_e2e
 
-  # Servizio di analisi semantica per suggerimenti link interni magazine.
-  # Usa sentence-transformers (multilingual) per calcolare similarità tra articoli.
-  python-linker:
+  # Servizio FastAPI ausiliario: magazine (sentence-transformers) e cohort insights.
+  python-services:
     build:
-      context: ./python-linker
+      context: ./python-services
       dockerfile: Dockerfile
-    image: finanzamente-python-linker
-    container_name: finanzamente-python-linker
+    image: finanzamente-python
+    container_name: finanzamente-python
     restart: unless-stopped
     networks:
       - finanzamente

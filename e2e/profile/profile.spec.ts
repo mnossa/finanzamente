@@ -47,6 +47,11 @@ test.describe('Profilo utente', () => {
         await expect(page.locator('input[name="email"]')).toBeVisible();
     });
 
+    test('il form profilo espone fascia di reddito e macro-area per insight anonimi', async ({ page }) => {
+        await expect(page.locator('#income_band')).toBeVisible();
+        await expect(page.locator('#macro_region')).toBeVisible();
+    });
+
     test('il campo nome è precompilato', async ({ page }) => {
         const value = await page.locator('input[name="name"]').inputValue();
         expect(value.length).toBeGreaterThan(0);

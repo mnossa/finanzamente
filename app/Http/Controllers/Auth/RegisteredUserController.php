@@ -160,7 +160,7 @@ class RegisteredUserController extends Controller
         $contextBase = [
             'source' => 'web_register',
             'legal_basis' => 'consent',
-            'policy_version' => '2026-04-28-v1',
+            'policy_version' => config('legal.privacy_policy_version'),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ];

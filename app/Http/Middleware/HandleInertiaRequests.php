@@ -127,6 +127,10 @@ class HandleInertiaRequests extends Middleware
             return route('recurrence-detection.index');
         }
 
+        if (str_starts_with($notificationKey, 'cohort_wants_share_')) {
+            return route('dashboard');
+        }
+
         return null;
     }
 }
