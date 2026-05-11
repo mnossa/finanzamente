@@ -19,9 +19,15 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): Response
     {
+        $environment = app()->environment();
+        $environmentBadge = in_array($environment, ['local', 'e2e'], true)
+            ? strtoupper($environment)
+            : null;
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'canRegister' => Route::has('register') && ! config('prelaunch.enabled', false),
+            'environmentBadge' => $environmentBadge,
             'status' => session('status'),
         ]);
     }

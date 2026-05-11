@@ -11,10 +11,12 @@ export default function Login({
     status,
     canResetPassword,
     canRegister,
+    environmentBadge,
 }: {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    environmentBadge?: string | null;
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -37,6 +39,12 @@ export default function Login({
             {status && (
                 <div className="mb-4 text-sm font-medium text-green-600">
                     {status}
+                </div>
+            )}
+
+            {environmentBadge && (
+                <div className="mb-4 inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-semibold tracking-wide text-amber-700">
+                    Ambiente: {environmentBadge}
                 </div>
             )}
 
