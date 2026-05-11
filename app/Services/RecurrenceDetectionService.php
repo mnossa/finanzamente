@@ -47,6 +47,10 @@ class RecurrenceDetectionService
         'yearly' => 15,
     ];
 
+    private const VARIABLE_AMOUNT_LOOKBACK_MONTHS = 8;
+
+    private const VARIABLE_AMOUNT_MAX_VARIANCE = 0.25;
+
     /**
      * Esegue il rilevamento per tutti gli account di un household
      * e persiste i nuovi suggerimenti trovati.
@@ -103,6 +107,7 @@ class RecurrenceDetectionService
         });
 
         $created = 0;
+        $usedTransactionIds = [];
         foreach ($groups as $group) {
             if ($group->count() < self::MIN_OCCURRENCES) {
                 continue;
@@ -119,7 +124,10 @@ class RecurrenceDetectionService
 
             RecurringTransactionSuggestion::create($suggestion);
             $created++;
+            $usedTransactionIds = array_merge($usedTransactionIds, $suggestion['transaction_ids'] ?? []);
         }
+
+        $created += $this->detectVariableAmountPatterns($transactions, $usedTransactionIds);
 
         return $created;
     }
@@ -130,15 +138,39 @@ class RecurrenceDetectionService
      */
     public function acceptSuggestion(
         RecurringTransactionSuggestion $suggestion,
-        RecurringTransactionService $recurringService
-    ): RecurringTransaction {
+        RecurringTransactionService $recurringService,
+        string $mode = 'auto'
+    ): AcceptedRecurringSuggestion {
         DB::beginTransaction();
         try {
             $transactions = Transaction::whereIn('id', $suggestion->transaction_ids)
                 ->orderBy('date')
                 ->get();
 
+            $today = Carbon::today();
+            $historicalTransactions = $transactions
+                ->filter(fn (Transaction $t) => Carbon::parse($t->date)->lte($today))
+                ->values();
+            $futureTransactions = $transactions
+                ->filter(fn (Transaction $t) => Carbon::parse($t->date)->gt($today))
+                ->values();
+
             $startDate = $transactions->first()->date;
+            $lastDate = $historicalTransactions->isNotEmpty()
+                ? Carbon::parse($historicalTransactions->last()->date)
+                : Carbon::parse($transactions->last()->date);
+            $endDate = match ($mode) {
+                'closed' => $lastDate,
+                'closed_fill_gaps' => $lastDate,
+                'active_fill_gaps' => null,
+                'active' => null,
+                default => $this->shouldAutoCloseAtLastDate(
+                    $suggestion->detected_frequency,
+                    $lastDate,
+                    $suggestion->description,
+                    $suggestion->account_id
+                ) ? $lastDate : null,
+            };
 
             $recurring = RecurringTransaction::create([
                 'user_id' => $suggestion->user_id,
@@ -148,16 +180,36 @@ class RecurrenceDetectionService
                 'currency_code' => $suggestion->currency_code,
                 'frequency' => $suggestion->detected_frequency,
                 'start_date' => $startDate,
-                'end_date' => null,
+                'end_date' => $endDate,
                 'description' => $suggestion->description,
-                'last_generated_date' => $transactions->last()->date,
+                // In modalità "*_fill_gaps" lasciamo null temporaneamente per
+                // permettere il backfill dei buchi storici.
+                'last_generated_date' => in_array($mode, ['closed_fill_gaps', 'active_fill_gaps'], true)
+                    ? null
+                    : ($historicalTransactions->isNotEmpty() ? $historicalTransactions->last()->date : null),
             ]);
 
-            // Collega le transazioni esistenti alla ricorrenza
-            Transaction::whereIn('id', $suggestion->transaction_ids)->update([
-                'recurring' => true,
-                'recurring_transaction_id' => $recurring->id,
-            ]);
+            // Collega le transazioni storiche alla ricorrenza.
+            if ($historicalTransactions->isNotEmpty()) {
+                Transaction::whereIn('id', $historicalTransactions->pluck('id')->all())->update([
+                    'recurring' => true,
+                    'recurring_transaction_id' => $recurring->id,
+                ]);
+            }
+
+            // Rimuove le occorrenze future già registrate: verranno rigenerate
+            // dal motore ricorrenze. Delete per modello (eventi ModelChanged → saldi).
+            foreach ($futureTransactions as $futureTx) {
+                $futureTx->delete();
+            }
+
+            if ($mode === 'closed_fill_gaps' && $endDate) {
+                $recurringService->backfillMissingOccurrences($recurring, Carbon::parse($endDate));
+            }
+
+            if ($mode === 'active_fill_gaps') {
+                $recurringService->backfillMissingOccurrences($recurring, Carbon::today());
+            }
 
             $suggestion->update(['status' => 'accepted']);
 
@@ -167,9 +219,10 @@ class RecurrenceDetectionService
                 'suggestion_id' => $suggestion->id,
                 'recurring_transaction_id' => $recurring->id,
                 'transactions_linked' => count($suggestion->transaction_ids),
+                'removed_future_transactions' => $futureTransactions->count(),
             ]);
 
-            return $recurring;
+            return new AcceptedRecurringSuggestion($recurring->fresh(), $futureTransactions->count());
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Errore accettazione suggerimento ricorrenza', [
@@ -241,7 +294,10 @@ class RecurrenceDetectionService
             if (abs($medianGap - $expectedGap) <= $window) {
                 // Verifica che la varianza sia contenuta
                 $variance = $this->relativeVariance($gaps, $medianGap);
-                if ($variance <= self::GAP_TOLERANCE) {
+                if (
+                    $variance <= self::GAP_TOLERANCE
+                    || $this->matchesFrequencyWithSingleGapOutlier($gaps, $medianGap)
+                ) {
                     return $frequency;
                 }
             }
@@ -363,5 +419,261 @@ class RecurrenceDetectionService
         $deviations = array_map(fn ($g) => abs($g - $median) / $median, $gaps);
 
         return array_sum($deviations) / count($deviations);
+    }
+
+    /**
+     * Tolleranza per dataset reali: accetta una singola anomalia di gap
+     * (es. un mese saltato) se il resto della sequenza è regolare.
+     *
+     * @param  int[]  $gaps
+     */
+    private function matchesFrequencyWithSingleGapOutlier(array $gaps, float $median): bool
+    {
+        if (count($gaps) < 5 || $median <= 0.0) {
+            return false;
+        }
+
+        $deviations = array_map(fn ($g) => abs($g - $median) / $median, $gaps);
+        rsort($deviations);
+        array_shift($deviations); // rimuove l'outlier peggiore
+
+        if (count($deviations) === 0) {
+            return false;
+        }
+
+        $trimmedVariance = array_sum($deviations) / count($deviations);
+
+        return $trimmedVariance <= self::GAP_TOLERANCE;
+    }
+
+    /**
+     * Analizza eventuali buchi nella sequenza: se tra due movimenti consecutivi
+     * passa più tempo del previsto, stima quante occorrenze mancano.
+     *
+     * @param  Carbon[]  $dates
+     * @return array{
+     *   has_gaps: bool,
+     *   missing_occurrences: int,
+     *   largest_gap_days: int,
+     *   has_internal_gaps: bool,
+     *   internal_missing_occurrences: int,
+     *   has_trailing_gap: bool,
+     *   trailing_missing_occurrences: int
+     * }
+     */
+    public function calculateGapInsights(string $frequency, array $dates): array
+    {
+        if (count($dates) < 2) {
+            return [
+                'has_gaps' => false,
+                'missing_occurrences' => 0,
+                'largest_gap_days' => 0,
+                'has_internal_gaps' => false,
+                'internal_missing_occurrences' => 0,
+                'has_trailing_gap' => false,
+                'trailing_missing_occurrences' => 0,
+            ];
+        }
+
+        usort($dates, fn (Carbon $a, Carbon $b) => $a->lt($b) ? -1 : 1);
+
+        $expectedGapDays = self::FREQUENCY_GAPS[$frequency] ?? 30;
+        $window = self::FREQUENCY_WINDOWS[$frequency] ?? 0;
+        $maxAllowedGap = $expectedGapDays + $window;
+
+        $missingOccurrences = 0;
+        $largestGapDays = 0;
+        $internalMissingOccurrences = 0;
+
+        for ($i = 1; $i < count($dates); $i++) {
+            $gapDays = $dates[$i - 1]->diffInDays($dates[$i]);
+            if ($gapDays <= $maxAllowedGap) {
+                continue;
+            }
+
+            $largestGapDays = max($largestGapDays, $gapDays);
+            $estimatedMissing = max(1, (int) floor($gapDays / $expectedGapDays) - 1);
+            $missingOccurrences += $estimatedMissing;
+            $internalMissingOccurrences += $estimatedMissing;
+        }
+
+        $lastDate = end($dates);
+        $trailingGapDays = $lastDate instanceof Carbon ? $lastDate->diffInDays(Carbon::today()) : 0;
+        $hasTrailingGap = $trailingGapDays > $maxAllowedGap;
+        $trailingMissingOccurrences = $hasTrailingGap
+            ? max(1, (int) floor($trailingGapDays / $expectedGapDays) - 1)
+            : 0;
+
+        if ($hasTrailingGap) {
+            $largestGapDays = max($largestGapDays, $trailingGapDays);
+            $missingOccurrences += $trailingMissingOccurrences;
+        }
+
+        return [
+            'has_gaps' => $missingOccurrences > 0,
+            'missing_occurrences' => $missingOccurrences,
+            'largest_gap_days' => $largestGapDays,
+            'has_internal_gaps' => $internalMissingOccurrences > 0,
+            'internal_missing_occurrences' => $internalMissingOccurrences,
+            'has_trailing_gap' => $hasTrailingGap,
+            'trailing_missing_occurrences' => $trailingMissingOccurrences,
+        ];
+    }
+
+    /**
+     * Se l'ultima occorrenza è troppo vecchia rispetto alla frequenza,
+     * considera la ricorrenza dismessa e la chiude all'ultima data nota.
+     */
+    public function shouldAutoCloseAtLastDate(
+        string $frequency,
+        Carbon $lastDate,
+        ?string $description = null,
+        ?int $accountId = null
+    ): bool {
+        $expectedGapDays = self::FREQUENCY_GAPS[$frequency] ?? 30;
+        $graceDays = max(2, $expectedGapDays * 2);
+        $staleThreshold = Carbon::today()->subDays($graceDays);
+
+        if (! $lastDate->lt($staleThreshold)) {
+            return false;
+        }
+
+        // Protezione anti-falsi positivi: se esistono movimenti più recenti con
+        // stessa descrizione sullo stesso conto, evitiamo la chiusura automatica.
+        if ($accountId && $description && $this->hasNewerSimilarTransaction($accountId, $description, $lastDate)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Verifica se esistono transazioni più recenti sullo stesso conto con
+     * descrizione sostanzialmente equivalente.
+     */
+    private function hasNewerSimilarTransaction(int $accountId, string $description, Carbon $afterDate): bool
+    {
+        $normalizedTarget = $this->normalizeDescription($description);
+        if ($normalizedTarget === '') {
+            return false;
+        }
+
+        $candidates = Transaction::where('account_id', $accountId)
+            ->whereDate('date', '>', $afterDate->toDateString())
+            ->whereNotNull('description')
+            ->whereNull('transfer_id')
+            ->whereNull('refund_id')
+            ->whereNull('inter_household_transfer_id')
+            ->get(['description']);
+
+        foreach ($candidates as $candidate) {
+            if ($this->normalizeDescription((string) $candidate->description) === $normalizedTarget) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Secondo pass: rileva ricorrenze recenti con importo variabile.
+     *
+     * @param  Collection<Transaction>  $transactions
+     * @param  int[]  $usedTransactionIds
+     */
+    private function detectVariableAmountPatterns(Collection $transactions, array $usedTransactionIds): int
+    {
+        $cutoffDate = Carbon::today()->subMonths(self::VARIABLE_AMOUNT_LOOKBACK_MONTHS);
+
+        $recentTransactions = $transactions
+            ->filter(fn (Transaction $t) => Carbon::parse($t->date)->gte($cutoffDate))
+            ->filter(fn (Transaction $t) => ! in_array($t->id, $usedTransactionIds, true))
+            ->values();
+
+        if ($recentTransactions->count() < self::MIN_OCCURRENCES) {
+            return 0;
+        }
+
+        $groups = $recentTransactions->groupBy(function (Transaction $t) {
+            return implode('|', [
+                $t->currency_code,
+                $t->category_id ?? '__none__',
+                $this->normalizeDescription((string) ($t->description ?? '')),
+            ]);
+        });
+
+        $created = 0;
+        foreach ($groups as $group) {
+            if ($group->count() < self::MIN_OCCURRENCES) {
+                continue;
+            }
+
+            $distinctAmounts = $group->pluck('amount')->map(fn ($a) => (float) $a)->unique();
+            if ($distinctAmounts->count() < 2) {
+                continue;
+            }
+
+            if (! $this->hasAcceptableVariableAmountVariance($group)) {
+                continue;
+            }
+
+            $suggestion = $this->analyzeVariableCandidateGroup($group);
+            if ($suggestion === null || $this->suggestionAlreadyExists($suggestion)) {
+                continue;
+            }
+
+            RecurringTransactionSuggestion::create($suggestion);
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * @param  Collection<Transaction>  $group
+     */
+    private function analyzeVariableCandidateGroup(Collection $group): ?array
+    {
+        $sorted = $group->sortBy('date')->values();
+        $dates = $sorted->map(fn ($t) => Carbon::parse($t->date))->all();
+
+        $frequency = $this->detectFrequency($dates);
+        if ($frequency === null) {
+            return null;
+        }
+
+        $latest = $sorted->last();
+        $confidence = min(0.9, max(0.5, $this->calculateConfidence($sorted, $frequency) - 0.1));
+
+        return [
+            'user_id' => $latest->user_id,
+            'account_id' => $latest->account_id,
+            'category_id' => $latest->category_id,
+            'amount' => (float) $latest->amount,
+            'currency_code' => $latest->currency_code,
+            'description' => $this->representativeDescription($sorted),
+            'detected_frequency' => $frequency,
+            'confidence' => round($confidence, 2),
+            'status' => 'pending',
+            'transaction_ids' => $sorted->pluck('id')->all(),
+        ];
+    }
+
+    /**
+     * @param  Collection<Transaction>  $group
+     */
+    private function hasAcceptableVariableAmountVariance(Collection $group): bool
+    {
+        $amounts = $group->pluck('amount')->map(fn ($a) => (float) $a)->values()->all();
+        $mean = array_sum($amounts) / max(1, count($amounts));
+        if ($mean == 0.0) {
+            return false;
+        }
+
+        $variance = array_sum(array_map(fn ($a) => (($a - $mean) ** 2), $amounts)) / max(1, count($amounts));
+        $stdDev = sqrt($variance);
+        $relativeVariance = abs($stdDev / $mean);
+
+        return $relativeVariance <= self::VARIABLE_AMOUNT_MAX_VARIANCE;
     }
 }

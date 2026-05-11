@@ -819,7 +819,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         router.post(
             route('transactions.import.store'),
             {
-                ...(columnMapping.account === null ? { account_id: data.account_id } : {}),
+                ...(data.account_id ? { account_id: data.account_id } : {}),
                 default_currency: defaultCurrency,
                 rows: rowsWithResolutions,
                 category_mappings: categoryMappingsArray,
@@ -833,8 +833,15 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
     };
 
     const handleImport = async () => {
-        // Serve account_id globale SOLO se la colonna conto non è mappata nel file
-        if (!previewData || (columnMapping.account == null && !data.account_id)) return;
+        if (!previewData) return;
+        if (columnMapping.account == null && !data.account_id) return;
+        if (columnMapping.account != null && requiresGlobalAccountFallback && !data.account_id) {
+            setImportErrors((prev) => ({
+                ...prev,
+                account_id: 'Seleziona un conto fallback per le righe senza conto nel file.',
+            }));
+            return;
+        }
         const rows = getRowsToImport();
         setDuplicateCheckLoading(true);
         setImportErrors({});
@@ -843,7 +850,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             const resp = await axios.post<{ duplicates: DuplicateInfo[] }>(
                 route('transactions.import.check-duplicates'),
                 {
-                    ...(columnMapping.account === null ? { account_id: data.account_id } : {}),
+                    ...(data.account_id ? { account_id: data.account_id } : {}),
                     rows,
                 },
             );
@@ -874,8 +881,21 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
     };
 
     const handleConfirmImport = () => {
+        const rows = getRowsToImport();
+        const rowsWithResolution = rows.map((row, idx) => {
+            const res = duplicateResolutions[idx];
+            return { row, action: res?.action ?? 'import' as DuplicateAction };
+        });
+        const importableCount = rowsWithResolution.filter((r) => r.action !== 'ignore').length;
+
+        if (importableCount === 0) {
+            setDuplicateCheckError('Tutte le righe duplicate sono impostate su "Ignora": nulla da importare. Scegli almeno una riga da importare/sostituire/aggiornare.');
+            setShowDuplicateModal(false);
+            return;
+        }
+
         setShowDuplicateModal(false);
-        doImport(getRowsToImport());
+        doImport(rows);
     };
 
     const canProceedFromStep = (): boolean => {
@@ -889,15 +909,19 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             if (!selectedRows.size) return false;
             if (columnMapping.account != null) {
                 const uniqueAccounts = previewData?.unique_accounts ?? [];
-                return uniqueAccounts.length > 0
-                    ? uniqueAccounts.every((name) => {
-                        const entry = accountMappings[name];
-                        if (!entry) return false;
-                        if (entry.action === 'existing') return entry.account_id != null;
-                        if (entry.action === 'create') return entry.currency_code !== '';
-                        return false;
-                    })
-                    : false;
+                const mappedAccountsOk =
+                    uniqueAccounts.length === 0
+                        ? true
+                        : uniqueAccounts.every((name) => {
+                              const entry = accountMappings[name];
+                              if (!entry) return false;
+                              if (entry.action === 'existing') return entry.account_id != null;
+                              if (entry.action === 'create') return entry.currency_code !== '';
+                              return false;
+                          });
+                const fallbackOk = !requiresGlobalAccountFallback || data.account_id !== '';
+
+                return mappedAccountsOk && fallbackOk;
             }
             return data.account_id !== '';
         }
@@ -935,6 +959,11 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
         return { className: 'text-gray-600', label: 'Neutro' };
     };
+
+    const rowsMissingAccountName = (previewData?.valid ?? []).filter(
+        (row) => !row.account_name || row.account_name.trim() === '',
+    ).length;
+    const requiresGlobalAccountFallback = columnMapping.account != null && rowsMissingAccountName > 0;
 
     return (
         <AuthenticatedLayout
@@ -1456,6 +1485,30 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                             </div>
                             )}
 
+                            {requiresGlobalAccountFallback && (
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                    <InputLabel htmlFor="fallback_account_id" value="Conto fallback per righe senza conto *" />
+                                    <p className="mt-0.5 text-xs text-amber-700">
+                                        Nel file ci sono {rowsMissingAccountName} righe senza conto: seleziona un conto fallback per evitare che vengano ignorate.
+                                    </p>
+                                    <select
+                                        id="fallback_account_id"
+                                        value={data.account_id}
+                                        onChange={(e) => setData('account_id', e.target.value)}
+                                        className="mt-2 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        required
+                                    >
+                                        <option value="">— Seleziona conto fallback —</option>
+                                        {accounts.map((acc) => (
+                                            <option key={acc.id} value={acc.id}>
+                                                {acc.name} ({acc.currency_code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <InputError message={importErrors.account_id} className="mt-1" />
+                                </div>
+                            )}
+
                             {/* Valuta predefinita / riepilogo valute */}
                             <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -1899,7 +1952,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                 <PrimaryButton
                                     type="button"
                                     onClick={handleImport}
-                                    disabled={selectedRows.size === 0 || importProcessing || duplicateCheckLoading || (columnMapping.account == null && !data.account_id)}
+                                    disabled={selectedRows.size === 0 || importProcessing || duplicateCheckLoading || (columnMapping.account == null && !data.account_id) || (requiresGlobalAccountFallback && !data.account_id)}
                                 >
                                     {importProcessing ? 'Avvio in corso…' : duplicateCheckLoading ? 'Verifica duplicati…' : `Importa ${selectedRows.size} transazioni`}
                                 </PrimaryButton>
@@ -2057,6 +2110,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         </div>
 
                         <div className="p-5 border-t border-gray-200 flex items-center justify-between gap-3">
+                            <div className="text-xs text-gray-500">
+                                Righe duplicate: {duplicates.length}. Seleziona almeno un'azione diversa da <span className="font-medium">Ignora</span> per importare qualcosa.
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setShowDuplicateModal(false)}

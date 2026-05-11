@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
                         'title' => $n->title,
                         'message' => $n->message,
                         'read' => $n->read,
+                        'action_url' => $this->resolveNotificationActionUrl($n->notification_key),
                         'created_at' => $n->created_at->diffForHumans(),
                     ])
                     ->toArray(),
@@ -111,5 +112,21 @@ class HandleInertiaRequests extends Middleware
                     : false,
             ],
         ];
+    }
+
+    /**
+     * Restituisce l'URL di azione per tipi notifica noti.
+     */
+    private function resolveNotificationActionUrl(?string $notificationKey): ?string
+    {
+        if (! $notificationKey) {
+            return null;
+        }
+
+        if (str_starts_with($notificationKey, 'recurring_detect_')) {
+            return route('recurrence-detection.index');
+        }
+
+        return null;
     }
 }

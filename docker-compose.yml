@@ -109,6 +109,24 @@ services:
     command: >
       sh -c "while true; do php artisan schedule:run --verbose; sleep 60; done"
 
+  queue-worker:
+    image: finanzamente-app
+    container_name: finanzamente-queue-worker
+    restart: unless-stopped
+    working_dir: /var/www
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file:
+      - .env.docker
+    volumes:
+      - ./:/var/www
+    networks:
+      - finanzamente
+    depends_on:
+      - app
+      - db
+    command: >
+      sh -c "php artisan queue:work --queue=default --tries=3 --sleep=1 --timeout=120 --no-interaction"
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: finanzamente-mailpit

@@ -7,6 +7,9 @@ use App\Models\Transaction;
 use App\Services\RecurrenceDetectionService;
 use App\Services\RecurringTransactionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,7 +29,7 @@ class RecurrenceDetectionController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $suggestions = RecurringTransactionSuggestion::with([
+        $rawSuggestions = RecurringTransactionSuggestion::with([
             'account:id,name,currency_code',
             'category:id,name,color,icon,type',
         ])
@@ -34,8 +37,13 @@ class RecurrenceDetectionController extends Controller
             ->pending()
             ->orderByDesc('confidence')
             ->orderByDesc('created_at')
-            ->get()
-            ->map(fn ($s) => $this->formatSuggestion($s));
+            ->get();
+
+        $suggestions = $rawSuggestions
+            ->map(fn ($s) => $this->formatSuggestion($s))
+            ->values();
+
+        $suggestions = $this->addAmountChangeGuidance($suggestions);
 
         return Inertia::render('RecurringTransactions/Suggestions', [
             'suggestions' => $suggestions,
@@ -64,7 +72,7 @@ class RecurrenceDetectionController extends Controller
     /**
      * Accetta un suggerimento: crea la ricorrenza e collega le transazioni.
      */
-    public function accept(RecurringTransactionSuggestion $suggestion): RedirectResponse
+    public function accept(Request $request, RecurringTransactionSuggestion $suggestion): RedirectResponse
     {
         $this->authorizeHousehold($suggestion);
 
@@ -73,10 +81,26 @@ class RecurrenceDetectionController extends Controller
                 ->with('error', 'Il suggerimento non è più in attesa.');
         }
 
-        $recurring = $this->detectionService->acceptSuggestion($suggestion, $this->recurringService);
+        $validated = $request->validate([
+            'mode' => 'nullable|in:auto,active,closed,closed_fill_gaps,active_fill_gaps',
+        ]);
 
-        return redirect()->route('recurring-transactions.show', $recurring->id)
-            ->with('success', 'Ricorrenza creata e transazioni collegate.');
+        $result = $this->detectionService->acceptSuggestion(
+            $suggestion,
+            $this->recurringService,
+            $validated['mode'] ?? 'auto'
+        );
+
+        $message = 'Ricorrenza creata e transazioni collegate.';
+        if ($result->removedFutureTransactionCount > 0) {
+            $message .= sprintf(
+                ' Rimosse %d transazioni future già registrate (verranno ricreate allo scadenziario dalla ricorrenza).',
+                $result->removedFutureTransactionCount
+            );
+        }
+
+        return redirect()->route('recurring-transactions.show', $result->recurring->id)
+            ->with('success', $message);
     }
 
     /**
@@ -111,6 +135,22 @@ class RecurrenceDetectionController extends Controller
                 'amount' => (float) $t->amount,
             ]);
 
+        $lastTransactionDate = $transactions->isNotEmpty()
+            ? Carbon::parse($transactions->last()['date'])
+            : null;
+        $willAutoClose = $lastTransactionDate
+            ? $this->detectionService->shouldAutoCloseAtLastDate(
+                $s->detected_frequency,
+                $lastTransactionDate,
+                $s->description,
+                $s->account_id
+            )
+            : false;
+        $gapInsights = $this->detectionService->calculateGapInsights(
+            $s->detected_frequency,
+            $transactions->map(fn ($t) => Carbon::parse($t['date']))->all()
+        );
+
         return [
             'id' => $s->id,
             'amount' => (float) $s->amount,
@@ -121,6 +161,24 @@ class RecurrenceDetectionController extends Controller
             'confidence_label' => $s->confidenceLabel(),
             'transaction_count' => count($s->transaction_ids ?? []),
             'transactions' => $transactions,
+            'will_auto_close' => $willAutoClose,
+            'auto_close_end_date' => $willAutoClose && $lastTransactionDate
+                ? $lastTransactionDate->format('Y-m-d')
+                : null,
+            'has_gaps' => $gapInsights['has_gaps'],
+            'missing_occurrences' => $gapInsights['missing_occurrences'],
+            'largest_gap_days' => $gapInsights['largest_gap_days'],
+            'has_internal_gaps' => $gapInsights['has_internal_gaps'],
+            'internal_missing_occurrences' => $gapInsights['internal_missing_occurrences'],
+            'has_trailing_gap' => $gapInsights['has_trailing_gap'],
+            'trailing_missing_occurrences' => $gapInsights['trailing_missing_occurrences'],
+            'first_transaction_date' => $transactions->isNotEmpty()
+                ? $transactions->first()['date']
+                : null,
+            'last_transaction_date' => $transactions->isNotEmpty()
+                ? $transactions->last()['date']
+                : null,
+            'amount_change_guidance' => null,
             'account' => [
                 'id' => $s->account->id,
                 'name' => $s->account->name,
@@ -149,5 +207,66 @@ class RecurrenceDetectionController extends Controller
             403,
             'Accesso non autorizzato.'
         );
+    }
+
+    /**
+     * Aggiunge guida UX quando esistono suggerimenti "gemelli" con stesso contesto
+     * ma importo diverso in periodi consecutivi (tipico cambio prezzo abbonamento).
+     */
+    private function addAmountChangeGuidance(Collection $suggestions): array
+    {
+        $grouped = $suggestions->groupBy(function (array $suggestion) {
+            return implode('|', [
+                $suggestion['account']['id'],
+                $suggestion['category']['id'] ?? 'none',
+                $suggestion['detected_frequency'],
+                mb_strtolower(trim((string) ($suggestion['description'] ?? ''))),
+            ]);
+        });
+
+        $guidanceById = [];
+
+        foreach ($grouped as $group) {
+            $withRanges = $group
+                ->filter(fn (array $s) => $s['first_transaction_date'] && $s['last_transaction_date'])
+                ->values();
+
+            if ($withRanges->count() < 2) {
+                continue;
+            }
+
+            $sorted = $withRanges->sortBy('first_transaction_date')->values();
+            for ($i = 0; $i < $sorted->count() - 1; $i++) {
+                $previous = $sorted[$i];
+                $next = $sorted[$i + 1];
+
+                // Se importo uguale, non è variazione importo.
+                if ((float) $previous['amount'] === (float) $next['amount']) {
+                    continue;
+                }
+
+                $guidanceById[$previous['id']] = [
+                    'pair_with_suggestion_id' => $next['id'],
+                    'pair_amount' => $next['amount'],
+                    'recommended_mode' => 'closed',
+                    'variant' => 'amount_change_previous',
+                    'message' => 'Possibile cambio importo rilevato: questa sembra la fase precedente.',
+                ];
+
+                $guidanceById[$next['id']] = [
+                    'pair_with_suggestion_id' => $previous['id'],
+                    'pair_amount' => $previous['amount'],
+                    'recommended_mode' => 'active',
+                    'variant' => 'amount_change_next',
+                    'message' => 'Possibile cambio importo rilevato: questa sembra la fase più recente.',
+                ];
+            }
+        }
+
+        return $suggestions->map(function (array $suggestion) use ($guidanceById) {
+            $suggestion['amount_change_guidance'] = $guidanceById[$suggestion['id']] ?? null;
+
+            return $suggestion;
+        })->values()->all();
     }
 }

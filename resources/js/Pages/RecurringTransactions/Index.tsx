@@ -216,12 +216,17 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                 <PageHeader
                     title="Transazioni Ricorrenti"
                     actions={
-                        <LinkButton
-                            href={route('recurring-transactions.create')}
-                            icon={<PlusIcon />}
-                        >
-                            Nuova Ricorrenza
-                        </LinkButton>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <LinkButton href={route('recurrence-detection.index')}>
+                                🔍 Ricorrenze Rilevate
+                            </LinkButton>
+                            <LinkButton
+                                href={route('recurring-transactions.create')}
+                                icon={<PlusIcon />}
+                            >
+                                Nuova Ricorrenza
+                            </LinkButton>
+                        </div>
                     }
                 />
             }

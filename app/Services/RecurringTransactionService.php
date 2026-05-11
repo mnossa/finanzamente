@@ -91,6 +91,50 @@ class RecurringTransactionService
     }
 
     /**
+     * Backfill storico: genera solo le occorrenze mancanti tra start_date e target,
+     * senza sincronizzare last_generated_date prima del calcolo.
+     */
+    public function backfillMissingOccurrences(RecurringTransaction $recurringTransaction, Carbon $targetDate): int
+    {
+        $generatedCount = 0;
+        $recurringTransaction->refresh();
+
+        $endLimit = $recurringTransaction->end_date && $recurringTransaction->end_date->lt($targetDate)
+            ? $recurringTransaction->end_date
+            : $targetDate;
+
+        $occurrences = $this->calculateOccurrences(
+            $recurringTransaction->start_date,
+            $endLimit,
+            $recurringTransaction->frequency
+        );
+
+        DB::beginTransaction();
+        try {
+            foreach ($occurrences as $occurrenceDate) {
+                $exists = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
+                    ->whereDate('date', $occurrenceDate->toDateString())
+                    ->exists();
+
+                if (! $exists) {
+                    $this->createTransactionFromRecurring($recurringTransaction, $occurrenceDate->copy());
+                    $generatedCount++;
+                }
+            }
+
+            // Dopo il backfill sincronizza all'ultima data effettivamente presente.
+            $this->syncLastGeneratedDate($recurringTransaction);
+
+            DB::commit();
+
+            return $generatedCount;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Genera la prossima transazione ricorrente.
      */
     public function generateNextTransaction(RecurringTransaction $recurringTransaction): ?Transaction
@@ -286,25 +330,67 @@ class RecurringTransactionService
     }
 
     /**
+     * Rimuove transazioni collegate con data oltre oggi e riallinea last_generated_date.
+     * Utile per ricorrenze create prima del fix che lasciavano occorrenze future manuali.
+     *
+     * @return int Numero di transazioni eliminate (soft delete)
+     */
+    public function removeFutureLinkedTransactions(RecurringTransaction $recurringTransaction): int
+    {
+        $today = Carbon::today()->toDateString();
+        $removed = 0;
+
+        $transactions = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
+            ->whereDate('date', '>', $today)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($transactions as $transaction) {
+            $transaction->delete();
+            $removed++;
+        }
+
+        if ($removed > 0) {
+            $this->syncLastGeneratedDateFromLinkedTransactions($recurringTransaction);
+        }
+
+        return $removed;
+    }
+
+    /**
+     * Sincronizza last_generated_date dall'ultima transazione collegata ancora attiva.
+     * Se non ci sono transazioni collegate, il campo viene azzerato.
+     */
+    public function syncLastGeneratedDateFromLinkedTransactions(RecurringTransaction $recurringTransaction): void
+    {
+        $recurringTransaction->refresh();
+
+        $lastTransaction = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
+            ->orderBy('date', 'desc')
+            ->first();
+
+        if (! $lastTransaction) {
+            $recurringTransaction->last_generated_date = null;
+            $recurringTransaction->saveQuietly();
+
+            return;
+        }
+
+        $lastTransactionDate = Carbon::parse($lastTransaction->date);
+        $current = $recurringTransaction->last_generated_date;
+
+        if ($current === null || ! $current->isSameDay($lastTransactionDate)) {
+            $recurringTransaction->last_generated_date = $lastTransactionDate;
+            $recurringTransaction->saveQuietly();
+        }
+    }
+
+    /**
      * Sincronizza il campo last_generated_date basandosi sulle transazioni esistenti.
      * Questo previene duplicazioni quando il comando viene eseguito più volte.
      */
     private function syncLastGeneratedDate(RecurringTransaction $recurringTransaction): void
     {
-        // Trova l'ultima transazione generata da questa ricorrenza
-        $lastTransaction = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
-            ->orderBy('date', 'desc')
-            ->first();
-
-        if ($lastTransaction) {
-            $lastTransactionDate = Carbon::parse($lastTransaction->date);
-
-            // Aggiorna last_generated_date solo se è diversa o null
-            if (! $recurringTransaction->last_generated_date ||
-                $lastTransactionDate->gt($recurringTransaction->last_generated_date)) {
-                $recurringTransaction->last_generated_date = $lastTransactionDate;
-                $recurringTransaction->saveQuietly(); // saveQuietly per evitare eventi
-            }
-        }
+        $this->syncLastGeneratedDateFromLinkedTransactions($recurringTransaction);
     }
 }

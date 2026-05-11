@@ -38,6 +38,24 @@ interface Suggestion {
     confidence_label: 'alto' | 'medio' | 'basso';
     transaction_count: number;
     transactions: TransactionPreview[];
+    will_auto_close: boolean;
+    auto_close_end_date: string | null;
+    has_gaps: boolean;
+    missing_occurrences: number;
+    largest_gap_days: number;
+    has_internal_gaps: boolean;
+    internal_missing_occurrences: number;
+    has_trailing_gap: boolean;
+    trailing_missing_occurrences: number;
+    first_transaction_date: string | null;
+    last_transaction_date: string | null;
+    amount_change_guidance: {
+        pair_with_suggestion_id: number;
+        pair_amount: number;
+        recommended_mode: 'active' | 'closed';
+        variant: 'amount_change_previous' | 'amount_change_next';
+        message: string;
+    } | null;
     account: Account;
     category: Category | null;
 }
@@ -83,15 +101,29 @@ function formatDate(dateString: string): string {
 
 function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
     suggestion: Suggestion;
-    onAccept: () => void;
+    onAccept: (mode?: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps') => void;
     onIgnore: () => void;
     processing: boolean;
 }) {
     const [expanded, setExpanded] = useState(false);
+    const [showGuidanceDetails, setShowGuidanceDetails] = useState(false);
+    const [showActionLegend, setShowActionLegend] = useState(false);
     const isExpense = suggestion.amount < 0;
+    const hasGuidance = Boolean(
+        suggestion.will_auto_close || suggestion.has_gaps || suggestion.amount_change_guidance
+    );
+    const hasManualActive = suggestion.has_gaps || suggestion.amount_change_guidance?.recommended_mode === 'active';
+    const hasManualClosed = suggestion.has_gaps || suggestion.amount_change_guidance?.recommended_mode === 'closed';
+    const hasFillGapsMode = suggestion.has_gaps;
+    const hasAutoMode = true;
 
     return (
-        <CardBox className="p-0 overflow-hidden">
+        <CardBox
+            className={clsx(
+                'p-0 overflow-hidden',
+                suggestion.amount_change_guidance && 'ring-1 ring-sky-200 dark:ring-sky-800/60'
+            )}
+        >
             <div className="p-4 sm:p-5">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
@@ -112,10 +144,10 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                         )}
 
                         <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            <p className="font-semibold text-gray-900 dark:text-gray-100 break-words leading-snug">
                                 {suggestion.description ?? suggestion.category?.name ?? 'Transazione senza descrizione'}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 break-words">
                                 {suggestion.account.name}
                             </p>
                         </div>
@@ -147,7 +179,76 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                             {suggestion.category.name}
                         </span>
                     )}
+                    {suggestion.amount_change_guidance && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
+                            🔗 Cambio importo ({suggestion.amount_change_guidance.variant === 'amount_change_previous' ? 'fase precedente' : 'fase recente'})
+                        </span>
+                    )}
+                    {suggestion.has_gaps && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                            ⛳ Buchi rilevati
+                        </span>
+                    )}
+                    {suggestion.will_auto_close && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                            ⏹ Auto-dismessa
+                        </span>
+                    )}
                 </div>
+
+                {hasGuidance && (
+                    <div className="mt-3">
+                        <button
+                            type="button"
+                            onClick={() => setShowGuidanceDetails((prev) => !prev)}
+                            className="text-xs font-medium text-indigo-600 dark:text-indigo-300 hover:underline"
+                        >
+                            {showGuidanceDetails ? 'Nascondi guida rapida' : 'Mostra guida rapida'}
+                        </button>
+
+                        {showGuidanceDetails && (
+                            <div className="mt-2 space-y-2">
+                                {suggestion.amount_change_guidance && (
+                                    <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:border-sky-800/60 dark:bg-sky-900/20 dark:text-sky-300">
+                                        <p className="font-semibold">Variazione importo collegata</p>
+                                        <p className="mt-1">
+                                            Questa card e collegata alla ricorrenza con importo {formatCurrency(suggestion.amount_change_guidance.pair_amount, suggestion.currency_code)}.
+                                        </p>
+                                        <p className="mt-1">
+                                            Azione consigliata: crea questa come{' '}
+                                            <span className="font-semibold">
+                                                {suggestion.amount_change_guidance.recommended_mode === 'closed' ? 'dismessa' : 'attiva'}
+                                            </span>.
+                                        </p>
+                                    </div>
+                                )}
+                                {suggestion.has_gaps && (
+                                    <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-800/60 dark:bg-indigo-900/20 dark:text-indigo-300">
+                                        Ho trovato buchi nel pattern ({suggestion.missing_occurrences} occorrenze mancanti, gap max {suggestion.largest_gap_days} giorni).
+                                        {suggestion.has_trailing_gap && suggestion.has_internal_gaps ? (
+                                            <span className="block mt-1">
+                                                Ci sono sia buchi interni che un buco finale: in genere conviene <span className="font-semibold">Forza Dismessa</span> (serie probabilmente terminata), poi verifica manualmente eventuali mesi mancanti.
+                                            </span>
+                                        ) : suggestion.has_trailing_gap ? (
+                                            <span className="block mt-1">
+                                                Il buco principale e dopo l'ultima transazione ({suggestion.trailing_missing_occurrences} mancanti in coda): in genere conviene <span className="font-semibold">Forza Dismessa</span>, salvo casi di mancata registrazione recente.
+                                            </span>
+                                        ) : (
+                                            <span className="block mt-1">
+                                                I buchi risultano interni alla serie ({suggestion.internal_missing_occurrences}): in genere conviene <span className="font-semibold">Forza Attiva</span>, verificando eventuali dimenticanze.
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                                {suggestion.will_auto_close && suggestion.auto_close_end_date && (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-300">
+                                        In modalita auto verra creata come dismessa (fine: {formatDate(suggestion.auto_close_end_date)}), perche l'ultima occorrenza risulta datata.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Anteprima transazioni (collassabile) */}
                 <button
@@ -201,14 +302,103 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                 >
                     Ignora
                 </button>
+                {suggestion.has_gaps ? (
+                    <>
+                        <button
+                            type="button"
+                            disabled={processing}
+                            onClick={() => onAccept('active')}
+                            className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                            Forza Attiva
+                        </button>
+                        <button
+                            type="button"
+                            disabled={processing}
+                            onClick={() => onAccept('active_fill_gaps')}
+                            className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                            Attiva + Inserisci Buchi
+                        </button>
+                        <button
+                            type="button"
+                            disabled={processing}
+                            onClick={() => onAccept('closed')}
+                            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                            Forza Dismessa
+                        </button>
+                        {suggestion.has_gaps && (
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('closed_fill_gaps')}
+                                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg disabled:opacity-50 transition-colors"
+                            >
+                                Dismessa + Inserisci Buchi
+                            </button>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        {suggestion.amount_change_guidance?.recommended_mode === 'closed' && (
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('closed')}
+                                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg disabled:opacity-50 transition-colors"
+                            >
+                                Forza Dismessa
+                            </button>
+                        )}
+                        {suggestion.amount_change_guidance?.recommended_mode === 'active' && (
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('active')}
+                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 transition-colors"
+                            >
+                                Forza Attiva
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            disabled={processing}
+                            onClick={() => onAccept('auto')}
+                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                            Applica Auto
+                        </button>
+                    </>
+                )}
+            </div>
+            <div className="px-4 sm:px-5 pb-2">
                 <button
                     type="button"
-                    disabled={processing}
-                    onClick={onAccept}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 transition-colors"
+                    onClick={() => setShowActionLegend((prev) => !prev)}
+                    className="text-[11px] font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 >
-                    Crea Ricorrenza
+                    {showActionLegend ? 'Nascondi legenda azioni' : 'Mostra legenda azioni'}
                 </button>
+                {showActionLegend && (
+                    <ul className="mt-1 space-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+                        {hasAutoMode && (
+                            <li>• Applica Auto: usa le regole automatiche.</li>
+                        )}
+                        {hasManualActive && (
+                            <li>• Forza Attiva: imposta la ricorrenza come aperta.</li>
+                        )}
+                        {hasManualClosed && (
+                            <li>• Forza Dismessa: imposta la ricorrenza come terminata.</li>
+                        )}
+                        {hasFillGapsMode && (
+                            <li>• Dismessa + Inserisci Buchi: chiude e prova a colmare i mesi mancanti.</li>
+                        )}
+                                        {hasFillGapsMode && (
+                                            <li>• Attiva + Inserisci Buchi: lascia attiva e colma i buchi mancanti fino a oggi.</li>
+                                        )}
+                    </ul>
+                )}
             </div>
         </CardBox>
     );
@@ -225,9 +415,12 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
         });
     };
 
-    const handleAccept = (suggestion: Suggestion) => {
+    const handleAccept = (
+        suggestion: Suggestion,
+        mode: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps' = 'auto'
+    ) => {
         setProcessingId(suggestion.id);
-        router.post(route('recurrence-detection.accept', suggestion.id), {}, {
+        router.post(route('recurrence-detection.accept', suggestion.id), { mode }, {
             onFinish: () => setProcessingId(null),
         });
     };
@@ -272,6 +465,26 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
                     </button>}
                 />
 
+                <div className="mb-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                    <div className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
+                            🔗 Cambio importo
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                            ⛳ Buchi rilevati
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                            ⏹ Auto-dismessa
+                        </span>
+                    </div>
+                    <p className="mt-2">
+                        Usa i pulsanti guidati: <span className="font-semibold">Forza Attiva</span> (continua),
+                        <span className="font-semibold"> Forza Dismessa</span> (terminata) oppure
+                        <span className="font-semibold"> Applica Auto</span> (decisione automatica).
+                        Per coprire buchi storici puoi usare <span className="font-semibold">Attiva + Inserisci Buchi</span> o <span className="font-semibold">Dismessa + Inserisci Buchi</span>.
+                    </p>
+                </div>
+
                 {suggestions.length === 0 ? (
                     <EmptyState
                         icon="🔍"
@@ -279,13 +492,13 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
                         description="Clicca su 'Avvia Rilevamento' per analizzare le tue transazioni e trovare pattern ricorrenti."
                     />
                 ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 grid-cols-1">
                         {suggestions.map((suggestion) => (
                             <SuggestionCard
                                 key={suggestion.id}
                                 suggestion={suggestion}
                                 processing={processingId === suggestion.id}
-                                onAccept={() => handleAccept(suggestion)}
+                                onAccept={(mode) => handleAccept(suggestion, mode ?? 'auto')}
                                 onIgnore={() => handleIgnore(suggestion)}
                             />
                         ))}

@@ -68,6 +68,8 @@ class ImportTransactionsJob implements ShouldQueue
 
         $imported = 0;
         $skipped = 0;
+        $skippedDuplicateIgnore = 0;
+        $skippedMissingAccount = 0;
 
         // Risolvi i mapping delle categorie (nome dal file → category_id + type)
         $categoryIdMap = [];
@@ -146,8 +148,16 @@ class ImportTransactionsJob implements ShouldQueue
             $action = $row['duplicate_action'] ?? 'import';
             $account = $resolveAccount($row);
 
-            if ($action === 'ignore' || $account === null) {
+            if ($action === 'ignore') {
                 $skipped++;
+                $skippedDuplicateIgnore++;
+
+                continue;
+            }
+
+            if ($account === null) {
+                $skipped++;
+                $skippedMissingAccount++;
 
                 continue;
             }
@@ -238,11 +248,23 @@ class ImportTransactionsJob implements ShouldQueue
             $accountsCache[$accountId]->save();
         }
 
+        $skipReasons = [];
+        if ($skippedMissingAccount > 0) {
+            $skipReasons[] = "{$skippedMissingAccount} per conto non assegnato";
+        }
+        if ($skippedDuplicateIgnore > 0) {
+            $skipReasons[] = "{$skippedDuplicateIgnore} ignorate manualmente";
+        }
+        $skipReasonText = empty($skipReasons) ? null : implode(', ', $skipReasons);
+
         if ($importRecord) {
             $importRecord->update([
                 'status' => 'completed',
                 'rows_imported' => $imported,
                 'rows_skipped' => $skipped,
+                'error_message' => $imported === 0 && $skipReasonText !== null
+                    ? "Nessuna transazione importata: {$skipReasonText}."
+                    : null,
                 'completed_at' => now(),
             ]);
         }
@@ -251,6 +273,9 @@ class ImportTransactionsJob implements ShouldQueue
         $msg = "{$imported} ".($imported === 1 ? 'transazione importata' : 'transazioni importate').' con successo.';
         if ($skipped > 0) {
             $msg .= " {$skipped} ".($skipped === 1 ? 'riga ignorata' : 'righe ignorate').'.';
+            if ($skipReasonText !== null) {
+                $msg .= " Motivi: {$skipReasonText}.";
+            }
         }
 
         AppNotification::create([

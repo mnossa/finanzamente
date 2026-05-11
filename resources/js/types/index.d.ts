@@ -117,6 +117,7 @@ export interface AppNotification {
     title: string;
     message: string;
     read: boolean;
+    action_url?: string | null;
     created_at: string;
 }
 

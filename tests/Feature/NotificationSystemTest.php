@@ -375,4 +375,25 @@ class NotificationSystemTest extends TestCase
         $response->assertInertia(fn ($page) => $page->where('notifications.unread_count', 1)
         );
     }
+
+    public function test_recurring_detection_notification_has_action_url(): void
+    {
+        $user = $this->createUserWithHousehold();
+
+        AppNotification::create([
+            'user_id' => $user->id,
+            'title' => '🔁 Nuove ricorrenze suggerite',
+            'message' => 'Trovati nuovi suggerimenti.',
+            'read' => false,
+            'notification_key' => 'recurring_detect_1_2026-05-11',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->withoutVite()
+            ->get(route('dashboard'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->where('notifications.items.0.action_url', route('recurrence-detection.index'))
+        );
+    }
 }

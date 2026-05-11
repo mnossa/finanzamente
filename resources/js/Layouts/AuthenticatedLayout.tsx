@@ -12,6 +12,7 @@ import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import axios from 'axios';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
+type UINotification = AppNotification & { action_url?: string | null };
 
 // Icone SVG inline per evitare dipendenze esterne
 const Icons = {
@@ -731,7 +732,7 @@ export default function Authenticated({
 
                         <div className="flex items-center gap-3">
                             {/* Search - Desktop only */}
-                            <div className="relative hidden md:block">
+                            {/*<div className="relative hidden md:block">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                                     <Icons.Search />
                                 </span>
@@ -742,7 +743,7 @@ export default function Authenticated({
                                          focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
                                          transition-all outline-none"
                                 />
-                            </div>
+                            </div>*/}
 
                             {/* Notifications */}
                             <div className="relative" ref={notifRef}>
@@ -791,7 +792,7 @@ export default function Authenticated({
                                                     Nessuna notifica
                                                 </li>
                                             ) : (
-                                                notifications.items.map((notif: AppNotification) => (
+                                                notifications.items.map((notif: UINotification) => (
                                                     <li
                                                         key={notif.id}
                                                         className={clsx(
@@ -808,6 +809,24 @@ export default function Authenticated({
                                                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
                                                                 {notif.message}
                                                             </p>
+                                                            {notif.action_url && (
+                                                                <Link
+                                                                    href={notif.action_url}
+                                                                    className="mt-1 inline-flex text-[11px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                                                                    onClick={() => {
+                                                                        if (!notif.read) {
+                                                                            router.post(
+                                                                                route('notifications.read', { notification: notif.id }),
+                                                                                {},
+                                                                                { preserveScroll: true }
+                                                                            );
+                                                                        }
+                                                                        setNotifOpen(false);
+                                                                    }}
+                                                                >
+                                                                    Vai ai suggerimenti
+                                                                </Link>
+                                                            )}
                                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                                                                 {notif.created_at}
                                                             </p>

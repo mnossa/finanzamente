@@ -50,21 +50,13 @@ class AccountController extends Controller
                 ];
             });
 
-        // Calcola totali per tipo
-        $totalsByType = $accounts->groupBy('type')->map(function ($group) {
-            return [
-                'count' => $group->count(),
-                'total' => $group->sum('current_balance'),
-            ];
-        });
-
-        $totalBalance = $accounts->sum('current_balance');
+        $totalBalance = $accounts
+            ->where('active', true)
+            ->sum('current_balance');
 
         return Inertia::render('Accounts/Index', [
             'accounts' => $accounts,
-            'totalsByType' => $totalsByType,
             'totalBalance' => $totalBalance,
-            'accountTypes' => Account::TYPES,
         ]);
     }
 

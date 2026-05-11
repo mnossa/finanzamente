@@ -78,6 +78,38 @@ services:
         max-size: "5m"
         max-file: "2"
 
+  # ── Queue worker Laravel (elabora job asincroni) ──────────────────────────
+  queue-worker:
+    image: mnossa/finanzamente:${IMAGE_TAG:-latest}
+    container_name: finanzamente-queue-worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Non rieseguire migrate/optimize: già fatto dal container app
+      SKIP_INIT: "true"
+      # python-linker gira nel container app: raggiungibile via rete Docker interna
+      PYTHON_LINKER_URL: "http://finanzamente-app:8000"
+    volumes:
+      - storage:/var/www/storage
+      - bootstrap_cache:/var/www/bootstrap/cache
+    networks:
+      - finanzamente
+    depends_on:
+      app:
+        condition: service_healthy
+    command: ["php", "artisan", "queue:work", "--queue=default", "--tries=3", "--sleep=1", "--timeout=120", "--no-interaction"]
+    healthcheck:
+      test: ["CMD", "php", "artisan", "--version"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
   # ── Database MySQL ──────────────────────────────────────────────────────────
   db:
     image: mysql:9.6

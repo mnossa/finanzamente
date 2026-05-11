@@ -324,7 +324,8 @@ class DashboardController extends Controller
     private function getMonthlyStats(int $householdId, int $userId, Carbon $startDate, Carbon $endDate): array
     {
         $query = Transaction::whereHas('account', function ($query) use ($householdId) {
-            $query->where('household_id', $householdId);
+            $query->where('household_id', $householdId)
+                ->where('active', true);
         })
             ->where(function ($query) use ($userId) {
                 $query->where('is_private', false)

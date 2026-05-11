@@ -278,6 +278,12 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
+                        <Link
+                            href={route('recurrence-detection.index')}
+                            className="inline-flex items-center rounded-lg border border-indigo-300 px-6 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/20"
+                        >
+                            🔍 Ricorrenze Rilevate
+                        </Link>
                         {rt.is_active && rt.next_due_date && (
                             <button
                                 onClick={() => setGenerateDialogOpen(true)}

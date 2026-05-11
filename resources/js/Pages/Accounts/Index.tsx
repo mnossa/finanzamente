@@ -27,22 +27,9 @@ interface Account {
     created_at: string;
 }
 
-interface TotalsByType {
-    [key: string]: {
-        count: number;
-        total: number;
-    };
-}
-
-interface AccountTypes {
-    [key: string]: string;
-}
-
 interface IndexProps {
     accounts: Account[];
-    totalsByType: TotalsByType;
     totalBalance: number;
-    accountTypes: AccountTypes;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -131,9 +118,7 @@ function AccountCard({ account }: { account: Account }) {
 
 export default function Index({
     accounts,
-    totalsByType,
     totalBalance,
-    accountTypes,
 }: IndexProps) {
     const activeAccounts = accounts.filter((a) => a.active);
     const archivedAccounts = accounts.filter((a) => !a.active);
@@ -191,35 +176,6 @@ export default function Index({
                                 <p className="mt-1 text-sm text-slate-400">
                                     {activeAccounts.length} {activeAccounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                                 </p>
-                            </div>
-
-                            {/* Riepilogo per tipo */}
-                            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                                {Object.entries(accountTypes).map(([type, label]) => {
-                                    const stats = totalsByType[type];
-                                    if (!stats) return null;
-                                    return (
-                                        <CardBox
-                                            key={type}
-                                            className="p-4 shadow-sm"
-                                        >
-                                            <div className="flex items-center space-x-2">
-                                                <span className="text-xl">
-                                                    {getAccountTypeIcon(type)}
-                                                </span>
-                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                                    {label}
-                                                </span>
-                                            </div>
-                                            <p className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
-                                                {formatCurrency(stats.total)}
-                                            </p>
-                                            <p className="text-xs text-gray-400">
-                                                {stats.count} {stats.count === 1 ? 'conto' : 'conti'}
-                                            </p>
-                                        </CardBox>
-                                    );
-                                })}
                             </div>
 
                             {/* Lista Conti Attivi */}
