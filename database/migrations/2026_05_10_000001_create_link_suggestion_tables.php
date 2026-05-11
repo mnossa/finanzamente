@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Recover from partial run (first table created, then migration failed before completion).
+        Schema::dropIfExists('link_suggestions');
+        Schema::dropIfExists('link_suggestion_runs');
+
         Schema::create('link_suggestion_runs', function (Blueprint $table) {
             $table->id();
             $table->timestamp('ran_at');
@@ -36,7 +40,10 @@ return new class extends Migration
             $table->timestamp('dismissed_at')->nullable();
             $table->timestamps();
 
-            $table->index(['source_article_id', 'target_article_id', 'status']);
+            $table->index(
+                ['source_article_id', 'target_article_id', 'status'],
+                'lnk_sugg_src_tgt_stat_idx'
+            );
             $table->index('status');
         });
     }
