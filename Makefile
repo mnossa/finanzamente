@@ -77,18 +77,22 @@ e2e-seed:
 #
 # Questo target automatizza tutti i passaggi necessari per garantire
 # che l'ambiente sia sempre pronto e consistente prima di lanciare i test E2E:
-#   1. Compila gli asset frontend (make build)
-#   2. Pulisce tutte le cache Laravel (make clear-cache)
-#   3. Prepara il database E2E (make e2e-seed)
-#   4. Rimuove public/hot per evitare conflitti con dev server
-#   5. Verifica la presenza della build asset
-#   6. Lancia i test Playwright su nginx_e2e (porta 8081 → app_e2e → db_e2e)
+#   1. npm ci nel container node (binding nativi Linux per Vite 8 / Rolldown sul volume condiviso)
+#   2. Compila gli asset frontend (make build)
+#   3. Pulisce tutte le cache Laravel (make clear-cache)
+#   4. Prepara il database E2E (make e2e-seed)
+#   5. Rimuove public/hot per evitare conflitti con dev server
+#   6. Verifica la presenza della build asset
+#   7. Installa browser Chromium nella cache del runner (host: stesso ambiente di `npx playwright test`)
+#   8. Lancia i test Playwright su nginx_e2e (porta 8081 → app_e2e → db_e2e)
 #
 # Il server principale (porta 8080) e il database reale non vengono mai toccati.
 #
 # Utilizzare SEMPRE questo target per eseguire i test E2E, sia in locale che in CI.
 ###############################################################
 playwright:
+	@echo "[+] npm ci nel container node (Vite/Rolldown: binding @rolldown/binding-linux-x64-gnu)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec -T node npm ci
 	@echo "[+] Build asset frontend (make build)..."
 	$(MAKE) build
 	@echo "[+] Clear cache Laravel (make clear-cache)..."
@@ -98,6 +102,8 @@ playwright:
 	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
 	@rm -f public/hot
 	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright'" && exit 1)
+	@echo "[+] Playwright: installazione browser Chromium (runner host, ~/.cache/ms-playwright)..."
+	npx playwright install chromium
 	@echo "[+] Esecuzione test E2E Playwright (porta 8081 → app_e2e → db_e2e)..."
 	@E2E_APP_MODE=normal PLAYWRIGHT_BASE_URL=http://localhost:8081 npx playwright test
 
@@ -115,6 +121,8 @@ playwright-prelaunch:
 		app php artisan config:cache
 	@echo "[+] Pulizia cache..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
+	@echo "[+] Playwright: installazione browser Chromium..."
+	npx playwright install chromium
 	@echo "[+] Esecuzione test E2E Playwright (modalità: prelaunch)..."
 	@E2E_APP_MODE=prelaunch PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test e2e/public/modes.spec.ts; PLAYWRIGHT_STATUS=$$?; \
 	echo "[+] Ripristino config cache dai valori .env originali..."; \
@@ -135,6 +143,8 @@ playwright-waitlist:
 		app php artisan config:cache
 	@echo "[+] Pulizia cache..."
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan cache:clear
+	@echo "[+] Playwright: installazione browser Chromium..."
+	npx playwright install chromium
 	@echo "[+] Esecuzione test E2E Playwright (modalità: waitlist)..."
 	@E2E_APP_MODE=waitlist PLAYWRIGHT_BASE_URL=http://localhost:8080 npx playwright test e2e/public/modes.spec.ts; PLAYWRIGHT_STATUS=$$?; \
 	echo "[+] Ripristino config cache dai valori .env originali..."; \
@@ -143,6 +153,7 @@ playwright-waitlist:
 
 # Esegui i test Playwright in modalità UI interattiva (solo locale)
 playwright-ui:
+	npx playwright install chromium
 	PLAYWRIGHT_BASE_URL=http://localhost:8081 npx playwright test --ui
 
 # Apri l'ultimo report HTML generato da Playwright
