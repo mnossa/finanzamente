@@ -61,6 +61,7 @@ class DetectRecurringTransactions extends Command
                 if ($created > 0) {
                     $this->notifyHouseholdMembers($household, $created);
                     $this->info("  ✅ Household #{$household->id} ({$household->name}): {$created} nuovi suggerimenti");
+
                     continue;
                 }
 

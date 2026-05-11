@@ -130,4 +130,3 @@ class ActiveAccountsTotalsTest extends TestCase
         );
     }
 }
-
