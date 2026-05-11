@@ -38,9 +38,16 @@ interface EditProps {
     currencies: Currency[];
 }
 
-
+const FEATURED_CURRENCY_CODES = ['EUR', 'USD', 'GBP', 'CHF'] as const;
 
 export default function Edit({ account, accountTypes, currencies }: EditProps) {
+    const currenciesByCode = new Map(currencies.map((currency) => [currency.code, currency]));
+    const featuredCurrencies = FEATURED_CURRENCY_CODES
+        .map((code) => currenciesByCode.get(code))
+        .filter((currency): currency is Currency => currency !== undefined);
+    const featuredCurrencySet = new Set(featuredCurrencies.map((currency) => currency.code));
+    const otherCurrencies = currencies.filter((currency) => !featuredCurrencySet.has(currency.code));
+
     const { data, setData, patch, processing, errors } = useForm({
         name: account.name,
         type: account.type,
@@ -143,11 +150,25 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                         onChange={(e) => setData('currency_code', e.target.value)}
                                         required
                                     >
-                                        {currencies.map((currency) => (
-                                            <option key={currency.code} value={currency.code}>
-                                                {currency.code} - {currency.name} ({currency.symbol})
-                                            </option>
-                                        ))}
+                                        {featuredCurrencies.length > 0 && (
+                                            <optgroup label="Valute principali">
+                                                {featuredCurrencies.map((currency) => (
+                                                    <option key={currency.code} value={currency.code}>
+                                                        {currency.code} - {currency.name} ({currency.symbol})
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+
+                                        {otherCurrencies.length > 0 && (
+                                            <optgroup label="Altre valute">
+                                                {otherCurrencies.map((currency) => (
+                                                    <option key={currency.code} value={currency.code}>
+                                                        {currency.code} - {currency.name} ({currency.symbol})
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
                                     </select>
                                     <InputError message={errors.currency_code} className="mt-2" />
                                 </div>

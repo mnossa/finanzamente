@@ -45,6 +45,9 @@ class TransactionImportService
         for ($i = $startIndex; $i < count($lines); $i++) {
             $raw = $lines[$i];
             $cols = $this->parseCsvLine($raw, $delimiter);
+            if ($this->isCompletelyEmptyCsvRow($cols)) {
+                continue;
+            }
             $rows[] = $this->mapColumns($cols, $columnMapping, $dateFormat, $raw, $i + 1);
         }
 
@@ -107,9 +110,6 @@ class TransactionImportService
 
         // Description
         $description = $descriptionRaw !== null ? trim($descriptionRaw) : '';
-        if ($description === '') {
-            $warnings[] = "Riga {$lineNumber}: descrizione vuota";
-        }
 
         return [
             'line_number' => $lineNumber,
@@ -136,6 +136,20 @@ class TransactionImportService
         }
 
         return $cols[$index];
+    }
+
+    /**
+     * True if every CSV column is empty/blank.
+     */
+    private function isCompletelyEmptyCsvRow(array $cols): bool
+    {
+        foreach ($cols as $value) {
+            if (trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -252,8 +266,8 @@ class TransactionImportService
             }
             foreach ($sheet->getRowIterator() as $row) {
                 $headers = array_map(
-                    fn ($cell) => (string) ($cell->getValue() ?? ''),
-                    $row->getCells(),
+                    fn ($value) => $this->cellValueToString($value),
+                    $row->toArray(),
                 );
                 break;
             }
@@ -297,7 +311,10 @@ class TransactionImportService
                 if ($hasHeader && $lineNumber === 1) {
                     continue; // riga di intestazione ignorata
                 }
-                $rows[] = $this->mapXlsxRow($row->getCells(), $columnMapping, $dateFormat, $lineNumber);
+                if ($this->isCompletelyEmptyXlsxRow($row->toArray())) {
+                    continue;
+                }
+                $rows[] = $this->mapXlsxRow($row->cells, $columnMapping, $dateFormat, $lineNumber);
             }
             break;
         }
@@ -378,10 +395,6 @@ class TransactionImportService
 
         // ── Descrizione / Note ───────────────────────────────────────────────
         $description = $descCell !== null ? trim($this->cellValueToString($descCell->getValue())) : '';
-        if ($description === '') {
-            $errors[] = "Riga {$lineNumber}: descrizione mancante";
-        }
-
         $notesRaw = $notesCell !== null ? trim($this->cellValueToString($notesCell->getValue())) : null;
         $categoryRaw = $categoryCell !== null ? trim($this->cellValueToString($categoryCell->getValue())) : null;
         $accountRaw = $accountCell !== null ? trim($this->cellValueToString($accountCell->getValue())) : null;
@@ -399,5 +412,19 @@ class TransactionImportService
             'raw' => "Riga {$lineNumber}",
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * True if every XLSX cell value is empty/blank.
+     */
+    private function isCompletelyEmptyXlsxRow(array $values): bool
+    {
+        foreach ($values as $value) {
+            if (trim($this->cellValueToString($value)) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -94,7 +94,7 @@ class TransactionImportServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_marks_rows_with_missing_description_as_errors(): void
+    public function it_accepts_rows_with_missing_description(): void
     {
         $csv = "Data;Descrizione;Importo\n01/01/2024;;100,00\n";
         $layout = [
@@ -108,9 +108,27 @@ class TransactionImportServiceTest extends TestCase
         $rows = $this->service->parseCsv($csv, $layout);
 
         $this->assertCount(1, $rows);
-        // La descrizione vuota genera un warning (la riga rimane importabile)
         $this->assertEmpty($rows[0]['errors']);
-        $this->assertNotEmpty($rows[0]['warnings']);
+        $this->assertEmpty($rows[0]['warnings']);
+    }
+
+    #[Test]
+    public function it_skips_completely_empty_rows_without_errors(): void
+    {
+        $csv = "Data;Descrizione;Importo\n01/01/2024;Spesa;10,00\n;;\n05/01/2024;Entrata;20,00\n";
+        $layout = [
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => ['date' => 0, 'description' => 1, 'amount' => 2, 'notes' => null],
+        ];
+
+        $rows = $this->service->parseCsv($csv, $layout);
+
+        $this->assertCount(2, $rows);
+        $this->assertEquals('Spesa', $rows[0]['description']);
+        $this->assertEquals('Entrata', $rows[1]['description']);
     }
 
     #[Test]

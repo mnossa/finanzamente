@@ -8,6 +8,7 @@ use App\Models\Currency;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\TransactionImportService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -353,5 +354,36 @@ class TransactionImportTest extends TestCase
         ]);
 
         $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function preview_returns_user_friendly_message_when_parser_throws_unexpected_error(): void
+    {
+        $this->mock(TransactionImportService::class, function ($mock): void {
+            $mock->shouldReceive('parseCsv')
+                ->once()
+                ->andThrow(new \Error('boom'));
+        });
+
+        $file = UploadedFile::fake()->createWithContent('transactions.csv', "Data;Descrizione;Importo\n01/01/2024;Test;10,00\n");
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
+            'csv_file' => $file,
+            'bank_name' => 'custom',
+            'delimiter' => ';',
+            'encoding' => 'UTF-8',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'column_mapping' => [
+                'date' => 0,
+                'description' => 1,
+                'amount' => 2,
+            ],
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'message' => 'Errore durante la lettura del file. Verifica il tracciato e riprova.',
+        ]);
     }
 }

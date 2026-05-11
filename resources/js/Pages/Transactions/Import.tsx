@@ -682,8 +682,9 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             });
             return true;
         } catch (err: unknown) {
-            if (axios.isAxiosError(err) && err.response?.data?.message) {
-                setPreviewError(err.response.data.message);
+            if (axios.isAxiosError(err) && err.response?.data) {
+                const payload = err.response.data as { message?: string; error?: string };
+                setPreviewError(payload.message ?? payload.error ?? 'Errore durante la lettura del file. Verifica la configurazione.');
             } else {
                 setPreviewError('Errore durante la lettura del file. Verifica la configurazione.');
             }
@@ -905,6 +906,34 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
     const formatAmount = (amount: number) => {
         return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
+    };
+
+    const resolveRowType = (row: ImportRow): 'income' | 'expense' | null => {
+        if (!row.category_name) return null;
+
+        const mapped = categoryMappings[row.category_name];
+        if (mapped) {
+            if (mapped.action === 'create') {
+                return mapped.type ?? null;
+            }
+            if (mapped.action === 'existing' && mapped.category_id != null) {
+                return categories.find((cat) => cat.id === mapped.category_id)?.type ?? null;
+            }
+        }
+
+        const normalizedRowCategory = normalizeForMatch(row.category_name);
+        return categories.find((cat) => normalizeForMatch(cat.name) === normalizedRowCategory)?.type ?? null;
+    };
+
+    const getRowAmountStyle = (row: ImportRow) => {
+        const rowType = resolveRowType(row);
+
+        if (rowType === 'income') return { className: 'text-green-700', label: 'Entrata' };
+        if (rowType === 'expense') return { className: 'text-red-700', label: 'Uscita' };
+        if (row.amount < 0) return { className: 'text-red-700', label: 'Uscita' };
+        if (row.amount > 0) return { className: 'text-green-700', label: 'Entrata' };
+
+        return { className: 'text-gray-600', label: 'Neutro' };
     };
 
     return (
@@ -1221,15 +1250,20 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {previewData.valid.slice(0, 5).map((row) => (
-                                                        <tr key={row.line_number} className="border-b border-green-100 last:border-0">
-                                                            <td className="pr-3 py-1 whitespace-nowrap">{row.date}</td>
-                                                            <td className={clsx('pr-3 py-1 whitespace-nowrap font-medium', row.amount < 0 ? 'text-red-600' : 'text-green-700')}>
-                                                                {formatAmount(row.amount)}
-                                                            </td>
-                                                            <td className="py-1 truncate max-w-[200px]">{row.description}</td>
-                                                        </tr>
-                                                    ))}
+                                                    {previewData.valid.slice(0, 5).map((row) => {
+                                                        const amountStyle = getRowAmountStyle(row);
+
+                                                        return (
+                                                            <tr key={row.line_number} className="border-b border-green-100 last:border-0">
+                                                                <td className="pr-3 py-1 whitespace-nowrap">{row.date}</td>
+                                                                <td className={clsx('pr-3 py-1 whitespace-nowrap font-medium', amountStyle.className)}>
+                                                                    {formatAmount(row.amount)}
+                                                                    <span className="ml-1 text-[11px] font-medium text-gray-500">{amountStyle.label}</span>
+                                                                </td>
+                                                                <td className="py-1 truncate max-w-[200px]">{row.description}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </table>
                                             {previewData.valid.length > 5 && (
@@ -1582,6 +1616,12 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                     </span>
                                 </div>);
                             })()}
+                            {previewData && (
+                                <div className="space-y-1 text-xs text-gray-500">
+                                    <p>Le righe completamente vuote vengono ignorate automaticamente.</p>
+                                    <p>Le righe con descrizione vuota sono comunque importabili.</p>
+                                </div>
+                            )}
 
                             {/* Righe non valide */}
                             {previewData && showInvalidRows && previewData.invalid.length > 0 && (
@@ -1711,7 +1751,10 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-100 text-sm">
-                                            {previewData.valid.map((row, index) => (
+                                            {previewData.valid.map((row, index) => {
+                                                const amountStyle = getRowAmountStyle(row);
+
+                                                return (
                                                 <tr
                                                     key={index}
                                                     className={clsx(
@@ -1733,9 +1776,12 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                     </td>
                                                     <td className={clsx(
                                                         'px-3 py-1 text-right font-medium whitespace-nowrap',
-                                                        row.amount >= 0 ? 'text-green-600' : 'text-red-600',
+                                                        amountStyle.className,
                                                     )}>
                                                         {formatAmount(row.amount)}
+                                                        <span className="ml-1 text-[11px] font-medium text-gray-500">
+                                                            {amountStyle.label}
+                                                        </span>
                                                     </td>
                                                     <td className="px-3 py-1 text-gray-700 max-w-xs truncate">
                                                         {row.description || (
@@ -1781,7 +1827,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                         </td>
                                                     )}
                                                 </tr>
-                                            ))}
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>

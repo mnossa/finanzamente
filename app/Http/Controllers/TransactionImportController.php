@@ -104,6 +104,10 @@ class TransactionImportController extends Controller
             return response()->json(['sheets' => $sheets]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
+        } catch (\Throwable) {
+            return response()->json([
+                'message' => 'Impossibile leggere il file XLSX. Verifica formato e foglio selezionato.',
+            ], 422);
         } finally {
             // Rimuovi il file temporaneo Google Drive (non i file locali)
             if ($tempPath !== null && $request->filled('google_drive_file_id') && file_exists($tempPath)) {
@@ -181,7 +185,11 @@ class TransactionImportController extends Controller
                 'unique_currencies' => $uniqueCurrencies,
             ]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable) {
+            return response()->json([
+                'message' => 'Errore durante la lettura del file. Verifica il tracciato e riprova.',
+            ], 422);
         } finally {
             if ($tempPath !== null && file_exists($tempPath)) {
                 @unlink($tempPath);
