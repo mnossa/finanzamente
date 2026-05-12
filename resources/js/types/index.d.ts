@@ -99,6 +99,9 @@ export type PageProps<
         clientId: string;
         apiKey: string;
     };
+    umami?: {
+        websiteId: string;
+    };
     plan?: {
         current: 'base' | 'pro';
         pro_enabled: boolean;

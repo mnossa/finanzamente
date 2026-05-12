@@ -14,6 +14,7 @@ use App\Models\Currency;
 use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\GoogleDriveService;
+use App\Services\TransactionImportColumnMappingAdvisor;
 use App\Services\TransactionImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -173,6 +174,11 @@ class TransactionImportController extends Controller
             $uniqueAccounts = $this->uniqueField($validated['valid'], 'account_name');
             $uniqueCurrencies = $this->uniqueField($validated['valid'], 'currency_code');
 
+            $columnMapping = $request->input('column_mapping', []);
+            $mappingWarnings = is_array($columnMapping)
+                ? TransactionImportColumnMappingAdvisor::warnings($columnMapping, $headers)
+                : [];
+
             return response()->json([
                 'headers' => $headers,
                 'valid' => $validated['valid'],
@@ -183,6 +189,7 @@ class TransactionImportController extends Controller
                 'unique_categories' => $uniqueCategories,
                 'unique_accounts' => $uniqueAccounts,
                 'unique_currencies' => $uniqueCurrencies,
+                'mapping_warnings' => $mappingWarnings,
             ]);
         } catch (\RuntimeException|\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

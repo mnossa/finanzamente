@@ -90,6 +90,9 @@ class HandleInertiaRequests extends Middleware
                 'clientId' => config('services.google_drive.client_id', ''),
                 'apiKey' => config('services.google_drive.api_key', ''),
             ],
+            'umami' => [
+                'websiteId' => (string) config('services.umami.website_id', ''),
+            ],
             'plan' => fn () => $user ? [
                 'current' => $user->isPro() ? 'pro' : 'base',
                 'pro_enabled' => config('plans.pro_enabled', true),

@@ -128,6 +128,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Umami Cloud — analytics (script lato React)
+    |--------------------------------------------------------------------------
+    |
+    | UMAMI_ID: website id dalla dashboard Umami (stesso valore usato nei layout Blade).
+    | Passato via Inertia così la produzione non dipende da VITE_UMAMI_ID nel build.
+    |
+    */
+    'umami' => [
+        'website_id' => env('UMAMI_ID', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Mollie — Sistema di pagamento
     |--------------------------------------------------------------------------
     |

@@ -71,6 +71,7 @@ interface PreviewResponse {
     unique_categories: string[];
     unique_accounts: string[];
     unique_currencies: string[];
+    mapping_warnings?: string[];
 }
 
 interface ColumnMapping {
@@ -1254,6 +1255,20 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                             {previewError && (
                                 <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
                                     {previewError}
+                                </div>
+                            )}
+
+                            {previewData && (previewData.mapping_warnings?.length ?? 0) > 0 && (
+                                <div
+                                    className="mt-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-md p-3 space-y-2"
+                                    role="status"
+                                >
+                                    <p className="font-medium">Controlla la mappatura delle colonne</p>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        {(previewData.mapping_warnings ?? []).map((w) => (
+                                            <li key={w}>{w}</li>
+                                        ))}
+                                    </ul>
                                 </div>
                             )}
 

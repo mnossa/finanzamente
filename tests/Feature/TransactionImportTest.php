@@ -77,8 +77,9 @@ class TransactionImportTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['headers', 'valid', 'invalid', 'total', 'valid_count', 'invalid_count']);
+        $response->assertJsonStructure(['headers', 'valid', 'invalid', 'total', 'valid_count', 'invalid_count', 'mapping_warnings']);
         $response->assertJson(['total' => 2, 'valid_count' => 2, 'invalid_count' => 0]);
+        $this->assertSame([], $response->json('mapping_warnings'));
     }
 
     #[Test]
@@ -235,6 +236,33 @@ class TransactionImportTest extends TestCase
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['google_drive_access_token']);
+    }
+
+    #[Test]
+    public function preview_returns_mapping_warning_when_description_points_to_category_header(): void
+    {
+        $csvContent = "Data;Importo;Categoria\n01/01/2024;-10,00;Abbonamento\n";
+        $file = UploadedFile::fake()->createWithContent('transactions.csv', $csvContent);
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa/anteprima', [
+            'csv_file' => $file,
+            'bank_name' => 'custom',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => [
+                'date' => 0,
+                'amount' => 1,
+                'description' => 2,
+            ],
+        ]);
+
+        $response->assertStatus(200);
+        $warnings = $response->json('mapping_warnings');
+        $this->assertIsArray($warnings);
+        $this->assertNotEmpty($warnings);
+        $this->assertStringContainsString('Categoria', implode(' ', $warnings));
     }
 
     #[Test]
