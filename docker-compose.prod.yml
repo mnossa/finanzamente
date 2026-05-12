@@ -7,6 +7,7 @@
 # VARIABILI d'ambiente richieste nel file .env (sul server):
 #   APP_KEY, APP_URL, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
 #   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, BACKUP_ENCRYPTION_KEY, IMAGE_TAG
+#   Opzionale sul VPS: DEPLOY_MIN_FREE_MB (soglia MiB liberi prima del pull; vedi deploy GitHub)
 #   (Opzionale) PYTHON_SERVICES_URL — in compose è fissata per servizio; vedi environment sotto.
 # =============================================================================
 

@@ -1,5 +1,8 @@
 name: Deploy to Production — Finanzamente
 
+# Deploy: test → build immagine → SSH su VPS. Concurrency senza cancel (nessun deploy
+# interrotto a metà). Rollback verifica compose, health e smoke HTTP.
+
 # Attivazione: ad ogni push sul branch main
 on:
   push:
@@ -10,10 +13,11 @@ on:
 permissions:
   contents: read
 
-# Qui inserisci il blocco concurrency
+# Un solo deploy alla volta su main; niente cancel del run in corso (evita stato
+# incoerente sul VPS se arriva un secondo push durante il deploy).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
 
@@ -64,7 +68,7 @@ jobs:
           } > .env.docker
 
       - name: Avvia stack Docker Compose (sviluppo)
-        run: docker compose up -d --build
+        run: docker compose up -d --build --remove-orphans
 
       - name: Attendi che il container PHP sia pronto
         run: |
@@ -83,6 +87,11 @@ jobs:
 
       - name: Verifica gate backend (Pint + test)
         run: make test-ci
+
+      - name: Smoke HTTP (nginx → app, come in locale)
+        run: |
+          timeout 90 bash -c 'until curl -sf --max-time 8 http://localhost:8080/up >/dev/null 2>&1; do sleep 3; echo "Attesa /up su :8080..."; done'
+          echo "Smoke OK: http://localhost:8080/up"
 
       - name: Debug logs in caso di test falliti
         if: failure()
@@ -197,33 +206,142 @@ jobs:
             echo "==> [deploy] Versione: ${IMAGE_TAG}"
             cd "${DEPLOY_DIR}"
 
-            # Salva il tag corrente per eventuale rollback
             PREVIOUS_TAG=$(grep "^IMAGE_TAG=" .env | cut -d= -f2 || true)
             echo "==> [deploy] Versione precedente: ${PREVIOUS_TAG:-<nessuna>}"
 
-            # Funzione di rollback: ripristina la versione precedente in caso di errore
-            rollback() {
-              echo "==> [deploy] ERRORE! Avvio rollback a ${PREVIOUS_TAG}..."
-              docker compose -f docker-compose.prod.yml logs app --tail=50 || true
-              if [ -n "${PREVIOUS_TAG}" ] && [ "${PREVIOUS_TAG}" != "${IMAGE_TAG}" ]; then
-                sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${PREVIOUS_TAG}|" .env
-                docker compose -f docker-compose.prod.yml up -d --remove-orphans || true
-                echo "==> [deploy] Rollback completato. Versione attiva: ${PREVIOUS_TAG}"
-              else
-                echo "==> [deploy] Nessuna versione precedente disponibile per il rollback."
-              fi
+            wait_app_healthy() {
+              local max_wait="${1:-300}"
+              local deadline=$(( $(date +%s) + max_wait ))
+              echo "==> [deploy] Attesa healthcheck ${CONTAINER_NAME} (max ${max_wait}s)..."
+              while true; do
+                STATUS=$(docker inspect --format '{{.State.Health.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "unknown")
+                case "${STATUS}" in
+                  healthy)
+                    echo "==> [deploy] App healthy."
+                    return 0
+                    ;;
+                  unhealthy)
+                    echo "==> [deploy] App in stato unhealthy."
+                    return 1
+                    ;;
+                  *)
+                    if [ "$(date +%s)" -ge "${deadline}" ]; then
+                      echo "==> [deploy] Timeout attesa health app."
+                      return 1
+                    fi
+                    echo "    ... stato: ${STATUS}"
+                    sleep 10
+                    ;;
+                esac
+              done
             }
+
+            smoke_http_up() {
+              echo "==> [deploy] Smoke HTTP (Caddy / stack pubblico)..."
+              if ! curl -sf --max-time 25 "http://127.0.0.1/up" >/dev/null; then
+                echo "==> [deploy] Smoke fallito: http://127.0.0.1/up"
+                return 1
+              fi
+              APP_URL_LINE=$(grep -E '^APP_URL=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r' | sed 's/^"//;s/"$//;s:/*$::' || true)
+              if echo "${APP_URL_LINE}" | grep -qE '^https://'; then
+                if ! curl -sf --max-time 25 "${APP_URL_LINE}/up" >/dev/null; then
+                  echo "==> [deploy] Smoke fallito: ${APP_URL_LINE}/up"
+                  return 1
+                fi
+              fi
+              echo "==> [deploy] Smoke HTTP OK."
+            }
+
+            check_disk_space() {
+              local min_mb="${1:-6144}"
+              echo "==> [deploy] Verifica spazio disco (min ${min_mb} MiB liberi)..."
+              AVAIL=$(df -Pm / 2>/dev/null | tail -1 | awk '{print $4}')
+              if [ -z "${AVAIL}" ] || ! [[ "${AVAIL}" =~ ^[0-9]+$ ]]; then
+                echo "==> [deploy] Avviso: df su / non leggibile, continuo."
+                return 0
+              fi
+              if [ "${AVAIL}" -lt "${min_mb}" ]; then
+                echo "==> [deploy] ERRORE: su / ci sono solo ${AVAIL} MiB liberi (minimo richiesto ${min_mb})."
+                exit 1
+              fi
+              DR=$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || true)
+              if [ -n "${DR}" ]; then
+                AVAIL_DR=$(df -Pm "${DR}" 2>/dev/null | tail -1 | awk '{print $4}')
+                if [ -n "${AVAIL_DR}" ] && [[ "${AVAIL_DR}" =~ ^[0-9]+$ ]] && [ "${AVAIL_DR}" -lt "${min_mb}" ]; then
+                  echo "==> [deploy] ERRORE: su ${DR} solo ${AVAIL_DR} MiB liberi (minimo ${min_mb})."
+                  exit 1
+                fi
+              fi
+              echo "==> [deploy] Spazio disco OK ( / ~${AVAIL} MiB liberi )."
+            }
+
+            prune_old_finanzamente_images() {
+              local repo="mnossa/finanzamente"
+              local keep=2
+              echo "==> [deploy] Prune ${repo}: mantengo le ${keep} digest più recenti (per .Created)..."
+              docker images "${repo}" -aq 2>/dev/null | sort -u | while read -r iid; do
+                [ -z "${iid}" ] && continue
+                docker image inspect --format '{{.Created}}\t{{.Id}}' "${iid}" 2>/dev/null || true
+              done | sort -r | tail -n +$((keep + 1)) | cut -f2 | while read -r rid; do
+                [ -z "${rid}" ] && continue
+                echo "    docker rmi ${rid}"
+                docker rmi "${rid}" 2>/dev/null || true
+              done
+            }
+
+            rollback() {
+              trap - ERR
+              echo "==> [deploy] ERRORE! Rollback verso: ${PREVIOUS_TAG:-<nessuno>}"
+              docker compose -f docker-compose.prod.yml logs app --tail=80 || true
+              if [ -z "${PREVIOUS_TAG}" ] || [ "${PREVIOUS_TAG}" = "${IMAGE_TAG}" ]; then
+                echo "==> [deploy] CRITICO: nessuna IMAGE_TAG precedente distinta — rollback automatico impossibile."
+                exit 1
+              fi
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${PREVIOUS_TAG}|" .env
+              if ! docker compose -f docker-compose.prod.yml up -d --remove-orphans; then
+                echo "==> [deploy] CRITICO: docker compose up dopo rollback fallito."
+                exit 1
+              fi
+              if ! wait_app_healthy 240; then
+                echo "==> [deploy] CRITICO: app non healthy dopo rollback."
+                exit 1
+              fi
+              if ! smoke_http_up; then
+                echo "==> [deploy] CRITICO: smoke HTTP fallito dopo rollback."
+                exit 1
+              fi
+              echo "==> [deploy] Fine manutenzione dopo rollback (artisan up)..."
+              docker compose -f docker-compose.prod.yml exec -T app php artisan up || echo "==> [deploy] AVVISO: artisan up dopo rollback non riuscito (controlla manualmente)."
+              echo "==> [deploy] Rollback riuscito. Versione runtime: ${PREVIOUS_TAG} (il job segnala fallimento deploy)."
+              exit 1
+            }
+
+            DEPLOY_MIN_FREE_MB=$(grep -E '^DEPLOY_MIN_FREE_MB=' .env 2>/dev/null | cut -d= -f2- | tr -d ' "\r' || true)
+            DEPLOY_MIN_FREE_MB=${DEPLOY_MIN_FREE_MB:-6144}
+            check_disk_space "${DEPLOY_MIN_FREE_MB}"
+
             trap rollback ERR
 
-            # Pulizia preventiva immagini obsolete prima del pull (evita "no space left on device")
-            echo "==> [deploy] Pulizia immagini obsolete pre-pull..."
+            # Spazio per estrarre layer grandi (torch / sentence-transformers):
+            # 1) cache build  2) solo dangling (<none>) — NON equivale a "prune -af"
+            # 3) vecchi digest mnossa/finanzamente oltre le 2 immagini più recenti (1ª volta: **prima del pull** —
+            #    toglie solo ciò che nessun container usa ancora; il digest in esecuzione resta).
+            # 4) altre immagini inutilizzate e vecchie (>7g), qualsiasi repository
+            echo "==> [deploy] Pulizia cache build Docker..."
+            docker builder prune -af || true
+            echo "==> [deploy] Pulizia solo immagini dangling (docker image prune -f)..."
+            docker image prune -f || true
+            prune_old_finanzamente_images
+            echo "==> [deploy] Pulizia immagini inutilizzate molto vecchie (altri repo, >7 giorni)..."
             docker image prune -af --filter "until=168h" || true
-            echo "==> [deploy] Spazio disco disponibile:"
+            echo "==> [deploy] Spazio disco disponibile (root e, se esiste, Docker root):"
             df -h / | tail -1
+            DR=$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || true)
+            if [ -n "${DR}" ]; then df -h "${DR}" | tail -1 || true; fi
 
             # Pull la nuova immagine da Docker Hub
             echo "==> [deploy] Pull immagine Docker Hub..."
-            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler queue-worker
 
             # Aggiorna IMAGE_TAG nel file .env del server
             if grep -q "^IMAGE_TAG=" .env; then
@@ -258,45 +376,32 @@ jobs:
             echo "==> [deploy] Avvio infrastruttura..."
             docker compose -f docker-compose.prod.yml up -d --no-deps --no-recreate caddy db-backup
 
-            # Riavvia solo i container app con la nuova immagine
-            echo "==> [deploy] Riavvio container app..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps --remove-orphans app scheduler
+            # Manutenzione cortesia: durante il recreate gli utenti vedono 503 con messaggio, non errori sparsi.
+            echo "==> [deploy] Manutenzione programmata (artisan down)..."
+            if ! docker compose -f docker-compose.prod.yml exec -T app php artisan down --retry=120 --render=maintenance.deploy; then
+              echo "==> [deploy] AVVISO: artisan down non riuscito — il deploy prosegue comunque."
+            fi
 
-            # Attendi lo stato "healthy" del Docker healthcheck nativo (max 5 min).
-            # Il docker-compose.prod.yml configura: start_period=90s, interval=30s, retries=3
-            # → il tempo massimo prima di "unhealthy" è 90+30*3=180s → usiamo 300s come timeout.
-            echo "==> [deploy] Attesa health check Docker (max 5 min)..."
-            DEADLINE=$(($(date +%s) + 300))
-            while true; do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "unknown")
-              case "${STATUS}" in
-                healthy)
-                  echo "==> [deploy] App healthy!"
-                  break
-                  ;;
-                unhealthy)
-                  echo "==> [deploy] ERRORE: container unhealthy dopo il deploy."
-                  false  # attiva il trap ERR → rollback
-                  ;;
-                *)
-                  if [ "$(date +%s)" -ge "${DEADLINE}" ]; then
-                    echo "==> [deploy] TIMEOUT: health check non completato entro 5 minuti."
-                    false  # attiva il trap ERR → rollback
-                  fi
-                  echo "    In attesa... (stato: ${STATUS})"
-                  sleep 10
-                  ;;
-              esac
-            done
+            echo "==> [deploy] Riavvio container app (nuova immagine)..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps --remove-orphans app scheduler queue-worker
+
+            wait_app_healthy 300
+
+            smoke_http_up
+
+            echo "==> [deploy] Fine manutenzione (artisan up)..."
+            if ! docker compose -f docker-compose.prod.yml exec -T app php artisan up; then
+              echo "==> [deploy] ERRORE: artisan up fallito dopo deploy riuscito."
+              exit 1
+            fi
 
             # Disattiva il trap ERR dopo il successo (la pulizia non deve attivare rollback)
             trap - ERR
 
-            # Pulizia immagini obsolete (libera spazio su disco).
-            # --filter "until=48h" rimuove le immagini scaricate più di 2 giorni fa,
-            # mantenendo sempre quella corrente e le recenti per rollback rapido.
-            echo "==> [deploy] Pulizia immagini vecchie (>2 giorni)..."
-            docker image prune -af --filter "until=48h"
+            # 2ª volta **dopo il recreate**: il digest appena sostituito non è più usato dai container →
+            #    spesso solo qui diventa eliminabile oltre il limite delle 2 versioni (non è duplicato inutile).
+            echo "==> [deploy] Prune tag app oltre le 2 più recenti (post-switch immagine)..."
+            prune_old_finanzamente_images
 
             # Log spazio disco post-deploy
             echo "==> [deploy] Spazio disco disponibile:"
