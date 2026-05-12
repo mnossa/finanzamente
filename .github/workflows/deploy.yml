@@ -253,7 +253,7 @@ jobs:
             }
 
             check_disk_space() {
-              local min_mb="${1:-6144}"
+              local min_mb="${1:-4096}"
               echo "==> [deploy] Verifica spazio disco (min ${min_mb} MiB liberi)..."
               AVAIL=$(df -Pm / 2>/dev/null | tail -1 | awk '{print $4}')
               if [ -z "${AVAIL}" ] || ! [[ "${AVAIL}" =~ ^[0-9]+$ ]]; then
@@ -289,6 +289,19 @@ jobs:
               done
             }
 
+            # Pulizia Docker **prima** del gate su spazio libero: così un VPS quasi pieno
+            # libera cache/layer inutilizzati e il check non fallisce senza aver tentato recovery.
+            prune_docker_before_disk_gate() {
+              echo "==> [deploy] Pre-pulizia Docker (cache build, dangling, vecchie immagini, container fermi)..."
+              docker builder prune -af || true
+              docker image prune -f || true
+              prune_old_finanzamente_images
+              docker image prune -af --filter "until=168h" || true
+              docker container prune -f || true
+              docker network prune -f || true
+              docker system prune -f || true
+            }
+
             rollback() {
               trap - ERR
               echo "==> [deploy] ERRORE! Rollback verso: ${PREVIOUS_TAG:-<nessuno>}"
@@ -317,27 +330,19 @@ jobs:
             }
 
             DEPLOY_MIN_FREE_MB=$(grep -E '^DEPLOY_MIN_FREE_MB=' .env 2>/dev/null | cut -d= -f2- | tr -d ' "\r' || true)
-            DEPLOY_MIN_FREE_MB=${DEPLOY_MIN_FREE_MB:-6144}
-            check_disk_space "${DEPLOY_MIN_FREE_MB}"
+            # Default 4096 MiB (~4 GiB): su VPS piccoli 6144 bloccava deploy prima di qualsiasi prune.
+            DEPLOY_MIN_FREE_MB=${DEPLOY_MIN_FREE_MB:-4096}
 
-            trap rollback ERR
+            prune_docker_before_disk_gate
 
-            # Spazio per estrarre layer grandi (torch / sentence-transformers):
-            # 1) cache build  2) solo dangling (<none>) — NON equivale a "prune -af"
-            # 3) vecchi digest mnossa/finanzamente oltre le 2 immagini più recenti (1ª volta: **prima del pull** —
-            #    toglie solo ciò che nessun container usa ancora; il digest in esecuzione resta).
-            # 4) altre immagini inutilizzate e vecchie (>7g), qualsiasi repository
-            echo "==> [deploy] Pulizia cache build Docker..."
-            docker builder prune -af || true
-            echo "==> [deploy] Pulizia solo immagini dangling (docker image prune -f)..."
-            docker image prune -f || true
-            prune_old_finanzamente_images
-            echo "==> [deploy] Pulizia immagini inutilizzate molto vecchie (altri repo, >7 giorni)..."
-            docker image prune -af --filter "until=168h" || true
-            echo "==> [deploy] Spazio disco disponibile (root e, se esiste, Docker root):"
+            echo "==> [deploy] Spazio disco dopo pre-pulizia (root e Docker root):"
             df -h / | tail -1
             DR=$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || true)
             if [ -n "${DR}" ]; then df -h "${DR}" | tail -1 || true; fi
+
+            check_disk_space "${DEPLOY_MIN_FREE_MB}"
+
+            trap rollback ERR
 
             # Pull la nuova immagine da Docker Hub
             echo "==> [deploy] Pull immagine Docker Hub..."
