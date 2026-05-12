@@ -66,3 +66,8 @@ Schedule::command('consents:enforce-retention')->dailyAt('03:30');
  * Dati inviati al servizio Python sono solo bucket numerici, senza accesso al DB.
  */
 Schedule::command('insights:cohort-analyze')->dailyAt('04:15');
+
+/**
+ * Sblocca import rimasti in pending/processing dopo crash worker o timeout (banner «import in corso»).
+ */
+Schedule::command('transaction-imports:mark-stale')->hourly();

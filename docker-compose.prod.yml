@@ -8,6 +8,8 @@
 #   APP_KEY, APP_URL, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
 #   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, BACKUP_ENCRYPTION_KEY, IMAGE_TAG
 #   Opzionale sul VPS: DEPLOY_MIN_FREE_MB (MiB liberi dopo pre-pulizia Docker; default deploy 4096; vedi deploy GitHub)
+#   In produzione usa QUEUE_CONNECTION=database (o redis): con "sync" gli import grandi
+#   eseguono nella richiesta HTTP e possono superare il max_execution_time di PHP-FPM (~30s).
 #   (Opzionale) PYTHON_SERVICES_URL — in compose è fissata per servizio; vedi environment sotto.
 # =============================================================================
 

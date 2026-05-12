@@ -120,6 +120,30 @@ class TransactionImportTest extends TestCase
     }
 
     #[Test]
+    public function duplicate_check_matches_row_and_db_when_only_sign_differs(): void
+    {
+        Transaction::factory()->create([
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
+            'date' => '2024-06-01',
+            'amount' => -50.00,
+            'description' => 'Spesa',
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson(route('transactions.import.check-duplicates'), [
+            'account_id' => $this->account->id,
+            'rows' => [
+                ['date' => '2024-06-01', 'amount' => 50.00, 'description' => 'Spesa da CSV'],
+            ],
+        ]);
+
+        $response->assertOk();
+        $dups = $response->json('duplicates');
+        $this->assertCount(1, $dups);
+        $this->assertSame(0, $dups[0]['row_index']);
+    }
+
+    #[Test]
     public function import_requires_valid_account(): void
     {
         $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [

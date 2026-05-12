@@ -279,9 +279,13 @@ class TransactionImportController extends Controller
             if (! $account) {
                 continue;
             }
+            // Confronta per modulo: in DB le uscite sono spesso negative (categoria expense / FX)
+            // mentre nel file l'importo può essere ancora positivo → altrimenti il secondo import
+            // non rileva duplicati e procede senza modale.
+            $rowAbs = abs((float) $row['amount']);
             $existing = Transaction::where('account_id', $account->id)
                 ->whereDate('date', $row['date'])
-                ->whereRaw('ABS(amount - ?) < 0.005', [(float) $row['amount']])
+                ->whereRaw('ABS(ABS(amount) - ?) < 0.005', [$rowAbs])
                 ->get(['id', 'date', 'amount', 'description'])
                 ->toArray();
 

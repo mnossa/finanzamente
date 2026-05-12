@@ -828,7 +828,10 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             },
             {
                 onFinish: () => setImportProcessing(false),
-                onError:  (errs) => setImportErrors(errs as Record<string, string>),
+                onError: (errs) => {
+                    setImportProcessing(false);
+                    setImportErrors(errs as Record<string, string>);
+                },
             },
         );
     };
@@ -862,7 +865,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                 const resolutions: Record<number, DuplicateResolution> = {};
                 dups.forEach((d) => {
                     resolutions[d.row_index] = {
-                        action: 'import',
+                        action: 'ignore',
                         duplicate_transaction_id: d.existing[0]?.id ?? null,
                     };
                 });
