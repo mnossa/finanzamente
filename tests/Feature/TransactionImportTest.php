@@ -8,6 +8,7 @@ use App\Models\Currency;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\RecurrenceDetectionService;
 use App\Services\TransactionImportService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -313,6 +314,50 @@ class TransactionImportTest extends TestCase
         $tx = Transaction::where('description', 'Hotel USD')->first();
         $this->assertNotNull($tx);
         $this->assertEquals('USD', $tx->original_currency_code);
+    }
+
+    #[Test]
+    public function import_sotto_soglia_non_avvia_rilevamento_ricorrenze_automatico(): void
+    {
+        $mock = $this->mock(RecurrenceDetectionService::class);
+        $mock->shouldNotReceive('detectForHousehold');
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
+            'account_id' => $this->account->id,
+            'rows' => [
+                ['date' => '2024-01-01', 'amount' => -10.00, 'description' => 'Riga 1'],
+                ['date' => '2024-01-02', 'amount' => -20.00, 'description' => 'Riga 2'],
+            ],
+        ]);
+
+        $response->assertStatus(302);
+    }
+
+    #[Test]
+    public function import_significativo_avvia_rilevamento_ricorrenze_automatico(): void
+    {
+        $mock = $this->mock(RecurrenceDetectionService::class);
+        $mock->shouldReceive('detectForHousehold')
+            ->once()
+            ->with($this->household->id)
+            ->andReturn(0);
+
+        $rows = [];
+        for ($i = 0; $i < 200; $i++) {
+            $rows[] = [
+                'date' => '2024-01-01',
+                'amount' => -10.00 - $i,
+                'description' => 'Import bulk '.$i,
+            ];
+        }
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
+            'account_id' => $this->account->id,
+            'rows' => $rows,
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseCount('transactions', 200);
     }
 
     #[Test]

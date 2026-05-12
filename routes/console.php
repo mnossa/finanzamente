@@ -51,10 +51,10 @@ Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8, 15, 0);
 
 /**
  * Scansiona gli articoli magazine e suggerisce link interni tramite similarità semantica.
- * Esegue ogni domenica e metà mese (1° e 15°) alle 03:00 per minimizzare l'impatto sulle performance.
+ * Esegue ogni domenica alle 03:00 per minimizzare l'impatto sulle performance.
  * I suggerimenti vengono inviati via email all'amministratore (config('mail.admin_address')) in formato leggibile.
  */
-Schedule::command('magazine:link-suggestions')->sundays()->twiceMonthly()->at('03:00');
+Schedule::command('magazine:link-suggestions')->sundays()->at('03:00');
 
 /**
  * Applica retention su eventi consenso GDPR (anonymize + prune) ogni notte.

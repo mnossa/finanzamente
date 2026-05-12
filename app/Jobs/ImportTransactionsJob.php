@@ -9,17 +9,25 @@ use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Models\User;
 use App\Services\CurrencyConverter;
+use App\Services\RecurrenceDetectionService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ImportTransactionsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
+     * Soglia minima di transazioni effettivamente importate per avviare
+     * il rilevamento automatico delle ricorrenze.
+     */
+    private const AUTO_RECURRING_DETECTION_MIN_IMPORTED_ROWS = 200;
 
     /** Timeout massimo in secondi (10 minuti) */
     public int $timeout = 600;
@@ -34,8 +42,10 @@ class ImportTransactionsJob implements ShouldQueue
         private readonly int $importId = 0,
     ) {}
 
-    public function handle(CurrencyConverter $converter): void
-    {
+    public function handle(
+        CurrencyConverter $converter,
+        RecurrenceDetectionService $recurrenceDetectionService
+    ): void {
         $user = User::findOrFail($this->userId);
         $defaultCurrency = ! empty($this->validated['default_currency'])
             ? strtoupper($this->validated['default_currency'])
@@ -269,6 +279,23 @@ class ImportTransactionsJob implements ShouldQueue
             ]);
         }
 
+        $autoDetectionCreated = null;
+        $autoDetectionError = false;
+        if ($imported >= self::AUTO_RECURRING_DETECTION_MIN_IMPORTED_ROWS) {
+            try {
+                $autoDetectionCreated = $recurrenceDetectionService->detectForHousehold($this->householdId);
+            } catch (Throwable $e) {
+                $autoDetectionError = true;
+                Log::warning('Rilevamento ricorrenze post-import fallito', [
+                    'user_id' => $this->userId,
+                    'household_id' => $this->householdId,
+                    'import_id' => $this->importId,
+                    'imported_rows' => $imported,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Notifica in-app al completamento
         $msg = "{$imported} ".($imported === 1 ? 'transazione importata' : 'transazioni importate').' con successo.';
         if ($skipped > 0) {
@@ -276,6 +303,15 @@ class ImportTransactionsJob implements ShouldQueue
             if ($skipReasonText !== null) {
                 $msg .= " Motivi: {$skipReasonText}.";
             }
+        }
+        if ($autoDetectionCreated !== null) {
+            if ($autoDetectionCreated > 0) {
+                $msg .= " Ho anche analizzato automaticamente le ricorrenze e trovato {$autoDetectionCreated} ".($autoDetectionCreated === 1 ? 'nuovo suggerimento' : 'nuovi suggerimenti').'.';
+            } else {
+                $msg .= ' Ho anche analizzato automaticamente le ricorrenze: nessun nuovo suggerimento trovato.';
+            }
+        } elseif ($autoDetectionError) {
+            $msg .= " L'analisi automatica delle ricorrenze non e' riuscita: puoi rilanciarla dalla sezione dedicata.";
         }
 
         AppNotification::create([
