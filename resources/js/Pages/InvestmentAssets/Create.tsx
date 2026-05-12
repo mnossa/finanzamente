@@ -123,6 +123,7 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
                                     <InputLabel htmlFor="name" value="Nome Asset *" />
                                     <TextInput
                                         id="name"
+                                        name="name"
                                         type="text"
                                         className="mt-2 w-full"
                                         value={data.name}
@@ -138,6 +139,7 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
                                     <InputLabel htmlFor="symbol" value="Simbolo / Ticker" />
                                     <TextInput
                                         id="symbol"
+                                        name="symbol"
                                         type="text"
                                         className="mt-2 w-full"
                                         value={data.symbol}

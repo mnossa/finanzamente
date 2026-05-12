@@ -10,9 +10,13 @@ test.describe('Household', () => {
 
     async function gotoActiveHousehold(page: import('@playwright/test').Page) {
         await page.goto('/nuclei/seleziona');
-        // "Casa E2E" è un dato del seeder — cliccato tramite link che contiene il nome
-        await page.getByText('Casa E2E').first().click();
-        await expect(page).toHaveURL(/\/nuclei\/\d+/);
+        const card = page
+            .locator('[data-household-id]')
+            .filter({ has: page.getByRole('heading', { level: 3, name: /^Casa E2E$/ }) });
+        const id = await card.getAttribute('data-household-id');
+        expect(id).toMatch(/^\d+$/);
+        await page.goto(`/nuclei/${id}`);
+        await expect(page).toHaveURL(new RegExp(`/nuclei/${id}`));
     }
 
     test('carica la pagina della household attiva', async ({ page }) => {

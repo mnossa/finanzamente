@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { selectOptionByText } from '../helpers';
+import { selectOptionByText, visibleHrefLocator } from '../helpers';
 
 async function ensureAssetExists(page: Page): Promise<string> {
     await page.goto('/investimenti');
@@ -13,7 +13,7 @@ async function ensureAssetExists(page: Page): Promise<string> {
 
     const assetName = `Asset E2E ${Date.now()}`;
 
-    await page.locator('a[href*="/asset-investimento/crea"]').first().click();
+    await visibleHrefLocator(page, '/asset-investimento/crea').click();
     await expect(page).toHaveURL('/asset-investimento/crea');
 
     await page.locator('input[name="name"]').fill(assetName);
@@ -58,7 +58,7 @@ test.describe('Investimenti', () => {
     });
 
     test('naviga al form nuovo investimento', async ({ page }) => {
-        await page.locator('a[href*="/investimenti/crea"]').first().click();
+        await visibleHrefLocator(page, '/investimenti/crea').click();
         await expect(page).toHaveURL('/investimenti/crea');
         await expect(page).toHaveTitle(/nuovo investimento/i);
     });
@@ -84,8 +84,8 @@ test.describe('Investimenti', () => {
         await page.goto('/investimenti/importa');
 
         await expect(page).toHaveURL('/investimenti/importa');
-        // Verifica strutturale: esiste un input file
-        await expect(page.locator('input[type="file"]')).toBeVisible();
+        // Input file nascosto (stile custom): presente nel DOM, setInputFiles funziona comunque
+        await expect(page.locator('input[type="file"]')).toHaveCount(1);
 
         const csvContent = [
             'buy_date;quantity;buy_price;ticker',
@@ -98,9 +98,7 @@ test.describe('Investimenti', () => {
             buffer: Buffer.from(csvContent),
         });
 
-        await page.locator('[type="submit"]').click();
-        // Dopo upload: secondo step del wizard (mapping colonne)
-        await expect(page.locator('form, [class*="step"], [class*="wizard"]').first())
-            .toBeVisible({ timeout: 10_000 });
+        await page.getByRole('button', { name: /avanti/i }).click();
+        await expect(page.getByRole('heading', { name: /Mappatura colonne/i })).toBeVisible({ timeout: 15_000 });
     });
 });

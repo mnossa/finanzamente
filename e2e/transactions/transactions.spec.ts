@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { visibleHrefLocator } from '../helpers';
 
 /**
  * Test E2E — Transazioni
@@ -16,26 +17,26 @@ test.describe('Transazioni', () => {
     });
 
     test('esiste il link per creare una nuova transazione', async ({ page }) => {
-        await expect(page.locator('a[href*="/transazioni/crea"]').first()).toBeVisible();
+        await expect(visibleHrefLocator(page, '/transazioni/crea')).toBeVisible();
     });
 
     test('il link nuova transazione porta al form', async ({ page }) => {
-        await page.locator('a[href*="/transazioni/crea"]').first().click();
+        await visibleHrefLocator(page, '/transazioni/crea').click();
         await expect(page).toHaveURL('/transazioni/crea');
         await expect(page).toHaveTitle(/nuova transazione/i);
     });
 
     test('la lista mostra stato vuoto o righe', async ({ page }) => {
-        // Stato coerente: empty state o righe con link azione
-        const emptyState = page.getByText(/nessuna transazione/i).first();
-        const rows = page.locator('table tbody tr, [data-row], ul li a[href*="/transazioni/"]');
+        // Lista reale: card (no table); ogni riga espone link "Visualizza" verso /transazioni/:id
+        const emptyState = page.getByText(/nessuna transazione trovata/i).first();
+        const rowViewLinks = page.getByRole('link', { name: /^visualizza$/i });
 
         await expect
             .poll(async () => {
                 const emptyVisible = await emptyState.isVisible().catch(() => false);
-                const rowsCount = await rows.count();
+                const rowsCount = await rowViewLinks.count();
                 return emptyVisible || rowsCount > 0;
-            }, { timeout: 10_000 })
+            }, { timeout: 15_000 })
             .toBeTruthy();
     });
 

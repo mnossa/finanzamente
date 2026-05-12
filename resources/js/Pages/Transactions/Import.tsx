@@ -2,6 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import ColumnMapper from '@/Components/ColumnMapper';
 import GoogleDrivePicker, { type DriveFile } from '@/Components/GoogleDrivePicker';
+import ImportLayoutSourceIcon, { LAYOUT_SOURCE_OPTIONS } from '@/Components/ImportLayoutSourceIcon';
 import ImportWizardStep from '@/Components/ImportWizardStep';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -13,6 +14,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import clsx from 'clsx';
 import { useRef, useState } from 'react';
+import { getImportAmountDisplay } from '@/utils/import-amount-display';
 
 interface Account {
     id: number;
@@ -39,6 +41,7 @@ interface UserLayout {
         description: number;
         notes: number | null;
         category?: number | null;
+        account?: number | null;
         currency?: number | null;
     };
     delimiter: string;
@@ -153,8 +156,6 @@ const DATE_FORMAT_OPTIONS = [
     { value: 'm/d/Y', label: 'MM/GG/AAAA' },
     { value: 'd-m-Y', label: 'GG-MM-AAAA' },
 ];
-
-const LAYOUT_ICONS = ['🏦', '💳', '💰', '🪙', '📊', '📈', '🏧', '💵', '📮', '🏛️', '💹', '⚙️'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auto-suggest helpers per la mappatura categorie/conti
@@ -380,7 +381,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
     const [userLayouts, setUserLayouts] = useState<UserLayout[]>(initialUserLayouts);
     const [selectedLayoutId, setSelectedLayoutId] = useState<number | null>(null);
     const [saveLayoutName, setSaveLayoutName] = useState('');
-    const [saveLayoutIcon, setSaveLayoutIcon] = useState('🏦');
+    const [saveLayoutIcon, setSaveLayoutIcon] = useState('csv');
     const [savingLayout, setSavingLayout] = useState(false);
     const [saveLayoutSuccess, setSaveLayoutSuccess] = useState<string | null>(null);
     const [saveLayoutError, setSaveLayoutError] = useState<string | null>(null);
@@ -415,6 +416,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         description: columnMapping.description ?? 2,
                         notes: columnMapping.notes ?? null,
                         category: columnMapping.category ?? null,
+                        account: columnMapping.account ?? null,
                         currency: columnMapping.currency ?? null,
                     },
                 },
@@ -422,7 +424,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             );
             setSaveLayoutSuccess(response.data.message);
             setSaveLayoutName('');
-            setSaveLayoutIcon('🏦');
+            setSaveLayoutIcon('csv');
             setUserLayouts((prev) => [...prev, response.data.layout]);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.data?.message) {
@@ -451,12 +453,12 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
             description: layout.column_mapping.description,
             notes: layout.column_mapping.notes ?? null,
             category: layout.column_mapping.category ?? null,
-            account: null,
+            account: layout.column_mapping.account ?? null,
             currency: layout.column_mapping.currency ?? null,
         });
         // Pre-compila il campo "Salva layout" con i dati del layout applicato
         setSaveLayoutName(layout.name);
-        setSaveLayoutIcon(layout.icon ?? '🏦');
+        setSaveLayoutIcon(layout.icon && layout.icon.trim() !== '' ? layout.icon : 'csv');
         setSaveLayoutSuccess(null);
         setSaveLayoutError(null);
         // Registra snapshot per rilevare eventuali modifiche
@@ -468,7 +470,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         setSelectedBank('custom');
         setSelectedLayoutId(null);
         setSaveLayoutName('');
-        setSaveLayoutIcon('🏦');
+        setSaveLayoutIcon('csv');
         setAppliedLayoutMapping(null);
         setShowUpdateLayoutPrompt(false);
     };
@@ -496,6 +498,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                         description: columnMapping.description ?? 2,
                         notes: columnMapping.notes ?? null,
                         category: columnMapping.category ?? null,
+                        account: columnMapping.account ?? null,
                         currency: columnMapping.currency ?? null,
                     },
                 },
@@ -712,6 +715,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                     columnMapping.description !== orig.description ||
                     (columnMapping.notes ?? null) !== (orig.notes ?? null) ||
                     (columnMapping.category ?? null) !== (orig.category ?? null) ||
+                    (columnMapping.account ?? null) !== (orig.account ?? null) ||
+                    (columnMapping.currency ?? null) !== (orig.currency ?? null) ||
                     delimiter !== appliedLayoutMapping.delimiter ||
                     dateFormat !== appliedLayoutMapping.date_format ||
                     hasHeader !== appliedLayoutMapping.has_header;
@@ -932,9 +937,8 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
         return false;
     };
 
-    const formatAmount = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
-    };
+    /** Importo completo (es. opzioni select) */
+    const formatAmountFull = (amount: number) => getImportAmountDisplay(amount).full;
 
     const resolveRowType = (row: ImportRow): 'income' | 'expense' | null => {
         if (!row.category_name) return null;
@@ -1299,13 +1303,21 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                 <tbody>
                                                     {previewData.valid.slice(0, 5).map((row) => {
                                                         const amountStyle = getRowAmountStyle(row);
+                                                        const amt = getImportAmountDisplay(row.amount);
 
                                                         return (
                                                             <tr key={row.line_number} className="border-b border-green-100 last:border-0">
                                                                 <td className="pr-3 py-1 whitespace-nowrap">{row.date}</td>
-                                                                <td className={clsx('pr-3 py-1 whitespace-nowrap font-medium', amountStyle.className)}>
-                                                                    {formatAmount(row.amount)}
-                                                                    <span className="ml-1 text-[11px] font-medium text-gray-500">{amountStyle.label}</span>
+                                                                <td className="pr-3 py-1 min-w-0 max-w-[6.5rem] sm:max-w-[9rem] align-top">
+                                                                    <span
+                                                                        className="inline-flex flex-col items-start gap-0.5 min-w-0"
+                                                                        title={`Importo: ${amt.full}`}
+                                                                    >
+                                                                        <span className={clsx('tabular-nums truncate font-medium', amountStyle.className)}>
+                                                                            {amt.short}
+                                                                        </span>
+                                                                        <span className="text-[11px] font-medium text-gray-500">{amountStyle.label}</span>
+                                                                    </span>
                                                                 </td>
                                                                 <td className="py-1 truncate max-w-[200px]">{row.description}</td>
                                                             </tr>
@@ -1361,25 +1373,29 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                         ? 'Sovrascrive il layout esistente con la configurazione attuale delle colonne.'
                                         : 'Potrai riutilizzarlo nelle prossime importazioni senza dover riconfigurare le colonne.'}
                                 </p>
-                                {/* Selezione icona */}
+                                {/* Fonte dati (icona in elenco layout) */}
                                 <div className="mb-3">
-                                    <p className="text-xs text-gray-500 mb-1.5">Icona</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {LAYOUT_ICONS.map((emoji) => (
+                                    <p className="text-xs text-gray-500 mb-1.5">Fonte dati</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {LAYOUT_SOURCE_OPTIONS.map((opt) => (
                                             <button
-                                                key={emoji}
+                                                key={opt.id}
                                                 type="button"
-                                                onClick={() => setSaveLayoutIcon(emoji)}
+                                                onClick={() => setSaveLayoutIcon(opt.id)}
                                                 className={clsx(
-                                                    'text-xl w-9 h-9 flex items-center justify-center rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
-                                                    saveLayoutIcon === emoji
+                                                    'flex items-center gap-2 rounded-lg border-2 px-3 py-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                    saveLayoutIcon === opt.id
                                                         ? 'border-blue-500 bg-blue-50'
                                                         : 'border-gray-200 bg-white hover:border-blue-300',
                                                 )}
-                                                aria-label={`Icona ${emoji}`}
-                                                aria-pressed={saveLayoutIcon === emoji}
+                                                aria-pressed={saveLayoutIcon === opt.id}
+                                                aria-label={`${opt.label}: ${opt.hint}`}
                                             >
-                                                {emoji}
+                                                <ImportLayoutSourceIcon icon={opt.id} size="md" />
+                                                <span>
+                                                    <span className="block text-sm font-medium text-gray-900">{opt.label}</span>
+                                                    <span className="block text-xs text-gray-500">{opt.hint}</span>
+                                                </span>
                                             </button>
                                         ))}
                                     </div>
@@ -1824,6 +1840,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                         <tbody className="bg-white divide-y divide-gray-100 text-sm">
                                             {previewData.valid.map((row, index) => {
                                                 const amountStyle = getRowAmountStyle(row);
+                                                const amt = getImportAmountDisplay(row.amount);
 
                                                 return (
                                                 <tr
@@ -1845,13 +1862,17 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                     <td className="px-3 py-1 text-gray-700 whitespace-nowrap">
                                                         {new Date(row.date).toLocaleDateString('it-IT')}
                                                     </td>
-                                                    <td className={clsx(
-                                                        'px-3 py-1 text-right font-medium whitespace-nowrap',
-                                                        amountStyle.className,
-                                                    )}>
-                                                        {formatAmount(row.amount)}
-                                                        <span className="ml-1 text-[11px] font-medium text-gray-500">
-                                                            {amountStyle.label}
+                                                    <td className="px-3 py-1 text-right align-top min-w-0 max-w-[6.5rem] sm:max-w-none">
+                                                        <span
+                                                            className="inline-flex flex-col items-end gap-0.5 min-w-0 max-w-full"
+                                                            title={`Importo: ${amt.full}`}
+                                                        >
+                                                            <span className={clsx('tabular-nums truncate font-medium text-right max-w-full', amountStyle.className)}>
+                                                                {amt.short}
+                                                            </span>
+                                                            <span className="text-[11px] font-medium text-gray-500 whitespace-nowrap">
+                                                                {amountStyle.label}
+                                                            </span>
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-1 text-gray-700 max-w-xs truncate">
@@ -2038,24 +2059,38 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                             {duplicates.map((dup) => {
                                 const res = duplicateResolutions[dup.row_index] ?? { action: 'import' as DuplicateAction, duplicate_transaction_id: dup.existing[0]?.id ?? null };
                                 const showExistingSelect = (res.action === 'replace' || res.action === 'update') && dup.existing.length > 1;
+                                const amtDup = getImportAmountDisplay(dup.amount);
                                 return (
                                     <div key={dup.row_index} className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                                         <div className="flex flex-col sm:flex-row gap-3 mb-3">
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dal file</p>
-                                                <p className={clsx('text-sm font-bold', dup.amount >= 0 ? 'text-green-700' : 'text-red-700')}>{formatAmount(dup.amount)}</p>
+                                                <p
+                                                    className={clsx('text-sm font-bold tabular-nums truncate', dup.amount >= 0 ? 'text-green-700' : 'text-red-700')}
+                                                    title={`Importo: ${amtDup.full}`}
+                                                >
+                                                    {amtDup.short}
+                                                </p>
                                                 <p className="text-xs text-gray-600">{new Date(dup.date).toLocaleDateString('it-IT')}</p>
                                                 <p className="text-xs text-gray-500 truncate">{dup.description}</p>
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Già presente</p>
-                                                {dup.existing.map((ex) => (
+                                                {dup.existing.map((ex) => {
+                                                    const amtEx = getImportAmountDisplay(Number(ex.amount));
+                                                    return (
                                                     <div key={ex.id} className="border-l-2 border-amber-400 pl-2 mb-1">
-                                                        <p className={clsx('text-xs font-bold', Number(ex.amount) >= 0 ? 'text-green-700' : 'text-red-700')}>{formatAmount(Number(ex.amount))}</p>
+                                                        <p
+                                                            className={clsx('text-xs font-bold tabular-nums truncate', Number(ex.amount) >= 0 ? 'text-green-700' : 'text-red-700')}
+                                                            title={`Importo: ${amtEx.full}`}
+                                                        >
+                                                            {amtEx.short}
+                                                        </p>
                                                         <p className="text-xs text-gray-600">{new Date(ex.date).toLocaleDateString('it-IT')}</p>
                                                         <p className="text-xs text-gray-500 truncate">{ex.description}</p>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 
@@ -2116,7 +2151,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
                                                 >
                                                     {dup.existing.map((ex) => (
                                                         <option key={ex.id} value={ex.id}>
-                                                            {formatAmount(Number(ex.amount))} — {new Date(ex.date).toLocaleDateString('it-IT')} — {ex.description}
+                                                            {formatAmountFull(Number(ex.amount))} — {new Date(ex.date).toLocaleDateString('it-IT')} — {ex.description}
                                                         </option>
                                                     ))}
                                                 </select>

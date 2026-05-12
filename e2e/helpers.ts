@@ -1,4 +1,12 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+/**
+ * Link con stesso href possono esistere in header desktop e drawer mobile:
+ * solo l’istanza visibile è cliccabile nei test.
+ */
+export function visibleHrefLocator(page: Page, hrefSubstring: string): Locator {
+    return page.locator(`a[href*="${hrefSubstring}"]`).filter({ visible: true }).first();
+}
 
 /**
  * Credenziali utente E2E (configurabili tramite variabili d'ambiente).

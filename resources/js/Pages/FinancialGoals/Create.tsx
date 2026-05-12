@@ -121,6 +121,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                                         
                                         <TextInput
                                             id="name"
+                                            name="name"
                                             type="text"
                                             className="flex-1"
                                             value={data.name}
@@ -186,6 +187,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                                         <div className="relative mt-2">
                                             <TextInput
                                                 id="target_amount"
+                                                name="target_amount"
                                                 type="number"
                                                 step="0.01"
                                                 min="0.01"

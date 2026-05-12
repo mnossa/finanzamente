@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { visibleHrefLocator } from '../helpers';
 
 /**
  * Test E2E — Conti
@@ -17,11 +18,11 @@ test.describe('Conti', () => {
     });
 
     test('esiste il link per creare un nuovo conto', async ({ page }) => {
-        await expect(page.locator('a[href*="/conti/crea"]')).toBeVisible();
+        await expect(visibleHrefLocator(page, '/conti/crea')).toBeVisible();
     });
 
     test('il link nuovo conto porta al form di creazione', async ({ page }) => {
-        await page.locator('a[href*="/conti/crea"]').first().click();
+        await visibleHrefLocator(page, '/conti/crea').click();
         await expect(page).toHaveURL('/conti/crea');
         await expect(page).toHaveTitle(/nuovo conto/i);
     });

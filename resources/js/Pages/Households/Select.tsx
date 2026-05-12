@@ -29,6 +29,7 @@ export default function Select({ households }: Props) {
                 {households.map((household) => (
                     <div
                         key={household.id}
+                        data-household-id={household.id}
                         className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-emerald-600"
                     >
                         <div className="flex-1">
@@ -56,6 +57,7 @@ export default function Select({ households }: Props) {
                             </p>
                         </div>
                         <PrimaryButton
+                            type="button"
                             onClick={() => selectHousehold(household.id)}
                         >
                             Seleziona

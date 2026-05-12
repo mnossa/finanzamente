@@ -543,6 +543,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                                 </div>
                                 {household.is_owner && (
                                     <PrimaryButton
+                                        type="button"
                                         onClick={() => setShowInviteModal(true)}
                                     >
                                         Invita Membro
@@ -730,6 +731,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                         <InputLabel htmlFor="invite_email" value="Email" />
                         <TextInput
                             id="invite_email"
+                            name="invite_email"
                             type="email"
                             className="mt-1 block w-full"
                             value={inviteForm.data.email}

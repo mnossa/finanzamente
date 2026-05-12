@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import ColumnMapper from '@/Components/ColumnMapper';
+import ImportLayoutSourceIcon, { LAYOUT_SOURCE_OPTIONS } from '@/Components/ImportLayoutSourceIcon';
 import EmptyState from '@/Components/EmptyState';
 import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
@@ -30,7 +31,7 @@ const DATE_FORMAT_OPTIONS = [
     { value: 'd-m-Y', label: 'GG-MM-AAAA' },
 ];
 
-const LAYOUT_ICONS = ['🏦', '💳', '💰', '🪙', '📊', '📈', '🏧', '💵', '📮', '🏛️', '💹', '⚙️'];
+const LAYOUT_SOURCE_ICON_DEFAULT = 'csv';
 
 interface Layout {
     id: number;
@@ -43,6 +44,8 @@ interface Layout {
         description: number;
         notes: number | null;
         category?: number | null;
+        account?: number | null;
+        currency?: number | null;
     };
     delimiter: string;
     date_format: string;
@@ -65,6 +68,8 @@ interface EditForm {
         description: number | null;
         notes: number | null;
         category?: number | null;
+        account?: number | null;
+        currency?: number | null;
     };
 }
 
@@ -100,18 +105,20 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
         setEditForm({
             name: layout.name,
             bank_name: layout.bank_name,
-            icon: layout.icon ?? '🏦',
+            icon: layout.icon && layout.icon.trim() !== '' ? layout.icon : LAYOUT_SOURCE_ICON_DEFAULT,
             delimiter: layout.delimiter,
             date_format: layout.date_format,
             has_header: layout.has_header,
             encoding: layout.encoding,
-            column_mapping: {
-                date: layout.column_mapping.date,
-                amount: layout.column_mapping.amount,
-                description: layout.column_mapping.description,
-                notes: layout.column_mapping.notes ?? null,
-                category: layout.column_mapping.category ?? null,
-            },
+                column_mapping: {
+                    date: layout.column_mapping.date,
+                    amount: layout.column_mapping.amount,
+                    description: layout.column_mapping.description,
+                    notes: layout.column_mapping.notes ?? null,
+                    category: layout.column_mapping.category ?? null,
+                    account: layout.column_mapping.account ?? null,
+                    currency: layout.column_mapping.currency ?? null,
+                },
         });
         setEditErrors({});
     };
@@ -135,6 +142,8 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                     description: editForm.column_mapping.description ?? 2,
                     notes: editForm.column_mapping.notes,
                     category: editForm.column_mapping.category ?? null,
+                    account: editForm.column_mapping.account ?? null,
+                    currency: editForm.column_mapping.currency ?? null,
                 },
             },
             {
@@ -194,7 +203,7 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                                 {/* Row header */}
                                 <div className="flex items-center justify-between px-5 py-4">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-2xl flex-shrink-0" aria-hidden="true">{layout.icon ?? '🏦'}</span>
+                                    <ImportLayoutSourceIcon icon={layout.icon} className="shrink-0" size="md" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{layout.name}</p>
                                         <p className="text-xs text-gray-500 mt-0.5">
@@ -251,25 +260,29 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
                                                 {editErrors.name && <p className="mt-1 text-xs text-red-600">{editErrors.name}</p>}
                                             </div>
 
-                                            {/* Icona */}
+                                            {/* Fonte dati */}
                                             <div>
-                                                <p className="text-xs text-gray-500 mb-1.5">Icona</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {LAYOUT_ICONS.map((emoji) => (
+                                                <p className="text-xs text-gray-500 mb-1.5">Fonte dati</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {LAYOUT_SOURCE_OPTIONS.map((opt) => (
                                                         <button
-                                                            key={emoji}
+                                                            key={opt.id}
                                                             type="button"
-                                                            onClick={() => setEditForm({ ...editForm, icon: emoji })}
+                                                            onClick={() => setEditForm({ ...editForm, icon: opt.id })}
                                                             className={clsx(
-                                                                'text-xl w-9 h-9 flex items-center justify-center rounded-lg border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
-                                                                editForm.icon === emoji
+                                                                'flex items-center gap-2 rounded-lg border-2 px-3 py-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                                                editForm.icon === opt.id
                                                                     ? 'border-blue-500 bg-blue-50'
                                                                     : 'border-gray-200 bg-white hover:border-blue-300',
                                                             )}
-                                                            aria-label={`Icona ${emoji}`}
-                                                            aria-pressed={editForm.icon === emoji}
+                                                            aria-pressed={editForm.icon === opt.id}
+                                                            aria-label={`${opt.label}: ${opt.hint}`}
                                                         >
-                                                            {emoji}
+                                                            <ImportLayoutSourceIcon icon={opt.id} size="md" />
+                                                            <span>
+                                                                <span className="block text-sm font-medium text-gray-900">{opt.label}</span>
+                                                                <span className="block text-xs text-gray-500">{opt.hint}</span>
+                                                            </span>
                                                         </button>
                                                     ))}
                                                 </div>

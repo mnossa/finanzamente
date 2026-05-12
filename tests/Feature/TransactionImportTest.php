@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\TransactionImportFinishedMail;
 use App\Models\Account;
 use App\Models\BankImportLayout;
 use App\Models\Currency;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -186,6 +188,52 @@ class TransactionImportTest extends TestCase
             'name' => 'Il mio layout',
             'bank_name' => 'custom',
         ]);
+    }
+
+    #[Test]
+    public function store_layout_persists_account_column_in_column_mapping(): void
+    {
+        $response = $this->actingAs($this->user)->postJson(route('bank-import-layouts.store'), [
+            'name' => 'Layout con colonna conto',
+            'bank_name' => 'custom',
+            'icon' => 'csv',
+            'delimiter' => ';',
+            'date_format' => 'd/m/Y',
+            'has_header' => true,
+            'encoding' => 'UTF-8',
+            'column_mapping' => [
+                'date' => 0,
+                'amount' => 2,
+                'description' => 1,
+                'notes' => null,
+                'account' => 3,
+            ],
+        ]);
+
+        $response->assertOk();
+        $layout = BankImportLayout::where('name', 'Layout con colonna conto')->first();
+        $this->assertNotNull($layout);
+        $this->assertSame(3, $layout->column_mapping['account']);
+    }
+
+    #[Test]
+    public function import_dispatches_completion_email(): void
+    {
+        Mail::fake();
+
+        $response = $this->actingAs($this->user)->postJson('/transazioni/importa', [
+            'account_id' => $this->account->id,
+            'rows' => [
+                ['date' => '2024-01-01', 'amount' => -50.00, 'description' => 'Test email', 'notes' => null],
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        Mail::assertSent(TransactionImportFinishedMail::class, function (TransactionImportFinishedMail $mail): bool {
+            return $mail->successful === true
+                && str_contains($mail->notificationMessage, '1')
+                && str_contains($mail->notificationMessage, 'transazione');
+        });
     }
 
     #[Test]

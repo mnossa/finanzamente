@@ -10,7 +10,6 @@ import {
     Pie,
     Cell,
     Tooltip,
-    Legend,
     ResponsiveContainer,
     BarChart,
     Bar,
@@ -82,6 +81,72 @@ function formatEur(amount: number): string {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(amount);
+}
+
+/** Massimo numero di fette distinte nel donut (oltre → «Altri»). */
+const MAX_PIE_SLICES_BEFORE_OTHER = 9;
+
+type PieDatum = {
+    name: string;
+    value: number;
+    color: string;
+    /** Elenco categorie aggregate in «Altri» (solo per la fetta Altri). */
+    otherDetail?: string;
+};
+
+/**
+ * Riduce il numero di fette nel pie chart: le categorie oltre le prime N-1
+ * vengono aggregate in «Altri (k)» per leggibilità su schermi piccoli.
+ */
+function aggregatePieData(raw: Array<{ name: string; value: number; color: string }>): PieDatum[] {
+    if (raw.length === 0) return [];
+    const sorted = [...raw].sort((a, b) => b.value - a.value);
+    if (sorted.length <= MAX_PIE_SLICES_BEFORE_OTHER) {
+        return sorted.map((r) => ({ name: r.name, value: r.value, color: r.color }));
+    }
+    const headCount = MAX_PIE_SLICES_BEFORE_OTHER - 1;
+    const head = sorted.slice(0, headCount);
+    const tail = sorted.slice(headCount);
+    const otherValue = tail.reduce((s, r) => s + r.value, 0);
+    const otherDetail = tail.map((r) => r.name).join(', ');
+
+    return [
+        ...head.map((r) => ({ name: r.name, value: r.value, color: r.color })),
+        {
+            name: `Altri (${tail.length})`,
+            value: otherValue,
+            color: '#64748b',
+            otherDetail,
+        },
+    ];
+}
+
+type PieTooltipProps = {
+    active?: boolean;
+    payload?: ReadonlyArray<{ payload?: PieDatum }>;
+    total: number;
+    formatEurFn: (amount: number) => string;
+};
+
+function LifestylePieTooltip({ active, payload, total, formatEurFn }: PieTooltipProps) {
+    const p = payload?.[0]?.payload;
+    if (!active || !p) return null;
+    const pct = total > 0 ? (p.value / total) * 100 : null;
+
+    return (
+        <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs shadow-md dark:border-gray-600 dark:bg-gray-800">
+            <p className="font-semibold text-gray-900 dark:text-white">{p.name}</p>
+            <p className="tabular-nums text-gray-800 dark:text-gray-200">{formatEurFn(p.value)}</p>
+            {pct !== null && (
+                <p className="tabular-nums text-gray-500 dark:text-gray-400">{pct.toFixed(1)}% del totale</p>
+            )}
+            {p.otherDetail && (
+                <p className="mt-1 max-w-[min(280px,85vw)] text-[11px] leading-snug break-words text-gray-500 dark:text-gray-400">
+                    Include: {p.otherDetail}
+                </p>
+            )}
+        </div>
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,23 +232,31 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
         );
     }
 
-    // Dati per il donut chart (solo categorie non escluse)
-    const pieData = metrics.category_breakdown
+    // Dati per il donut chart (solo categorie non escluse), aggregati se molte fette
+    const pieDataRaw = metrics.category_breakdown
         .filter(c => !c.excluded)
         .map((cat, i) => ({
             name:  cat.name,
             value: cat.amount,
             color: cat.color ?? categoryPalette[i % categoryPalette.length],
         }));
+    const pieData = aggregatePieData(pieDataRaw);
+    const pieTotal = pieData.reduce((s, d) => s + d.value, 0);
 
-    // Dati per il bar chart (tutte le categorie)
+    // Dati per il bar chart (tutte le categorie) — nome completo (niente troncamento nel dato)
     const barData = metrics.category_breakdown.map((cat, i) => ({
-        name:     cat.name.length > 12 ? cat.name.slice(0, 12) + '…' : cat.name,
+        name:     cat.name,
         fullName: cat.name,
         value:    cat.amount,
-        color:    cat.excluded ? '#e2e8f0' : (cat.color ?? categoryPalette[i % categoryPalette.length]),
+        color:    cat.excluded ? '#cbd5e1' : (cat.color ?? categoryPalette[i % categoryPalette.length]),
         excluded: cat.excluded,
     }));
+    const maxBarValue = Math.max(...barData.map((d) => d.value), 1);
+    const barChartHeight = Math.min(560, Math.max(240, barData.length * 30 + 64));
+    const yAxisWidth = Math.min(
+        240,
+        88 + Math.min(36, Math.max(...barData.map((d) => d.name.length), 8)) * 5.8,
+    );
 
     const exportXlsUrl = route('lifestyle-score.export-xls');
     const exportPdfUrl = route('lifestyle-score.export-pdf');
@@ -341,45 +414,78 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
 
                     {/* ── Grafici ───────────────────────────────────────────────────────── */}
                     <div className="grid gap-6 lg:grid-cols-2">
-                        {/* Donut chart — suddivisione spese effettive */}
+                        {/* Donut chart — suddivisione spese effettive (legenda scrollabile, fette aggregate) */}
                         <CardBox>
-                            <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+                            <h3 className="mb-3 font-semibold text-gray-900 dark:text-white">
                                 Distribuzione Spese Effettive
                             </h3>
                             {pieData.length > 0 ? (
-                                <div className="h-72">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={pieData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={100}
-                                                dataKey="value"
-                                                strokeWidth={0}
-                                                label={({ name, percent }: { name?: string; percent?: number }) =>
-                                                    (percent ?? 0) > 0.05 ? `${((percent ?? 0) * 100).toFixed(0)}%` : ''
-                                                }
+                                <div className="flex flex-col">
+                                    <div className="h-52 shrink-0 sm:h-60">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={pieData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={56}
+                                                    outerRadius={88}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    paddingAngle={1}
+                                                    strokeWidth={0}
+                                                    labelLine={false}
+                                                    label={({ percent }: { percent?: number }) =>
+                                                        (percent ?? 0) >= 0.06 ? `${((percent ?? 0) * 100).toFixed(0)}%` : ''
+                                                    }
+                                                >
+                                                    {pieData.map((entry, index) => (
+                                                        <Cell key={index} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    content={(props) => (
+                                                        <LifestylePieTooltip
+                                                            active={props.active}
+                                                            payload={props.payload}
+                                                            total={pieTotal}
+                                                            formatEurFn={formatEur}
+                                                        />
+                                                    )}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <ul
+                                        className="mt-3 max-h-40 space-y-1 overflow-y-auto overscroll-contain border-t border-gray-100 pt-3 dark:border-gray-700 sm:max-h-44"
+                                        aria-label="Legenda distribuzione spese"
+                                    >
+                                        {pieData.map((d, i) => (
+                                            <li
+                                                key={`${d.name}-${i}`}
+                                                className="flex items-start justify-between gap-2 text-xs"
                                             >
-                                                {pieData.map((entry, index) => (
-                                                    <Cell key={index} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip
-                                                formatter={(value, name) => [
-                                                    formatEur(Number(value ?? 0)),
-                                                    String(name ?? ''),
-                                                ]}
-                                                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                            />
-                                            <Legend
-                                                formatter={(value) => (
-                                                    <span className="text-xs text-gray-700 dark:text-gray-300">{value}</span>
-                                                )}
-                                            />
-                                        </PieChart>
-                                    </ResponsiveContainer>
+                                                <span className="flex min-w-0 items-start gap-2">
+                                                    <span
+                                                        className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                                                        style={{ backgroundColor: d.color }}
+                                                        aria-hidden
+                                                    />
+                                                    <span
+                                                        className="break-words text-gray-700 dark:text-gray-300"
+                                                        title={d.name}
+                                                    >
+                                                        {d.name}
+                                                    </span>
+                                                </span>
+                                                <span className="shrink-0 tabular-nums text-gray-500 dark:text-gray-400">
+                                                    {pieTotal > 0
+                                                        ? `${((d.value / pieTotal) * 100).toFixed(1)}%`
+                                                        : '—'}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
                             ) : (
                                 <div className="flex h-40 items-center justify-center text-gray-400">
@@ -388,45 +494,109 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                             )}
                         </CardBox>
 
-                        {/* Bar chart — tutte le categorie */}
+                        {/* Bar chart — lista su mobile, grafico scrollabile su desktop */}
                         <CardBox>
-                            <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+                            <h3 className="mb-3 font-semibold text-gray-900 dark:text-white">
                                 Spesa per Categoria
                             </h3>
                             {barData.length > 0 ? (
-                                <div className="h-72">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={barData} layout="vertical" margin={{ left: 0, right: 16 }}>
-                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                            <XAxis
-                                                type="number"
-                                                tickFormatter={v => `€${(v / 1000).toFixed(0)}k`}
-                                                tick={{ fontSize: 11 }}
-                                            />
-                                            <YAxis
-                                                dataKey="name"
-                                                type="category"
-                                                width={90}
-                                                tick={{ fontSize: 11 }}
-                                            />
-                                            <Tooltip
-                                                formatter={(value, _name, item) => {
-                                                    const row = item?.payload as LifestyleBarDatum | undefined;
-                                                    const label =
-                                                        (row?.fullName ?? '') +
-                                                        (row?.excluded ? ' (escluso)' : '');
-                                                    return [formatEur(Number(value ?? 0)), label];
-                                                }}
-                                                contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
-                                            />
-                                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                                                {barData.map((entry, index) => (
-                                                    <Cell key={index} fill={entry.color} opacity={entry.excluded ? 0.4 : 1} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
+                                <>
+                                    <div className="space-y-3 lg:hidden">
+                                        {barData.map((row, i) => (
+                                            <div
+                                                key={`${row.fullName}-${i}`}
+                                                className="rounded-lg border border-gray-100 bg-gray-50/90 p-3 dark:border-gray-600 dark:bg-gray-900/40"
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex min-w-0 items-start gap-2">
+                                                        <span
+                                                            className="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                                                            style={{ backgroundColor: row.color }}
+                                                            aria-hidden
+                                                        />
+                                                        <span className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-gray-900 dark:text-white">
+                                                            {row.fullName}
+                                                        </span>
+                                                    </div>
+                                                    <span
+                                                        className={clsx(
+                                                            'shrink-0 text-xs font-semibold tabular-nums',
+                                                            row.excluded
+                                                                ? 'text-gray-400 line-through dark:text-gray-500'
+                                                                : 'text-gray-800 dark:text-gray-200',
+                                                        )}
+                                                    >
+                                                        {formatEur(row.value)}
+                                                    </span>
+                                                </div>
+                                                <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                                                    <div
+                                                        className="h-full rounded-full transition-all"
+                                                        style={{
+                                                            width: `${Math.min(100, (row.value / maxBarValue) * 100)}%`,
+                                                            backgroundColor: row.color,
+                                                            opacity: row.excluded ? 0.45 : 1,
+                                                        }}
+                                                    />
+                                                </div>
+                                                {row.excluded && (
+                                                    <p className="mt-1 text-[10px] text-gray-400">
+                                                        Escluso dal calcolo dello score
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="hidden max-h-[min(560px,72vh)] overflow-y-auto overflow-x-hidden lg:block">
+                                        <div style={{ height: barChartHeight }} className="min-h-[240px]">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart
+                                                    data={barData}
+                                                    layout="vertical"
+                                                    margin={{ left: 4, right: 16, top: 8, bottom: 8 }}
+                                                >
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                                    <XAxis
+                                                        type="number"
+                                                        tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`}
+                                                        tick={{ fontSize: 11 }}
+                                                    />
+                                                    <YAxis
+                                                        dataKey="name"
+                                                        type="category"
+                                                        width={yAxisWidth}
+                                                        tick={{ fontSize: 11 }}
+                                                        interval={0}
+                                                    />
+                                                    <Tooltip
+                                                        formatter={(value, _name, item) => {
+                                                            const row = item?.payload as LifestyleBarDatum | undefined;
+                                                            const label =
+                                                                (row?.fullName ?? '') +
+                                                                (row?.excluded ? ' (escluso)' : '');
+                                                            return [formatEur(Number(value ?? 0)), label];
+                                                        }}
+                                                        contentStyle={{
+                                                            fontSize: 12,
+                                                            borderRadius: 8,
+                                                            border: '1px solid #e2e8f0',
+                                                        }}
+                                                    />
+                                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22}>
+                                                        {barData.map((entry, index) => (
+                                                            <Cell
+                                                                key={index}
+                                                                fill={entry.color}
+                                                                opacity={entry.excluded ? 0.45 : 1}
+                                                            />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </>
                             ) : (
                                 <div className="flex h-40 items-center justify-center text-gray-400">
                                     Nessuna spesa registrata

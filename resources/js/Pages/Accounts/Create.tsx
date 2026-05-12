@@ -112,6 +112,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                 <InputLabel htmlFor="name" value="Nome del conto" />
                                 <TextInput
                                     id="name"
+                                    name="name"
                                     type="text"
                                     className="mt-1 block w-full"
                                     value={data.name}
@@ -157,6 +158,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                     <InputLabel htmlFor="initial_balance" value="Saldo iniziale" />
                                     <TextInput
                                         id="initial_balance"
+                                        name="initial_balance"
                                         type="number"
                                         step="0.01"
                                         className="mt-1 block w-full"

@@ -164,6 +164,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                     <InputLabel htmlFor="asset_id" value="Asset *" />
                                     <select
                                         id="asset_id"
+                                        name="asset_id"
                                         className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.asset_id}
                                         onChange={(e) => setData('asset_id', e.target.value)}
@@ -200,6 +201,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                         <InputLabel htmlFor="quantity" value="Quantità *" />
                                         <TextInput
                                             id="quantity"
+                                            name="quantity"
                                             type="number"
                                             step="0.00000001"
                                             min="0"
@@ -217,6 +219,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                                         <div className="relative mt-2">
                                             <TextInput
                                                 id="buy_price"
+                                                name="buy_price"
                                                 type="number"
                                                 step="0.00000001"
                                                 min="0"

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { visibleHrefLocator } from '../helpers';
 
 /**
  * Test E2E — Categorie
@@ -16,11 +17,11 @@ test.describe('Categorie', () => {
     });
 
     test('esiste il link per creare una nuova categoria', async ({ page }) => {
-        await expect(page.locator('a[href*="/categorie/crea"]')).toBeVisible();
+        await expect(visibleHrefLocator(page, '/categorie/crea')).toBeVisible();
     });
 
     test('il link nuova categoria porta al form', async ({ page }) => {
-        await page.locator('a[href*="/categorie/crea"]').first().click();
+        await visibleHrefLocator(page, '/categorie/crea').click();
         await expect(page).toHaveURL('/categorie/crea');
         await expect(page).toHaveTitle(/nuova categoria/i);
     });

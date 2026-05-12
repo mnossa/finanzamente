@@ -62,6 +62,7 @@ export default function Create({ categoryTypes }: CreateProps) {
                                 <InputLabel htmlFor="name" value="Nome della categoria" />
                                 <TextInput
                                     id="name"
+                                    name="name"
                                     type="text"
                                     className="mt-1 block w-full"
                                     value={data.name}

@@ -634,6 +634,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                     ← Torna agli investimenti
                                 </LinkButton>
                                 <PrimaryButton
+                                    type="button"
                                     disabled={sheetsLoading || (fileSource === 'local' ? !csvFile : !driveFile)}
                                     onClick={goNext}
                                 >
@@ -723,6 +724,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                     ← Indietro
                                 </button>
                                 <PrimaryButton
+                                    type="button"
                                     disabled={!isMappingValid() || previewLoading}
                                     onClick={runPreview}
                                 >
@@ -959,6 +961,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                     ← Indietro
                                 </button>
                                 <PrimaryButton
+                                    type="button"
                                     disabled={selectedValidRows().length === 0 || !allAssetsResolved()}
                                     onClick={() => setCurrentStep(3)}
                                 >
@@ -1050,6 +1053,7 @@ export default function Import({ accounts, userLayouts: initialLayouts, assets, 
                                     ← Indietro
                                 </button>
                                 <PrimaryButton
+                                    type="button"
                                     disabled={importProcessing || selectedValidRows().length === 0}
                                     onClick={handleImport}
                                 >

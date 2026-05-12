@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Mail\TransactionImportFinishedMail;
 use App\Models\Account;
 use App\Models\AppNotification;
 use App\Models\Category;
@@ -18,6 +19,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class ImportTransactionsJob implements ShouldQueue
@@ -348,6 +350,40 @@ class ImportTransactionsJob implements ShouldQueue
             'read' => false,
             'notification_key' => 'import_done_'.time().'_'.$this->userId,
         ]);
+
+        $this->sendImportFinishedEmail($user, true, '✅ Importazione completata', $msg, null);
+    }
+
+    /**
+     * Invia email di riepilogo import (successo o fallimento). Errori SMTP non devono far fallire il job.
+     */
+    private function sendImportFinishedEmail(
+        User $user,
+        bool $successful,
+        string $notificationTitle,
+        string $notificationMessage,
+        ?string $errorDetail,
+    ): void {
+        $email = $user->email;
+        if ($email === null || $email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        try {
+            Mail::to($email)->send(new TransactionImportFinishedMail(
+                $user,
+                $successful,
+                $notificationTitle,
+                $notificationMessage,
+                $errorDetail,
+            ));
+        } catch (Throwable $e) {
+            Log::warning('Invio email esito import transazioni fallito', [
+                'user_id' => $user->id,
+                'successful' => $successful,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -371,5 +407,17 @@ class ImportTransactionsJob implements ShouldQueue
             'read' => false,
             'notification_key' => 'import_failed_'.time().'_'.$this->userId,
         ]);
+
+        $failMsg = 'Si è verificato un errore durante l\'importazione delle transazioni. Riprova o contatta il supporto.';
+        $user = User::find($this->userId);
+        if ($user) {
+            $this->sendImportFinishedEmail(
+                $user,
+                false,
+                '❌ Importazione fallita',
+                $failMsg,
+                mb_substr($exception->getMessage(), 0, 2000),
+            );
+        }
     }
 }

@@ -95,6 +95,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_name" value="Nome / Ragione sociale *" />
                     <TextInput
                         id="billing_name"
+                        name="billing_name"
                         value={data.billing_name}
                         className="mt-1 block w-full"
                         onChange={(e) => setData('billing_name', e.target.value)}
@@ -106,6 +107,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_email" value="Email fatturazione *" />
                     <TextInput
                         id="billing_email"
+                        name="billing_email"
                         type="email"
                         value={data.billing_email}
                         className="mt-1 block w-full"
@@ -118,6 +120,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_company" value="Azienda (opzionale)" />
                     <TextInput
                         id="billing_company"
+                        name="billing_company"
                         value={data.billing_company}
                         className="mt-1 block w-full"
                         onChange={(e) => setData('billing_company', e.target.value)}
@@ -127,6 +130,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_vat" value="P.IVA / C.F. (opzionale)" />
                     <TextInput
                         id="billing_vat"
+                        name="billing_vat"
                         value={data.billing_vat}
                         className="mt-1 block w-full"
                         onChange={(e) => setData('billing_vat', e.target.value)}
@@ -136,6 +140,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_address" value="Indirizzo (opzionale)" />
                     <TextInput
                         id="billing_address"
+                        name="billing_address"
                         value={data.billing_address}
                         className="mt-1 block w-full"
                         onChange={(e) => setData('billing_address', e.target.value)}
@@ -145,6 +150,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_city" value="Città (opzionale)" />
                     <TextInput
                         id="billing_city"
+                        name="billing_city"
                         value={data.billing_city}
                         className="mt-1 block w-full"
                         onChange={(e) => setData('billing_city', e.target.value)}
@@ -154,6 +160,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputLabel htmlFor="billing_zip" value="CAP (opzionale)" />
                     <TextInput
                         id="billing_zip"
+                        name="billing_zip"
                         value={data.billing_zip}
                         className="mt-1 block w-full"
                         onChange={(e) => setData('billing_zip', e.target.value)}

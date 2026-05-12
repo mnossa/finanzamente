@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { visibleHrefLocator } from '../helpers';
 
 /**
  * Test E2E — Obiettivi Finanziari
@@ -21,13 +22,13 @@ test.describe('Obiettivi Finanziari', () => {
     });
 
     test('esiste il link per creare un nuovo obiettivo', async ({ page }) => {
-        await expect(page.locator('a[href*="/obiettivi-finanziari/crea"]')).toBeVisible();
+        await expect(visibleHrefLocator(page, '/obiettivi-finanziari/crea')).toBeVisible();
     });
 
     test('crea un nuovo obiettivo e appare nella lista', async ({ page }) => {
         const name = `Obiettivo E2E ${Date.now()}`;
 
-        await page.locator('a[href*="/obiettivi-finanziari/crea"]').first().click();
+        await visibleHrefLocator(page, '/obiettivi-finanziari/crea').click();
         await expect(page).toHaveURL('/obiettivi-finanziari/crea');
 
         await page.locator('input[name="name"]').fill(name);
@@ -42,7 +43,7 @@ test.describe('Obiettivi Finanziari', () => {
     });
 
     test('il dettaglio di un obiettivo si apre correttamente', async ({ page }) => {
-        await page.locator('a[href*="/obiettivi-finanziari/"]').first().click();
+        await page.getByRole('link', { name: 'Obiettivo E2E Vacanza' }).filter({ visible: true }).first().click();
         await expect(page).toHaveURL(/obiettivi-finanziari\/\d+/);
         await expect(page).toHaveTitle(/obiettiv/i);
     });
@@ -55,7 +56,7 @@ test.describe('Widget Obiettivi in Dashboard', () => {
     });
 
     test('il widget ha un link alla pagina obiettivi', async ({ page }) => {
-        await expect(page.locator('a[href*="obiettivi-finanziari"]').first()).toBeVisible();
+        await expect(visibleHrefLocator(page, 'obiettivi-finanziari')).toBeVisible();
     });
 
     test('il widget mostra l\'obiettivo del seeder', async ({ page }) => {
@@ -68,12 +69,12 @@ test.describe('Widget Obiettivi in Dashboard', () => {
     });
 
     test('il link "vedi tutti" porta alla pagina obiettivi', async ({ page }) => {
-        await page.locator('a[href*="obiettivi-finanziari"]', { hasText: /vedi tutti/i }).click();
+        await page.locator('a[href*="obiettivi-finanziari"]').filter({ hasText: /vedi tutti/i }).filter({ visible: true }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });
 
     test('cliccando un obiettivo nel widget si apre il dettaglio', async ({ page }) => {
-        await page.locator('a[href*="/obiettivi-finanziari/"]').first().click();
+        await page.getByRole('link', { name: 'Obiettivo E2E Vacanza' }).filter({ visible: true }).first().click();
         await expect(page).toHaveURL(/obiettivi-finanziari\/\d+/);
     });
 });

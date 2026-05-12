@@ -252,6 +252,7 @@ export default function Create({ sourceAccounts, userHouseholds, activeHousehold
                                     <InputLabel htmlFor="dest_account_id" value="Account Destinatario" />
                                     <select
                                         id="dest_account_id"
+                                        name="dest_account_id"
                                         value={data.dest_account_id}
                                         onChange={(e) => setData('dest_account_id', e.target.value)}
                                         disabled={!data.dest_household_id || loadingAccounts}
@@ -284,6 +285,7 @@ export default function Create({ sourceAccounts, userHouseholds, activeHousehold
                                     <div className="relative mt-1">
                                         <TextInput
                                             id="source_amount"
+                                            name="source_amount"
                                             type="number"
                                             step="0.01"
                                             min="0.01"
@@ -397,6 +399,7 @@ export default function Create({ sourceAccounts, userHouseholds, activeHousehold
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
+                                        name="description"
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
                                         rows={3}

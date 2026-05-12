@@ -4,12 +4,14 @@ import { ButtonHTMLAttributes } from 'react';
 export default function PrimaryButton({
     className = '',
     disabled,
+    type = 'submit',
     children,
     ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
     return (
         <button
             {...props}
+            type={type}
             className={clsx(
                 'inline-flex items-center justify-center gap-2',
                 'bg-emerald-500 hover:bg-emerald-600 text-white',
