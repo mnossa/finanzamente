@@ -110,7 +110,7 @@ export default function GoogleDrivePicker({
     const tokenClientRef = useRef<{ requestAccessToken: () => void } | null>(null);
     const accessTokenRef = useRef<string | null>(null);
 
-    const isConfigured = Boolean(clientId);
+    const isConfigured = Boolean(clientId) && Boolean(apiKey);
 
     useEffect(() => {
         if (!isConfigured) return;
@@ -151,6 +151,7 @@ export default function GoogleDrivePicker({
         const pickerInstance = new picker.PickerBuilder()
             .addView(view)
             .setOAuthToken(token)
+            .setDeveloperKey(apiKey)
             .setCallback((data: PickerData) => {
                 if (data.action === picker.Action.PICKED && data.docs?.length) {
                     const doc = data.docs[0];
@@ -174,7 +175,7 @@ export default function GoogleDrivePicker({
 
     const handleClick = useCallback(() => {
         if (!isConfigured) {
-            onError?.('Google Drive non configurato. Aggiungi GOOGLE_DRIVE_CLIENT_ID e GOOGLE_DRIVE_API_KEY nel file .env.');
+            onError?.('Google Drive non configurato. Imposta GOOGLE_DRIVE_CLIENT_ID e GOOGLE_DRIVE_API_KEY.');
             return;
         }
         if (!scriptsReady) {
@@ -198,6 +199,14 @@ export default function GoogleDrivePicker({
                 callback:  (response) => {
                     if (response.error || !response.access_token) {
                         setLoading(false);
+                        if (response.error === 'origin_mismatch') {
+                            onError?.(
+                                `Google OAuth non autorizza questo dominio (${window.location.origin}). ` +
+                                'Aggiungi questa origin negli URI JavaScript autorizzati del client OAuth su Google Cloud Console.'
+                            );
+                            return;
+                        }
+
                         onError?.('Autenticazione Google Drive non riuscita. Riprova.');
                         return;
                     }
