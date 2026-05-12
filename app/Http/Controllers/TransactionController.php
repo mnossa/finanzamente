@@ -131,10 +131,13 @@ class TransactionController extends Controller
             });
         }
 
+        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id'];
+
         $transactions = $query
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(25)
+            ->appends($request->only($filterQueryKeys))
             ->through(function ($transaction) {
                 return [
                     'id' => $transaction->id,
@@ -206,7 +209,7 @@ class TransactionController extends Controller
             'categories' => $categories,
             'debtCredits' => $debtCredits,
             'tags' => $tags,
-            'filters' => $request->only(['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id']),
+            'filters' => $request->only($filterQueryKeys),
             'activeImports' => TransactionImport::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'processing'])
                 ->orderBy('created_at', 'desc')
