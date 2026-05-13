@@ -751,7 +751,7 @@ export default function Show({ household, members, pendingInvitations }: Props) 
                         <InputLabel htmlFor="invite_role" value="Ruolo" />
                         <select
                             id="invite_role"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             value={inviteForm.data.role}
                             onChange={(e) =>
                                 inviteForm.setData(

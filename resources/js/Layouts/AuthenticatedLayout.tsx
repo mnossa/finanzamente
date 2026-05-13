@@ -653,7 +653,7 @@ export default function Authenticated({
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 mt-1 p-4 space-y-1 overflow-y-auto min-h-0">
+                    <nav className="flex-1 mt-1 p-4 space-y-1 overflow-y-auto min-h-0" aria-label="Navigazione principale">
                         {/* Ricerca nel menu */}
                         <div className="relative mb-3">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
@@ -942,7 +942,7 @@ function MobileBottomNav({
         <nav
             className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-            aria-label="Navigazione principale"
+            aria-label="Navigazione rapida"
         >
             <div className="flex items-center justify-around h-16">
                 {/* Dashboard */}

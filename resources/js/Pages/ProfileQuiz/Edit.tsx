@@ -89,7 +89,7 @@ export default function Edit({ currentSettings }: Props) {
                         </p>
                     </div>
 
-                    <form onSubmit={submit} className="p-6 space-y-6">
+                    <form onSubmit={submit} className="p-6 space-y-4">
                         {/* Domanda 1: Hai una Partita IVA? */}
                         <div>
                             <InputLabel

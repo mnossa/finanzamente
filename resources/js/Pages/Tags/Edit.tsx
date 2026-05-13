@@ -3,6 +3,7 @@ import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -134,7 +135,7 @@ export default function Edit({ tag }: EditProps) {
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex items-center justify-end space-x-4">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('tags.index')}
                                     className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
@@ -144,7 +145,7 @@ export default function Edit({ tag }: EditProps) {
                                 <PrimaryButton disabled={processing}>
                                     Salva Modifiche
                                 </PrimaryButton>
-                            </div>
+                            </FormActionsBar>
                         </form>
                     </CardBox>
             </PageContent>

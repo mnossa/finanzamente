@@ -178,8 +178,8 @@ export default function Create({ originalTransaction, refundableTransactions, to
             <Head title="Nuovo Rimborso" />
 
             <PageContent>
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">➕</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo rimborso</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Seleziona una spesa e registra il rimborso ricevuto.</p>
@@ -199,7 +199,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-6">
+                            <form onSubmit={submit} className="space-y-4">
                                 {/* Selezione Transazione */}
                                 {!originalTransaction && (
                                     <div>
@@ -375,7 +375,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                     <InputLabel htmlFor="category_id" value="Categoria del rimborso" />
                                     <select
                                         id="category_id"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.category_id}
                                         onChange={(e) => setData('category_id', e.target.value)}
                                         required
@@ -408,7 +408,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         rows={2}
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
@@ -457,7 +457,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                 )}
 
                                 {/* Azioni */}
-                                <FormActionsBar className="justify-end pt-6">
+                                <FormActionsBar className="justify-end">
                                     <Link
                                         href={route('refunds.index')}
                                         className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"

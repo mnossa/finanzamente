@@ -5,6 +5,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -111,14 +112,14 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-6">
+                            <form onSubmit={submit} className="space-y-4">
                                 {/* Conto */}
                                 <div>
                                     <InputLabel htmlFor="account_id" value="Conto" />
                                         <CardBox>
                                             <select
                                                 id="account_id"
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                                 value={data.account_id}
                                                 onChange={(e) => setData('account_id', e.target.value)}
                                                 required
@@ -177,7 +178,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                         <InputLabel htmlFor="frequency" value="Frequenza" />
                                         <select
                                             id="frequency"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={data.frequency}
                                             onChange={(e) => setData('frequency', e.target.value)}
                                             required
@@ -228,7 +229,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         rows={2}
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
@@ -248,7 +249,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                         ) : (
                                             <select
                                                 id="debt_credit_id"
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                                 value={data.debt_credit_id}
                                                 onChange={(e) => setData('debt_credit_id', e.target.value)}
                                             >
@@ -275,7 +276,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                 )}
 
                                 {/* Azioni */}
-                                <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                                <FormActionsBar className="justify-end">
                                     <Link
                                         href={route('recurring-transactions.index')}
                                         className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -285,7 +286,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                     <PrimaryButton disabled={processing || !data.category_id}>
                                         {processing ? 'Salvataggio...' : 'Crea Ricorrenza'}
                                     </PrimaryButton>
-                                </div>
+                                </FormActionsBar>
                             </form>
                         )}
                     </CardBox>

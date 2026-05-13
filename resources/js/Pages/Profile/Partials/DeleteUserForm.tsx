@@ -57,7 +57,7 @@ export default function DeleteUserForm({
 
     return (
         <section className={`space-y-6 ${className}`}>
-            <header className="space-y-2">
+            <header className="hidden sm:block space-y-2">
                 <SectionBadge
                     label="Zona pericolosa"
                     tone="danger"

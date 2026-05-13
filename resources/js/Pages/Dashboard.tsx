@@ -275,31 +275,32 @@ function AccountCard({ account }: { account: Account }) {
 function TransactionRow({ transaction }: { transaction: Transaction }) {
     const isIncome = transaction.amount > 0;
     return (
-        <div className="flex items-center justify-between border-b border-gray-100 py-2 last:border-0 dark:border-gray-700">
-            <div className="flex items-center gap-2 min-w-0">
-                <div
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm"
-                    style={{
-                        backgroundColor: transaction.category?.color
-                            ? `${transaction.category.color}20`
-                            : isIncome ? '#22c55e20' : '#ef444420',
-                    }}
-                >
-                    {transaction.category?.icon || (isIncome ? '💰' : '💸')}
-                </div>
-                <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {transaction.description || transaction.category?.name || 'Transazione'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {transaction.account.name} • {formatDate(transaction.date)}
-                    </p>
-                </div>
+        <Link
+            href={route('transactions.show', transaction.id)}
+            className="flex items-center gap-2 border-b border-gray-100 py-2.5 last:border-0 -mx-4 px-3 sm:px-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+        >
+            <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm"
+                style={{
+                    backgroundColor: transaction.category?.color
+                        ? `${transaction.category.color}20`
+                        : isIncome ? '#22c55e20' : '#ef444420',
+                }}
+            >
+                {transaction.category?.icon || (isIncome ? '💰' : '💸')}
             </div>
-            <p className={clsx('text-sm font-semibold shrink-0 ml-2', isIncome ? 'text-green-500' : 'text-red-500')}>
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                    {transaction.description || transaction.category?.name || 'Transazione'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {transaction.account.name} · {formatDate(transaction.date)}
+                </p>
+            </div>
+            <p className={clsx('text-sm font-semibold shrink-0', isIncome ? 'text-green-500' : 'text-red-500')}>
                 {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
             </p>
-        </div>
+        </Link>
     );
 }
 

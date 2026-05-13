@@ -112,7 +112,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
             <Head title={account.name} />
 
             <PageContent maxWidth="5xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Dettaglio conto" icon={<span className="text-sm leading-none">🏦</span>} />
                             <p className="text-sm text-gray-600 dark:text-gray-300">

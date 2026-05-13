@@ -75,13 +75,13 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
             <Head title="Modifica Conto" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Conti" icon={<span className="text-sm leading-none">✏️</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aggiorna conto</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Modifica i dettagli principali del conto e il suo stato.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>
                                 <InputLabel htmlFor="name" value="Nome del conto" />
@@ -145,7 +145,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                     <InputLabel htmlFor="currency_code" value="Valuta" />
                                     <select
                                         id="currency_code"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.currency_code}
                                         onChange={(e) => setData('currency_code', e.target.value)}
                                         required
@@ -223,7 +223,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                             </div>
 
                             {/* Azioni */}
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('accounts.index')}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"

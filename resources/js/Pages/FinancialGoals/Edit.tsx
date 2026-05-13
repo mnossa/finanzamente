@@ -91,13 +91,13 @@ export default function Edit({ goal, currencies, suggestedIcons, statuses }: Edi
             <Head title={`Modifica ${goal.name}`} />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Obiettivi" icon={<span className="text-sm leading-none">✏️</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica obiettivo</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna dati, importi e stato di avanzamento del traguardo.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             <div>
                                 {/* Icon e Nome */}
                                 <div className="mb-6">
@@ -279,7 +279,7 @@ export default function Edit({ goal, currencies, suggestedIcons, statuses }: Edi
                             </div>
 
                             {/* Footer */}
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('financial-goals.show', goal.id)}
                                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"

@@ -66,13 +66,13 @@ export default function Edit({ budget, categories, currencies }: EditProps) {
             <Head title="Modifica Budget" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Budget" icon={<span className="text-sm leading-none">✏️</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica budget</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna categoria, importo e periodo di riferimento.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             <div className="space-y-6">
                                 {/* Categoria */}
                                 <div>
@@ -83,7 +83,7 @@ export default function Edit({ budget, categories, currencies }: EditProps) {
                                         onChange={(e) =>
                                             setData('category_id', e.target.value)
                                         }
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         required
                                     >
                                         <option value="">Seleziona una categoria</option>
@@ -129,7 +129,7 @@ export default function Edit({ budget, categories, currencies }: EditProps) {
                                             onChange={(e) =>
                                                 setData('currency_code', e.target.value)
                                             }
-                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             required
                                         >
                                             {currencies.map((curr) => (
@@ -202,7 +202,7 @@ export default function Edit({ budget, categories, currencies }: EditProps) {
                                             setData('description', e.target.value)
                                         }
                                         rows={3}
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         placeholder="Note opzionali sul budget..."
                                     />
                                     <InputError
@@ -212,7 +212,7 @@ export default function Edit({ budget, categories, currencies }: EditProps) {
                                 </div>
                             </div>
 
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('budgets.index')}
                                     className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"

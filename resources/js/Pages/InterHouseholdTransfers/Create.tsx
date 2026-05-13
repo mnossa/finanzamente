@@ -177,7 +177,7 @@ export default function Create({ sourceAccounts, userHouseholds, activeHousehold
                                 </p>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-6">
+                            <form onSubmit={submit} className="space-y-4">
                                 {/* Info box */}
                                 <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
                                     <div className="flex">

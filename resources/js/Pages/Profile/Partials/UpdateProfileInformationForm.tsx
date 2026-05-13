@@ -56,7 +56,7 @@ export default function UpdateProfileInformation({
 
     return (
         <section className={className}>
-            <header className="space-y-2">
+            <header className="hidden sm:block space-y-2">
                 <SectionBadge
                     label="Profilo"
                     icon={(
@@ -74,7 +74,7 @@ export default function UpdateProfileInformation({
                 </p>
             </header>
 
-            <form onSubmit={submit} className="mt-6 space-y-6">
+            <form onSubmit={submit} className="mt-6 space-y-4">
                 <div>
                     <InputLabel htmlFor="name" value="Nome" />
 
@@ -113,7 +113,7 @@ export default function UpdateProfileInformation({
                     <InputLabel htmlFor="default_currency_code" value="Valuta predefinita" />
                     <select
                         id="default_currency_code"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                         value={data.default_currency_code ?? ''}
                         onChange={(e) => setData('default_currency_code', e.target.value)}
                     >
@@ -136,7 +136,7 @@ export default function UpdateProfileInformation({
                         <select
                             id="income_band"
                             name="income_band"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             value={data.income_band}
                             onChange={(e) => setData('income_band', e.target.value)}
                         >
@@ -154,7 +154,7 @@ export default function UpdateProfileInformation({
                             <select
                                 id="macro_region"
                                 name="macro_region"
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 value={data.macro_region}
                                 onChange={(e) => setData('macro_region', e.target.value)}
                             >

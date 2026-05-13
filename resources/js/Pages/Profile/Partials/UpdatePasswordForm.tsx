@@ -53,7 +53,7 @@ export default function UpdatePasswordForm({
 
     return (
         <section className={className}>
-            <header className="space-y-2">
+            <header className="hidden sm:block space-y-2">
                 <SectionBadge
                     label="Sicurezza"
                     icon={(
@@ -72,7 +72,7 @@ export default function UpdatePasswordForm({
                 </p>
             </header>
 
-            <form onSubmit={updatePassword} className="mt-6 space-y-6">
+            <form onSubmit={updatePassword} className="mt-6 space-y-4">
                 <div>
                     <InputLabel
                         htmlFor="current_password"

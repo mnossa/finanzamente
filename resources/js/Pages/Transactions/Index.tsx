@@ -635,7 +635,7 @@ export default function Index({
                                 size="sm"
                                 className="hidden sm:inline-flex"
                             >
-                                Nuova
+                                Nuova Transazione
                             </LinkButton>
                         </div>
                     }
@@ -706,7 +706,7 @@ export default function Index({
                     <CardBox className="overflow-hidden p-0 shadow-sm">
                         {/* Header filtri — sempre visibile */}
                         <details className="group" {...(hasFilters ? { open: true } : {})}>
-                            <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                            <summary data-testid="filter-summary" className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 <span className="flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>

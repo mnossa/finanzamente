@@ -47,7 +47,7 @@ export default function Edit({
         >
             <Head title="Profilo" />
 
-            <PageContent maxWidth="5xl" className="space-y-5">
+            <PageContent maxWidth="5xl" className="space-y-4">
                 <section className="rounded-2xl border border-emerald-200/70 bg-linear-to-br from-emerald-50 via-white to-teal-50 p-5 shadow-sm sm:p-7 dark:border-emerald-800/70 dark:from-emerald-950/30 dark:via-gray-900 dark:to-teal-950/20">
                     <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                         Impostazioni account

@@ -83,76 +83,56 @@ function RefundRow({ refund, onDeleteClick }: { refund: Refund; onDeleteClick: (
     const originalTx = refund.original_transaction;
 
     return (
-        <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 dark:border-gray-700">
-            <div className="flex items-center space-x-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-2xl dark:bg-blue-900/30">
-                    💸
-                </div>
-                <div>
-                    <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                            {refund.description || 'Rimborso'}
-                        </span>
-                        <span
-                            className={clsx(
-                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                                refund.status === 'completed'
-                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                    : refund.status === 'pending'
-                                    ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                            )}
-                        >
-                            {refund.status === 'completed' ? '✓ Completato' : refund.status === 'pending' ? '⏳ In attesa' : '✗ Annullato'}
-                        </span>
-                    </div>
-                    {originalTx && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Rimborso di: {originalTx.description || originalTx.category?.name || 'Transazione'}
-                            {originalTx.account && ` • ${originalTx.account.name}`}
-                            {originalTx.date && ` • ${formatDate(originalTx.date)}`}
-                        </p>
-                    )}
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                        {refund.created_at}
-                        {refund.user && ` • ${refund.user.name}`}
-                    </p>
-                </div>
+        <div className="flex items-center border-b border-gray-100 py-3 last:border-0 -mx-4 px-3 sm:px-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
+            <div className="mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg dark:bg-blue-900/30">
+                💸
             </div>
-            <div className="flex items-center space-x-4">
+            <Link href={route('refunds.show', refund.id)} className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {refund.description || 'Rimborso'}
+                    </span>
+                    <span className={clsx('inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                        refund.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : refund.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    )}>
+                        {refund.status === 'completed' ? '✓' : refund.status === 'pending' ? '⏳' : '✗'}{' '}
+                        {refund.status === 'completed' ? 'Completato' : refund.status === 'pending' ? 'In attesa' : 'Annullato'}
+                    </span>
+                </div>
+                {originalTx && (
+                    <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                        {originalTx.description || originalTx.category?.name || 'Transazione'}
+                        {originalTx.account && ` · ${originalTx.account.name}`}
+                    </p>
+                )}
+            </Link>
+            <div className="ml-2 flex shrink-0 items-center gap-1 sm:gap-2">
                 <div className="text-right">
-                    <p className="font-semibold text-green-600 dark:text-green-400">
+                    <p className="text-sm font-semibold text-green-600 dark:text-green-400">
                         +{formatCurrency(refund.amount, refund.currency_code)}
                     </p>
                     {originalTx && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                             su {formatCurrency(Math.abs(originalTx.amount), refund.currency_code)}
                         </p>
                     )}
                 </div>
-                <div className="flex space-x-2">
-                    <Link
-                        href={route('refunds.show', refund.id)}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
-                        title="Visualizza"
-                    >
-                        <EyeIcon size={18} />
+                <div className="hidden sm:flex items-center gap-1">
+                    <Link href={route('refunds.show', refund.id)} className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400" title="Visualizza">
+                        <EyeIcon size={16} />
                     </Link>
-                    <Link
-                        href={route('refunds.edit', refund.id)}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                        title="Modifica"
-                    >
-                        <PencilIcon size={18} />
+                    <Link href={route('refunds.edit', refund.id)} className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400" title="Modifica">
+                        <PencilIcon size={16} />
                     </Link>
-                    <button
-                        onClick={() => onDeleteClick(refund.id, refund.description || 'questo rimborso')}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                        title="Elimina"
-                    >
-                        <TrashIcon size={18} />
+                    <button onClick={() => onDeleteClick(refund.id, refund.description || 'questo rimborso')} className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400" title="Elimina">
+                        <TrashIcon size={16} />
                     </button>
                 </div>
+                <span className="sm:hidden text-gray-300 dark:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </span>
             </div>
         </div>
     );
@@ -210,7 +190,7 @@ export default function Index({ refunds }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">💸</span>} />
                             <p className="text-sm text-gray-600 dark:text-gray-300">

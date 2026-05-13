@@ -90,8 +90,8 @@ export default function Create({ accounts }: CreateProps) {
             <Head title="Nuovo Trasferimento" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Trasferimenti" icon={<span className="text-sm leading-none">➕</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo trasferimento</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Compila origine, destinazione e importi per registrare il movimento.</p>
@@ -110,14 +110,14 @@ export default function Create({ accounts }: CreateProps) {
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-6">
+                            <form onSubmit={submit} className="space-y-4">
                                 {/* Conti */}
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
                                         <InputLabel htmlFor="source_account_id" value="Da (Conto Origine)" />
                                         <select
                                             id="source_account_id"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={data.source_account_id}
                                             onChange={(e) => setData('source_account_id', e.target.value)}
                                             required
@@ -138,7 +138,7 @@ export default function Create({ accounts }: CreateProps) {
                                         <InputLabel htmlFor="destination_account_id" value="A (Conto Destinazione)" />
                                         <select
                                             id="destination_account_id"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={data.destination_account_id}
                                             onChange={(e) => setData('destination_account_id', e.target.value)}
                                             required
@@ -252,7 +252,7 @@ export default function Create({ accounts }: CreateProps) {
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         rows={2}
                                         value={data.description}
                                         onChange={(e) => setData('description', e.target.value)}
@@ -286,7 +286,7 @@ export default function Create({ accounts }: CreateProps) {
                                 </div>
 
                                 {/* Azioni */}
-                                <FormActionsBar className="justify-end pt-6">
+                                <FormActionsBar className="justify-end">
                                     <Link
                                         href={route('transfers.index')}
                                         className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"

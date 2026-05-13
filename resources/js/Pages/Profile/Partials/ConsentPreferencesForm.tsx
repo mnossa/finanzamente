@@ -27,7 +27,7 @@ export default function ConsentPreferencesForm({ className = '', consents }: Pro
 
     return (
         <section className={className}>
-            <header className="space-y-2">
+            <header className="hidden sm:block space-y-2">
                 <SectionBadge
                     label="Privacy"
                     icon={(
