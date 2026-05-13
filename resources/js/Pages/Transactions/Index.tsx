@@ -675,7 +675,8 @@ export default function Index({
             />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    {/* Intro decorativa — solo su desktop */}
+                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge
                                 label="Registro transazioni"
@@ -702,91 +703,102 @@ export default function Index({
                     )}
 
                     {/* Filtri */}
-                    <CardBox className="overflow-hidden p-4 shadow-sm">
-                        <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex-1 min-w-[150px]">
-                                <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.account_id || ''}
-                                    onChange={(e) => handleFilterChange('account_id', e.target.value)}
-                                >
-                                    <option value="">Tutti i conti</option>
-                                    {accounts.map((account) => (
-                                        <option key={account.id} value={account.id}>
-                                            {account.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[150px]">
-                                <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.category_id || ''}
-                                    onChange={(e) => handleFilterChange('category_id', e.target.value)}
-                                >
-                                    <option value="">Tutte le categorie</option>
-                                    <option value="__none__">— Senza categoria</option>
-                                    {categories.map((category) => (
-                                        <option key={category.id} value={category.id}>
-                                            {category.icon} {category.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[120px]">
-                                <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.type || ''}
-                                    onChange={(e) => handleFilterChange('type', e.target.value)}
-                                >
-                                    <option value="">Tipo</option>
-                                    <option value="income">Entrate</option>
-                                    <option value="expense">Uscite</option>
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[130px]">
-                                <input
-                                    type="date"
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.from || ''}
-                                    onChange={(e) => handleFilterChange('from', e.target.value)}
-                                    placeholder="Da"
-                                />
-                            </div>
-                            <div className="flex-1 min-w-[130px]">
-                                <input
-                                    type="date"
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.to || ''}
-                                    onChange={(e) => handleFilterChange('to', e.target.value)}
-                                    placeholder="A"
-                                />
-                            </div>
-                            {tags.length > 0 && (
-                                <div className="flex-1 min-w-[150px]">
+                    <CardBox className="overflow-hidden p-0 shadow-sm">
+                        {/* Header filtri — sempre visibile */}
+                        <details className="group" {...(hasFilters ? { open: true } : {})}>
+                            <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                <span className="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                                    </svg>
+                                    Filtri
+                                    {hasFilters && (
+                                        <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                            {Object.values(filters).filter(Boolean).length}
+                                        </span>
+                                    )}
+                                </span>
+                                <svg className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </summary>
+
+                            {/* Corpo filtri — 2 colonne su mobile, flex-wrap su sm+ */}
+                            <div className="border-t border-gray-100 px-4 pb-4 pt-3 dark:border-gray-700">
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                                     <select
-                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.tag_id || ''}
-                                        onChange={(e) => handleFilterChange('tag_id', e.target.value)}
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.account_id || ''}
+                                        onChange={(e) => handleFilterChange('account_id', e.target.value)}
                                     >
-                                        <option value="">Tutti i tag</option>
-                                        {tags.map((tag) => (
-                                            <option key={tag.id} value={tag.id}>
-                                                {tag.name}
+                                        <option value="">Tutti i conti</option>
+                                        {accounts.map((account) => (
+                                            <option key={account.id} value={account.id}>
+                                                {account.name}
                                             </option>
                                         ))}
                                     </select>
+                                    <select
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.category_id || ''}
+                                        onChange={(e) => handleFilterChange('category_id', e.target.value)}
+                                    >
+                                        <option value="">Tutte le categorie</option>
+                                        <option value="__none__">— Senza categoria</option>
+                                        {categories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.icon} {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.type || ''}
+                                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                                    >
+                                        <option value="">Tipo</option>
+                                        <option value="income">Entrate</option>
+                                        <option value="expense">Uscite</option>
+                                    </select>
+                                    <input
+                                        type="date"
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.from || ''}
+                                        onChange={(e) => handleFilterChange('from', e.target.value)}
+                                        title="Da"
+                                    />
+                                    <input
+                                        type="date"
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.to || ''}
+                                        onChange={(e) => handleFilterChange('to', e.target.value)}
+                                        title="A"
+                                    />
+                                    {tags.length > 0 && (
+                                        <select
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.tag_id || ''}
+                                            onChange={(e) => handleFilterChange('tag_id', e.target.value)}
+                                        >
+                                            <option value="">Tutti i tag</option>
+                                            {tags.map((tag) => (
+                                                <option key={tag.id} value={tag.id}>
+                                                    {tag.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {hasFilters && (
+                                        <button
+                                            onClick={clearFilters}
+                                            className="col-span-2 sm:col-span-1 text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 py-2 sm:py-0"
+                                        >
+                                            Pulisci filtri
+                                        </button>
+                                    )}
                                 </div>
-                            )}
-                            {hasFilters && (
-                                <button
-                                    onClick={clearFilters}
-                                    className="text-sm text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
-                                >
-                                    Pulisci filtri
-                                </button>
-                            )}
-                        </div>
+                            </div>
+                        </details>
                     </CardBox>
 
                     {/* Lista Transazioni */}
