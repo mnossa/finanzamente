@@ -164,134 +164,64 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
             <Head title="Modifica Transazione" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        {/* Titolo pagina visibile solo su desktop */}
+                        <header className="hidden sm:block space-y-1">
                             <SectionBadge label="Transazioni" icon={<span className="text-sm leading-none">✏️</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aggiorna transazione</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Modifica importo, descrizione, privacy e collegamenti disponibili.</p>
                         </header>
-                        {/* Avviso trasferimento inter-household */}
+
+                        {/* Avvisi trasferimento */}
                         {isInterHouseholdTransfer && (
-                            <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
-                                <span className="text-xl">🚫</span>
+                            <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
+                                <span className="text-lg shrink-0">🚫</span>
                                 <div>
-                                    <p className="font-medium text-red-800 dark:text-red-200">
-                                        Transazione di trasferimento tra Household
+                                    <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                                        Trasferimento tra Household — non modificabile
                                     </p>
-                                    <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-                                        Questa transazione fa parte di un trasferimento tra Households diverse. 
-                                        Non è possibile modificarla. Per eliminarla, vai alla lista dei trasferimenti inter-household.
+                                    <p className="mt-0.5 text-xs text-red-700 dark:text-red-300">
+                                        Per eliminare, vai alla lista dei trasferimenti inter-household.
                                     </p>
                                 </div>
                             </div>
                         )}
-                        
-                        {/* Avviso trasferimento normale */}
+
                         {isTransfer && !isInterHouseholdTransfer && (
-                            <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-                                <span className="text-xl">🔄</span>
-                                <div>
-                                    <p className="font-medium text-amber-800 dark:text-amber-200">
-                                        Transazione di trasferimento
-                                    </p>
-                                    <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                                        Questa transazione fa parte di un trasferimento. Non è possibile modificare il conto o la categoria. 
-                                        Le modifiche a importo, descrizione e privacy verranno applicate anche alla transazione collegata.
-                                    </p>
-                                </div>
+                            <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+                                <span className="text-lg shrink-0">🔄</span>
+                                <p className="text-xs text-amber-700 dark:text-amber-300">
+                                    Fa parte di un trasferimento. Le modifiche verranno applicate anche alla transazione collegata.
+                                </p>
                             </div>
                         )}
 
-                        <form onSubmit={submit} className="space-y-6">
-                            {/* Conto */}
-                            <div>
-                                <InputLabel htmlFor="account_id" value="Conto" />
-                                <select
-                                    id="account_id"
-                                    className={clsx(
-                                        'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
-                                        (isTransfer || isInterHouseholdTransfer) && 'cursor-not-allowed opacity-60'
-                                    )}
-                                    value={data.account_id}
-                                    onChange={(e) => setData('account_id', e.target.value)}
-                                    required
-                                    disabled={isTransfer || isInterHouseholdTransfer}
-                                >
-                                    {accounts.map((account) => (
-                                        <option key={account.id} value={account.id}>
-                                            {account.name} ({account.currency_code})
-                                        </option>
-                                    ))}
-                                </select>
-                                <InputError message={errors.account_id} className="mt-2" />
-                            </div>
-
-                            {/* Categoria */}
-                            {!isInterHouseholdTransfer && (
-                            <div>
-                                <InputLabel htmlFor="category_id" value="Categoria" />
-                                {isTransfer ? (
-                                    <div className="mt-2">
-                                        <div className={clsx(
-                                            'flex items-center space-x-3 rounded-lg border-2 p-3 cursor-not-allowed opacity-60',
-                                            isExpense
-                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                                                : 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                        )}>
-                                            <span className="text-2xl">{selectedCategory?.icon || (isExpense ? '💸' : '💰')}</span>
-                                            <div>
-                                                <p className="font-medium text-gray-900 dark:text-white">
-                                                    {selectedCategory?.name}
-                                                </p>
-                                                <p className={clsx(
-                                                    'text-xs',
-                                                    isExpense
-                                                        ? 'text-red-600 dark:text-red-400'
-                                                        : 'text-green-600 dark:text-green-400'
-                                                )}>
-                                                    {isExpense ? 'Uscita' : 'Entrata'} (non modificabile)
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <CategoryPicker
-                                        categories={categories}
-                                        value={data.category_id}
-                                        onChange={(categoryId) => setData('category_id', categoryId)}
-                                        error={errors.category_id}
-                                        className="mt-2"
-                                    />
-                                )}
-                            </div>
-                            )}
-
-                            {/* Importo e Data */}
-                            <div className="grid gap-4 sm:grid-cols-2">
+                        <form onSubmit={submit} className="space-y-4">
+                            {/* Importo e Data — visibili subito */}
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <InputLabel htmlFor="amount" value="Importo" />
                                     <div className="relative mt-1">
                                         <span
                                             className={clsx(
-                                                'absolute left-3 top-1/2 -translate-y-1/2 text-lg',
+                                                'absolute left-3 top-1/2 -translate-y-1/2 text-lg font-bold',
                                                 isExpense ? 'text-red-500' : 'text-green-500'
                                             )}
                                         >
-                                            {isExpense ? '-' : '+'}
+                                            {isExpense ? '−' : '+'}
                                         </span>
                                         <TextInput
                                             id="amount"
                                             type="number"
                                             step="0.01"
                                             min="0.01"
-                                            className="block w-full pl-8"
+                                            className="block w-full pl-8 text-lg font-semibold"
                                             value={data.amount}
                                             onChange={(e) => setData('amount', e.target.value)}
                                             required
                                             disabled={isInterHouseholdTransfer}
                                         />
                                     </div>
-                                    <InputError message={errors.amount} className="mt-2" />
+                                    <InputError message={errors.amount} className="mt-1" />
                                 </div>
 
                                 <div>
@@ -305,92 +235,64 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                         required
                                         disabled={isInterHouseholdTransfer}
                                     />
-                                    <InputError message={errors.date} className="mt-2" />
+                                    <InputError message={errors.date} className="mt-1" />
                                 </div>
                             </div>
 
-                            {/* Valuta diversa dal conto (opzionale) */}
-                            <div className="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-600">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const next = !showFx;
-                                        setShowFx(next);
-                                        if (!next) {
-                                            setData('original_amount', '');
-                                            setData('original_currency_code', '');
-                                            setData('manual_rate', '');
-                                        } else if (!data.original_currency_code) {
-                                            setData('original_currency_code', userDefaultCurrency || 'EUR');
-                                        }
-                                    }}
-                                    className="flex w-full items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200"
-                                    aria-expanded={showFx}
-                                >
-                                    <span>💱 Valuta originale del pagamento (conto: {accountCurrency})</span>
-                                    <span className="text-xs text-gray-500">{showFx ? '−' : '+'}</span>
-                                </button>
+                            {/* Categoria */}
+                            {!isInterHouseholdTransfer && (
+                                <div>
+                                    <InputLabel htmlFor="category_id" value="Categoria" />
+                                    {isTransfer ? (
+                                        <div className="mt-1">
+                                            <div className={clsx(
+                                                'flex items-center gap-3 rounded-xl border-2 p-3 cursor-not-allowed opacity-60',
+                                                isExpense
+                                                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                                                    : 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                            )}>
+                                                <span className="text-2xl">{selectedCategory?.icon || (isExpense ? '💸' : '💰')}</span>
+                                                <div>
+                                                    <p className="font-medium text-gray-900 dark:text-white">{selectedCategory?.name}</p>
+                                                    <p className={clsx('text-xs', isExpense ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400')}>
+                                                        {isExpense ? 'Uscita' : 'Entrata'} (non modificabile)
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <CategoryPicker
+                                            categories={categories}
+                                            value={data.category_id}
+                                            onChange={(categoryId) => setData('category_id', categoryId)}
+                                            error={errors.category_id}
+                                            className="mt-1"
+                                        />
+                                    )}
+                                </div>
+                            )}
 
-                                {showFx && (
-                                    <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                                        <div>
-                                            <InputLabel htmlFor="original_amount" value="Importo originale" />
-                                            <TextInput
-                                                id="original_amount"
-                                                type="number"
-                                                step="0.01"
-                                                min="0.01"
-                                                className="mt-1 block w-full"
-                                                value={data.original_amount}
-                                                onChange={(e) => setData('original_amount', e.target.value)}
-                                                placeholder="es. 30"
-                                            />
-                                            <InputError message={errors.original_amount} className="mt-2" />
-                                        </div>
-                                        <div>
-                                            <InputLabel htmlFor="original_currency_code" value="Valuta originale" />
-                                            <select
-                                                id="original_currency_code"
-                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                                value={data.original_currency_code}
-                                                onChange={(e) => setData('original_currency_code', e.target.value)}
-                                            >
-                                                <option value="">Seleziona…</option>
-                                                {currencies.map((c) => (
-                                                    <option key={c.code} value={c.code}>
-                                                        {c.code} — {c.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <InputError message={errors.original_currency_code} className="mt-2" />
-                                        </div>
-                                        <div>
-                                            <InputLabel htmlFor="manual_rate" value="Cambio manuale (opz.)" />
-                                            <TextInput
-                                                id="manual_rate"
-                                                type="number"
-                                                step="0.0001"
-                                                min="0.0001"
-                                                className="mt-1 block w-full"
-                                                value={data.manual_rate}
-                                                onChange={(e) => setData('manual_rate', e.target.value)}
-                                                placeholder="vuoto = cambio del giorno"
-                                            />
-                                            <InputError message={errors.manual_rate} className="mt-2" />
-                                            {data.original_currency_code && data.original_currency_code !== accountCurrency && (
-                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400" data-testid="fx-preview-hint">
-                                                    {fxPreview.isLoading && 'Calcolo cambio…'}
-                                                    {!fxPreview.isLoading && fxPreview.rate !== null && (
-                                                        <>Cambio del giorno: 1 {data.original_currency_code} = {fxPreview.rate.toFixed(4)} {accountCurrency}</>
-                                                    )}
-                                                    {!fxPreview.isLoading && fxPreview.error && (
-                                                        <span className="text-amber-600 dark:text-amber-400">{fxPreview.error}</span>
-                                                    )}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                            {/* Conto */}
+                            <div>
+                                <InputLabel htmlFor="account_id" value="Conto" />
+                                <select
+                                    id="account_id"
+                                    className={clsx(
+                                        'mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300',
+                                        (isTransfer || isInterHouseholdTransfer) && 'cursor-not-allowed opacity-60'
+                                    )}
+                                    value={data.account_id}
+                                    onChange={(e) => setData('account_id', e.target.value)}
+                                    required
+                                    disabled={isTransfer || isInterHouseholdTransfer}
+                                >
+                                    {accounts.map((account) => (
+                                        <option key={account.id} value={account.id}>
+                                            {account.name} ({account.currency_code})
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.account_id} className="mt-1" />
                             </div>
 
                             {/* Descrizione */}
@@ -398,78 +300,197 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                 <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                 <textarea
                                     id="description"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     rows={2}
                                     value={data.description}
                                     onChange={(e) => setData('description', e.target.value)}
                                     disabled={isInterHouseholdTransfer}
                                 />
-                                <InputError message={errors.description} className="mt-2" />
+                                <InputError message={errors.description} className="mt-1" />
                             </div>
 
-                            {/* Transazione Privata */}
-                            <div className="flex items-start rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-                                <div className="flex h-6 items-center">
-                                    <input
-                                        id="is_private"
-                                        type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
-                                        checked={data.is_private}
-                                        onChange={(e) => setData('is_private', e.target.checked)}
-                                        disabled={isInterHouseholdTransfer}
-                                    />
-                                </div>
-                                <div className="ml-3">
-                                    <label
-                                        htmlFor="is_private"
-                                        className="text-sm font-medium text-gray-900 dark:text-white"
-                                    >
-                                        🔒 Transazione privata
-                                    </label>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Solo tu potrai vedere questa transazione.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Detrazione Fiscale (solo per spese) */}
-                            {isExpense && !isInterHouseholdTransfer && (
-                                <div className="space-y-4 rounded-lg border-2 border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-700 dark:bg-emerald-900/20">
-                                    <div className="flex items-start">
-                                        <div className="flex h-6 items-center">
+                            {/* Opzioni extra — collassabili */}
+                            {!isInterHouseholdTransfer && (
+                                <details className="group rounded-xl border border-gray-200 dark:border-gray-700">
+                                    <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                        <span>Opzioni aggiuntive</span>
+                                        <svg className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </summary>
+                                    <div className="space-y-4 px-4 pb-4 pt-2">
+                                        {/* Privata */}
+                                        <label className="flex cursor-pointer items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 dark:bg-gray-700/50">
                                             <input
-                                                id="is_tax_deductible"
+                                                id="is_private"
                                                 type="checkbox"
-                                                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                                                checked={data.is_tax_deductible}
-                                                onChange={(e) => setData('is_tax_deductible', e.target.checked)}
+                                                className="h-5 w-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
+                                                checked={data.is_private}
+                                                onChange={(e) => setData('is_private', e.target.checked)}
+                                            />
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">🔒 Transazione privata</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Solo tu potrai vederla</p>
+                                            </div>
+                                        </label>
+
+                                        {/* Tag */}
+                                        <div>
+                                            <InputLabel value="Tag" />
+                                            <TagAutocomplete
+                                                selectedTags={selectedTagsList}
+                                                onAdd={handleTagAdd}
+                                                onRemove={handleTagRemove}
+                                                className="mt-1"
                                             />
                                         </div>
-                                        <div className="ml-3">
-                                            <label
-                                                htmlFor="is_tax_deductible"
-                                                className="text-sm font-medium text-gray-900 dark:text-white"
+
+                                        {/* Valuta diversa */}
+                                        <div className="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-600">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const next = !showFx;
+                                                    setShowFx(next);
+                                                    if (!next) {
+                                                        setData('original_amount', '');
+                                                        setData('original_currency_code', '');
+                                                        setData('manual_rate', '');
+                                                    } else if (!data.original_currency_code) {
+                                                        setData('original_currency_code', userDefaultCurrency || 'EUR');
+                                                    }
+                                                }}
+                                                className="flex w-full items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200"
+                                                aria-expanded={showFx}
                                             >
-                                                📋 Spesa detraibile/deducibile (730)
-                                            </label>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                Segna questa spesa per la dichiarazione dei redditi.
-                                            </p>
+                                                <span>💱 Pagato in valuta diversa ({accountCurrency})</span>
+                                                <span className="text-xs text-gray-500">{showFx ? '−' : '+'}</span>
+                                            </button>
+
+                                            {showFx && (
+                                                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                                    <div>
+                                                        <InputLabel htmlFor="original_amount" value="Importo originale" />
+                                                        <TextInput
+                                                            id="original_amount"
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0.01"
+                                                            className="mt-1 block w-full"
+                                                            value={data.original_amount}
+                                                            onChange={(e) => setData('original_amount', e.target.value)}
+                                                            placeholder="es. 30"
+                                                        />
+                                                        <InputError message={errors.original_amount} className="mt-1" />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel htmlFor="original_currency_code" value="Valuta" />
+                                                        <select
+                                                            id="original_currency_code"
+                                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                            value={data.original_currency_code}
+                                                            onChange={(e) => setData('original_currency_code', e.target.value)}
+                                                        >
+                                                            <option value="">Seleziona…</option>
+                                                            {currencies.map((c) => (
+                                                                <option key={c.code} value={c.code}>
+                                                                    {c.code} — {c.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <InputError message={errors.original_currency_code} className="mt-1" />
+                                                    </div>
+                                                    <div className="col-span-2 sm:col-span-1">
+                                                        <InputLabel htmlFor="manual_rate" value="Cambio manuale (opz.)" />
+                                                        <TextInput
+                                                            id="manual_rate"
+                                                            type="number"
+                                                            step="0.0001"
+                                                            min="0.0001"
+                                                            className="mt-1 block w-full"
+                                                            value={data.manual_rate}
+                                                            onChange={(e) => setData('manual_rate', e.target.value)}
+                                                            placeholder="vuoto = tasso BCE"
+                                                        />
+                                                        <InputError message={errors.manual_rate} className="mt-1" />
+                                                        {data.original_currency_code && data.original_currency_code !== accountCurrency && (
+                                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400" data-testid="fx-preview-hint">
+                                                                {fxPreview.isLoading && 'Calcolo cambio…'}
+                                                                {!fxPreview.isLoading && fxPreview.rate !== null && (
+                                                                    <>1 {data.original_currency_code} = {fxPreview.rate.toFixed(4)} {accountCurrency}</>
+                                                                )}
+                                                                {!fxPreview.isLoading && fxPreview.error && (
+                                                                    <span className="text-amber-600 dark:text-amber-400">{fxPreview.error}</span>
+                                                                )}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {/* Debito/Credito */}
+                                        {debtsCredits.length > 0 && !isTransfer && (
+                                            <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 dark:border-purple-700 dark:bg-purple-900/20">
+                                                <InputLabel htmlFor="debt_credit_id" value="🔗 Collega a Debito/Credito" />
+                                                {filteredDebtsCredits.length === 0 && selectedCategory ? (
+                                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                        Nessun {isExpense ? 'debito' : 'credito'} aperto.
+                                                    </p>
+                                                ) : (
+                                                    <select
+                                                        id="debt_credit_id"
+                                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                        value={data.debt_credit_id}
+                                                        onChange={(e) => setData('debt_credit_id', e.target.value)}
+                                                    >
+                                                        <option value="">Nessun collegamento</option>
+                                                        {filteredDebtsCredits.map((dc) => (
+                                                            <option key={dc.id} value={dc.id}>
+                                                                {dc.type === 'debt' ? '📤' : '📥'} {dc.counterparty} — rimanenti: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: dc.currency_code }).format(dc.remaining_amount)}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                                {!selectedCategory && (
+                                                    <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                                                        Seleziona prima una categoria.
+                                                    </p>
+                                                )}
+                                                <InputError message={errors.debt_credit_id} className="mt-1" />
+                                            </div>
+                                        )}
                                     </div>
+                                </details>
+                            )}
+
+                            {/* Detrazione Fiscale */}
+                            {isExpense && !isInterHouseholdTransfer && (
+                                <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/20">
+                                    <label className="flex cursor-pointer items-center gap-3 px-4 py-3">
+                                        <input
+                                            id="is_tax_deductible"
+                                            type="checkbox"
+                                            className="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                            checked={data.is_tax_deductible}
+                                            onChange={(e) => setData('is_tax_deductible', e.target.checked)}
+                                        />
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">📋 Spesa detraibile (730)</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400">Segna per la dichiarazione dei redditi</p>
+                                        </div>
+                                    </label>
 
                                     {data.is_tax_deductible && (
-                                        <div className="ml-7 space-y-4 border-l-2 border-emerald-300 pl-4 dark:border-emerald-600">
-                                            {/* Tipo di detrazione */}
+                                        <div className="space-y-3 border-t border-emerald-200 px-4 pb-4 pt-3 dark:border-emerald-700">
                                             <div>
                                                 <InputLabel htmlFor="tax_deduction_type" value="Tipo di detrazione" />
                                                 <select
                                                     id="tax_deduction_type"
-                                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                                     value={data.tax_deduction_type}
                                                     onChange={(e) => {
                                                         setData('tax_deduction_type', e.target.value);
-                                                        // Auto-imposta la percentuale di default
                                                         const selectedType = TAX_DEDUCTION_TYPES.find(t => t.value === e.target.value);
                                                         if (selectedType) {
                                                             setData('tax_deduction_rate', String(selectedType.defaultRate));
@@ -484,13 +505,11 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                                         </option>
                                                     ))}
                                                 </select>
-                                                <InputError message={errors.tax_deduction_type} className="mt-2" />
+                                                <InputError message={errors.tax_deduction_type} className="mt-1" />
                                             </div>
-
-                                            {/* Percentuale e Anno */}
-                                            <div className="grid gap-4 sm:grid-cols-2">
+                                            <div className="grid grid-cols-2 gap-3">
                                                 <div>
-                                                    <InputLabel htmlFor="tax_deduction_rate" value="Percentuale detrazione (%)" />
+                                                    <InputLabel htmlFor="tax_deduction_rate" value="Percentuale (%)" />
                                                     <TextInput
                                                         id="tax_deduction_rate"
                                                         type="number"
@@ -503,9 +522,8 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                                         placeholder="es. 19"
                                                         required={data.is_tax_deductible}
                                                     />
-                                                    <InputError message={errors.tax_deduction_rate} className="mt-2" />
+                                                    <InputError message={errors.tax_deduction_rate} className="mt-1" />
                                                 </div>
-
                                                 <div>
                                                     <InputLabel htmlFor="tax_year" value="Anno fiscale" />
                                                     <TextInput
@@ -517,76 +535,24 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                                         value={data.tax_year}
                                                         onChange={(e) => setData('tax_year', Number(e.target.value))}
                                                     />
-                                                    <InputError message={errors.tax_year} className="mt-2" />
+                                                    <InputError message={errors.tax_year} className="mt-1" />
                                                 </div>
                                             </div>
-
-                                            <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                                                💡 Potrai allegare documenti (scontrini, fatture) nella pagina di dettaglio.
-                                            </p>
                                         </div>
                                     )}
                                 </div>
                             )}
 
-                            {/* Collega a Debito/Credito */}
-                            {debtsCredits.length > 0 && !isTransfer && !isInterHouseholdTransfer && (
-                                <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-700 dark:bg-purple-900/20">
-                                    <InputLabel htmlFor="debt_credit_id" value="🔗 Collega a Debito/Credito (opzionale)" />
-                                    {filteredDebtsCredits.length === 0 && selectedCategory ? (
-                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                            Nessun {isExpense ? 'debito' : 'credito'} aperto da collegare.
-                                        </p>
-                                    ) : (
-                                        <select
-                                            id="debt_credit_id"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={data.debt_credit_id}
-                                            onChange={(e) => setData('debt_credit_id', e.target.value)}
-                                        >
-                                            <option value="">Nessun collegamento</option>
-                                            {filteredDebtsCredits.map((dc) => (
-                                                <option key={dc.id} value={dc.id}>
-                                                    {dc.type === 'debt' ? '📤' : '📥'} {dc.counterparty} — rimanenti: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: dc.currency_code }).format(dc.remaining_amount)}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    {!selectedCategory && (
-                                        <p className="mt-1 text-xs text-purple-600 dark:text-purple-400">
-                                            Seleziona prima una categoria per filtrare i debiti/crediti pertinenti.
-                                        </p>
-                                    )}
-                                    {selectedCategory && filteredDebtsCredits.length > 0 && (
-                                        <p className="mt-1 text-xs text-purple-700 dark:text-purple-300">
-                                            Il saldo del {isExpense ? 'debito' : 'credito'} verrà aggiornato automaticamente.
-                                        </p>
-                                    )}
-                                    <InputError message={errors.debt_credit_id} className="mt-2" />
-                                </div>
-                            )}
-
-                            {/* Tag */}
-                            <div>
-                                <InputLabel value="Tag (opzionale)" />
-                                <TagAutocomplete
-                                    selectedTags={selectedTagsList}
-                                    onAdd={handleTagAdd}
-                                    onRemove={handleTagRemove}
-                                    className="mt-2"
-                                />
-                            </div>
-
                             {/* Azioni */}
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('transactions.index')}
-                                    className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
                                     {isInterHouseholdTransfer ? 'Torna Indietro' : 'Annulla'}
                                 </Link>
                                 {!isInterHouseholdTransfer && (
-                                    <PrimaryButton disabled={processing}>
+                                    <PrimaryButton disabled={processing} className="flex-1 sm:flex-none justify-center">
                                         {processing ? 'Salvataggio...' : 'Salva Modifiche'}
                                     </PrimaryButton>
                                 )}

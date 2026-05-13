@@ -10,7 +10,7 @@ export default function SectionCard({ children, className = '' }: SectionCardPro
     return (
         <div
             className={clsx(
-                'rounded-2xl border border-gray-200/80 bg-white/95 p-5 shadow-sm backdrop-blur-sm sm:p-7 dark:border-gray-700 dark:bg-gray-800/95',
+                'rounded-2xl border border-gray-200/80 bg-white/95 p-4 shadow-sm backdrop-blur-sm sm:p-5 dark:border-gray-700 dark:bg-gray-800/95',
                 className
             )}
         >

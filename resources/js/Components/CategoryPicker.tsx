@@ -172,7 +172,7 @@ export default function CategoryPicker({
             )}
 
             {/* Lista categorie con scroll */}
-            <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 sm:max-h-56">
+            <div className="max-h-52 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 sm:max-h-64">
                 {filteredCategories.length === 0 ? (
                     <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         {search
@@ -182,14 +182,14 @@ export default function CategoryPicker({
                               : 'Nessuna categoria di uscita'}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-1 p-2 sm:grid-cols-3">
+                    <div className="grid grid-cols-3 gap-1 p-1.5 sm:grid-cols-4">
                         {filteredCategories.map((category) => (
                             <button
                                 key={category.id}
                                 type="button"
                                 onClick={() => handleCategorySelect(String(category.id))}
                                 className={clsx(
-                                    'flex items-center space-x-2 rounded-lg border-2 p-2 text-left text-sm transition-all',
+                                    'flex flex-col items-center gap-0.5 rounded-lg border-2 p-1.5 text-center transition-all',
                                     value === String(category.id)
                                         ? activeTab === 'income'
                                             ? 'border-green-500 bg-green-50 ring-2 ring-green-500/20 dark:bg-green-900/20'
@@ -197,10 +197,10 @@ export default function CategoryPicker({
                                         : 'border-transparent bg-gray-50 hover:border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:border-gray-600 dark:hover:bg-gray-700'
                                 )}
                             >
-                                <span className="flex-shrink-0 text-base">
+                                <span className="text-lg leading-none">
                                     {category.icon || (activeTab === 'income' ? '💰' : '💸')}
                                 </span>
-                                <span className="truncate text-gray-900 dark:text-white">
+                                <span className="truncate w-full text-center text-[11px] leading-tight text-gray-900 dark:text-white">
                                     {category.name}
                                 </span>
                             </button>
