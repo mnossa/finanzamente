@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import { nav } from '@/utils/analytics';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
 import ProBadge from '@/Components/ProBadge';
@@ -948,6 +949,7 @@ function MobileBottomNav({
                 {/* Dashboard */}
                 <Link
                     href={route('dashboard')}
+                    onClick={() => nav.bottomBar('home')}
                     className={clsx(
                         'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
                         isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
@@ -961,6 +963,7 @@ function MobileBottomNav({
                 {/* Transazioni */}
                 <Link
                     href={route('transactions.index')}
+                    onClick={() => nav.bottomBar('movimenti')}
                     className={clsx(
                         'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
                         isTransactions ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
@@ -985,6 +988,7 @@ function MobileBottomNav({
                 {/* Conti */}
                 <Link
                     href={route('accounts.index')}
+                    onClick={() => nav.bottomBar('conti')}
                     className={clsx(
                         'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
                         isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'

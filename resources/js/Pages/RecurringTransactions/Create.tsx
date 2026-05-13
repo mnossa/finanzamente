@@ -8,6 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { recurring } from '@/utils/analytics';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
@@ -70,7 +71,12 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('recurring-transactions.store'));
+        post(route('recurring-transactions.store'), {
+            onSuccess: () => recurring.created(
+                    data.frequency,
+                    selectedCategory?.type === 'income' ? 'income' : 'expense'
+                ),
+        });
     };
 
     return (

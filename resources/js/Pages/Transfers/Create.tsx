@@ -9,6 +9,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { transfers } from '@/utils/analytics';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 import PageHeader from '@/Components/PageHeader';
@@ -75,7 +76,9 @@ export default function Create({ accounts }: CreateProps) {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('transfers.store'));
+        post(route('transfers.store'), {
+            onSuccess: () => transfers.created(),
+        });
     };
 
     return (

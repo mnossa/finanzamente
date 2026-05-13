@@ -14,7 +14,9 @@ import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import { useFxPreview } from '@/hooks/useFxPreview';
-import { useState } from 'react';
+import { useFormTimer } from '@/hooks/useFormTimer';
+import { tx } from '@/utils/analytics';
+import { useState, useEffect, useRef } from 'react';
 
 interface Category {
     id: number;
@@ -103,6 +105,20 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
     });
 
     const [showFx, setShowFx] = useState<boolean>(!!transaction.original_amount);
+    const { getElapsedSeconds } = useFormTimer();
+    const submitted = useRef(false);
+    const fxTracked = useRef(false);
+    const optionsTracked = useRef(false);
+    const taxTracked = useRef(false);
+
+    useEffect(() => {
+        return () => {
+            if (!submitted.current) {
+                tx.formAbandoned('edit', getElapsedSeconds());
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const selectedAccount = accounts.find((a) => a.id === Number(data.account_id));
     const accountCurrency = selectedAccount?.currency_code ?? transaction.currency_code ?? 'EUR';
 
@@ -149,7 +165,20 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        patch(route('transactions.update', transaction.id));
+        patch(route('transactions.update', transaction.id), {
+            onSuccess: () => {
+                submitted.current = true;
+                tx.edited({
+                    type: selectedCategory?.type ?? 'expense',
+                    has_tags: selectedTagsList.length > 0,
+                    has_fx: showFx && !!data.original_currency_code,
+                    form_seconds: getElapsedSeconds(),
+                });
+            },
+            onError: (errors) => {
+                tx.formError('edit', Object.keys(errors));
+            },
+        });
     };
 
     return (
@@ -311,7 +340,12 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
 
                             {/* Opzioni extra — collassabili */}
                             {!isInterHouseholdTransfer && (
-                                <details className="group rounded-xl border border-gray-200 dark:border-gray-700">
+                                <details className="group rounded-xl border border-gray-200 dark:border-gray-700" onToggle={(e) => {
+                                    if ((e.target as HTMLDetailsElement).open && !optionsTracked.current) {
+                                        optionsTracked.current = true;
+                                        tx.optionsOpened();
+                                    }
+                                }}>
                                     <summary className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                         <span>Opzioni aggiuntive</span>
                                         <svg className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,8 +390,14 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                                         setData('original_amount', '');
                                                         setData('original_currency_code', '');
                                                         setData('manual_rate', '');
-                                                    } else if (!data.original_currency_code) {
-                                                        setData('original_currency_code', userDefaultCurrency || 'EUR');
+                                                    } else {
+                                                        if (!data.original_currency_code) {
+                                                            setData('original_currency_code', userDefaultCurrency || 'EUR');
+                                                        }
+                                                        if (!fxTracked.current) {
+                                                            fxTracked.current = true;
+                                                            tx.fxOpened();
+                                                        }
                                                     }
                                                 }}
                                                 className="flex w-full items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200"
@@ -473,7 +513,13 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                                             type="checkbox"
                                             className="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                                             checked={data.is_tax_deductible}
-                                            onChange={(e) => setData('is_tax_deductible', e.target.checked)}
+                                            onChange={(e) => {
+                                                setData('is_tax_deductible', e.target.checked);
+                                                if (e.target.checked && !taxTracked.current) {
+                                                    taxTracked.current = true;
+                                                    tx.taxOpened();
+                                                }
+                                            }}
                                         />
                                         <div>
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">📋 Spesa detraibile (730)</p>

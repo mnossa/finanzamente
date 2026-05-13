@@ -18,6 +18,7 @@ import CardBox from '@/Components/CardBox';
 import React, { useEffect, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import axios from 'axios';
+import { filtersAnalytics, tx } from '@/utils/analytics';
 
 interface Category {
     id: number;
@@ -545,7 +546,9 @@ export default function Index({
 
     const handleConfirmDelete = () => {
         if (deleteTarget) {
-            router.delete(route('transactions.destroy', deleteTarget.id));
+            router.delete(route('transactions.destroy', deleteTarget.id), {
+                onSuccess: () => tx.deleted(),
+            });
         }
         setDeleteDialogOpen(false);
         setDeleteTarget(null);
@@ -602,6 +605,17 @@ export default function Index({
     };
 
     const handleFilterChange = (key: string, value: string) => {
+        if (value) {
+            const filterMap: Record<string, Parameters<typeof filtersAnalytics.applied>[0]> = {
+                account_id: 'account',
+                category_id: 'category',
+                type: 'type',
+                from: 'date_from',
+                to: 'date_to',
+                tag_id: 'tag',
+            };
+            if (filterMap[key]) filtersAnalytics.applied(filterMap[key]);
+        }
         router.get(
             route('transactions.index'),
             { ...filters, [key]: value || undefined },
@@ -610,6 +624,7 @@ export default function Index({
     };
 
     const clearFilters = () => {
+        if (Object.values(filters).some(Boolean)) filtersAnalytics.cleared();
         router.get(route('transactions.index'));
     };
 

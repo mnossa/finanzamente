@@ -8,6 +8,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { debts } from '@/utils/analytics';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
@@ -39,7 +40,9 @@ export default function Create({ currencies, types }: CreateProps) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('debts-credits.store'));
+        post(route('debts-credits.store'), {
+            onSuccess: () => debts.created(data.type as 'debt' | 'credit'),
+        });
     };
 
     return (

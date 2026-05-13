@@ -10,6 +10,7 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { accs } from '@/utils/analytics';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
 
@@ -51,7 +52,9 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('accounts.store'));
+        post(route('accounts.store'), {
+            onSuccess: () => accs.created(data.type, data.currency_code),
+        });
     };
 
     return (

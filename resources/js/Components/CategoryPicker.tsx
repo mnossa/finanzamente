@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import clsx from 'clsx';
+import { cats } from '@/utils/analytics';
 
 interface Category {
     id: number;
@@ -104,7 +105,7 @@ export default function CategoryPicker({
             <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-700">
                 <button
                     type="button"
-                    onClick={() => setActiveTab('expense')}
+                    onClick={() => { setActiveTab('expense'); cats.tabChanged('expense'); }}
                     className={clsx(
                         'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                         activeTab === 'expense'
@@ -119,7 +120,7 @@ export default function CategoryPicker({
                 </button>
                 <button
                     type="button"
-                    onClick={() => setActiveTab('income')}
+                    onClick={() => { setActiveTab('income'); cats.tabChanged('income'); }}
                     className={clsx(
                         'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                         activeTab === 'income'

@@ -8,6 +8,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { budgets } from '@/utils/analytics';
 import { FormEventHandler } from 'react';
 import PageHeader from '@/Components/PageHeader';
 
@@ -45,7 +46,9 @@ export default function Create({ categories, currencies }: CreateProps) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('budgets.store'));
+        post(route('budgets.store'), {
+            onSuccess: () => budgets.created('custom'),
+        });
     };
 
     // Helper per impostare periodi predefiniti
