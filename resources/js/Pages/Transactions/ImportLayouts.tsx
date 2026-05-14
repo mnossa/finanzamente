@@ -8,6 +8,7 @@ import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import { Head, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -186,6 +187,11 @@ export default function ImportLayouts({ layouts }: ImportLayoutsProps) {
             />
 
             <PageContent maxWidth="4xl">
+                <IndexPageMobileToolbar>
+                    <LinkButton href={route('transactions.import')}>
+                        Nuova importazione
+                    </LinkButton>
+                </IndexPageMobileToolbar>
                 {layouts.length === 0 ? (
                     <EmptyState
                         icon="📄"

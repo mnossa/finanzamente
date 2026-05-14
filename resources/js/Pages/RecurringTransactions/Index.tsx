@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
@@ -176,23 +177,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
     return (
         <AuthenticatedLayout
             header={
-                <PageHeader
-                    title="Transazioni Ricorrenti"
-                    actions={
-                        <div className="flex flex-wrap items-center gap-2">
-                            <LinkButton href={route('recurrence-detection.index')}>
-                                🔍 Ricorrenze Rilevate
-                            </LinkButton>
-                            <LinkButton
-                                href={route('recurring-transactions.create')}
-                                icon={<PlusIcon />}
-                                className="hidden lg:inline-flex"
-                            >
-                                Nuova Ricorrenza
-                            </LinkButton>
-                        </div>
-                    }
-                />
+                <PageHeader title="Transazioni Ricorrenti" />
             }
         >
             <Head title="Transazioni Ricorrenti" />
@@ -216,6 +201,24 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                             </p>
                         </div>
                     </SectionCard>
+                    <IndexPageMobileToolbar>
+                        <LinkButton
+                            href={route('recurrence-detection.index')}
+                            variant="secondary"
+                            size="sm"
+                            className="w-full justify-center sm:w-auto"
+                        >
+                            🔍 Ricorrenze Rilevate
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
+                    <div className="mb-4 hidden flex-wrap items-center gap-2 lg:flex">
+                        <LinkButton href={route('recurrence-detection.index')}>
+                            🔍 Ricorrenze Rilevate
+                        </LinkButton>
+                        <LinkButton href={route('recurring-transactions.create')} icon={<PlusIcon />}>
+                            Nuova Ricorrenza
+                        </LinkButton>
+                    </div>
                     {/* Riepilogo frequenze */}
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         {Object.entries(frequencies).map(([key, label]) => {

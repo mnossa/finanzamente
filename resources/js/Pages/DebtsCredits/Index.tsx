@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -186,13 +187,11 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                 <PageHeader
                     title="Debiti e Crediti"
                     actions={
-                        <LinkButton
-                            href={route('debts-credits.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('debts-credits.create')} icon={<PlusIcon />}>
+                                Nuovo
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

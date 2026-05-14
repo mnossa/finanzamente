@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -153,13 +154,11 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                 <PageHeader
                     title="Categorie"
                     actions={
-                        <LinkButton
-                            href={route('categories.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuova Categoria
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('categories.create')} icon={<PlusIcon />}>
+                                Nuova Categoria
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

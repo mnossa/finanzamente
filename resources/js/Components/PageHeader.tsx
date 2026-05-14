@@ -31,8 +31,8 @@ interface PageHeaderProps {
 
 /**
  * Componente header generico per le pagine autenticate.
- * Mostra titolo, sottotitolo opzionale e azioni. Sotto il breakpoint `lg` le azioni vanno su una
- * seconda riga sotto il titolo (non competono con le icone header a destra).
+ * Le `actions` sono visibili solo da `lg` in su (su mobile restano fuori dall’header appiccicoso: FAB, toolbar nel contenuto, ecc.).
+ * Per CTA secondarie solo mobile usare `IndexPageMobileToolbar` (vedi `IndexPageListToolbars.tsx`).
  * 
  * @example
  * ```tsx
@@ -76,7 +76,7 @@ export default function PageHeader({ title, actions, subtitle, className, backLi
                 </div>
             </div>
             {actions && (
-                <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2 lg:ml-auto">
+                <div className="hidden min-w-0 shrink-0 flex-wrap items-center gap-2 lg:ml-auto lg:flex">
                     {actions}
                 </div>
             )}

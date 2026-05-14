@@ -101,4 +101,13 @@ test.describe('Investimenti', () => {
         await page.getByRole('button', { name: /avanti/i }).click();
         await expect(page.getByRole('heading', { name: /Mappatura colonne/i })).toBeVisible({ timeout: 15_000 });
     });
+
+    test('su mobile dalla lista investimenti il link Importa CSV è nella toolbar sotto header', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/investimenti');
+        const importLink = visibleHrefLocator(page, '/investimenti/importa');
+        await expect(importLink).toBeVisible();
+        await importLink.click();
+        await expect(page).toHaveURL(/\/investimenti\/importa/);
+    });
 });

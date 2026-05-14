@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -171,13 +172,11 @@ export default function Index({ budgets }: IndexProps) {
                 <PageHeader
                     title="Budget"
                     actions={
-                        <LinkButton
-                            href={route('budgets.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Budget
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('budgets.create')} icon={<PlusIcon />}>
+                                Nuovo Budget
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

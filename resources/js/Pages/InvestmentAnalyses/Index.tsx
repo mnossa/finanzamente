@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import EmptyState from '@/Components/EmptyState';
 import { Head, router } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
@@ -800,12 +801,18 @@ export default function Index({ analyses }: IndexProps) {
                     title="Analisi Investimenti"
                     subtitle="Calcola risparmio e ammortamento dei tuoi investimenti energetici e tecnologici"
                     actions={
-                        <button onClick={() => setShowWizard(true)} className="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                                <path d="M5 12h14" /><path d="M12 5v14" />
-                            </svg>
-                            Nuova analisi
-                        </button>
+                        <IndexPageHeaderActions>
+                            <button
+                                type="button"
+                                onClick={() => setShowWizard(true)}
+                                className="btn btn-primary"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                    <path d="M5 12h14" /><path d="M12 5v14" />
+                                </svg>
+                                Nuova analisi
+                            </button>
+                        </IndexPageHeaderActions>
                     }
                 />
             }
@@ -813,6 +820,18 @@ export default function Index({ analyses }: IndexProps) {
             <Head title="Analisi Investimenti" />
 
             <PageContent>
+                <IndexPageMobileToolbar>
+                    <button
+                        type="button"
+                        onClick={() => setShowWizard(true)}
+                        className="btn btn-primary w-full justify-center sm:w-auto"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                            <path d="M5 12h14" /><path d="M12 5v14" />
+                        </svg>
+                        Nuova analisi
+                    </button>
+                </IndexPageMobileToolbar>
                 {analyses.length === 0 ? (
                     <EmptyState
                         icon="📊"

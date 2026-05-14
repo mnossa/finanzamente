@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 
 interface User {
     id: number;
@@ -148,6 +149,23 @@ export default function Dashboard({
         }
     };
 
+    const refreshToolbarButton = (
+        <button
+            type="button"
+            onClick={refreshData}
+            disabled={refreshing}
+            className={clsx(
+                'inline-flex w-full items-center justify-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest transition-colors sm:w-auto',
+                refreshing
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900'
+            )}
+        >
+            <ArrowPathIcon className={clsx('h-4 w-4', refreshing && 'animate-spin')} />
+            {refreshing ? 'Aggiornamento...' : 'Aggiorna'}
+        </button>
+    );
+
     if (dashboardData.error) {
         return (
             <AuthenticatedLayout
@@ -186,19 +204,7 @@ export default function Dashboard({
             header={
                 <PageHeader
                     title={`Contributi Spese Fisse`}
-                    actions={<button
-                        onClick={refreshData}
-                        disabled={refreshing}
-                        className={clsx(
-                            "inline-flex items-center gap-2 px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest transition-colors",
-                            refreshing
-                                ? "opacity-50 cursor-not-allowed"
-                                : "hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900"
-                        )}
-                    >
-                        <ArrowPathIcon className={clsx("h-4 w-4", refreshing && "animate-spin")} />
-                        {refreshing ? 'Aggiornamento...' : 'Aggiorna'}
-                    </button>}
+                    actions={refreshToolbarButton}
                     subtitle={`${household.name} • Bilanciamento Debiti`}
                 />
 
@@ -207,6 +213,8 @@ export default function Dashboard({
             <Head title={`Contributi Spese Fisse - ${household.name}`} />
 
             <PageContent>
+
+                    <IndexPageMobileToolbar>{refreshToolbarButton}</IndexPageMobileToolbar>
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

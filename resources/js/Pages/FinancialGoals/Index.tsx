@@ -11,6 +11,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 
 interface Currency {
     code: string;
@@ -148,13 +149,11 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                 <PageHeader
                     title="Obiettivi Finanziari"
                     actions={
-                        <LinkButton
-                            href={route('financial-goals.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Obiettivo
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('financial-goals.create')} icon={<PlusIcon />}>
+                                Nuovo Obiettivo
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

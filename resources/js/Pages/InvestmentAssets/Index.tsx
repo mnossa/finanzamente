@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -101,13 +102,11 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                 <PageHeader
                     title="Asset Finanziari"
                     actions={
-                        <LinkButton
-                            href={route('investment-assets.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Asset
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('investment-assets.create')} icon={<PlusIcon />}>
+                                Nuovo Asset
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

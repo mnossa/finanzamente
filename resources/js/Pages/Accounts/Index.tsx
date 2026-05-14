@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -129,13 +130,11 @@ export default function Index({
                 <PageHeader
                     title="I tuoi Conti"
                     actions={
-                        <LinkButton
-                            href={route('accounts.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Conto
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('accounts.create')} icon={<PlusIcon />}>
+                                Nuovo Conto
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

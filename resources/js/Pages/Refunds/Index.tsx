@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
 import SectionBadge from '@/Components/SectionBadge';
@@ -167,13 +168,11 @@ export default function Index({ refunds }: IndexProps) {
                 <PageHeader
                     title="Rimborsi"
                     actions={
-                        <LinkButton
-                            href={route('refunds.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Rimborso
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('refunds.create')} icon={<PlusIcon />}>
+                                Nuovo Rimborso
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

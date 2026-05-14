@@ -5,6 +5,7 @@ import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -112,6 +113,11 @@ export default function Show({ account, recentTransactions }: ShowProps) {
             <Head title={account.name} />
 
             <PageContent maxWidth="5xl">
+                    <IndexPageMobileToolbar>
+                        <LinkButton href={route('accounts.edit', account.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
                     <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Dettaglio conto" icon={<span className="text-sm leading-none">🏦</span>} />

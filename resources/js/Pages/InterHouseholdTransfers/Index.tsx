@@ -5,6 +5,7 @@ import EmptyState from '@/Components/EmptyState';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -199,13 +200,12 @@ export default function Index({ transfers, filters }: IndexProps) {
                 <PageHeader
                     title="Trasferimenti tra Households"
                     actions={
-                        <LinkButton
-                            href={route('inter-household-transfers.create')}
-                            className="hidden lg:inline-flex"
-                        >
-                            <PlusIcon className="mr-2 h-4 w-4" />
-                            Nuovo Trasferimento
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('inter-household-transfers.create')}>
+                                <PlusIcon className="mr-2 h-4 w-4" />
+                                Nuovo Trasferimento
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

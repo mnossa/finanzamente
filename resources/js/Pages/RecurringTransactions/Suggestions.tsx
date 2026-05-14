@@ -3,6 +3,7 @@ import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import EmptyState from '@/Components/EmptyState';
 import CardBox from '@/Components/CardBox';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import { Head, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React, { useState } from 'react';
@@ -432,37 +433,42 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
         });
     };
 
+    const avviaRilevamentoButton = (
+        <button
+            type="button"
+            disabled={detecting}
+            onClick={handleDetect}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 sm:w-auto"
+        >
+            {detecting ? (
+                <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Rilevamento in corso…
+                </>
+            ) : (
+                <>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z" />
+                    </svg>
+                    Avvia Rilevamento
+                </>
+            )}
+        </button>
+    );
+
     return (
         <AuthenticatedLayout>
             <Head title="Ricorrenze Rilevate" />
 
             <PageContent>
+                <IndexPageMobileToolbar>{avviaRilevamentoButton}</IndexPageMobileToolbar>
                 <PageHeader
                     title="Ricorrenze Rilevate"
                     subtitle="Transazioni con pattern regolare che potrebbero essere ricorrenti."
-                    actions={<button
-                        type="button"
-                        disabled={detecting}
-                        onClick={handleDetect}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 lg:w-auto"
-                    >
-                        {detecting ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                </svg>
-                                Rilevamento in corso…
-                            </>
-                        ) : (
-                            <>
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z" />
-                                </svg>
-                                Avvia Rilevamento
-                            </>
-                        )}
-                    </button>}
+                    actions={avviaRilevamentoButton}
                 />
 
                 <div className="mb-4 rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">

@@ -104,11 +104,6 @@ export default function Show({ refund }: ShowProps) {
                 <PageHeader
                     title="Dettaglio Rimborso"
                     backLink={route('refunds.index')}
-                    actions={
-                        <LinkButton href={route('refunds.edit', refund.id)} icon={<PencilIcon />}>
-                            Modifica
-                        </LinkButton>
-                    }
                 />
             }
         >

@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
@@ -198,18 +199,12 @@ export default function Index({
                 <PageHeader
                     title="Investimenti"
                     actions={
-                        <div className="flex items-center gap-2">
-                            <LinkButton href={route('investments.import')}>
-                                📥 Importa CSV
-                            </LinkButton>
-                            <LinkButton
-                                href={route('investments.create')}
-                                icon={<PlusIcon />}
-                                className="hidden lg:inline-flex"
-                            >
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('investments.import')}>📥 Importa CSV</LinkButton>
+                            <LinkButton href={route('investments.create')} icon={<PlusIcon />}>
                                 Nuovo Investimento
                             </LinkButton>
-                        </div>
+                        </IndexPageHeaderActions>
                     }
                 />
             }
@@ -225,6 +220,17 @@ export default function Index({
                             </p>
                         </div>
                     </SectionCard>
+
+                    <IndexPageMobileToolbar>
+                        <LinkButton
+                            href={route('investments.import')}
+                            variant="secondary"
+                            size="sm"
+                            className="w-full justify-center sm:w-auto"
+                        >
+                            📥 Importa CSV
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
 
                     {/* Statistiche */}
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

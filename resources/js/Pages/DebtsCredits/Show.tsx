@@ -10,6 +10,7 @@ import { StatusBadge } from '@/Components/StatusBadge';
 import PageHeader from '@/Components/PageHeader';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 
 interface Currency {
     code: string;
@@ -117,6 +118,11 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
             <Head title={`${debtCredit.type_label} - ${debtCredit.counterparty}`} />
 
             <PageContent maxWidth="2xl">
+                    <IndexPageMobileToolbar>
+                        <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
                     <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Dettaglio posizione" icon={<span className="text-sm leading-none">📌</span>} />

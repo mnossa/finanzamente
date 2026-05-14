@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import EmptyState from '@/Components/EmptyState';
 import SectionBadge from '@/Components/SectionBadge';
@@ -144,13 +145,11 @@ export default function Index({ transfers }: IndexProps) {
                 <PageHeader
                     title="Trasferimenti"
                     actions={
-                        <LinkButton
-                            href={route('transfers.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Trasferimento
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('transfers.create')} icon={<PlusIcon />}>
+                                Nuovo Trasferimento
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }

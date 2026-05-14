@@ -113,9 +113,6 @@ export default function Show({ transaction }: ShowProps) {
                 <PageHeader
                     title={`Dettaglio Transazione`}
                     backLink={route('transactions.index')}
-                    actions={<LinkButton href={route('transactions.edit', transaction.id)} icon={<PencilIcon />}>
-                        Modifica
-                    </LinkButton>}
                 />
 
             }

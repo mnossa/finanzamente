@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EyeIcon from '@/Components/Icons/EyeIcon';
@@ -636,7 +637,7 @@ export default function Index({
                 <PageHeader
                     title="Transazioni"
                     actions={
-                        <div className="flex items-center gap-2">
+                        <IndexPageHeaderActions>
                             <LinkButton
                                 href={route('transactions.import')}
                                 variant="secondary"
@@ -648,11 +649,10 @@ export default function Index({
                                 href={route('transactions.create')}
                                 icon={<PlusIcon />}
                                 size="sm"
-                                className="hidden lg:inline-flex"
                             >
                                 Nuova Transazione
                             </LinkButton>
-                        </div>
+                        </IndexPageHeaderActions>
                     }
                 />
             }
@@ -716,6 +716,17 @@ export default function Index({
                             </span>
                         </div>
                     )}
+
+                    <IndexPageMobileToolbar>
+                        <LinkButton
+                            href={route('transactions.import')}
+                            variant="secondary"
+                            size="sm"
+                            className="w-full justify-center sm:w-auto"
+                        >
+                            Importa
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
 
                     {/* Filtri */}
                     <CardBox className="overflow-hidden p-0 shadow-sm">

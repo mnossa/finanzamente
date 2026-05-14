@@ -119,11 +119,6 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                 <PageHeader
                     title="Dettaglio Ricorrenza"
                     backLink={route('recurring-transactions.index')}
-                    actions={
-                        <LinkButton href={route('recurring-transactions.edit', rt.id)} icon={<PencilIcon />}>
-                            Modifica
-                        </LinkButton>
-                    }
                 />
             }
         >

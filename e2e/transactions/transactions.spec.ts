@@ -124,4 +124,13 @@ test.describe('Transazioni', () => {
         // Verifichiamo che il name dell'opzione contenga "Revolut" e mostri (GBP) come valuta.
         await expect(accountSelect.locator('option', { hasText: /revolut/i })).toContainText(/gbp/i);
     });
+
+    test('su mobile il link Importa è nel corpo pagina (toolbar sotto header)', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/transazioni');
+        const importLink = visibleHrefLocator(page, '/transazioni/importa');
+        await expect(importLink).toBeVisible();
+        await importLink.click();
+        await expect(page).toHaveURL(/\/transazioni\/importa/);
+    });
 });

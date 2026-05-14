@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 
 interface Category {
     id: number;
@@ -70,6 +71,11 @@ export default function Show({ budget, transactions }: ShowProps) {
             <Head title={`Budget - ${budget.category.name}`} />
 
             <PageContent maxWidth="4xl">
+                    <IndexPageMobileToolbar>
+                        <LinkButton href={route('budgets.edit', budget.id)} icon={<PencilIcon />}>
+                            Modifica
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
                     <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Dettaglio budget" icon={<span className="text-sm leading-none">📈</span>} />

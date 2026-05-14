@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -102,13 +103,11 @@ export default function Index({ tags }: IndexProps) {
                 <PageHeader
                     title="Tag"
                     actions={
-                        <LinkButton
-                            href={route('tags.create')}
-                            icon={<PlusIcon />}
-                            className="hidden lg:inline-flex"
-                        >
-                            Nuovo Tag
-                        </LinkButton>
+                        <IndexPageHeaderActions>
+                            <LinkButton href={route('tags.create')} icon={<PlusIcon />}>
+                                Nuovo Tag
+                            </LinkButton>
+                        </IndexPageHeaderActions>
                     }
                 />
             }
