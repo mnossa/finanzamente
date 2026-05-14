@@ -161,7 +161,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
             <Head title="Obiettivi Finanziari" />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Obiettivi finanziari" icon={<span className="text-sm leading-none">🎯</span>} />
                             <p className="text-sm text-gray-600 dark:text-gray-300">

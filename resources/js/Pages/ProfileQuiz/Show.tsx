@@ -40,7 +40,7 @@ export default function Show({ currentSettings }: Props) {
                 </p>
             </div>
 
-            <form onSubmit={submit} className="space-y-6">
+            <form onSubmit={submit} className="space-y-4">
                 {/* Domanda 1: Situazione familiare */}
                 <div>
                     <InputLabel

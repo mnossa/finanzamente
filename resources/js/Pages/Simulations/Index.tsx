@@ -258,7 +258,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
                 {/* Parametri */}
-                <CardBox className="space-y-5">
+                <CardBox className="space-y-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white">⚙️ Parametri</h3>
 
                     <SliderField
@@ -507,7 +507,7 @@ function DebtVsInvestmentSimulator() {
     return (
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
-                <CardBox className="space-y-5">
+                <CardBox className="space-y-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white">⚙️ Parametri</h3>
 
                     <SliderField
@@ -685,7 +685,7 @@ function EmergencyFundSimulator() {
     return (
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
-                <CardBox className="space-y-5">
+                <CardBox className="space-y-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white">⚙️ Parametri</h3>
 
                     <SliderField
@@ -851,7 +851,7 @@ function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScena
     return (
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
-                <CardBox className="space-y-5">
+                <CardBox className="space-y-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white">⚙️ Parametri</h3>
 
                     <SliderField

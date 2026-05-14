@@ -3,6 +3,7 @@ import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import EmojiPicker from '@/Components/EmojiPicker';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -67,7 +68,7 @@ export default function Edit({ category, categoryTypes }: EditProps) {
 
             <PageContent maxWidth="2xl">
                     <CardBox>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>
                                 <InputLabel htmlFor="name" value="Nome della categoria" />
@@ -273,7 +274,7 @@ export default function Edit({ category, categoryTypes }: EditProps) {
                             </div>
 
                             {/* Azioni */}
-                            <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('categories.index')}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -283,7 +284,7 @@ export default function Edit({ category, categoryTypes }: EditProps) {
                                 <PrimaryButton disabled={processing}>
                                     {processing ? 'Salvataggio...' : 'Salva Modifiche'}
                                 </PrimaryButton>
-                            </div>
+                            </FormActionsBar>
                         </form>
                     </CardBox>
             </PageContent>

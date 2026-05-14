@@ -89,13 +89,13 @@ export default function Edit({ refund }: EditProps) {
             <Head title="Modifica Rimborso" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">✏️</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica rimborso</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna importo, data e visibilità del rimborso registrato.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             {/* Transazione originale (solo lettura) */}
                             <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
                                 <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -180,7 +180,7 @@ export default function Edit({ refund }: EditProps) {
                                 <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                 <textarea
                                     id="description"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     rows={2}
                                     value={data.description}
                                     onChange={(e) => setData('description', e.target.value)}
@@ -213,7 +213,7 @@ export default function Edit({ refund }: EditProps) {
                             </div>
 
                             {/* Azioni */}
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('refunds.show', refund.id)}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"

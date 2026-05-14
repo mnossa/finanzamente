@@ -3,9 +3,11 @@ import PageContent from '@/Components/PageContent';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import EmojiPicker from '@/Components/EmojiPicker';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { cats } from '@/utils/analytics';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
@@ -39,7 +41,9 @@ export default function Create({ categoryTypes }: CreateProps) {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('categories.store'));
+        post(route('categories.store'), {
+            onSuccess: () => cats.created(data.type as 'expense' | 'income'),
+        });
     };
 
     return (
@@ -56,7 +60,7 @@ export default function Create({ categoryTypes }: CreateProps) {
 
             <PageContent maxWidth="2xl">
                     <CardBox>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>
                                 <InputLabel htmlFor="name" value="Nome della categoria" />
@@ -263,7 +267,7 @@ export default function Create({ categoryTypes }: CreateProps) {
                             </div>
 
                             {/* Azioni */}
-                            <div className="flex items-center justify-end space-x-4 border-t border-gray-200 pt-6 dark:border-gray-700">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('categories.index')}
                                     className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
@@ -273,7 +277,7 @@ export default function Create({ categoryTypes }: CreateProps) {
                                 <PrimaryButton disabled={processing}>
                                     {processing ? 'Salvataggio...' : 'Crea Categoria'}
                                 </PrimaryButton>
-                            </div>
+                            </FormActionsBar>
                         </form>
                     </CardBox>
             </PageContent>

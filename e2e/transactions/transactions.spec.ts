@@ -27,21 +27,33 @@ test.describe('Transazioni', () => {
     });
 
     test('la lista mostra stato vuoto o righe', async ({ page }) => {
-        // Lista reale: card (no table); ogni riga espone link "Visualizza" verso /transazioni/:id
+        // Stato vuoto oppure righe linkate a /transazioni/:id
         const emptyState = page.getByText(/nessuna transazione trovata/i).first();
-        const rowViewLinks = page.getByRole('link', { name: /^visualizza$/i });
+        // Le righe sono link verso /transazioni/:id (tutta la riga è linkabile su mobile)
+        const rowLinks = page.locator('a[href*="/transazioni/"]').filter({ hasNot: page.locator('[href="/transazioni"]') });
 
         await expect
             .poll(async () => {
                 const emptyVisible = await emptyState.isVisible().catch(() => false);
-                const rowsCount = await rowViewLinks.count();
+                const rowsCount = await rowLinks.count();
                 return emptyVisible || rowsCount > 0;
             }, { timeout: 15_000 })
             .toBeTruthy();
     });
 
     test('i filtri di ricerca sono presenti', async ({ page }) => {
-        await expect(page.getByRole('combobox').first()).toBeVisible();
+        // Il pannello filtri è collassabile: verifichiamo che esista il trigger (sempre visibile)
+        // oppure che i combobox siano direttamente visibili se il pannello è già aperto
+        const filterTrigger = page.getByTestId('filter-summary');
+        const combobox = page.getByRole('combobox').first();
+
+        await expect
+            .poll(async () => {
+                const triggerVisible = await filterTrigger.isVisible().catch(() => false);
+                const comboboxVisible = await combobox.isVisible().catch(() => false);
+                return triggerVisible || comboboxVisible;
+            }, { timeout: 8_000 })
+            .toBeTruthy();
     });
 
     test('navigazione paginazione funziona se ci sono più pagine', async ({ page }) => {
@@ -56,35 +68,53 @@ test.describe('Transazioni', () => {
     });
 
     test('il form di creazione espone il toggle "valuta diversa dal conto"', async ({ page }) => {
-        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
+        await visibleHrefLocator(page, '/transazioni/crea').click();
         await expect(page).toHaveURL('/transazioni/crea');
 
-        const toggle = page.getByRole('button', { name: /valuta diversa dal conto/i });
-        await expect(toggle).toBeVisible();
+        // Le opzioni aggiuntive (incluso FX) sono in un pannello collassabile — apriamo prima
+        const extraDetails = page.locator('details').filter({ hasText: /opzioni aggiuntive/i });
+        if (await extraDetails.count() > 0) {
+            const isOpen = await extraDetails.getAttribute('open');
+            if (isOpen === null) {
+                await extraDetails.locator('summary').click();
+            }
+        }
+
+        const toggle = page.getByRole('button', { name: /valuta diversa.*conto|pagato in valuta/i });
+        await expect(toggle).toBeVisible({ timeout: 5_000 });
 
         // Apre la sezione FX e verifica che compaiano i tre campi di valuta
         await toggle.click();
         await expect(page.getByLabel(/importo originale/i)).toBeVisible();
-        await expect(page.getByLabel(/valuta originale/i)).toBeVisible();
+        await expect(page.getByLabel(/valuta originale|valuta/i).first()).toBeVisible();
         await expect(page.getByLabel(/cambio manuale/i)).toBeVisible();
     });
 
     test('mostra l\'anteprima del cambio quando si seleziona una valuta diversa dal conto', async ({ page }) => {
-        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
+        await visibleHrefLocator(page, '/transazioni/crea').click();
         await expect(page).toHaveURL('/transazioni/crea');
 
-        await page.getByRole('button', { name: /valuta diversa dal conto/i }).click();
+        // Apri opzioni aggiuntive se chiuse
+        const extraDetails = page.locator('details').filter({ hasText: /opzioni aggiuntive/i });
+        if (await extraDetails.count() > 0) {
+            const isOpen = await extraDetails.getAttribute('open');
+            if (isOpen === null) {
+                await extraDetails.locator('summary').click();
+            }
+        }
+
+        await page.getByRole('button', { name: /valuta diversa.*conto|pagato in valuta/i }).click();
         // Default è la valuta dell'utente: forziamo GBP per garantire mismatch col conto principale (EUR)
-        await page.getByLabel(/valuta originale/i).selectOption('GBP');
+        await page.getByLabel(/valuta originale|valuta/i).first().selectOption('GBP');
 
         // L'hint compare (eventualmente con stato "Calcolo cambio…" che si stabilizza)
         const hint = page.getByTestId('fx-preview-hint');
         await expect(hint).toBeVisible({ timeout: 5_000 });
-        await expect(hint).toContainText(/cambio del giorno|calcolo cambio/i, { timeout: 10_000 });
+        await expect(hint).toContainText(/cambio del giorno|calcolo cambio|=/i, { timeout: 10_000 });
     });
 
     test('il conto in valuta estera "Revolut GBP" è visibile nella select del form', async ({ page }) => {
-        await page.getByRole('link', { name: /nuova transazione/i }).first().click();
+        await visibleHrefLocator(page, '/transazioni/crea').click();
         await expect(page).toHaveURL('/transazioni/crea');
 
         const accountSelect = page.locator('#account_id');

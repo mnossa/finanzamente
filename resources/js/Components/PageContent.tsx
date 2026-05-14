@@ -20,8 +20,8 @@ const maxWidthClasses: Record<MaxWidth, string> = {
 
 export default function PageContent({ children, maxWidth, className }: PageContentProps) {
     return (
-        <div className="py-6">
-            <div className={clsx('mx-auto space-y-6 px-4 sm:px-6 lg:px-8', maxWidth && maxWidthClasses[maxWidth], className)}>
+        <div className="py-2 sm:py-6">
+            <div className={clsx('mx-auto space-y-3 sm:space-y-6 sm:px-6 lg:px-8', maxWidth && maxWidthClasses[maxWidth], className)}>
                 {children}
             </div>
         </div>

@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import { nav } from '@/utils/analytics';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
 import ProBadge from '@/Components/ProBadge';
@@ -653,7 +654,7 @@ export default function Authenticated({
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 mt-1 p-4 space-y-1 overflow-y-auto min-h-0">
+                    <nav className="flex-1 mt-1 p-4 space-y-1 overflow-y-auto min-h-0" aria-label="Navigazione principale">
                         {/* Ricerca nel menu */}
                         <div className="relative mb-3">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
@@ -715,16 +716,16 @@ export default function Authenticated({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Header */}
                     <header className="app-header dark:bg-slate-800/80 dark:border-slate-700">
-                        <div className="flex items-center gap-4">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
                             <button
                                 onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                                className="lg:hidden shrink-0 p-2 -ml-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors"
                             >
                                 <Icons.Menu />
                             </button>
 
                             {header && (
-                                <div className="hidden sm:block">
+                                <div className="min-w-0 flex-1 truncate">
                                     {header}
                                 </div>
                             )}
@@ -906,13 +907,6 @@ export default function Authenticated({
                         </div>
                     </header>
 
-                    {/* Mobile Header with title */}
-                    {header && (
-                        <div className="sm:hidden px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{header}</div>
-                        </div>
-                    )}
-
                     {/* Flash Messages */}
                     <FlashMessages />
 
@@ -920,13 +914,101 @@ export default function Authenticated({
                     <PlanAlertBanner />
 
                     {/* Scrollable Content */}
-                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
                         <div className="max-w-7xl mx-auto">
                             {children}
                         </div>
                     </main>
                 </div>
             </div>
+
+            {/* Bottom Navigation — mobile only */}
+            <MobileBottomNav isRouteActive={isRouteActive} onMenuOpen={() => setSidebarOpen(true)} />
         </ThemeProvider>
+    );
+}
+
+function MobileBottomNav({
+    isRouteActive,
+    onMenuOpen,
+}: {
+    isRouteActive: (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string) => boolean;
+    onMenuOpen: () => void;
+}) {
+    const isDashboard = isRouteActive('dashboard');
+    const isTransactions = isRouteActive('transactions.*', undefined, 'transactions.quick-session');
+    const isAccounts = isRouteActive('accounts.*');
+
+    return (
+        <nav
+            className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            aria-label="Navigazione rapida"
+        >
+            <div className="flex items-center justify-around h-16">
+                {/* Dashboard */}
+                <Link
+                    href={route('dashboard')}
+                    onClick={() => nav.bottomBar('home')}
+                    className={clsx(
+                        'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
+                        isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                    )}
+                    aria-label="Dashboard"
+                >
+                    <Icons.Dashboard />
+                    <span className="text-[10px] font-medium leading-none">Home</span>
+                </Link>
+
+                {/* Transazioni */}
+                <Link
+                    href={route('transactions.index')}
+                    onClick={() => nav.bottomBar('movimenti')}
+                    className={clsx(
+                        'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
+                        isTransactions ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                    )}
+                    aria-label="Transazioni"
+                >
+                    <Icons.ArrowLeftRight />
+                    <span className="text-[10px] font-medium leading-none">Movimenti</span>
+                </Link>
+
+                {/* FAB — nuova transazione */}
+                <Link
+                    href={route('transactions.create')}
+                    className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                    aria-label="Nuova transazione"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14" /><path d="M12 5v14" />
+                    </svg>
+                </Link>
+
+                {/* Conti */}
+                <Link
+                    href={route('accounts.index')}
+                    onClick={() => nav.bottomBar('conti')}
+                    className={clsx(
+                        'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
+                        isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                    )}
+                    aria-label="Conti"
+                >
+                    <Icons.Wallet />
+                    <span className="text-[10px] font-medium leading-none">Conti</span>
+                </Link>
+
+                {/* Altro / Menu */}
+                <button
+                    onClick={onMenuOpen}
+                    className="flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl text-slate-500 dark:text-slate-400 transition-colors"
+                    aria-label="Apri menu"
+                >
+                    <Icons.Menu />
+                    <span className="text-[10px] font-medium leading-none">Altro</span>
+                </button>
+            </div>
+        </nav>
     );
 }

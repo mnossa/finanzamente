@@ -8,6 +8,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { goals } from '@/utils/analytics';
 import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
 import PageHeader from '@/Components/PageHeader';
@@ -38,7 +39,9 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('financial-goals.store'));
+        post(route('financial-goals.store'), {
+            onSuccess: () => goals.created(!!data.target_date),
+        });
     };
 
     const selectIcon = (icon: string) => {
@@ -71,13 +74,13 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
             <Head title="Nuovo Obiettivo" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Obiettivi" icon={<span className="text-sm leading-none">🎯</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo obiettivo finanziario</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Definisci target, scadenza e stile visuale per il tuo traguardo.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             <div>
                                 {/* Icon e Nome */}
                                 <div className="mb-6">
@@ -240,7 +243,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                             </div>
 
                             {/* Footer */}
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('financial-goals.index')}
                                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"

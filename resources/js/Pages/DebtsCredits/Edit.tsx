@@ -72,13 +72,13 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
             <Head title={`Modifica ${types[debtCredit.type]}`} />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Debiti/Crediti" icon={<span className="text-sm leading-none">✏️</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica posizione</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna stato, importo e dettagli della posizione selezionata.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             <div className="space-y-6">
                                 {/* Tipo */}
                                 <div>
@@ -139,7 +139,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                         id="status"
                                         value={data.status}
                                         onChange={(e) => setData('status', e.target.value)}
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         required
                                     >
                                         {Object.entries(statuses).map(([key, label]) => (
@@ -196,7 +196,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                             onChange={(e) =>
                                                 setData('currency_code', e.target.value)
                                             }
-                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             required
                                         >
                                             {currencies.map((curr) => (
@@ -238,7 +238,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                             setData('description', e.target.value)
                                         }
                                         rows={3}
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                     />
                                     <InputError
                                         message={errors.description}
@@ -247,7 +247,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                 </div>
                             </div>
 
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('debts-credits.index')}
                                     className="rounded-lg px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"

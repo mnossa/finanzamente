@@ -39,3 +39,4 @@ node_modules
 /playwright/.auth/
 /e2e/.auth/
 public/sitemap.xml
+composer.phar

@@ -61,59 +61,55 @@ function TransferRow({ transfer, onDeleteClick }: { transfer: Transfer; onDelete
     const isSameCurrency = transfer.source_currency === transfer.dest_currency;
 
     return (
-        <div className="flex items-center justify-between border-b border-gray-100 py-4 last:border-0 dark:border-gray-700">
-            <div className="flex items-center space-x-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl dark:bg-emerald-900/30">
-                    🔄
-                </div>
-                <div>
-                    <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                            {transfer.source_account?.name || 'Conto eliminato'}
-                        </span>
-                        <span className="text-gray-400">→</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                            {transfer.destination_account?.name || 'Conto eliminato'}
-                        </span>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {transfer.created_at}
-                        {transfer.user && ` • ${transfer.user.name}`}
-                    </p>
-                </div>
+        <div className="flex items-center border-b border-gray-100 py-3 last:border-0 -mx-4 px-3 sm:px-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
+            <div className="mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-lg dark:bg-emerald-900/30">
+                🔄
             </div>
-            <div className="flex items-center space-x-4">
+            <Link href={route('transfers.show', transfer.id)} className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                    {transfer.source_account?.name || 'Conto eliminato'}
+                    <span className="mx-1 text-gray-400">→</span>
+                    {transfer.destination_account?.name || 'Conto eliminato'}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {transfer.created_at}{transfer.user && ` • ${transfer.user.name}`}
+                </p>
+            </Link>
+            <div className="ml-2 flex shrink-0 items-center gap-1 sm:gap-2">
                 <div className="text-right">
-                    <p className="font-semibold text-gray-900 dark:text-white">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(transfer.source_amount, transfer.source_currency)}
                     </p>
                     {!isSameCurrency && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
                             → {formatCurrency(transfer.dest_amount, transfer.dest_currency)}
                         </p>
                     )}
                     {transfer.fee && transfer.fee > 0 && (
                         <p className="text-xs text-orange-500">
-                            Comm. {formatCurrency(transfer.fee, transfer.source_currency)}
+                            +{formatCurrency(transfer.fee, transfer.source_currency)}
                         </p>
                     )}
                 </div>
-                <div className="flex space-x-2">
+                <div className="hidden sm:flex items-center gap-1">
                     <Link
                         href={route('transfers.show', transfer.id)}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
                         title="Visualizza"
                     >
-                        <EyeIcon size={18} />
+                        <EyeIcon size={16} />
                     </Link>
                     <button
                         onClick={() => onDeleteClick(transfer.id, `il trasferimento da ${transfer.source_account?.name || 'conto'} a ${transfer.destination_account?.name || 'conto'}`)}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                         title="Elimina"
                     >
-                        <TrashIcon size={18} />
+                        <TrashIcon size={16} />
                     </button>
                 </div>
+                <span className="sm:hidden text-gray-300 dark:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </span>
             </div>
         </div>
     );
@@ -172,7 +168,7 @@ export default function Index({ transfers }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Trasferimenti" icon={<span className="text-sm leading-none">🔄</span>} />
                             <p className="text-sm text-gray-600 dark:text-gray-300">

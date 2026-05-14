@@ -18,6 +18,7 @@ import CardBox from '@/Components/CardBox';
 import React, { useEffect, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import axios from 'axios';
+import { filtersAnalytics, tx } from '@/utils/analytics';
 
 interface Category {
     id: number;
@@ -335,117 +336,118 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
 
     return (
         <div className={clsx(
-            "flex items-center justify-between border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 -mx-4 px-4 transition-colors",
-            isSelected && "bg-emerald-50 dark:bg-emerald-900/20"
+            "group flex items-center border-b border-gray-100 py-3 last:border-0 -mx-4 px-3 sm:px-4 transition-colors",
+            isSelected ? "bg-emerald-50 dark:bg-emerald-900/20" : "hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
         )}>
-            <div className="flex items-center space-x-3">
-                <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => onToggleSelect(transaction.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                />
-                <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-lg"
-                    style={{
-                        backgroundColor: isTransfer
-                            ? '#f59e0b20'
-                            : isRefund
-                              ? '#3b82f620'
-                              : transaction.category?.color
-                                ? `${transaction.category.color}20`
-                                : isIncome
-                                  ? '#22c55e20'
-                                  : '#ef444420',
-                    }}
-                >
-                    {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
-                </div>
-                <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                        {transaction.description || transaction.category?.name || 'Transazione'}
-                        {transaction.is_private && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
-                                🔒 Privata
-                            </span>
-                        )}
-                        {transaction.is_tax_deductible && (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                📋 Detraibile
-                            </span>
-                        )}
-                        {isTransfer && (
-                            <span className="ml-2 text-xs text-amber-500">Trasferimento</span>
-                        )}
-                        {isRefund && (
-                            <span className="ml-2 text-xs text-blue-500">Rimborso</span>
-                        )}
-                        {hasRefunds && (
-                            <span className={clsx(
-                                'ml-2 text-xs',
-                                transaction.is_fully_refunded ? 'text-green-500' : 'text-amber-500'
-                            )}>
-                                {transaction.is_fully_refunded ? '✓ Rimborsato' : '◐ Parzialmente rimborsato'}
-                            </span>
-                        )}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {transaction.account.name} • {formatDate(transaction.date)}
-                        </p>
-                        {transaction.tags && transaction.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 ml-2">
-                                {transaction.tags.map((tag) => (
-                                    <span
-                                        key={tag.id}
-                                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                                        style={{
-                                            backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
-                                            color: tag.color || '#374151',
-                                        }}
-                                    >
-                                        {tag.name}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+            {/* Checkbox */}
+            <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => onToggleSelect(transaction.id)}
+                className="mr-2 h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+            />
+
+            {/* Icona categoria */}
+            <div
+                className="mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base"
+                style={{
+                    backgroundColor: isTransfer
+                        ? '#f59e0b20'
+                        : isRefund
+                          ? '#3b82f620'
+                          : transaction.category?.color
+                            ? `${transaction.category.color}20`
+                            : isIncome
+                              ? '#22c55e20'
+                              : '#ef444420',
+                }}
+            >
+                {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
             </div>
-            <div className="flex items-center space-x-4">
-                <p
-                    className={clsx(
-                        'text-lg font-semibold',
-                        isIncome ? 'text-green-500' : 'text-red-500'
+
+            {/* Corpo — link su tutta la riga su mobile */}
+            <Link
+                href={route('transactions.show', transaction.id)}
+                className="min-w-0 flex-1"
+            >
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                    {transaction.description || transaction.category?.name || 'Transazione'}
+                    {transaction.is_private && (
+                        <span className="ml-1.5 inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                            🔒
+                        </span>
                     )}
-                >
+                    {transaction.is_tax_deductible && (
+                        <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            📋
+                        </span>
+                    )}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {transaction.account.name} · {formatDate(transaction.date)}
+                    {isTransfer && <span className="ml-1 text-amber-500">· Trasferimento</span>}
+                    {isRefund && <span className="ml-1 text-blue-500">· Rimborso</span>}
+                    {hasRefunds && (
+                        <span className={clsx('ml-1', transaction.is_fully_refunded ? 'text-green-500' : 'text-amber-500')}>
+                            · {transaction.is_fully_refunded ? '✓ Rimborsato' : '◐ Parz. rimborsato'}
+                        </span>
+                    )}
+                </p>
+                {transaction.tags && transaction.tags.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                        {transaction.tags.map((tag) => (
+                            <span
+                                key={tag.id}
+                                className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                                style={{
+                                    backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
+                                    color: tag.color || '#374151',
+                                }}
+                            >
+                                {tag.name}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </Link>
+
+            {/* Importo + azioni */}
+            <div className="ml-2 flex shrink-0 items-center gap-1 sm:gap-2">
+                <p className={clsx('text-base font-semibold tabular-nums', isIncome ? 'text-green-500' : 'text-red-500')}>
                     {isIncome ? '+' : ''}
                     {formatCurrency(transaction.amount, transaction.account.currency_code)}
                 </p>
-                <div className="flex space-x-2">
+                {/* Azioni — visibili solo su desktop o al hover */}
+                <div className="hidden sm:flex items-center gap-1">
                     <Link
                         href={route('transactions.show', transaction.id)}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
                         title="Visualizza"
                     >
-                        <EyeIcon size={18} />
+                        <EyeIcon size={16} />
                     </Link>
                     <Link
                         href={route('transactions.edit', transaction.id)}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
                         title="Modifica"
                     >
-                        <PencilIcon size={18} />
+                        <PencilIcon size={16} />
                     </Link>
                     <button
                         onClick={() => onDeleteClick(transaction.id, transaction.description || transaction.category?.name || 'questa transazione')}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
                         title="Elimina"
                     >
-                        <TrashIcon size={18} />
+                        <TrashIcon size={16} />
                     </button>
                 </div>
+                {/* Freccia chevron su mobile */}
+                <span className="sm:hidden text-gray-300 dark:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m9 18 6-6-6-6" />
+                    </svg>
+                </span>
             </div>
         </div>
     );
@@ -544,7 +546,9 @@ export default function Index({
 
     const handleConfirmDelete = () => {
         if (deleteTarget) {
-            router.delete(route('transactions.destroy', deleteTarget.id));
+            router.delete(route('transactions.destroy', deleteTarget.id), {
+                onSuccess: () => tx.deleted(),
+            });
         }
         setDeleteDialogOpen(false);
         setDeleteTarget(null);
@@ -601,6 +605,17 @@ export default function Index({
     };
 
     const handleFilterChange = (key: string, value: string) => {
+        if (value) {
+            const filterMap: Record<string, Parameters<typeof filtersAnalytics.applied>[0]> = {
+                account_id: 'account',
+                category_id: 'category',
+                type: 'type',
+                from: 'date_from',
+                to: 'date_to',
+                tag_id: 'tag',
+            };
+            if (filterMap[key]) filtersAnalytics.applied(filterMap[key]);
+        }
         router.get(
             route('transactions.index'),
             { ...filters, [key]: value || undefined },
@@ -609,6 +624,7 @@ export default function Index({
     };
 
     const clearFilters = () => {
+        if (Object.values(filters).some(Boolean)) filtersAnalytics.cleared();
         router.get(route('transactions.index'));
     };
 
@@ -624,12 +640,15 @@ export default function Index({
                             <LinkButton
                                 href={route('transactions.import')}
                                 variant="secondary"
+                                size="sm"
                             >
                                 Importa
                             </LinkButton>
                             <LinkButton
                                 href={route('transactions.create')}
                                 icon={<PlusIcon />}
+                                size="sm"
+                                className="hidden sm:inline-flex"
                             >
                                 Nuova Transazione
                             </LinkButton>
@@ -671,7 +690,8 @@ export default function Index({
             />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    {/* Intro decorativa — solo su desktop */}
+                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge
                                 label="Registro transazioni"
@@ -698,91 +718,102 @@ export default function Index({
                     )}
 
                     {/* Filtri */}
-                    <CardBox className="overflow-hidden p-4 shadow-sm">
-                        <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex-1 min-w-[150px]">
-                                <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.account_id || ''}
-                                    onChange={(e) => handleFilterChange('account_id', e.target.value)}
-                                >
-                                    <option value="">Tutti i conti</option>
-                                    {accounts.map((account) => (
-                                        <option key={account.id} value={account.id}>
-                                            {account.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[150px]">
-                                <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.category_id || ''}
-                                    onChange={(e) => handleFilterChange('category_id', e.target.value)}
-                                >
-                                    <option value="">Tutte le categorie</option>
-                                    <option value="__none__">— Senza categoria</option>
-                                    {categories.map((category) => (
-                                        <option key={category.id} value={category.id}>
-                                            {category.icon} {category.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[120px]">
-                                <select
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.type || ''}
-                                    onChange={(e) => handleFilterChange('type', e.target.value)}
-                                >
-                                    <option value="">Tipo</option>
-                                    <option value="income">Entrate</option>
-                                    <option value="expense">Uscite</option>
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[130px]">
-                                <input
-                                    type="date"
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.from || ''}
-                                    onChange={(e) => handleFilterChange('from', e.target.value)}
-                                    placeholder="Da"
-                                />
-                            </div>
-                            <div className="flex-1 min-w-[130px]">
-                                <input
-                                    type="date"
-                                    className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                    value={filters.to || ''}
-                                    onChange={(e) => handleFilterChange('to', e.target.value)}
-                                    placeholder="A"
-                                />
-                            </div>
-                            {tags.length > 0 && (
-                                <div className="flex-1 min-w-[150px]">
+                    <CardBox className="overflow-hidden p-0 shadow-sm">
+                        {/* Header filtri — sempre visibile */}
+                        <details className="group" {...(hasFilters ? { open: true } : {})}>
+                            <summary data-testid="filter-summary" className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                <span className="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                                    </svg>
+                                    Filtri
+                                    {hasFilters && (
+                                        <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                            {Object.values(filters).filter(Boolean).length}
+                                        </span>
+                                    )}
+                                </span>
+                                <svg className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </summary>
+
+                            {/* Corpo filtri — 2 colonne su mobile, flex-wrap su sm+ */}
+                            <div className="border-t border-gray-100 px-4 pb-4 pt-3 dark:border-gray-700">
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                                     <select
-                                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.tag_id || ''}
-                                        onChange={(e) => handleFilterChange('tag_id', e.target.value)}
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.account_id || ''}
+                                        onChange={(e) => handleFilterChange('account_id', e.target.value)}
                                     >
-                                        <option value="">Tutti i tag</option>
-                                        {tags.map((tag) => (
-                                            <option key={tag.id} value={tag.id}>
-                                                {tag.name}
+                                        <option value="">Tutti i conti</option>
+                                        {accounts.map((account) => (
+                                            <option key={account.id} value={account.id}>
+                                                {account.name}
                                             </option>
                                         ))}
                                     </select>
+                                    <select
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.category_id || ''}
+                                        onChange={(e) => handleFilterChange('category_id', e.target.value)}
+                                    >
+                                        <option value="">Tutte le categorie</option>
+                                        <option value="__none__">— Senza categoria</option>
+                                        {categories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.icon} {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.type || ''}
+                                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                                    >
+                                        <option value="">Tipo</option>
+                                        <option value="income">Entrate</option>
+                                        <option value="expense">Uscite</option>
+                                    </select>
+                                    <input
+                                        type="date"
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.from || ''}
+                                        onChange={(e) => handleFilterChange('from', e.target.value)}
+                                        title="Da"
+                                    />
+                                    <input
+                                        type="date"
+                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.to || ''}
+                                        onChange={(e) => handleFilterChange('to', e.target.value)}
+                                        title="A"
+                                    />
+                                    {tags.length > 0 && (
+                                        <select
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.tag_id || ''}
+                                            onChange={(e) => handleFilterChange('tag_id', e.target.value)}
+                                        >
+                                            <option value="">Tutti i tag</option>
+                                            {tags.map((tag) => (
+                                                <option key={tag.id} value={tag.id}>
+                                                    {tag.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {hasFilters && (
+                                        <button
+                                            onClick={clearFilters}
+                                            className="col-span-2 sm:col-span-1 text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 py-2 sm:py-0"
+                                        >
+                                            Pulisci filtri
+                                        </button>
+                                    )}
                                 </div>
-                            )}
-                            {hasFilters && (
-                                <button
-                                    onClick={clearFilters}
-                                    className="text-sm text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
-                                >
-                                    Pulisci filtri
-                                </button>
-                            )}
-                        </div>
+                            </div>
+                        </details>
                     </CardBox>
 
                     {/* Lista Transazioni */}

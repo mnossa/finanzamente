@@ -17,7 +17,10 @@ test.describe('Dashboard principale', () => {
     });
 
     test('la navigazione principale è presente', async ({ page }) => {
-        await expect(page.getByRole('navigation')).toBeVisible();
+        // Almeno una delle due nav (sidebar o bottom nav) deve essere visibile
+        const navPrincipale = page.getByRole('navigation', { name: /navigazione principale/i });
+        const navRapida = page.getByRole('navigation', { name: /navigazione rapida/i });
+        await expect(navPrincipale.or(navRapida).first()).toBeVisible();
     });
 
     test('la navigazione ha un link alla dashboard', async ({ page }) => {

@@ -1070,7 +1070,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
                     {/* Step 1: Carica file */}
                     {currentStep === 1 && (
-                        <div className="space-y-5">
+                        <div className="space-y-4">
                             <h2 className="text-lg font-semibold text-gray-900">Carica il file</h2>
 
                             {/* Selezione sorgente */}
@@ -1444,7 +1444,7 @@ export default function Import({ accounts, userLayouts: initialUserLayouts, cate
 
                     {/* Step 3: Conferma */}
                     {currentStep === 3 && (
-                        <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+                        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
                             <h2 className="text-lg font-semibold text-gray-900">Anteprima e conferma</h2>
 
                             {/* Account selector (solo se NON mappata la colonna conto) */}

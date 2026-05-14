@@ -151,13 +151,13 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
             <Head title="Nuovo Investimento" />
 
             <PageContent maxWidth="2xl">
-                    <SectionCard className="space-y-5">
-                        <header className="space-y-2">
+                    <SectionCard className="space-y-4">
+                        <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Investimenti" icon={<span className="text-sm leading-none">📈</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Registra investimento</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Inserisci quantità, prezzo, data e metadati della posizione.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-6">
+                        <form onSubmit={submit} className="space-y-4">
                             <div>
                                 {/* Asset */}
                                 <div className="mb-6">
@@ -385,7 +385,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                             </div>
 
                             {/* Footer */}
-                            <FormActionsBar className="justify-end pt-6">
+                            <FormActionsBar className="justify-end">
                                 <Link
                                     href={route('investments.index')}
                                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
