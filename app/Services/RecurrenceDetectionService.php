@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\RecurringTransaction;
 use App\Models\RecurringTransactionSuggestion;
 use App\Models\Transaction;
+use DomainException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -141,12 +142,25 @@ class RecurrenceDetectionService
         RecurringTransactionService $recurringService,
         string $mode = 'auto'
     ): AcceptedRecurringSuggestion {
+        $ids = array_values(array_filter(array_map(
+            static fn (mixed $id): int => (int) $id,
+            (array) ($suggestion->transaction_ids ?? [])
+        )));
+
+        $transactions = Transaction::withTrashed()
+            ->whereIn('id', $ids)
+            ->where('account_id', $suggestion->account_id)
+            ->orderBy('date')
+            ->get();
+
+        if ($transactions->isEmpty()) {
+            throw new DomainException(
+                'Questo suggerimento non ha più transazioni collegate (forse eliminate dal registro). Ignoralo o rilancia il rilevamento.'
+            );
+        }
+
         DB::beginTransaction();
         try {
-            $transactions = Transaction::whereIn('id', $suggestion->transaction_ids)
-                ->orderBy('date')
-                ->get();
-
             $today = Carbon::today();
             $historicalTransactions = $transactions
                 ->filter(fn (Transaction $t) => Carbon::parse($t->date)->lte($today))
@@ -191,7 +205,7 @@ class RecurrenceDetectionService
 
             // Collega le transazioni storiche alla ricorrenza.
             if ($historicalTransactions->isNotEmpty()) {
-                Transaction::whereIn('id', $historicalTransactions->pluck('id')->all())->update([
+                Transaction::withTrashed()->whereIn('id', $historicalTransactions->pluck('id')->all())->update([
                     'recurring' => true,
                     'recurring_transaction_id' => $recurring->id,
                 ]);
@@ -200,7 +214,9 @@ class RecurrenceDetectionService
             // Rimuove le occorrenze future già registrate: verranno rigenerate
             // dal motore ricorrenze. Delete per modello (eventi ModelChanged → saldi).
             foreach ($futureTransactions as $futureTx) {
-                $futureTx->delete();
+                if (! $futureTx->trashed()) {
+                    $futureTx->delete();
+                }
             }
 
             if ($mode === 'closed_fill_gaps' && $endDate) {

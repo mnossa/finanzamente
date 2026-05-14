@@ -12,6 +12,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\RecurrenceDetectionService;
 use App\Services\RecurringTransactionService;
+use DomainException;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -1063,5 +1064,185 @@ class RecurrenceDetectionTest extends TestCase
         $this->assertNotNull($suggestion);
         $this->assertSame('monthly', $suggestion->detected_frequency);
         $this->assertCount(4, $suggestion->transaction_ids);
+    }
+
+    #[Test]
+    public function index_includes_soft_deleted_transactions_in_preview(): void
+    {
+        $transactions = collect(range(1, 3))->map(function ($i) {
+            return Transaction::create([
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -16.13,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(3 - $i)->startOfMonth(),
+                'description' => 'Allianz test',
+                'recurring' => false,
+                'recurring_transaction_id' => null,
+                'transfer_id' => null,
+                'refund_id' => null,
+            ]);
+        });
+
+        $transactions->first()->delete();
+
+        RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -16.13,
+            'currency_code' => 'EUR',
+            'description' => 'Allianz test',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.9,
+            'status' => 'pending',
+            'transaction_ids' => $transactions->pluck('id')->all(),
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('recurrence-detection.index'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('RecurringTransactions/Suggestions')
+            // Inertia passa array JSON come Collection al closure `where`.
+            ->where('suggestions.0.transactions', fn ($rows): bool => count($rows) === 3)
+        );
+    }
+
+    #[Test]
+    public function accept_suggestion_links_soft_deleted_historical_transactions(): void
+    {
+        $transactions = collect(range(1, 3))->map(function ($i) {
+            return Transaction::create([
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -22.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
+                'recurring' => false,
+                'recurring_transaction_id' => null,
+                'transfer_id' => null,
+                'refund_id' => null,
+            ]);
+        });
+
+        $transactions->first()->delete();
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -22.00,
+            'currency_code' => 'EUR',
+            'description' => 'Soft delete link',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.9,
+            'status' => 'pending',
+            'transaction_ids' => $transactions->pluck('id')->all(),
+        ]);
+
+        $recurring = $this->service->acceptSuggestion($suggestion, app(RecurringTransactionService::class))->recurring;
+
+        $this->assertSame(
+            3,
+            Transaction::withTrashed()->whereIn('id', $transactions->pluck('id'))
+                ->where('recurring', true)
+                ->where('recurring_transaction_id', $recurring->id)
+                ->count()
+        );
+    }
+
+    #[Test]
+    public function accept_suggestion_throws_when_transaction_ids_do_not_resolve_for_account(): void
+    {
+        $otherHousehold = Household::factory()->create(['owner_user_id' => $this->user->id]);
+        $otherHousehold->users()->attach($this->user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
+        $otherAccount = Account::factory()->create([
+            'household_id' => $otherHousehold->id,
+            'owner_user_id' => $this->user->id,
+            'currency_code' => 'EUR',
+            'active' => true,
+        ]);
+
+        $foreign = Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $otherAccount->id,
+            'category_id' => $this->category->id,
+            'amount' => -10.00,
+            'currency_code' => 'EUR',
+            'date' => Carbon::now()->subMonth()->startOfMonth(),
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]);
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -10.00,
+            'currency_code' => 'EUR',
+            'description' => 'Mismatch account',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.5,
+            'status' => 'pending',
+            'transaction_ids' => [$foreign->id],
+        ]);
+
+        $this->expectException(DomainException::class);
+
+        $this->service->acceptSuggestion($suggestion, app(RecurringTransactionService::class));
+    }
+
+    #[Test]
+    public function accept_route_redirects_with_error_when_no_transactions_for_suggestion(): void
+    {
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+
+        $foreignHousehold = Household::factory()->create(['owner_user_id' => $this->user->id]);
+        $foreignHousehold->users()->attach($this->user->id, ['role' => 'owner', 'permissions' => json_encode(['manage' => true])]);
+        $foreignAccount = Account::factory()->create([
+            'household_id' => $foreignHousehold->id,
+            'owner_user_id' => $this->user->id,
+            'currency_code' => 'EUR',
+            'active' => true,
+        ]);
+
+        $foreign = Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $foreignAccount->id,
+            'category_id' => $this->category->id,
+            'amount' => -10.00,
+            'currency_code' => 'EUR',
+            'date' => Carbon::now()->subMonth()->startOfMonth(),
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]);
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -10.00,
+            'currency_code' => 'EUR',
+            'description' => 'Mismatch account web',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.5,
+            'status' => 'pending',
+            'transaction_ids' => [$foreign->id],
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->post(route('recurrence-detection.accept', $suggestion), ['mode' => 'active']);
+
+        $response->assertRedirect(route('recurrence-detection.index'));
+        $response->assertSessionHas(
+            'error',
+            'Questo suggerimento non ha più transazioni collegate (forse eliminate dal registro). Ignoralo o rilancia il rilevamento.'
+        );
     }
 }

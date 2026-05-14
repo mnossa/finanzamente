@@ -104,6 +104,7 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                         <LinkButton
                             href={route('investment-assets.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Asset
                         </LinkButton>

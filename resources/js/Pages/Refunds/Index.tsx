@@ -170,6 +170,7 @@ export default function Index({ refunds }: IndexProps) {
                         <LinkButton
                             href={route('refunds.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Rimborso
                         </LinkButton>

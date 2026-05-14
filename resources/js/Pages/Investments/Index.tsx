@@ -205,6 +205,7 @@ export default function Index({
                             <LinkButton
                                 href={route('investments.create')}
                                 icon={<PlusIcon />}
+                                className="hidden lg:inline-flex"
                             >
                                 Nuovo Investimento
                             </LinkButton>

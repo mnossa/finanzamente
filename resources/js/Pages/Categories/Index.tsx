@@ -156,6 +156,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
                         <LinkButton
                             href={route('categories.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuova Categoria
                         </LinkButton>

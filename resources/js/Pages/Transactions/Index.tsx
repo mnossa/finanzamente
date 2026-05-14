@@ -648,7 +648,7 @@ export default function Index({
                                 href={route('transactions.create')}
                                 icon={<PlusIcon />}
                                 size="sm"
-                                className="hidden sm:inline-flex"
+                                className="hidden lg:inline-flex"
                             >
                                 Nuova Transazione
                             </LinkButton>

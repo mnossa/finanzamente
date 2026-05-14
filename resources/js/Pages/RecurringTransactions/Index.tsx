@@ -186,6 +186,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                             <LinkButton
                                 href={route('recurring-transactions.create')}
                                 icon={<PlusIcon />}
+                                className="hidden lg:inline-flex"
                             >
                                 Nuova Ricorrenza
                             </LinkButton>

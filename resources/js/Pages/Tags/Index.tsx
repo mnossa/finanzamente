@@ -105,6 +105,7 @@ export default function Index({ tags }: IndexProps) {
                         <LinkButton
                             href={route('tags.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Tag
                         </LinkButton>

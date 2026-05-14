@@ -189,6 +189,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                         <LinkButton
                             href={route('debts-credits.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo
                         </LinkButton>

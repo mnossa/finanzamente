@@ -182,4 +182,7 @@ export const nav = {
     /** Tap su una voce della bottom navigation mobile */
     bottomBar: (destination: 'home' | 'movimenti' | 'conti') =>
         trackEvent('nav.bottom_bar', { destination }),
+
+    /** Tap sul FAB centrale (destinazione dipende dalla pagina corrente) */
+    mobileFab: (section: string) => trackEvent('nav.mobile_fab', { section }),
 } as const;

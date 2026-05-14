@@ -199,7 +199,10 @@ export default function Index({ transfers, filters }: IndexProps) {
                 <PageHeader
                     title="Trasferimenti tra Households"
                     actions={
-                        <LinkButton href={route('inter-household-transfers.create')}>
+                        <LinkButton
+                            href={route('inter-household-transfers.create')}
+                            className="hidden lg:inline-flex"
+                        >
                             <PlusIcon className="mr-2 h-4 w-4" />
                             Nuovo Trasferimento
                         </LinkButton>

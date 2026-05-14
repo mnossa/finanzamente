@@ -11,6 +11,10 @@ const ThemeContext = createContext<ThemeContextType>({
     toggleTheme: () => {},
 });
 
+function themeToIsDark(theme: string | undefined): boolean {
+    return theme === 'dark';
+}
+
 export function ThemeProvider({
     initialTheme,
     children,
@@ -18,7 +22,12 @@ export function ThemeProvider({
     initialTheme?: string;
     children: ReactNode;
 }) {
-    const [isDark, setIsDark] = useState(initialTheme === 'dark');
+    const [isDark, setIsDark] = useState(() => themeToIsDark(initialTheme));
+
+    // Inertia aggiorna `auth.user` a ogni visita: riallinea il tema locale al server
+    useEffect(() => {
+        setIsDark(themeToIsDark(initialTheme));
+    }, [initialTheme]);
 
     useEffect(() => {
         if (isDark) {
@@ -32,8 +41,8 @@ export function ThemeProvider({
         const newIsDark = !isDark;
         setIsDark(newIsDark);
 
-        // Persist preference to backend
-        axios.patch('/user/preferences/theme', { theme: newIsDark ? 'dark' : 'light' }, {
+        // Stesso endpoint definito in routes (it): user.preferences.theme
+        axios.patch(route('user.preferences.theme'), { theme: newIsDark ? 'dark' : 'light' }, {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN':

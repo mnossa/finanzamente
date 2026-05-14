@@ -147,6 +147,7 @@ export default function Index({ transfers }: IndexProps) {
                         <LinkButton
                             href={route('transfers.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Trasferimento
                         </LinkButton>

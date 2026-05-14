@@ -132,6 +132,7 @@ export default function Index({
                         <LinkButton
                             href={route('accounts.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Conto
                         </LinkButton>

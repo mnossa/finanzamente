@@ -10,7 +10,7 @@ class ThemePreferenceController extends Controller
     /**
      * Aggiorna la preferenza tema dell'utente autenticato.
      *
-     * PATCH /user/preferences/theme
+     * PATCH /utente/preferenze/tema (nome rotta: user.preferences.theme)
      */
     public function update(Request $request): JsonResponse
     {

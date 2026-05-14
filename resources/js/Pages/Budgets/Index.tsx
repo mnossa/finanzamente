@@ -174,6 +174,7 @@ export default function Index({ budgets }: IndexProps) {
                         <LinkButton
                             href={route('budgets.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Budget
                         </LinkButton>

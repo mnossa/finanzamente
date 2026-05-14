@@ -125,8 +125,8 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
             )}
         >
             <div className="p-4 sm:p-5">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
+                {/* Header — colonna su mobile per evitare compressione con importo */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                         {/* Icona categoria */}
                         {suggestion.category ? (
@@ -153,9 +153,9 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                         </div>
                     </div>
 
-                    <div className="flex-shrink-0 text-right">
+                    <div className="flex shrink-0 flex-row items-baseline justify-between gap-3 border-t border-gray-100 pt-3 dark:border-gray-700 sm:flex-col sm:border-t-0 sm:pt-0 sm:text-right">
                         <p className={clsx(
-                            'text-lg font-bold tabular-nums',
+                            'text-lg font-bold tabular-nums sm:text-xl',
                             isExpense ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
                         )}>
                             {formatCurrency(suggestion.amount, suggestion.currency_code)}
@@ -260,7 +260,7 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                 </button>
 
                 {expanded && (
-                    <div className="mt-2 rounded-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div className="mt-2 overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-700 [-webkit-overflow-scrolling:touch]">
                         <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-700 text-sm">
                             <thead className="bg-gray-50 dark:bg-gray-800">
                                 <tr>
@@ -292,85 +292,85 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                 )}
             </div>
 
-            {/* Azioni */}
-            <div className="px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 flex gap-3 justify-end">
-                <button
-                    type="button"
-                    disabled={processing}
-                    onClick={onIgnore}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
-                >
-                    Ignora
-                </button>
-                {suggestion.has_gaps ? (
-                    <>
-                        <button
-                            type="button"
-                            disabled={processing}
-                            onClick={() => onAccept('active')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 transition-colors"
-                        >
-                            Forza Attiva
-                        </button>
-                        <button
-                            type="button"
-                            disabled={processing}
-                            onClick={() => onAccept('active_fill_gaps')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50 transition-colors"
-                        >
-                            Attiva + Inserisci Buchi
-                        </button>
-                        <button
-                            type="button"
-                            disabled={processing}
-                            onClick={() => onAccept('closed')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg disabled:opacity-50 transition-colors"
-                        >
-                            Forza Dismessa
-                        </button>
-                        {suggestion.has_gaps && (
-                            <button
-                                type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('closed_fill_gaps')}
-                                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg disabled:opacity-50 transition-colors"
-                            >
-                                Dismessa + Inserisci Buchi
-                            </button>
-                        )}
-                    </>
-                ) : (
-                    <>
-                        {suggestion.amount_change_guidance?.recommended_mode === 'closed' && (
-                            <button
-                                type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('closed')}
-                                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg disabled:opacity-50 transition-colors"
-                            >
-                                Forza Dismessa
-                            </button>
-                        )}
-                        {suggestion.amount_change_guidance?.recommended_mode === 'active' && (
+            {/* Azioni — stack verticale su mobile, riga su sm+ */}
+            <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/50 sm:px-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-2">
+                    <button
+                        type="button"
+                        disabled={processing}
+                        onClick={onIgnore}
+                        className="order-first w-full min-h-[44px] rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 sm:order-0 sm:w-auto sm:min-h-0"
+                    >
+                        Ignora
+                    </button>
+                    {suggestion.has_gaps ? (
+                        <>
                             <button
                                 type="button"
                                 disabled={processing}
                                 onClick={() => onAccept('active')}
-                                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 transition-colors"
+                                className="w-full min-h-[44px] rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                             >
                                 Forza Attiva
                             </button>
-                        )}
-                        <button
-                            type="button"
-                            disabled={processing}
-                            onClick={() => onAccept('auto')}
-                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 transition-colors"
-                        >
-                            Applica Auto
-                        </button>
-                    </>
-                )}
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('active_fill_gaps')}
+                                className="w-full min-h-[44px] rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
+                            >
+                                Attiva + Inserisci Buchi
+                            </button>
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('closed')}
+                                className="w-full min-h-[44px] rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
+                            >
+                                Forza Dismessa
+                            </button>
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('closed_fill_gaps')}
+                                className="w-full min-h-[44px] rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
+                            >
+                                Dismessa + Inserisci Buchi
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {suggestion.amount_change_guidance?.recommended_mode === 'closed' && (
+                                <button
+                                    type="button"
+                                    disabled={processing}
+                                    onClick={() => onAccept('closed')}
+                                    className="w-full min-h-[44px] rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
+                                >
+                                    Forza Dismessa
+                                </button>
+                            )}
+                            {suggestion.amount_change_guidance?.recommended_mode === 'active' && (
+                                <button
+                                    type="button"
+                                    disabled={processing}
+                                    onClick={() => onAccept('active')}
+                                    className="w-full min-h-[44px] rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
+                                >
+                                    Forza Attiva
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                disabled={processing}
+                                onClick={() => onAccept('auto')}
+                                className="w-full min-h-[44px] rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
+                            >
+                                Applica Auto
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
             <div className="px-4 sm:px-5 pb-2">
                 <button
@@ -444,7 +444,7 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
                         type="button"
                         disabled={detecting}
                         onClick={handleDetect}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 transition-colors"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 lg:w-auto"
                     >
                         {detecting ? (
                             <>

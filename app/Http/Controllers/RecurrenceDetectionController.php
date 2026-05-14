@@ -6,6 +6,7 @@ use App\Models\RecurringTransactionSuggestion;
 use App\Models\Transaction;
 use App\Services\RecurrenceDetectionService;
 use App\Services\RecurringTransactionService;
+use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -85,11 +86,16 @@ class RecurrenceDetectionController extends Controller
             'mode' => 'nullable|in:auto,active,closed,closed_fill_gaps,active_fill_gaps',
         ]);
 
-        $result = $this->detectionService->acceptSuggestion(
-            $suggestion,
-            $this->recurringService,
-            $validated['mode'] ?? 'auto'
-        );
+        try {
+            $result = $this->detectionService->acceptSuggestion(
+                $suggestion,
+                $this->recurringService,
+                $validated['mode'] ?? 'auto'
+            );
+        } catch (DomainException $e) {
+            return redirect()->route('recurrence-detection.index')
+                ->with('error', $e->getMessage());
+        }
 
         $message = 'Ricorrenza creata e transazioni collegate.';
         if ($result->removedFutureTransactionCount > 0) {
@@ -125,7 +131,16 @@ class RecurrenceDetectionController extends Controller
 
     private function formatSuggestion(RecurringTransactionSuggestion $s): array
     {
-        $transactions = Transaction::whereIn('id', $s->transaction_ids ?? [])
+        $ids = array_values(array_filter(array_map(
+            static fn (mixed $id): int => (int) $id,
+            (array) ($s->transaction_ids ?? [])
+        )));
+
+        // Include soft-delete: altrimenti l'anteprima risulta vuota se l'utente ha eliminato
+        // movimenti dopo il rilevamento, e acceptSuggestion andrebbe in errore su ->first().
+        $transactions = Transaction::withTrashed()
+            ->whereIn('id', $ids)
+            ->where('account_id', $s->account_id)
             ->orderBy('date')
             ->get(['id', 'date', 'description', 'amount'])
             ->map(fn ($t) => [
@@ -159,7 +174,7 @@ class RecurrenceDetectionController extends Controller
             'detected_frequency' => $s->detected_frequency,
             'confidence' => (float) $s->confidence,
             'confidence_label' => $s->confidenceLabel(),
-            'transaction_count' => count($s->transaction_ids ?? []),
+            'transaction_count' => $transactions->count(),
             'transactions' => $transactions,
             'will_auto_close' => $willAutoClose,
             'auto_close_end_date' => $willAutoClose && $lastTransactionDate
@@ -218,7 +233,7 @@ class RecurrenceDetectionController extends Controller
         $grouped = $suggestions->groupBy(function (array $suggestion) {
             return implode('|', [
                 $suggestion['account']['id'],
-                $suggestion['category']['id'] ?? 'none',
+                (string) data_get($suggestion, 'category.id', 'none'),
                 $suggestion['detected_frequency'],
                 mb_strtolower(trim((string) ($suggestion['description'] ?? ''))),
             ]);

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { visibleHrefLocator } from '../helpers';
 
 /**
  * Test E2E — Budget
@@ -16,13 +17,12 @@ test.describe('Budget', () => {
     });
 
     test('mostra il pulsante "Nuovo Budget"', async ({ page }) => {
-        await expect(
-            page.getByRole('link', { name: /nuovo budget/i })
-        ).toBeVisible();
+        // Header + FAB mobile possono duplicare href: solo istanza visibile (come e2e/conti).
+        await expect(visibleHrefLocator(page, '/budget/crea')).toBeVisible();
     });
 
     test('il pulsante "Nuovo Budget" porta al form di creazione', async ({ page }) => {
-        await page.getByRole('link', { name: /nuovo budget/i }).click();
+        await visibleHrefLocator(page, '/budget/crea').click();
         await expect(page).toHaveURL('/budget/crea');
         await expect(page).toHaveTitle(/nuovo budget/i);
     });

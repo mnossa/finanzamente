@@ -151,6 +151,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                         <LinkButton
                             href={route('financial-goals.create')}
                             icon={<PlusIcon />}
+                            className="hidden lg:inline-flex"
                         >
                             Nuovo Obiettivo
                         </LinkButton>

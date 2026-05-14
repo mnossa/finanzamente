@@ -11,6 +11,7 @@ import React, { PropsWithChildren, ReactNode, useState, useEffect, FormEvent, us
 import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import axios from 'axios';
+import { resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
 type UINotification = AppNotification & { action_url?: string | null };
@@ -716,16 +717,9 @@ export default function Authenticated({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Header */}
                     <header className="app-header dark:bg-slate-800/80 dark:border-slate-700">
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <button
-                                onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden shrink-0 p-2 -ml-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors"
-                            >
-                                <Icons.Menu />
-                            </button>
-
+                        <div className="flex min-w-0 flex-1 items-start gap-3 lg:items-center">
                             {header && (
-                                <div className="min-w-0 flex-1 truncate">
+                                <div className="min-w-0 flex-1 py-0.5 lg:py-0">
                                     {header}
                                 </div>
                             )}
@@ -762,7 +756,15 @@ export default function Authenticated({
                                 </button>
 
                                 {notifOpen && (
-                                    <div className="absolute right-0 mt-2 w-80 sm:w-96 z-50 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+                                    <div
+                                        className={clsx(
+                                            'z-50 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden',
+                                            // Mobile: ancoraggio al viewport — evita che w-80 esca a sinistra rispetto al trigger
+                                            'max-lg:fixed max-lg:left-3 max-lg:right-3 max-lg:top-22 max-lg:w-auto',
+                                            // Desktop: sotto la campanella, larghezza fissa
+                                            'lg:absolute lg:right-0 lg:left-auto lg:top-full lg:mt-2 lg:w-96',
+                                        )}
+                                    >
                                         {/* Intestazione */}
                                         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
                                             <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -938,6 +940,7 @@ function MobileBottomNav({
     const isDashboard = isRouteActive('dashboard');
     const isTransactions = isRouteActive('transactions.*', undefined, 'transactions.quick-session');
     const isAccounts = isRouteActive('accounts.*');
+    const primaryFab = resolveMobilePrimaryFab();
 
     return (
         <nav
@@ -974,16 +977,24 @@ function MobileBottomNav({
                     <span className="text-[10px] font-medium leading-none">Movimenti</span>
                 </Link>
 
-                {/* FAB — nuova transazione */}
-                <Link
-                    href={route('transactions.create')}
-                    className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
-                    aria-label="Nuova transazione"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14" /><path d="M12 5v14" />
-                    </svg>
-                </Link>
+                {/* FAB — nascosto dove non c'è un'azione primaria sensata (es. simulazioni) */}
+                {primaryFab ? (
+                    <Link
+                        href={primaryFab.href}
+                        onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
+                        className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                        aria-label={primaryFab.ariaLabel}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14" /><path d="M12 5v14" />
+                        </svg>
+                    </Link>
+                ) : (
+                    <div
+                        className="flex w-14 h-14 shrink-0 -mt-5 items-center justify-center"
+                        aria-hidden="true"
+                    />
+                )}
 
                 {/* Conti */}
                 <Link

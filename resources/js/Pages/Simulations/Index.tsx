@@ -1061,25 +1061,33 @@ export default function SimulationsIndex({ presetScenarios, historicalData, cris
                     </div>
                 </CardBox>
 
-                {/* Tabs */}
-                <div className="overflow-x-auto">
-                    <div className="flex min-w-max gap-1 rounded-2xl bg-gray-100 p-1.5 dark:bg-gray-800">
-                        {TABS.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={clsx(
-                                    'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all',
-                                    activeTab === tab.id
-                                        ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
-                                )}
-                                aria-pressed={activeTab === tab.id}
-                            >
-                                <span aria-hidden="true">{tab.icon}</span>
-                                {tab.label}
-                            </button>
-                        ))}
+                {/* Tabs — scroll orizzontale su mobile (flex parent può comprimere senza min-w-0) */}
+                <div className="w-full min-w-0">
+                    <div
+                        className="overflow-x-auto overflow-y-visible overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] scroll-smooth"
+                        role="tablist"
+                        aria-label="Tipo di simulazione"
+                    >
+                        <div className="flex w-max min-w-full gap-1 rounded-2xl bg-gray-100 p-1.5 dark:bg-gray-800">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    role="tab"
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={clsx(
+                                        'flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all snap-start',
+                                        activeTab === tab.id
+                                            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+                                    )}
+                                    aria-selected={activeTab === tab.id}
+                                >
+                                    <span aria-hidden="true">{tab.icon}</span>
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
