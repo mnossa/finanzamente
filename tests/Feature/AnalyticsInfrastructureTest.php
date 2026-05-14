@@ -25,7 +25,7 @@ class AnalyticsInfrastructureTest extends TestCase
         $user = User::factory()->create();
         $household = Household::factory()->create(['owner_user_id' => $user->id]);
         $household->users()->attach($user->id, [
-            'role'        => 'owner',
+            'role' => 'owner',
             'permissions' => json_encode(['manage' => true]),
         ]);
         $user->update(['active_household_id' => $household->id]);
@@ -43,8 +43,7 @@ class AnalyticsInfrastructureTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('umami.websiteId', 'test-website-id-123')
+        $response->assertInertia(fn ($page) => $page->where('umami.websiteId', 'test-website-id-123')
         );
     }
 
@@ -61,8 +60,7 @@ class AnalyticsInfrastructureTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('privacy.analytics_enabled', false)
+        $response->assertInertia(fn ($page) => $page->where('privacy.analytics_enabled', false)
         );
     }
 
@@ -73,15 +71,14 @@ class AnalyticsInfrastructureTest extends TestCase
         Consent::create([
             'user_id' => $user->id,
             'purpose' => 'analytics_tracking',
-            'status'  => 'granted',
-            'source'         => 'test',
+            'status' => 'granted',
+            'source' => 'test',
             'policy_version' => config('legal.privacy_policy_version', '1.0'),
         ]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('privacy.analytics_enabled', true)
+        $response->assertInertia(fn ($page) => $page->where('privacy.analytics_enabled', true)
         );
     }
 
@@ -92,15 +89,14 @@ class AnalyticsInfrastructureTest extends TestCase
         Consent::create([
             'user_id' => $user->id,
             'purpose' => 'analytics_tracking',
-            'status'  => 'denied',
-            'source'         => 'test',
+            'status' => 'denied',
+            'source' => 'test',
             'policy_version' => config('legal.privacy_policy_version', '1.0'),
         ]);
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('privacy.analytics_enabled', false)
+        $response->assertInertia(fn ($page) => $page->where('privacy.analytics_enabled', false)
         );
     }
 
@@ -112,8 +108,7 @@ class AnalyticsInfrastructureTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
-        $response->assertInertia(fn ($page) =>
-            $page->where('umami.websiteId', '')
+        $response->assertInertia(fn ($page) => $page->where('umami.websiteId', '')
         );
     }
 
@@ -144,8 +139,8 @@ class AnalyticsInfrastructureTest extends TestCase
         Consent::create([
             'user_id' => $user->id,
             'purpose' => 'analytics_tracking',
-            'status'  => 'granted',
-            'source'         => 'test',
+            'status' => 'granted',
+            'source' => 'test',
             'policy_version' => config('legal.privacy_policy_version', '1.0'),
         ]);
 
