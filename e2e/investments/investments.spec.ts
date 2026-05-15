@@ -1,50 +1,53 @@
 import { test, expect, Page } from '@playwright/test';
 import { selectOptionByText, visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
 
+/** Dopo store asset: solo index, non /crea (il regex largo mascherava errori di validazione). */
+const assetIndexUrl = /\/asset-investimento\/?(\?.*)?$/;
+
+async function createInvestmentAsset(page: Page, assetName: string): Promise<void> {
+    await page.goto('/asset-investimento/crea');
+    await page.locator('input[name="name"]').fill(assetName);
+    await page.locator('input[name="symbol"]').fill(`E2E${Date.now().toString().slice(-6)}`);
+    await primaryFormSubmitLocator(page).click();
+    await expect(page).toHaveURL(assetIndexUrl, { timeout: 15_000 });
+}
+
 async function ensureAssetExists(page: Page): Promise<string> {
-    await page.goto('/investimenti');
+    await page.goto('/investimenti/crea');
+    const assetSelect = page.locator('select[name="asset_id"]');
+    await expect(assetSelect).toBeVisible();
 
-    const emptyState = page.getByText(/nessun investimento registrato/i);
-    const hasEmptyState = await emptyState.isVisible().catch(() => false);
-
-    if (!hasEmptyState) {
-        return 'Asset E2E Esistente';
+    if ((await assetSelect.locator('option').count()) > 1) {
+        const label = (await assetSelect.locator('option[value]:not([value=""])').first().textContent()) ?? '';
+        return label.trim();
     }
 
     const assetName = `Asset E2E ${Date.now()}`;
-
-    await visibleHrefLocator(page, '/asset-investimento/crea').click();
-    await expect(page).toHaveURL('/asset-investimento/crea');
-
-    await page.locator('input[name="name"]').fill(assetName);
-    await page.locator('input[name="symbol"]').fill(`E2E${Date.now().toString().slice(-4)}`);
-    await primaryFormSubmitLocator(page).click();
-
-    await expect(page).toHaveURL(/\/asset-investimento/, { timeout: 15_000 });
-
+    await createInvestmentAsset(page, assetName);
     return assetName;
 }
 
-async function ensureAssetInCreateSelect(page: Page): Promise<void> {
+/** Garantisce almeno un asset nella select del form investimento; ritorna testo opzione da selezionare. */
+async function ensureAssetInCreateSelect(page: Page): Promise<string> {
+    await page.goto('/investimenti/crea');
     const assetSelect = page.locator('select[name="asset_id"]');
     await expect(assetSelect).toBeVisible();
 
     let optionCount = await assetSelect.locator('option').count();
-    if (optionCount > 1) return;
+    if (optionCount > 1) {
+        return ((await assetSelect.locator('option[value]:not([value=""])').first().textContent()) ?? '').trim();
+    }
 
     const assetName = `Asset Form E2E ${Date.now()}`;
-    await page.goto('/asset-investimento/crea');
-    await page.locator('input[name="name"]').fill(assetName);
-    await page.locator('input[name="symbol"]').fill(`AF${Date.now().toString().slice(-4)}`);
-    await primaryFormSubmitLocator(page).click();
-
-    await expect(page).toHaveURL(/\/asset-investimento/, { timeout: 15_000 });
+    await createInvestmentAsset(page, assetName);
 
     await page.goto('/investimenti/crea');
     await expect(assetSelect).toBeVisible();
     await expect
-        .poll(async () => assetSelect.locator('option').count(), { timeout: 10_000 })
+        .poll(async () => assetSelect.locator('option').count(), { timeout: 15_000 })
         .toBeGreaterThan(1);
+
+    return assetName;
 }
 
 test.describe('Investimenti', () => {
@@ -64,12 +67,9 @@ test.describe('Investimenti', () => {
     });
 
     test('crea investimento base (happy path)', async ({ page }) => {
-        const ensuredAssetName = await ensureAssetExists(page);
-
-        await page.goto('/investimenti/crea');
         await ensureAssetInCreateSelect(page);
 
-        await selectOptionByText(page, '#asset_id', new RegExp(ensuredAssetName, 'i'));
+        await selectOptionByText(page, '#asset_id', /Asset E2E|E2ESEED/i);
 
         await page.locator('input[name="quantity"]').fill('2');
         await page.locator('input[name="buy_price"]').fill('150');

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Account;
 use App\Models\FinancialGoal;
 use App\Models\Household;
+use App\Models\InvestmentAsset;
 use App\Models\MagazineArticle;
 use App\Models\MagazineCategory;
 use App\Models\Subscription;
@@ -145,6 +146,16 @@ class E2ESeeder extends Seeder
 
         $this->command->info("Utente E2E pronto: {$email}");
         $this->command->info("Household: {$household->name} (ID: {$household->id})");
+
+        // Asset investimento per form /investimenti/crea (test Playwright happy path)
+        InvestmentAsset::firstOrCreate(
+            ['symbol' => 'E2ESEED'],
+            [
+                'type' => 'stock',
+                'name' => 'Asset E2E Seeder',
+                'currency_code' => 'EUR',
+            ]
+        );
 
         // Crea un obiettivo finanziario di test per il widget dashboard
         FinancialGoal::firstOrCreate(
