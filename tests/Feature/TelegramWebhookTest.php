@@ -28,6 +28,7 @@ class TelegramWebhookTest extends TestCase
         parent::setUp();
         $this->withoutMiddleware(ValidateCsrfToken::class);
         Cache::flush();
+        config(['services.telegram.bot_token' => 'test-token']);
         // Blocca le chiamate HTTP reali verso Telegram durante i test
         Http::fake([
             'api.telegram.org/*' => Http::response(['ok' => true], 200),

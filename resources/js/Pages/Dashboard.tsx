@@ -7,6 +7,7 @@ import CardBox from '@/Components/CardBox';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import PageHeader from '@/Components/PageHeader';
+import PageContent from '@/Components/PageContent';
 import { LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
 import RevenueProgressCard from '@/Components/RevenueProgressCard';
@@ -36,6 +37,13 @@ import {
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
 import { moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+
+/** Padding widget dashboard: compatto su mobile, come le altre sezioni. */
+const widgetHeaderClass =
+    'flex items-center justify-between border-b border-gray-100 px-3 py-2.5 sm:px-4 sm:py-3 dark:border-gray-700';
+const widgetBodyClass = 'p-3 sm:p-4';
+const widgetListBodyClass = 'space-y-1.5 px-3 py-2 sm:p-3';
+const widgetEmptyClass = 'py-4 text-center sm:py-6';
 
 interface Account {
     id: number;
@@ -227,9 +235,9 @@ function StatCard({
     className?: string;
 }) {
     return (
-        <CardBox className={className}>
+        <CardBox className={clsx('!p-3 sm:!p-4', className)}>
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-            <p className={clsx('mt-2 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>{value}</p>
+            <p className={clsx('mt-1.5 text-xl font-bold text-gray-900 dark:text-white sm:mt-2 sm:text-2xl', moneyTabular)}>{value}</p>
             {(subtitle || trendLabel) && (
                 <div className="mt-2 flex items-center text-sm">
                     {trend && (
@@ -278,7 +286,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     return (
         <Link
             href={route('transactions.show', transaction.id)}
-            className="flex items-center gap-2 border-b border-gray-100 py-2.5 last:border-0 -mx-4 px-3 sm:px-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+            className="flex items-center gap-2 border-b border-gray-100 py-2 last:border-0 -mx-3 px-1 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 sm:-mx-4 sm:px-3"
         >
             <div
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm"
@@ -307,7 +315,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
 
 function EmptyState({ message }: { message: string }) {
     return (
-        <div className="flex flex-col items-center justify-center py-6 text-center">
+        <div className="flex flex-col items-center justify-center py-4 text-center sm:py-6">
             <div className="mb-2 text-2xl">📊</div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
         </div>
@@ -452,9 +460,9 @@ export default function Dashboard({
         switch (widgetId) {
             case 'total_balance':
                 return (
-                    <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
+                    <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-4 text-white shadow-lg sm:p-5">
                         <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
-                        <p className={clsx('mt-2 text-4xl font-bold', moneyTabular)}>{formatCurrency(totalBalance)}</p>
+                        <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>{formatCurrency(totalBalance)}</p>
                         <p className="mt-1 text-sm text-slate-400">
                             {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                         </p>
@@ -507,11 +515,11 @@ export default function Dashboard({
             case 'accounts':
                 return (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">I tuoi conti</h3>
                             <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
                         </div>
-                        <div className="space-y-1.5 p-3">
+                        <div className={widgetListBodyClass}>
                             {accounts.length > 0
                                 ? accounts.map((account) => <AccountCard key={account.id} account={account} />)
                                 : <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />}
@@ -522,11 +530,11 @@ export default function Dashboard({
             case 'recent_transactions':
                 return (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">Ultime transazioni</h3>
                             <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutte</Link>
                         </div>
-                        <div className="px-3 pt-1 pb-2">
+                        <div className={widgetListBodyClass}>
                             {recentTransactions.length > 0
                                 ? recentTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
                                 : <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />}
@@ -537,17 +545,17 @@ export default function Dashboard({
             case 'active_budgets':
                 return isModuleEnabled('budgets') ? (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">📊 Budget Attivi</h3>
                             <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
                         </div>
-                        <div className="p-4">
+                        <div className={widgetBodyClass}>
                             {activeBudgets.length > 0 ? (
                                 <div className="space-y-3">
                                     {activeBudgets.map((budget) => <BudgetCard key={budget.id} budget={budget} />)}
                                 </div>
                             ) : (
-                                <div className="py-8 text-center">
+                                <div className={widgetEmptyClass}>
                                     <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun budget attivo</p>
                                     <Link href={route('budgets.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Crea il tuo primo budget →</Link>
                                 </div>
@@ -566,11 +574,11 @@ export default function Dashboard({
             case 'debts_credits':
                 return isModuleEnabled('debts_credits') ? (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">💸 Debiti e Crediti</h3>
                             <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
                         </div>
-                        <div className="p-4">
+                        <div className={widgetBodyClass}>
                             {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
                                 <div className={clsx('mb-4', moneyKpiGrid2)}>
                                     <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
@@ -586,7 +594,7 @@ export default function Dashboard({
                             {openDebtsCredits.length > 0 ? (
                                 <div>{openDebtsCredits.map((item) => <DebtCreditRow key={item.id} item={item} />)}</div>
                             ) : (
-                                <div className="py-8 text-center">
+                                <div className={widgetEmptyClass}>
                                     <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun debito o credito aperto</p>
                                     <Link href={route('debts-credits.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Aggiungi il primo →</Link>
                                 </div>
@@ -605,9 +613,9 @@ export default function Dashboard({
             case 'quick_actions': {
                 const compact = size === 'sm';
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                        <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Azioni rapide</h3>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="overflow-hidden rounded-xl bg-white p-3 shadow-sm dark:bg-gray-800 sm:p-4">
+                        <h3 className="mb-2 font-semibold text-gray-900 dark:text-white sm:mb-3">Azioni rapide</h3>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                             <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
                             <QuickActionCard href={route('transactions.quick-session')} icon="⚡" label="Sessione Rapida" compact={compact} />
                             <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" compact={compact} />
@@ -628,13 +636,13 @@ export default function Dashboard({
 
                 return isModuleEnabled('investments') ? (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">📊 Asset Allocation</h3>
                             <Link href={route('asset-allocation.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
                                 Dettaglio →
                             </Link>
                         </div>
-                        <div className="p-4 space-y-3">
+                        <div className={clsx(widgetBodyClass, 'space-y-3')}>
                             {total_value > 0 ? (
                                 <>
                                     <div className="flex items-center justify-between">
@@ -694,10 +702,10 @@ export default function Dashboard({
             case 'net_worth':
                 return (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">📈 Patrimonio nel Tempo</h3>
                         </div>
-                        <div className="p-4">
+                        <div className={widgetBodyClass}>
                             <NetWorthChart data={netWorthData} />
                         </div>
                     </div>
@@ -706,10 +714,10 @@ export default function Dashboard({
             case 'cash_flow':
                 return (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">💰 Panoramica Cashflow</h3>
                         </div>
-                        <div className="p-4">
+                        <div className={widgetBodyClass}>
                             <CashFlowChart data={cashFlowData} />
                         </div>
                     </div>
@@ -718,10 +726,10 @@ export default function Dashboard({
             case 'expense_treemap':
                 return (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">🏷️ Spese per Categoria</h3>
                         </div>
-                        <div className="p-4">
+                        <div className={widgetBodyClass}>
                             <ExpenseTreemap data={expenseCategories} />
                         </div>
                     </div>
@@ -730,11 +738,11 @@ export default function Dashboard({
             case 'financial_goals':
                 return isModuleEnabled('financial_goals') ? (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
+                        <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">🎯 Obiettivi Finanziari</h3>
                             <Link href={route('financial-goals.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
                         </div>
-                        <div className="p-4">
+                        <div className={widgetBodyClass}>
                             {financialGoals.length > 0 ? (
                                 <div className="space-y-3">
                                     {financialGoals.map((goal) => (
@@ -759,7 +767,7 @@ export default function Dashboard({
                                     ))}
                                 </div>
                             ) : (
-                                <div className="py-8 text-center">
+                                <div className={widgetEmptyClass}>
                                     <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun obiettivo attivo</p>
                                     <Link href={route('financial-goals.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Crea il tuo primo obiettivo →</Link>
                                 </div>
@@ -853,12 +861,11 @@ export default function Dashboard({
                 </button>
             )}
 
-            <div className="py-6">
-                <div className="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
+            <PageContent maxWidth="7xl">
                     {/* Barra personalizzazione dashboard — solo in editing */}
                     {isEditing && (
                         <div
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-dashed border-emerald-400 bg-emerald-50 px-4 py-3 dark:border-emerald-600 dark:bg-emerald-900/20"
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-dashed border-emerald-400 bg-emerald-50 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 dark:border-emerald-600 dark:bg-emerald-900/20"
                             role="region"
                             aria-label="Modalità personalizzazione dashboard"
                         >
@@ -909,7 +916,7 @@ export default function Dashboard({
                             items={sortedWidgets.filter((w) => isWidgetRenderable(w.id)).map((w) => w.id)}
                             strategy={rectSortingStrategy}
                         >
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-6 xl:gap-6">
                                 {sortedWidgets.map((widget) => {
                                     const renderable = isWidgetRenderable(widget.id);
                                     const content = renderWidgetContent(widget.id, widget.size);
@@ -937,8 +944,8 @@ export default function Dashboard({
                     {/* Moduli Suggeriti (se bloccati) */}
                     {(shouldShowInvestmentsUpsell || shouldShowVatUpsell) && !isEditing && (
                         <div>
-                            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">✨ Sblocca Nuove Funzionalità</h3>
-                            <div className="grid gap-6 lg:grid-cols-2">
+                            <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white sm:mb-4 sm:text-lg">✨ Sblocca Nuove Funzionalità</h3>
+                            <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-6">
                                 {shouldShowInvestmentsUpsell && (
                                     <LockedModuleCard
                                         moduleId="investments"
@@ -958,8 +965,7 @@ export default function Dashboard({
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContent>
         </AuthenticatedLayout>
     );
 }

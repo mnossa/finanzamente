@@ -46,14 +46,46 @@ class TelegramLinkTest extends TestCase
     #[Test]
     public function user_can_generate_link_token()
     {
+        config(['services.telegram.bot_username' => 'finanzamente_bot']);
+
         $response = $this->actingAs($this->user)->post(route('telegram.link.generate'));
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('telegram.link.show'));
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('telegram_link_tokens', [
             'user_id' => $this->user->id,
         ]);
+
+        $token = TelegramLinkToken::where('user_id', $this->user->id)->first();
+
+        $this->actingAs($this->user)
+            ->get(route('telegram.link.show'))
+            ->assertInertia(fn ($page) => $page
+                ->where('token', $token->token)
+                ->where('botDeepLink', 'https://t.me/finanzamente_bot?start='.$token->token)
+            );
+    }
+
+    #[Test]
+    public function show_page_includes_deep_link_when_token_active(): void
+    {
+        $this->withoutVite();
+        config(['services.telegram.bot_username' => '@finanzamente_bot']);
+
+        TelegramLinkToken::create([
+            'user_id' => $this->user->id,
+            'token' => 'abcdef1234567890abcdef1234567890',
+            'expires_at' => now()->addMinutes(30),
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('telegram.link.show'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('botUsername', 'finanzamente_bot')
+                ->where('botDeepLink', 'https://t.me/finanzamente_bot?start=abcdef1234567890abcdef1234567890')
+            );
     }
 
     #[Test]

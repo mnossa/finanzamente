@@ -335,9 +335,16 @@ class RecurringTransactionController extends Controller
             'debt_credit_id' => $validated['debt_credit_id'] ?? null,
         ]);
 
+        $syncedCount = $this->recurringService->syncLinkedTransactionsFromTemplate($recurringTransaction);
+
+        $message = 'Transazione ricorrente aggiornata con successo.';
+        if ($syncedCount > 0) {
+            $message .= " {$syncedCount} transazioni collegate sono state allineate.";
+        }
+
         return redirect()
             ->route('recurring-transactions.index')
-            ->with('success', 'Transazione ricorrente aggiornata con successo.');
+            ->with('success', $message);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
 use Illuminate\Support\Carbon;
@@ -392,5 +393,42 @@ class RecurringTransactionService
     private function syncLastGeneratedDate(RecurringTransaction $recurringTransaction): void
     {
         $this->syncLastGeneratedDateFromLinkedTransactions($recurringTransaction);
+    }
+
+    /**
+     * Allinea tutte le transazioni collegate al template della ricorrenza aggiornato.
+     */
+    public function syncLinkedTransactionsFromTemplate(RecurringTransaction $recurringTransaction): int
+    {
+        $linkedTransactions = Transaction::query()
+            ->where('recurring_transaction_id', $recurringTransaction->id)
+            ->get();
+
+        if ($linkedTransactions->isEmpty()) {
+            return 0;
+        }
+
+        $affectedAccountIds = [];
+
+        foreach ($linkedTransactions as $transaction) {
+            $affectedAccountIds[] = $transaction->account_id;
+
+            $transaction->update([
+                'account_id' => $recurringTransaction->account_id,
+                'category_id' => $recurringTransaction->category_id,
+                'amount' => $recurringTransaction->amount,
+                'currency_code' => $recurringTransaction->currency_code,
+                'description' => $recurringTransaction->description,
+                'debt_credit_id' => $recurringTransaction->debt_credit_id,
+            ]);
+
+            $affectedAccountIds[] = $recurringTransaction->account_id;
+        }
+
+        foreach (array_unique(array_filter($affectedAccountIds)) as $accountId) {
+            Account::find($accountId)?->recalculateBalance();
+        }
+
+        return $linkedTransactions->count();
     }
 }

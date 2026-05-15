@@ -17,8 +17,15 @@ class TelegramService
 
     public function __construct()
     {
-        $token = config('services.telegram.bot_token');
-        $this->baseUrl = "https://api.telegram.org/bot{$token}";
+        $token = trim((string) config('services.telegram.bot_token', ''));
+        $this->baseUrl = $token !== ''
+            ? "https://api.telegram.org/bot{$token}"
+            : '';
+    }
+
+    public function isConfigured(): bool
+    {
+        return $this->baseUrl !== '';
     }
 
     /**
@@ -26,12 +33,26 @@ class TelegramService
      */
     public function sendMessage(string $chatId, string $text, string $parseMode = 'HTML'): bool
     {
+        if (! $this->isConfigured()) {
+            Log::error('TelegramService: TELEGRAM_BOT_TOKEN non configurato, impossibile inviare messaggi');
+
+            return false;
+        }
+
         try {
             $response = Http::timeout(10)->post("{$this->baseUrl}/sendMessage", [
                 'chat_id' => $chatId,
                 'text' => $text,
                 'parse_mode' => $parseMode,
             ]);
+
+            if (! $response->successful()) {
+                Log::warning('TelegramService: sendMessage rifiutato da API', [
+                    'chat_id' => $chatId,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            }
 
             return $response->successful();
         } catch (\Throwable $e) {
@@ -85,13 +106,25 @@ class TelegramService
      * Imposta il webhook URL per il bot Telegram.
      * Da invocare una sola volta in fase di setup.
      */
-    public function setWebhook(string $webhookUrl): bool
+    public function setWebhook(string $webhookUrl, ?string $secretToken = null): bool
     {
+        if (! $this->isConfigured()) {
+            Log::error('TelegramService: TELEGRAM_BOT_TOKEN non configurato, impossibile impostare webhook');
+
+            return false;
+        }
+
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/setWebhook", [
+            $payload = [
                 'url' => $webhookUrl,
                 'allowed_updates' => ['message'],
-            ]);
+            ];
+
+            if ($secretToken !== null && $secretToken !== '') {
+                $payload['secret_token'] = $secretToken;
+            }
+
+            $response = Http::timeout(10)->post("{$this->baseUrl}/setWebhook", $payload);
 
             return $response->successful() && $response->json('ok') === true;
         } catch (\Throwable $e) {

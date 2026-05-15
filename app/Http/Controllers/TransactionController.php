@@ -307,7 +307,7 @@ class TransactionController extends Controller
             ->orderBy('description')
             ->get(['id', 'description', 'type']);
 
-        $tags = Tag::where('household_id', $householdId)
+        $tags = Tag::forUser($user->id, $householdId)
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
@@ -350,7 +350,7 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
-        $tags = Tag::where('household_id', $householdId)
+        $tags = Tag::forUser($user->id, $householdId)
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
@@ -603,7 +603,8 @@ class TransactionController extends Controller
         $tagIds = $this->resolveTagIds(
             $validated['tag_ids'] ?? [],
             $validated['new_tag_names'] ?? [],
-            $user->active_household_id
+            $user->active_household_id,
+            $user->id
         );
         $transaction->tags()->sync($tagIds);
 
@@ -713,7 +714,7 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
-        $tags = Tag::where('household_id', $householdId)
+        $tags = Tag::forUser($user->id, $householdId)
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
@@ -854,7 +855,8 @@ class TransactionController extends Controller
         $tagIds = $this->resolveTagIds(
             $validated['tag_ids'] ?? [],
             $validated['new_tag_names'] ?? [],
-            Auth::user()->active_household_id
+            Auth::user()->active_household_id,
+            Auth::id()
         );
         $transaction->tags()->sync($tagIds);
 
@@ -1134,20 +1136,27 @@ class TransactionController extends Controller
      * @param  array  $tagIds  ID di tag già esistenti da associare
      * @param  array  $newTagNames  Nuovi nomi di tag da creare/trovare
      * @param  int  $householdId  ID della household corrente
+     * @param  int  $userId  ID dell'utente proprietario dei tag
      * @return array Array unico di ID tag da sincronizzare
      */
-    private function resolveTagIds(array $tagIds, array $newTagNames, int $householdId): array
+    private function resolveTagIds(array $tagIds, array $newTagNames, int $householdId, int $userId): array
     {
+        $tagIds = Tag::forUser($userId, $householdId)
+            ->whereIn('id', $tagIds)
+            ->pluck('id')
+            ->all();
+
         foreach ($newTagNames as $tagName) {
-            $tag = Tag::findByNameForHousehold($tagName, $householdId)
+            $tag = Tag::findByNameForHousehold($tagName, $householdId, $userId)
                 ?? Tag::create([
                     'household_id' => $householdId,
+                    'user_id' => $userId,
                     'name' => $tagName,
                     'color' => '#6366f1',
                 ]);
             $tagIds[] = $tag->id;
         }
 
-        return array_unique($tagIds);
+        return array_values(array_unique($tagIds));
     }
 }

@@ -359,7 +359,16 @@ Il webhook rimane attivo permanentemente finché non viene rimosso o aggiornato.
 ```bash
 make set-telegram-webhook url=https://tuodominio.it  # Registra il webhook
 make get-telegram-webhook                             # Mostra lo stato attuale del webhook
+make telegram-diagnose                                # Diagnostica token, URL e secret (in container)
 ```
+
+Se il bot non risponde in produzione, controlla nell'ordine:
+
+1. `make telegram-diagnose` — verifica token, URL webhook e allineamento `TELEGRAM_WEBHOOK_SECRET`
+2. Webhook registrato sull'URL di produzione (`https://tuodominio.it/telegram/webhook`), non su ngrok vecchio
+3. Dopo deploy con `config:cache`, le variabili `TELEGRAM_*` devono essere nel `.env` del server prima del cache
+4. Account collegato: in app Pro genera token e invia `/start TOKEN` al bot
+5. Log Laravel: messaggi `Telegram webhook rejected: secret token mismatch` → riesegui `make set-telegram-webhook`
 
 La dashboard è completamente personalizzabile da ogni utente autenticato. È possibile:
 

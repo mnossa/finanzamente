@@ -11,6 +11,7 @@ interface Props extends PageProps {
     token: string | null;
     tokenExpiresAt: string | null;
     botUsername: string | null;
+    botDeepLink: string | null;
 }
 
 function CountdownTimer({ expiresAt }: { expiresAt: string }) {
@@ -38,17 +39,15 @@ function CountdownTimer({ expiresAt }: { expiresAt: string }) {
     );
 }
 
-export default function TelegramLink({ linked, token, tokenExpiresAt, botUsername }: Props) {
+export default function TelegramLink({ linked, token, tokenExpiresAt, botUsername, botDeepLink }: Props) {
     const generateForm = useForm({});
     const unlinkForm = useForm({});
 
-    const botLink = botUsername && token
-        ? `https://t.me/${botUsername}?start=${token}`
-        : null;
-
     function handleGenerate(e: React.FormEvent) {
         e.preventDefault();
-        generateForm.post(route('telegram.link.generate'));
+        generateForm.post(route('telegram.link.generate'), {
+            preserveScroll: true,
+        });
     }
 
     function handleUnlink(e: React.FormEvent) {
@@ -128,9 +127,9 @@ export default function TelegramLink({ linked, token, tokenExpiresAt, botUsernam
                                     <code className="text-sm font-mono font-bold text-slate-800 dark:text-white break-all">{token}</code>
                                 </div>
 
-                                {botLink && (
+                                {botDeepLink && (
                                     <a
-                                        href={botLink}
+                                        href={botDeepLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 transition-colors"

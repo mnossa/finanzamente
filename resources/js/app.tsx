@@ -19,8 +19,13 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { registerSW } from 'virtual:pwa-register';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Finanzamente';
+
+if (import.meta.env.PROD && typeof window !== 'undefined') {
+    registerSW({ immediate: true });
+}
 
 function extractInitialThemeFromPage(initialPage: { props?: Record<string, unknown> } | undefined): string | undefined {
     const auth = initialPage?.props?.auth as { user?: { preferences?: Record<string, unknown> } } | undefined;

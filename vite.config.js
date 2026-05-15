@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode, command }) => {
     const env = loadEnv(mode, process.cwd(), '');
@@ -25,6 +26,75 @@ export default defineConfig(({ mode, command }) => {
                 refresh: true,
             }),
             react(),
+            VitePWA({
+                registerType: 'autoUpdate',
+                includeAssets: [
+                    'images/finanzamente-logo.webp',
+                    'pwa/icon-192.png',
+                    'pwa/icon-512.png',
+                    'pwa/apple-touch-icon.png',
+                ],
+                manifest: {
+                    name: 'Finanzamente',
+                    short_name: 'Finanzamente',
+                    description: 'Gestione finanziaria personale e familiare',
+                    theme_color: '#4f4ce5',
+                    background_color: '#ffffff',
+                    display: 'standalone',
+                    orientation: 'portrait',
+                    start_url: '/dashboard',
+                    scope: '/',
+                    lang: 'it',
+                    icons: [
+                        {
+                            src: '/pwa/icon-192.png',
+                            sizes: '192x192',
+                            type: 'image/png',
+                            purpose: 'any',
+                        },
+                        {
+                            src: '/pwa/icon-512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'any',
+                        },
+                        {
+                            src: '/pwa/icon-512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'maskable',
+                        },
+                    ],
+                },
+                workbox: {
+                    navigateFallback: '/dashboard',
+                    navigateFallbackDenylist: [
+                        /^\/login/,
+                        /^\/register/,
+                        /^\/forgot-password/,
+                        /^\/reset-password/,
+                        /^\/verify-email/,
+                        /^\/sanctum/,
+                    ],
+                    globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,woff2}'],
+                    runtimeCaching: [
+                        {
+                            urlPattern: /^https:\/\/fonts\.bunny\.net\/.*/i,
+                            handler: 'CacheFirst',
+                            options: {
+                                cacheName: 'bunny-fonts',
+                                expiration: {
+                                    maxEntries: 10,
+                                    maxAgeSeconds: 60 * 60 * 24 * 365,
+                                },
+                            },
+                        },
+                    ],
+                },
+                devOptions: {
+                    enabled: false,
+                },
+            }),
         ],
         build: {
             chunkSizeWarningLimit: 900,

@@ -186,7 +186,9 @@ export default function Create({ originalTransaction, refundableTransactions, to
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">➕</span>} />
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo rimborso</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Seleziona una spesa e registra il rimborso ricevuto.</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Scegli la spesa e indica quanto hai ricevuto: puoi registrare un rimborso totale o parziale.
+                            </p>
                         </header>
                         {refundableTransactions.length === 0 && !originalTransaction ? (
                             <div className="py-8 text-center">
@@ -339,6 +341,9 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                 {/* Importo */}
                                 <div>
                                     <InputLabel htmlFor="amount" value="Importo del rimborso" />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Inserisci l&apos;importo effettivamente ricevuto (anche parziale). Usa &quot;Max&quot; per l&apos;intero residuo.
+                                    </p>
                                     <div className="mt-1 flex items-center space-x-2">
                                         <TextInput
                                             id="amount"

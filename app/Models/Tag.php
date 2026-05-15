@@ -11,15 +11,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Tag
  *
  * Etichetta assegnabile a transazioni per categorizzazioni flessibili e
- * filtraggio (es. #viaggio, #lavoro). I tag possono essere globali o
- * specifici per household.
+ * filtraggio (es. #viaggio, #lavoro). Ogni tag appartiene a un utente
+ * all'interno della household attiva.
  */
 class Tag extends Model
 {
     use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'household_id', 'name', 'color',
+        'household_id', 'user_id', 'name', 'color',
     ];
 
     /**
@@ -35,6 +35,16 @@ class Tag extends Model
         return $this->belongsTo(Household::class);
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function scopeForUser($query, int $userId, int $householdId)
+    {
+        return $query->where('household_id', $householdId)->where('user_id', $userId);
+    }
+
     public function transactions()
     {
         return $this->belongsToMany(Transaction::class, 'transaction_tag');
@@ -44,10 +54,15 @@ class Tag extends Model
      * Restituisce un tag esistente con lo stesso nome (case-insensitive) nella stessa household,
      * oppure null se non esiste.
      */
-    public static function findByNameForHousehold(string $name, int $householdId): ?self
+    public static function findByNameForHousehold(string $name, int $householdId, ?int $userId = null): ?self
     {
-        return self::where('household_id', $householdId)
-            ->where('name', strtoupper(trim($name)))
-            ->first();
+        $query = self::where('household_id', $householdId)
+            ->where('name', strtoupper(trim($name)));
+
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query->first();
     }
 }

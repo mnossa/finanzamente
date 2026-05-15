@@ -423,12 +423,18 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
 
                             {/* Pulsante per creare rimborso */}
                             {canBeRefunded && (
-                                <Link
-                                    href={route('refunds.create', { transaction_id: transaction.id })}
-                                    className="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
-                                >
-                                    💸 Registra Rimborso ({formatCurrency(transaction.refund_info?.max_refundable ?? Math.abs(transaction.amount), transaction.account.currency_code)} disponibile)
-                                </Link>
+                                <div className="space-y-2">
+                                    <Link
+                                        href={route('refunds.create', { transaction_id: transaction.id })}
+                                        className="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                                    >
+                                        💸 Registra rimborso
+                                    </Link>
+                                    <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+                                        Apri il modulo per indicare l&apos;importo ricevuto (totale o parziale, fino a{' '}
+                                        {formatCurrency(transaction.refund_info?.max_refundable ?? Math.abs(transaction.amount), transaction.account.currency_code)}).
+                                    </p>
+                                </div>
                             )}
 
                             {/* Messaggio se completamente rimborsato */}

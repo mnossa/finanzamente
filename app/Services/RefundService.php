@@ -32,7 +32,7 @@ class RefundService
             $originalTransactionId = (int) $data['original_transaction_id'];
 
             // Blocca la transazione originale per evitare race condition
-            $originalTransaction = Transaction::lockForUpdate()->find($originalTransactionId);
+            $originalTransaction = Transaction::with('tags')->lockForUpdate()->find($originalTransactionId);
 
             if (! $originalTransaction) {
                 throw ValidationException::withMessages([
@@ -119,6 +119,11 @@ class RefundService
             // Aggiorna il saldo del conto
             $account->current_balance += $refundAmount;
             $account->save();
+
+            // Copia i tag dalla spesa originale sulla transazione di rimborso
+            if ($originalTransaction->tags->isNotEmpty()) {
+                $refundTransaction->tags()->sync($originalTransaction->tags->pluck('id')->all());
+            }
 
             // Carica le relazioni per il ritorno
             return $refund->load(['originalTransaction.account', 'originalTransaction.category', 'refundTransaction', 'user']);

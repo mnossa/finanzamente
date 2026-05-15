@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\RecurringDetectionMail;
 use App\Models\AppNotification;
 use App\Models\Household;
 use App\Models\RecurringTransactionSuggestion;
 use App\Services\RecurrenceDetectionService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Comando per rilevare pattern ricorrenti nelle transazioni esistenti
@@ -88,9 +90,9 @@ class DetectRecurringTransactions extends Command
         $periodKey = Carbon::now()->format('Y-m-d');
         $notificationKey = "recurring_detect_{$household->id}_{$periodKey}";
 
-        $userIds = $household->users()->pluck('users.id');
-        foreach ($userIds as $userId) {
-            $alreadyNotified = AppNotification::where('user_id', $userId)
+        $users = $household->users()->get();
+        foreach ($users as $user) {
+            $alreadyNotified = AppNotification::where('user_id', $user->id)
                 ->where('notification_key', $notificationKey)
                 ->exists();
 
@@ -99,12 +101,16 @@ class DetectRecurringTransactions extends Command
             }
 
             AppNotification::create([
-                'user_id' => $userId,
+                'user_id' => $user->id,
                 'title' => '🔁 Nuove ricorrenze suggerite',
                 'message' => "Ho trovato {$created} possibili transazioni ricorrenti in \"{$household->name}\". Vai su Rilevamento Ricorrenze per confermare o ignorare.",
                 'read' => false,
                 'notification_key' => $notificationKey,
             ]);
+
+            if ($user->email) {
+                Mail::to($user->email)->send(new RecurringDetectionMail($user, $household, $created));
+            }
         }
     }
 

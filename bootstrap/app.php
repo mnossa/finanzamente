@@ -26,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Escludi i webhook da CSRF (chiamate server-to-server autenticate via firma HMAC)
         $middleware->validateCsrfTokens(except: [
             '/webhooks/*',
+            '/telegram/webhook',
+            '/mollie/webhook',
         ]);
 
         $middleware->web(append: [

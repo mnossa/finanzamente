@@ -70,8 +70,9 @@ class TelegramWebhookController extends Controller
         if ($webhookSecret !== '') {
             $receivedSecret = (string) $request->header('X-Telegram-Bot-Api-Secret-Token', '');
             if (! hash_equals($webhookSecret, $receivedSecret)) {
-                Log::warning('Telegram webhook rejected: invalid secret token', [
+                Log::warning('Telegram webhook rejected: secret token mismatch (rigenera webhook con make set-telegram-webhook)', [
                     'ip' => $request->ip(),
+                    'has_header' => $receivedSecret !== '',
                 ]);
 
                 return response('Unauthorized', 401);

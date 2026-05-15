@@ -22,7 +22,7 @@ export default function QuickActionCard({
             href={href}
             title={compact ? label : undefined}
             className={clsx(
-                'flex flex-col items-center rounded-xl p-4',
+                'flex flex-col items-center rounded-xl p-3 sm:p-4',
                 'bg-emerald-50 text-emerald-600',
                 'hover:bg-emerald-100',
                 'dark:bg-emerald-900/20 dark:text-emerald-400',

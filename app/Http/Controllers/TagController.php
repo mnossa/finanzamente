@@ -22,7 +22,7 @@ class TagController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $tags = Tag::where('household_id', $householdId)
+        $tags = Tag::forUser($user->id, $householdId)
             ->withCount('transactions')
             ->orderBy('name')
             ->get()
@@ -57,7 +57,7 @@ class TagController extends Controller
         $validated = $request->validated();
         $householdId = $user->active_household_id;
 
-        $existing = Tag::findByNameForHousehold($validated['name'], $householdId);
+        $existing = Tag::findByNameForHousehold($validated['name'], $householdId, $user->id);
 
         if ($existing) {
             return redirect()
@@ -67,6 +67,7 @@ class TagController extends Controller
 
         Tag::create([
             'household_id' => $householdId,
+            'user_id' => $user->id,
             'name' => $validated['name'],
             'color' => $validated['color'] ?? '#6366f1',
         ]);
@@ -132,7 +133,7 @@ class TagController extends Controller
         $householdId = $user->active_household_id;
         $q = strtoupper(trim($request->get('q', '')));
 
-        $tags = Tag::where('household_id', $householdId)
+        $tags = Tag::forUser($user->id, $householdId)
             ->when($q !== '', fn ($query) => $query->where('name', 'like', $q.'%'))
             ->orderBy('name')
             ->limit(15)
@@ -148,7 +149,7 @@ class TagController extends Controller
     {
         $user = Auth::user();
 
-        if ($tag->household_id !== $user->active_household_id) {
+        if ($tag->household_id !== $user->active_household_id || $tag->user_id !== $user->id) {
             abort(403, 'Non hai accesso a questo tag.');
         }
     }

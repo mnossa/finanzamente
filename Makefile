@@ -11,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -213,16 +213,27 @@ set-telegram-webhook:
 		echo "[ERRORE] Specificare l'URL con: make set-telegram-webhook url=https://tuodominio.it"; \
 		exit 1; \
 	fi; \
-	TOKEN=$$(grep TELEGRAM_BOT_TOKEN .env | cut -d= -f2); \
-	SECRET=$$(grep TELEGRAM_WEBHOOK_SECRET .env | cut -d= -f2); \
-	curl -s -X POST "https://api.telegram.org/bot$$TOKEN/setWebhook" \
-		-d "url=$(url)/telegram/webhook" \
-		-d "secret_token=$$SECRET" | python3 -m json.tool
+	TOKEN=$$(grep -E '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2- | tr -d '"' | tr -d "'"); \
+	SECRET=$$(grep -E '^TELEGRAM_WEBHOOK_SECRET=' .env | cut -d= -f2- | tr -d '"' | tr -d "'"); \
+	if [ -z "$$TOKEN" ]; then echo "[ERRORE] TELEGRAM_BOT_TOKEN mancante in .env"; exit 1; fi; \
+	WEBHOOK_URL=$$(echo "$(url)" | sed 's:/*$$::')/telegram/webhook; \
+	if [ -n "$$SECRET" ]; then \
+		curl -s -X POST "https://api.telegram.org/bot$$TOKEN/setWebhook" \
+			-d "url=$$WEBHOOK_URL" \
+			-d "secret_token=$$SECRET" | python3 -m json.tool; \
+	else \
+		echo "[WARN] TELEGRAM_WEBHOOK_SECRET vuoto: webhook senza secret_token"; \
+		curl -s -X POST "https://api.telegram.org/bot$$TOKEN/setWebhook" \
+			-d "url=$$WEBHOOK_URL" | python3 -m json.tool; \
+	fi
 
 # Mostra lo stato attuale del webhook Telegram
 get-telegram-webhook:
-	@TOKEN=$$(grep TELEGRAM_BOT_TOKEN .env | cut -d= -f2); \
+	@TOKEN=$$(grep -E '^TELEGRAM_BOT_TOKEN=' .env | cut -d= -f2- | tr -d '"' | tr -d "'"); \
 	curl -s "https://api.telegram.org/bot$$TOKEN/getWebhookInfo" | python3 -m json.tool
+
+telegram-diagnose:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan telegram:diagnose
 
 # Avvia il tunnel ngrok (profilo Docker 'tunnel') — URL disponibile su http://localhost:4040
 ngrok:

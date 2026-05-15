@@ -61,6 +61,7 @@ class TransactionTagTest extends TestCase
     {
         $tag = Tag::create([
             'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
             'name' => 'spesa alimentare',
             'color' => '#ff0000',
         ]);
@@ -73,6 +74,7 @@ class TransactionTagTest extends TestCase
     {
         $tag = Tag::create([
             'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
             'name' => 'Viaggio Di Lavoro',
             'color' => null,
         ]);
@@ -89,15 +91,16 @@ class TransactionTagTest extends TestCase
     {
         Tag::create([
             'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
             'name' => 'VIAGGI',
             'color' => '#00ff00',
         ]);
 
-        $found = Tag::findByNameForHousehold('viaggi', $this->household->id);
+        $found = Tag::findByNameForHousehold('viaggi', $this->household->id, $this->user->id);
         $this->assertNotNull($found);
         $this->assertSame('VIAGGI', $found->name);
 
-        $found2 = Tag::findByNameForHousehold('Viaggi', $this->household->id);
+        $found2 = Tag::findByNameForHousehold('Viaggi', $this->household->id, $this->user->id);
         $this->assertNotNull($found2);
         $this->assertSame('VIAGGI', $found2->name);
     }
@@ -114,6 +117,7 @@ class TransactionTagTest extends TestCase
     {
         Tag::create([
             'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
             'name' => 'SPORT',
         ]);
 
@@ -121,6 +125,7 @@ class TransactionTagTest extends TestCase
 
         Tag::create([
             'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
             'name' => 'SPORT',
         ]);
     }
@@ -132,8 +137,8 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function can_create_transaction_with_multiple_tags(): void
     {
-        $tag1 = Tag::create(['household_id' => $this->household->id, 'name' => 'LAVORO', 'color' => '#111111']);
-        $tag2 = Tag::create(['household_id' => $this->household->id, 'name' => 'RIMBORSO', 'color' => '#222222']);
+        $tag1 = Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'LAVORO', 'color' => '#111111']);
+        $tag2 = Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'RIMBORSO', 'color' => '#222222']);
 
         $response = $this->actingAs($this->user)->post(route('transactions.store'), [
             'account_id' => $this->account->id,
@@ -182,6 +187,7 @@ class TransactionTagTest extends TestCase
     {
         $existingTag = Tag::create([
             'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
             'name' => 'SPORT',
             'color' => '#ff0000',
         ]);
@@ -213,9 +219,9 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function tag_search_returns_matching_tags_for_household(): void
     {
-        Tag::create(['household_id' => $this->household->id, 'name' => 'ALIMENTARI', 'color' => null]);
-        Tag::create(['household_id' => $this->household->id, 'name' => 'ALTRO ALIMENTARE', 'color' => null]);
-        Tag::create(['household_id' => $this->household->id, 'name' => 'BENZINA', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'ALIMENTARI', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'ALTRO ALIMENTARE', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'BENZINA', 'color' => null]);
 
         $response = $this->actingAs($this->user)->get(route('tags.search', ['q' => 'al']));
 
@@ -231,8 +237,8 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function tag_search_without_query_returns_all_household_tags(): void
     {
-        Tag::create(['household_id' => $this->household->id, 'name' => 'TAG1', 'color' => null]);
-        Tag::create(['household_id' => $this->household->id, 'name' => 'TAG2', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'TAG1', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'TAG2', 'color' => null]);
 
         $response = $this->actingAs($this->user)->get(route('tags.search'));
 
@@ -244,7 +250,7 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function tag_search_is_case_insensitive(): void
     {
-        Tag::create(['household_id' => $this->household->id, 'name' => 'VIAGGI', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'VIAGGI', 'color' => null]);
 
         $response = $this->actingAs($this->user)->get(route('tags.search', ['q' => 'via']));
 
@@ -258,8 +264,8 @@ class TransactionTagTest extends TestCase
     public function tag_search_does_not_return_other_household_tags(): void
     {
         $otherHousehold = Household::factory()->create(['owner_user_id' => $this->user->id]);
-        Tag::create(['household_id' => $otherHousehold->id, 'name' => 'PRIVATO', 'color' => null]);
-        Tag::create(['household_id' => $this->household->id, 'name' => 'PUBBLICO', 'color' => null]);
+        Tag::create(['household_id' => $otherHousehold->id, 'user_id' => $this->user->id, 'name' => 'PRIVATO', 'color' => null]);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'PUBBLICO', 'color' => null]);
 
         $response = $this->actingAs($this->user)->get(route('tags.search'));
 
@@ -285,7 +291,7 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function can_filter_transactions_by_tag(): void
     {
-        $tag = Tag::create(['household_id' => $this->household->id, 'name' => 'SPORT', 'color' => null]);
+        $tag = Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'SPORT', 'color' => null]);
 
         $tagged = Transaction::create([
             'user_id' => $this->user->id,
@@ -320,8 +326,8 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function tag_filter_does_not_return_transactions_without_that_tag(): void
     {
-        $tag1 = Tag::create(['household_id' => $this->household->id, 'name' => 'LAVORO', 'color' => null]);
-        $tag2 = Tag::create(['household_id' => $this->household->id, 'name' => 'PERSONALE', 'color' => null]);
+        $tag1 = Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'LAVORO', 'color' => null]);
+        $tag2 = Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'PERSONALE', 'color' => null]);
 
         $t1 = Transaction::create([
             'user_id' => $this->user->id,
@@ -361,7 +367,7 @@ class TransactionTagTest extends TestCase
     #[Test]
     public function creating_duplicate_tag_redirects_with_warning(): void
     {
-        Tag::create(['household_id' => $this->household->id, 'name' => 'SPORT', 'color' => '#ff0000']);
+        Tag::create(['household_id' => $this->household->id, 'user_id' => $this->user->id, 'name' => 'SPORT', 'color' => '#ff0000']);
 
         $response = $this->actingAs($this->user)->post(route('tags.store'), [
             'name' => 'sport',

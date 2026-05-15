@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\RecurringDetectionMail;
 use App\Models\Account;
 use App\Models\AppNotification;
 use App\Models\Category;
@@ -17,6 +18,7 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -193,6 +195,37 @@ class RecurrenceDetectionTest extends TestCase
 
         $this->assertSame(1, $created);
         $this->assertSame('yearly', RecurringTransactionSuggestion::first()->detected_frequency);
+    }
+
+    #[Test]
+    public function recurring_detect_command_sends_email_to_household_members(): void
+    {
+        Mail::fake();
+
+        foreach (range(1, 4) as $i) {
+            Transaction::create([
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'category_id' => $this->category->id,
+                'amount' => -42.00,
+                'currency_code' => 'EUR',
+                'date' => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
+                'recurring' => false,
+                'recurring_transaction_id' => null,
+                'transfer_id' => null,
+                'refund_id' => null,
+            ]);
+        }
+
+        Artisan::call('recurring:detect', [
+            '--household' => $this->household->id,
+        ]);
+
+        Mail::assertSent(RecurringDetectionMail::class, function (RecurringDetectionMail $mail) {
+            return $mail->hasTo($this->user->email)
+                && $mail->household->is($this->household)
+                && $mail->suggestionsCount >= 1;
+        });
     }
 
     #[Test]
