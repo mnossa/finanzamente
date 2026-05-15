@@ -11,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed e2e-wait-healthy playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -66,11 +66,27 @@ seed:
 # Il servizio app_e2e usa db_e2e — il database principale non viene mai toccato.
 e2e-seed:
 	@echo "[+] Preparazione database per test E2E (servizio app_e2e → db_e2e)..."
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose up -d db_e2e app_e2e nginx_e2e
+	$(MAKE) e2e-wait-healthy
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan config:cache
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan migrate:fresh --force
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan db:seed --class=E2ESeeder --force
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app_e2e php artisan cache:clear
 	@echo "[+] Database E2E pronto (utente: e2e@finanzamente.test)"
+
+# Attende che nginx_e2e → app_e2e risponda (evita 502 se PHP-FPM non è pronto).
+e2e-wait-healthy:
+	@echo "[+] Verifica stack E2E su http://localhost:8081 ..."
+	@LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose restart app_e2e nginx_e2e >/dev/null
+	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do \
+		if curl -sf -o /dev/null http://localhost:8081/accedi; then \
+			echo "[+] Stack E2E pronto."; \
+			exit 0; \
+		fi; \
+		sleep 2; \
+	done; \
+	echo "ERRORE: stack E2E non risponde su :8081 (502?). Controlla: docker compose logs app_e2e nginx_e2e"; \
+	exit 1
 
 ###############################################################
 # Esegui i test Playwright E2E in modalità headless (modalità normale).
@@ -99,6 +115,7 @@ playwright:
 	$(MAKE) clear-cache
 	@echo "[+] Seed database E2E (make e2e-seed)..."
 	$(MAKE) e2e-seed
+	$(MAKE) e2e-wait-healthy
 	@echo "[+] Rimozione public/hot (usa build compilata, non dev server)..."
 	@rm -f public/hot
 	@test -f public/build/manifest.json || (echo "ERRORE: Esegui 'make build' prima di 'make playwright'" && exit 1)
