@@ -1,23 +1,67 @@
 /**
  * FAB centrale (bottom nav mobile): destinazione primaria in base alla rotta corrente.
+ * Su form di creazione/modifica e sessione rapida diventa submit verso il form con id
+ * {@link FM_MOBILE_PRIMARY_FORM_ID}.
  * Tenere allineato con i test PHP che verificano Route::has sui nomi usati.
  */
-export type MobilePrimaryFab = {
-    href: string;
-    ariaLabel: string;
-    /** Slug anonimo per analytics (no PII) */
-    analyticsSection: string;
-};
+export const FM_MOBILE_PRIMARY_FORM_ID = 'fm-mobile-primary-form';
+
+export type MobilePrimaryFab =
+    | {
+          mode: 'link';
+          href: string;
+          ariaLabel: string;
+          /** Slug anonimo per analytics (no PII) */
+          analyticsSection: string;
+      }
+    | {
+          mode: 'submit';
+          ariaLabel: string;
+          analyticsSection: string;
+          /** Attributo HTML `form`; default {@link FM_MOBILE_PRIMARY_FORM_ID} */
+          formId?: string;
+      };
 
 const defaultFab = (): MobilePrimaryFab => ({
+    mode: 'link',
     href: route('transactions.create'),
     ariaLabel: 'Nuova transazione',
     analyticsSection: 'transactions',
 });
 
 /**
- * Risolve href/etichetta del pulsante + nel footer mobile.
- * Su form crea/modifica torna al default (nuova transazione) per evitare loop sulla stessa pagina.
+ * Pagine con più form principali: nessun FAB submit (resta il link di default dopo i `when`).
+ */
+function isExcludedFromMobileSubmitFab(current: string): boolean {
+    return current === 'profile.edit';
+}
+
+function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
+    if (isExcludedFromMobileSubmitFab(current)) {
+        return null;
+    }
+
+    if (current === 'transactions.quick-session') {
+        return {
+            mode: 'submit',
+            ariaLabel: 'Salva transazione',
+            analyticsSection: 'transactions_quick_session_save',
+        };
+    }
+
+    if (current.endsWith('.create') || current.endsWith('.edit')) {
+        return {
+            mode: 'submit',
+            ariaLabel: 'Salva',
+            analyticsSection: `${current.replace(/[.-]/g, '_')}_save`,
+        };
+    }
+
+    return null;
+}
+
+/**
+ * Risolve href/etichetta del pulsante centrale nel footer mobile.
  */
 export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
     if (typeof route !== 'function') {
@@ -29,8 +73,9 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
         return defaultFab();
     }
 
-    if (current.endsWith('.create') || current.endsWith('.edit')) {
-        return defaultFab();
+    const submitFab = tryResolveMobileSubmitFab(current);
+    if (submitFab) {
+        return submitFab;
     }
 
     /** Pagine strumento / prevalentemente lettura: nessun FAB */
@@ -62,81 +107,97 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
 
     return (
         when(['accounts.index', 'accounts.show'], {
+            mode: 'link',
             href: route('accounts.create'),
             ariaLabel: 'Nuovo conto',
             analyticsSection: 'accounts',
         }) ??
         when(['categories.index'], {
+            mode: 'link',
             href: route('categories.create'),
             ariaLabel: 'Nuova categoria',
             analyticsSection: 'categories',
         }) ??
         when(['budgets.index', 'budgets.show'], {
+            mode: 'link',
             href: route('budgets.create'),
             ariaLabel: 'Nuovo budget',
             analyticsSection: 'budgets',
         }) ??
         when(['financial-goals.index', 'financial-goals.show'], {
+            mode: 'link',
             href: route('financial-goals.create'),
             ariaLabel: 'Nuovo obiettivo',
             analyticsSection: 'financial_goals',
         }) ??
         when(['recurring-transactions.index', 'recurring-transactions.show'], {
+            mode: 'link',
             href: route('recurring-transactions.create'),
             ariaLabel: 'Nuova ricorrenza',
             analyticsSection: 'recurring_transactions',
         }) ??
-        when(['transactions.index', 'transactions.show', 'transactions.import', 'transactions.quick-session'], {
+        when(['transactions.index', 'transactions.show', 'transactions.import'], {
+            mode: 'link',
             href: route('transactions.create'),
             ariaLabel: 'Nuova transazione',
             analyticsSection: 'transactions',
         }) ??
         when(['tags.index'], {
+            mode: 'link',
             href: route('tags.create'),
             ariaLabel: 'Nuova etichetta',
             analyticsSection: 'tags',
         }) ??
         when(['debts-credits.index', 'debts-credits.show'], {
+            mode: 'link',
             href: route('debts-credits.create'),
             ariaLabel: 'Nuovo debito/credito',
             analyticsSection: 'debts_credits',
         }) ??
         when(['transfers.index', 'transfers.show'], {
+            mode: 'link',
             href: route('transfers.create'),
             ariaLabel: 'Nuovo trasferimento',
             analyticsSection: 'transfers',
         }) ??
         when(['refunds.index', 'refunds.show'], {
+            mode: 'link',
             href: route('refunds.create'),
             ariaLabel: 'Nuovo rimborso',
             analyticsSection: 'refunds',
         }) ??
         when(['inter-household-transfers.index', 'inter-household-transfers.show'], {
+            mode: 'link',
             href: route('inter-household-transfers.create'),
             ariaLabel: 'Nuovo trasferimento tra nuclei',
             analyticsSection: 'inter_household_transfers',
         }) ??
         when(['investments.index', 'investments.show'], {
+            mode: 'link',
             href: route('investments.create'),
             ariaLabel: 'Nuovo investimento',
             analyticsSection: 'investments',
         }) ??
         when(['investment-assets.index'], {
+            mode: 'link',
             href: route('investment-assets.create'),
             ariaLabel: 'Nuovo asset',
             analyticsSection: 'investment_assets',
         }) ??
         when(['inbox.index'], {
+            mode: 'link',
             href: route('transactions.create'),
             ariaLabel: 'Nuova transazione',
             analyticsSection: 'inbox_fallback_transactions',
         }) ??
         when(['dashboard'], {
+            mode: 'link',
             href: route('transactions.create'),
             ariaLabel: 'Nuova transazione',
             analyticsSection: 'dashboard',
         }) ??
         when(['fixed-expenses.dashboard'], {
+            mode: 'link',
             href: route('transactions.create'),
             ariaLabel: 'Nuova transazione',
             analyticsSection: 'fixed_expenses',

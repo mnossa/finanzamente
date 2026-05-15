@@ -9,6 +9,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { refunds } from '@/utils/analytics';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -202,7 +203,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-4">
+                            <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                                 {/* Selezione Transazione */}
                                 {!originalTransaction && (
                                     <div>

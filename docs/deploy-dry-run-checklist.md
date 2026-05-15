@@ -19,6 +19,7 @@ Checklist operativa per validare il flusso di rilascio senza impattare la produz
 - Spazio disco sufficiente su host deploy
 - Presenza variabili ambiente richieste (`.env` server)
 - Accesso al registry e permessi pull immagine
+- Dopo ogni release produzione: la pipeline esegue `php artisan view:clear` sul container app (cache Blade compilata); in intervento manuale usare lo stesso comando se aggiorni viste senza workflow.
 
 ## 4) Simulazione rollback (manuale)
 

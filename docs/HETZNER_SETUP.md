@@ -44,6 +44,7 @@ GitHub Actions — Job deploy
     • docker compose pull (scarica nuova immagine)
     • docker compose up -d (riavvia con zero-config)
     • Entrypoint→ php artisan migrate + optimize
+    • Dopo health OK: `php artisan up` + `php artisan view:clear` (workflow deploy)
     • Health check su /up
 ```
 

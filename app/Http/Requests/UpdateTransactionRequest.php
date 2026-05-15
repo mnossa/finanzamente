@@ -64,6 +64,7 @@ class UpdateTransactionRequest extends FormRequest
                         ->whereIn('status', ['open', 'overdue']);
                 }),
             ],
+            'return_index_query' => ['nullable', 'string', 'max:8192'],
         ];
     }
 

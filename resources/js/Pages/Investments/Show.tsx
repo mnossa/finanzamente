@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
+import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -188,6 +189,7 @@ function SellModal({
                             </p>
                             <p className={clsx(
                                 'text-xl font-bold',
+                                moneyTabular,
                                 estimatedProfit >= 0 ? 'text-green-600' : 'text-red-600'
                             )}>
                                 {estimatedProfit >= 0 ? '+' : ''}
@@ -285,7 +287,7 @@ export default function Show({ investment }: ShowProps) {
                     </CardBox>
 
                     {/* Dettagli Acquisto/Vendita */}
-                    <div className="grid gap-6 sm:grid-cols-2">
+                    <div className={moneyKpiGrid2}>
                         {/* Acquisto */}
                         <CardBox className="overflow-hidden shadow-sm">
                             <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
@@ -296,14 +298,14 @@ export default function Show({ investment }: ShowProps) {
                             <div className="p-6">
                                 <div className="mb-4">
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Valore Totale</p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    <p className={clsx('text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                         {formatCurrency(investment.total_buy_value, currencyCode)}
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className={clsx(moneyKpiGrid2, 'text-sm')}>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400">Prezzo Unitario</p>
-                                        <p className="font-medium text-gray-900 dark:text-white">
+                                        <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
                                             {formatCurrency(investment.buy_price, currencyCode)}
                                         </p>
                                     </div>
@@ -329,14 +331,14 @@ export default function Show({ investment }: ShowProps) {
                                     <>
                                         <div className="mb-4">
                                             <p className="text-sm text-gray-500 dark:text-gray-400">Valore Totale</p>
-                                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                            <p className={clsx('text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                                 {formatCurrency(investment.total_sell_value!, currencyCode)}
                                             </p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className={clsx(moneyKpiGrid2, 'text-sm')}>
                                             <div>
                                                 <p className="text-gray-500 dark:text-gray-400">Prezzo Unitario</p>
-                                                <p className="font-medium text-gray-900 dark:text-white">
+                                                <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
                                                     {formatCurrency(investment.sell_price!, currencyCode)}
                                                 </p>
                                             </div>
@@ -381,6 +383,7 @@ export default function Show({ investment }: ShowProps) {
                                         </p>
                                         <p className={clsx(
                                             'text-3xl font-bold',
+                                            moneyTabular,
                                             investment.net_profit !== null && investment.net_profit >= 0
                                                 ? 'text-green-600'
                                                 : 'text-red-600'
@@ -390,7 +393,7 @@ export default function Show({ investment }: ShowProps) {
                                         </p>
                                     </div>
                                     <div className={clsx(
-                                        'rounded-full px-6 py-3 text-2xl font-bold',
+                                        'rounded-full px-6 py-3 text-2xl font-bold tabular-nums',
                                         investment.net_profit !== null && investment.net_profit >= 0
                                             ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
                                             : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
@@ -400,7 +403,7 @@ export default function Show({ investment }: ShowProps) {
                                     </div>
                                 </div>
                                 {investment.fees && investment.fees > 0 && (
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                    <p className={clsx('mt-2 text-sm text-gray-500 dark:text-gray-400', moneyTabular)}>
                                         Commissioni totali: {formatCurrency(investment.fees, currencyCode)}
                                     </p>
                                 )}
@@ -427,7 +430,7 @@ export default function Show({ investment }: ShowProps) {
                             {investment.fees && investment.fees > 0 && (
                                 <div className="flex items-center justify-between px-6 py-4">
                                     <span className="text-gray-600 dark:text-gray-400">Commissioni</span>
-                                    <span className="font-medium text-gray-900 dark:text-white">
+                                    <span className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
                                         {formatCurrency(investment.fees, currencyCode)}
                                     </span>
                                 </div>

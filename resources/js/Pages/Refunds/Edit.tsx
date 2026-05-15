@@ -8,6 +8,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import PageHeader from '@/Components/PageHeader';
 
 interface Category {
@@ -95,7 +96,7 @@ export default function Edit({ refund }: EditProps) {
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica rimborso</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna importo, data e visibilità del rimborso registrato.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Transazione originale (solo lettura) */}
                             <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
                                 <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">

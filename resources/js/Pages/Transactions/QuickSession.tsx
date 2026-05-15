@@ -5,6 +5,7 @@ import CardBox from '@/Components/CardBox';
 import { Head, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { PageProps } from '@/types';
 import React, { useRef, useEffect } from 'react';
 
@@ -147,11 +148,11 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                 {/* Importo */}
                 <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
                         Importo <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -159,6 +160,7 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
                         type="number"
                         step="0.01"
                         min="0.01"
+                        required
                         value={data.amount}
                         onChange={e => setData('amount', e.target.value)}
                         placeholder="0,00"
@@ -174,11 +176,12 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
 
                 {/* Data */}
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
                         Data <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="date"
+                        required
                         value={data.date}
                         onChange={e => setData('date', e.target.value)}
                         className={clsx(
@@ -193,10 +196,11 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
 
                 {/* Conto */}
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
                         Conto <span className="text-red-500">*</span>
                     </label>
                     <select
+                        required
                         value={data.account_id}
                         onChange={e => setData('account_id', e.target.value)}
                         className={clsx(
@@ -216,10 +220,11 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
 
                 {/* Categoria */}
                 <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
                         Categoria <span className="text-red-500">*</span>
                     </label>
                     <select
+                        required
                         value={data.category_id}
                         onChange={e => setData('category_id', e.target.value)}
                         className={clsx(
@@ -318,9 +323,9 @@ export default function QuickSession({ accounts, categories, sessionTransactions
             <PageContent>
 
                 {/* Istruzione */}
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <span className="text-xl shrink-0">⚡</span>
-                    <div className="text-sm text-blue-800 dark:text-blue-200">
+                <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20 sm:mb-4 sm:gap-3 sm:p-4">
+                    <span className="shrink-0 text-lg sm:text-xl">⚡</span>
+                    <div className="text-xs leading-snug text-blue-800 dark:text-blue-200 sm:text-sm sm:leading-normal">
                         <strong>Modalità batch:</strong> inserisci rapidamente tutte le transazioni accumulate.
                         Ogni invio salva la transazione e lascia il form aperto per la prossima.
                         Al termine clicca <em>Fine sessione</em> per chiudere la lista.
@@ -328,8 +333,8 @@ export default function QuickSession({ accounts, categories, sessionTransactions
                 </div>
 
                 {/* Form di inserimento rapido */}
-                <CardBox className="p-5 shadow-sm">
-                    <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+                <CardBox className="p-4 shadow-sm sm:p-5">
+                    <h2 className="mb-3 text-base font-semibold text-gray-900 dark:text-white sm:mb-4">
                         Nuova Transazione
                     </h2>
                     <QuickEntryForm

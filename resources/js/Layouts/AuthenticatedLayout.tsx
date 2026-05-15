@@ -4,14 +4,13 @@ import { nav } from '@/utils/analytics';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
 import ProBadge from '@/Components/ProBadge';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ActiveHousehold, AppNotification, PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import React, { PropsWithChildren, ReactNode, useState, useEffect, FormEvent, useRef } from 'react';
 import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import axios from 'axios';
-import { resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
+import { FM_MOBILE_PRIMARY_FORM_ID, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
 type UINotification = AppNotification & { action_url?: string | null };
@@ -472,8 +471,6 @@ export default function Authenticated({
     const { auth, activeHousehold, notifications, plan: planData, isAdmin, privacy } = usePage<PageProps>().props;
     const user = auth.user;
     const { isModuleEnabled, isPro } = useModules();
-    const initialTheme = (user.preferences?.theme as string | undefined) ?? 'light';
-
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
     const [navSearch, setNavSearch] = useState('');
@@ -618,7 +615,7 @@ export default function Authenticated({
     const filteredNavigationSections = getFilteredSections(allNavigationSections);
 
     return (
-        <ThemeProvider initialTheme={initialTheme}>
+        <>
             <UmamiAnalytics enabled={privacy?.analytics_enabled ?? false} />
             <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
                 {/* Overlay Mobile */}
@@ -916,7 +913,7 @@ export default function Authenticated({
                     <PlanAlertBanner />
 
                     {/* Scrollable Content */}
-                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
+                    <main className="flex-1 overflow-y-auto p-2 pb-19 sm:p-4 md:p-6 lg:p-8 sm:pb-20 lg:pb-8">
                         <div className="max-w-7xl mx-auto">
                             {children}
                         </div>
@@ -926,7 +923,7 @@ export default function Authenticated({
 
             {/* Bottom Navigation — mobile only */}
             <MobileBottomNav isRouteActive={isRouteActive} onMenuOpen={() => setSidebarOpen(true)} />
-        </ThemeProvider>
+        </>
     );
 }
 
@@ -979,16 +976,28 @@ function MobileBottomNav({
 
                 {/* FAB — nascosto dove non c'è un'azione primaria sensata (es. simulazioni) */}
                 {primaryFab ? (
-                    <Link
-                        href={primaryFab.href}
-                        onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                        className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
-                        aria-label={primaryFab.ariaLabel}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M5 12h14" /><path d="M12 5v14" />
-                        </svg>
-                    </Link>
+                    primaryFab.mode === 'submit' ? (
+                        <button
+                            type="submit"
+                            form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
+                            onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
+                            className="flex min-w-[4.75rem] max-w-[5.5rem] shrink-0 items-center justify-center px-2 h-14 -mt-5 rounded-2xl bg-emerald-500 text-white text-[11px] font-bold leading-tight shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform sm:text-xs"
+                            aria-label={primaryFab.ariaLabel}
+                        >
+                            Salva
+                        </button>
+                    ) : (
+                        <Link
+                            href={primaryFab.href}
+                            onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
+                            className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                            aria-label={primaryFab.ariaLabel}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12h14" /><path d="M12 5v14" />
+                            </svg>
+                        </Link>
+                    )
                 ) : (
                     <div
                         className="flex w-14 h-14 shrink-0 -mt-5 items-center justify-center"

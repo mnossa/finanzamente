@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { useEffect, useMemo, useState } from 'react';
@@ -177,7 +178,7 @@ export default function Create({ sourceAccounts, userHouseholds, activeHousehold
                                 </p>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-4">
+                            <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                                 {/* Info box */}
                                 <div className="rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
                                     <div className="flex">

@@ -8,6 +8,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { recurring } from '@/utils/analytics';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -118,7 +119,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-4">
+                            <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                                 {/* Conto */}
                                 <div>
                                     <InputLabel htmlFor="account_id" value="Conto" />

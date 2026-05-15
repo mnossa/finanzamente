@@ -5,6 +5,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
 
@@ -89,7 +90,7 @@ export default function Edit({ currentSettings }: Props) {
                         </p>
                     </div>
 
-                    <form onSubmit={submit} className="p-6 space-y-4">
+                    <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="p-6 space-y-4">
                         {/* Domanda 1: Hai una Partita IVA? */}
                         <div>
                             <InputLabel

@@ -16,7 +16,7 @@ import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
 import CardBox from '@/Components/CardBox';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import axios from 'axios';
 import { filtersAnalytics, tx } from '@/utils/analytics';
@@ -86,6 +86,83 @@ interface Filters {
     from?: string;
     to?: string;
     tag_id?: string;
+    is_tax_deductible?: string;
+}
+
+/** Parametri ammessi per redirect verso indice (allineati al backend). */
+type IndexReturnQuery = Record<string, string | number>;
+
+function buildReturnIndexQuery(filters: Filters, currentPage: number): IndexReturnQuery {
+    const q: IndexReturnQuery = {};
+    if (filters.account_id) {
+        q.account_id = filters.account_id;
+    }
+    if (filters.category_id !== undefined && filters.category_id !== '') {
+        q.category_id = filters.category_id === '__none__' ? '__none__' : Number(filters.category_id);
+    }
+    if (filters.type) {
+        q.type = filters.type;
+    }
+    if (filters.from) {
+        q.from = filters.from;
+    }
+    if (filters.to) {
+        q.to = filters.to;
+    }
+    if (filters.tag_id) {
+        q.tag_id = Number(filters.tag_id);
+    }
+    if (filters.is_tax_deductible !== undefined && filters.is_tax_deductible !== '') {
+        q.is_tax_deductible = filters.is_tax_deductible;
+    }
+    if (currentPage > 1) {
+        q.page = currentPage;
+    }
+
+    return q;
+}
+
+function returnIndexQueryJson(filters: Filters, currentPage: number): string {
+    const payload = buildReturnIndexQuery(filters, currentPage);
+
+    return Object.keys(payload).length === 0 ? '' : JSON.stringify(payload);
+}
+
+function filtersToQueryParams(f: Filters): Record<string, string> {
+    const o: Record<string, string> = {};
+    (Object.entries(f) as [keyof Filters, string | undefined][]).forEach(([k, v]) => {
+        if (v !== undefined && v !== '') {
+            o[k] = v;
+        }
+    });
+
+    return o;
+}
+
+function computeNextFilters(filters: Filters, categories: Category[], key: string, value: string): Filters {
+    const next: Filters = { ...filters };
+    if (!value) {
+        delete (next as Record<string, unknown>)[key];
+    } else {
+        (next as Record<string, unknown>)[key] = value;
+    }
+    if (key === 'category_id' && value && value !== '__none__') {
+        const cat = categories.find((c) => String(c.id) === value);
+        if (cat) {
+            next.type = cat.type;
+        }
+    }
+    if (key === 'type' && value) {
+        const cid = next.category_id;
+        if (cid && cid !== '__none__') {
+            const cat = categories.find((c) => String(c.id) === String(cid));
+            if (cat && cat.type !== value) {
+                delete next.category_id;
+            }
+        }
+    }
+
+    return next;
 }
 
 interface DebtCredit {
@@ -324,11 +401,12 @@ function BulkEditModal({
 }
 
 
-function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect }: {
+function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect, indexQuery }: {
     transaction: Transaction;
     onDeleteClick: (id: number, description: string) => void;
     isSelected: boolean;
     onToggleSelect: (id: number) => void;
+    indexQuery: IndexReturnQuery;
 }) {
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
@@ -369,7 +447,7 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
 
             {/* Corpo — link su tutta la riga su mobile */}
             <Link
-                href={route('transactions.show', transaction.id)}
+                href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
                 className="min-w-0 flex-1"
             >
                 <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
@@ -422,14 +500,14 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
                 {/* Azioni — visibili solo su desktop o al hover */}
                 <div className="hidden sm:flex items-center gap-1">
                     <Link
-                        href={route('transactions.show', transaction.id)}
+                        href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
                         title="Visualizza"
                     >
                         <EyeIcon size={16} />
                     </Link>
                     <Link
-                        href={route('transactions.edit', transaction.id)}
+                        href={route('transactions.edit', { transaction: transaction.id, ...indexQuery })}
                         className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
                         title="Modifica"
                     >
@@ -469,6 +547,27 @@ export default function Index({
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
     const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
+
+    const returnQuery = useMemo(
+        () => buildReturnIndexQuery(filters, transactions.current_page),
+        [filters, transactions.current_page],
+    );
+
+    const visibleCategories = useMemo(() => {
+        const base = filters.type ? categories.filter((c) => c.type === filters.type) : categories;
+        if (!filters.category_id || filters.category_id === '__none__') {
+            return base;
+        }
+        const selected = categories.find((c) => String(c.id) === String(filters.category_id));
+        if (!selected) {
+            return base;
+        }
+        if (base.some((c) => c.id === selected.id)) {
+            return base;
+        }
+
+        return [...base, selected];
+    }, [categories, filters.type, filters.category_id]);
 
     // Polling import attivi: aggiorna il banner e ricarica la pagina quando terminano
     type ActiveImport = { id: number; status: string; rows_total: number; rows_imported: number; created_at: string };
@@ -547,7 +646,9 @@ export default function Index({
 
     const handleConfirmDelete = () => {
         if (deleteTarget) {
+            const rq = returnIndexQueryJson(filters, transactions.current_page);
             router.delete(route('transactions.destroy', deleteTarget.id), {
+                ...(rq ? { data: { return_index_query: rq } } : {}),
                 onSuccess: () => tx.deleted(),
             });
         }
@@ -565,8 +666,12 @@ export default function Index({
     };
 
     const handleConfirmBulkDelete = () => {
+        const rq = returnIndexQueryJson(filters, transactions.current_page);
         router.delete(route('transactions.bulk-destroy'), {
-            data: { ids: Array.from(selectedIds) },
+            data: {
+                ids: Array.from(selectedIds),
+                ...(rq ? { return_index_query: rq } : {}),
+            },
             onFinish: () => {
                 setSelectedIds(new Set());
             },
@@ -597,6 +702,11 @@ export default function Index({
             payload.account_id = Number(state.account_id);
         }
 
+        const rq = returnIndexQueryJson(filters, transactions.current_page);
+        if (rq) {
+            payload.return_index_query = rq;
+        }
+
         router.patch(route('transactions.bulk-update'), payload, {
             onSuccess: () => {
                 setSelectedIds(new Set());
@@ -606,6 +716,7 @@ export default function Index({
     };
 
     const handleFilterChange = (key: string, value: string) => {
+        const next = computeNextFilters(filters, categories, key, value);
         if (value) {
             const filterMap: Record<string, Parameters<typeof filtersAnalytics.applied>[0]> = {
                 account_id: 'account',
@@ -617,19 +728,18 @@ export default function Index({
             };
             if (filterMap[key]) filtersAnalytics.applied(filterMap[key]);
         }
-        router.get(
-            route('transactions.index'),
-            { ...filters, [key]: value || undefined },
-            { preserveState: true, replace: true }
-        );
+        router.get(route('transactions.index'), filtersToQueryParams(next), {
+            preserveState: true,
+            replace: true,
+        });
     };
+
+    const hasFilters = Object.values(filters).some((v) => v !== undefined && v !== '');
 
     const clearFilters = () => {
-        if (Object.values(filters).some(Boolean)) filtersAnalytics.cleared();
+        if (hasFilters) filtersAnalytics.cleared();
         router.get(route('transactions.index'));
     };
-
-    const hasFilters = Object.values(filters).some((v) => v);
 
     return (
         <AuthenticatedLayout
@@ -751,7 +861,7 @@ export default function Index({
 
                             {/* Corpo filtri — 2 colonne su mobile, flex-wrap su sm+ */}
                             <div className="border-t border-gray-100 px-4 pb-4 pt-3 dark:border-gray-700">
-                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
                                     <select
                                         className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={filters.account_id || ''}
@@ -766,43 +876,49 @@ export default function Index({
                                     </select>
                                     <select
                                         className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={filters.type || ''}
+                                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                                    >
+                                        <option value="">Tutti i tipi</option>
+                                        <option value="income">Entrate</option>
+                                        <option value="expense">Uscite</option>
+                                    </select>
+                                    <select
+                                        className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={filters.category_id || ''}
                                         onChange={(e) => handleFilterChange('category_id', e.target.value)}
                                     >
                                         <option value="">Tutte le categorie</option>
                                         <option value="__none__">— Senza categoria</option>
-                                        {categories.map((category) => (
+                                        {visibleCategories.map((category) => (
                                             <option key={category.id} value={category.id}>
                                                 {category.icon} {category.name}
                                             </option>
                                         ))}
                                     </select>
-                                    <select
-                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.type || ''}
-                                        onChange={(e) => handleFilterChange('type', e.target.value)}
-                                    >
-                                        <option value="">Tipo</option>
-                                        <option value="income">Entrate</option>
-                                        <option value="expense">Uscite</option>
-                                    </select>
-                                    <input
-                                        type="date"
-                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.from || ''}
-                                        onChange={(e) => handleFilterChange('from', e.target.value)}
-                                        title="Da"
-                                    />
-                                    <input
-                                        type="date"
-                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.to || ''}
-                                        onChange={(e) => handleFilterChange('to', e.target.value)}
-                                        title="A"
-                                    />
+                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-44">
+                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Data da</span>
+                                        <input
+                                            type="date"
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.from || ''}
+                                            onChange={(e) => handleFilterChange('from', e.target.value)}
+                                            aria-label="Data da"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-44">
+                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Data a</span>
+                                        <input
+                                            type="date"
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.to || ''}
+                                            onChange={(e) => handleFilterChange('to', e.target.value)}
+                                            aria-label="Data a"
+                                        />
+                                    </div>
                                     {tags.length > 0 && (
                                         <select
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                             value={filters.tag_id || ''}
                                             onChange={(e) => handleFilterChange('tag_id', e.target.value)}
                                         >
@@ -816,6 +932,7 @@ export default function Index({
                                     )}
                                     {hasFilters && (
                                         <button
+                                            type="button"
                                             onClick={clearFilters}
                                             className="col-span-2 sm:col-span-1 text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 py-2 sm:py-0"
                                         >
@@ -876,6 +993,7 @@ export default function Index({
                                             onDeleteClick={openDeleteDialog}
                                             isSelected={selectedIds.has(transaction.id)}
                                             onToggleSelect={toggleSelect}
+                                            indexQuery={returnQuery}
                                         />
                                     ))}
                                 </div>

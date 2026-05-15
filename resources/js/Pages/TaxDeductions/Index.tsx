@@ -6,6 +6,7 @@ import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import clsx from 'clsx';
 import React from 'react';
 import CardBox from '@/Components/CardBox';
+import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Category {
     id: number;
@@ -155,7 +156,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                     {/* Statistiche */}
                     {transactions.length > 0 ? (
                         <>
-                            <div className="grid gap-4 sm:grid-cols-3">
+                            <div className={moneyKpiGrid3}>
                                 {/* Totale transazioni */}
                                 <CardBox className="p-6 shadow-sm">
                                     <div className="flex items-center justify-between">
@@ -163,7 +164,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                                 Transazioni
                                             </p>
-                                            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                                            <p className={clsx('mt-2 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                                 {safeSummary.total_transactions}
                                             </p>
                                         </div>
@@ -178,7 +179,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                                 Totale Spese
                                             </p>
-                                            <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                                            <p className={clsx('mt-2 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                                 {formatCurrency(safeSummary.total_amount)}
                                             </p>
                                         </div>
@@ -193,7 +194,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                             <p className="text-sm font-medium text-emerald-50">
                                                 Importo Detraibile
                                             </p>
-                                            <p className="mt-2 text-3xl font-bold text-white">
+                                            <p className={clsx('mt-2 text-3xl font-bold text-white', moneyTabular)}>
                                                 {formatCurrency(safeSummary.total_deductible)}
                                             </p>
                                         </div>
@@ -224,7 +225,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                                         <p className="text-sm text-gray-500 dark:text-gray-400">
                                                             {typeTransactions.length} {typeTransactions.length === 1 ? 'transazione' : 'transazioni'}
                                                         </p>
-                                                        <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <p className={clsx('text-lg font-semibold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
                                                             Detraibile: {formatCurrency(typeDeductible)}
                                                         </p>
                                                     </div>
@@ -254,10 +255,10 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="font-semibold text-gray-900 dark:text-white">
+                                                                <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
                                                                     {formatCurrency(Math.abs(transaction.amount), transaction.account.currency_code)}
                                                                 </p>
-                                                                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                                                                <p className={clsx('text-sm text-emerald-600 dark:text-emerald-400', moneyTabular)}>
                                                                     {transaction.tax_deduction_rate}% · {formatCurrency(
                                                                         Math.abs(transaction.amount) * transaction.tax_deduction_rate / 100,
                                                                         transaction.account.currency_code
@@ -275,7 +276,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
                                                     <span className="font-medium text-gray-700 dark:text-gray-300">
                                                         Totale categoria
                                                     </span>
-                                                    <span className="font-bold text-gray-900 dark:text-white">
+                                                    <span className={clsx('font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                                         {formatCurrency(typeTotal)}
                                                     </span>
                                                 </div>

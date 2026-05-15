@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { selectOptionByText, visibleHrefLocator } from '../helpers';
+import { selectOptionByText, visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
 
 async function ensureAssetExists(page: Page): Promise<string> {
     await page.goto('/investimenti');
@@ -18,7 +18,7 @@ async function ensureAssetExists(page: Page): Promise<string> {
 
     await page.locator('input[name="name"]').fill(assetName);
     await page.locator('input[name="symbol"]').fill(`E2E${Date.now().toString().slice(-4)}`);
-    await page.locator('[type="submit"]').click();
+    await primaryFormSubmitLocator(page).click();
 
     await expect(page).toHaveURL(/\/asset-investimento/, { timeout: 15_000 });
 
@@ -36,7 +36,7 @@ async function ensureAssetInCreateSelect(page: Page): Promise<void> {
     await page.goto('/asset-investimento/crea');
     await page.locator('input[name="name"]').fill(assetName);
     await page.locator('input[name="symbol"]').fill(`AF${Date.now().toString().slice(-4)}`);
-    await page.locator('[type="submit"]').click();
+    await primaryFormSubmitLocator(page).click();
 
     await expect(page).toHaveURL(/\/asset-investimento/, { timeout: 15_000 });
 
@@ -73,7 +73,7 @@ test.describe('Investimenti', () => {
 
         await page.locator('input[name="quantity"]').fill('2');
         await page.locator('input[name="buy_price"]').fill('150');
-        await page.locator('[type="submit"]').click();
+        await primaryFormSubmitLocator(page).click();
 
         await expect(page).toHaveURL(/\/investimenti/, { timeout: 15_000 });
         await expect(page.getByRole('heading', { name: /posizioni aperte/i })).toBeVisible();

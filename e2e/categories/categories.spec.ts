@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { visibleHrefLocator } from '../helpers';
+import { visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
 
 /**
  * Test E2E — Categorie
@@ -29,7 +29,7 @@ test.describe('Categorie', () => {
     test('il form di creazione ha il campo nome e il submit', async ({ page }) => {
         await page.goto('/categorie/crea');
         await expect(page.locator('input[name="name"]')).toBeVisible();
-        await expect(page.locator('[type="submit"]')).toBeVisible();
+        await expect(primaryFormSubmitLocator(page)).toBeVisible();
     });
 
     test('crea una nuova categoria e appare nella lista', async ({ page }) => {
@@ -44,7 +44,7 @@ test.describe('Categorie', () => {
             await typeSelect.selectOption('expense');
         }
 
-        await page.locator('[type="submit"]').click();
+        await primaryFormSubmitLocator(page).click();
 
         await expect(page).toHaveURL(/\/categorie/, { timeout: 10_000 });
         await expect(page.getByText(nomeCategoria)).toBeVisible({ timeout: 8_000 });

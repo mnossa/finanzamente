@@ -18,6 +18,7 @@ import {
     CartesianGrid,
 } from 'recharts';
 import { categoryPalette } from '@/Components/Charts/chartConfig';
+import { moneyMetricGrid3 } from '@/utils/moneyGridClasses';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -141,7 +142,7 @@ function LifestylePieTooltip({ active, payload, total, formatEurFn }: PieTooltip
                 <p className="tabular-nums text-gray-500 dark:text-gray-400">{pct.toFixed(1)}% del totale</p>
             )}
             {p.otherDetail && (
-                <p className="mt-1 max-w-[min(280px,85vw)] text-[11px] leading-snug break-words text-gray-500 dark:text-gray-400">
+                <p className="mt-1 max-w-[min(280px,85vw)] text-[11px] leading-snug wrap-break-word text-gray-500 dark:text-gray-400">
                     Include: {p.otherDetail}
                 </p>
             )}
@@ -211,10 +212,22 @@ function ScoreGauge({ score }: { score: number | null }) {
 
 function MetricCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
     return (
-        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-700/50">
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
-            <p className={clsx('mt-1 text-xl font-bold', color ?? 'text-gray-900 dark:text-white')}>{value}</p>
-            {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
+        <div className="min-w-0 rounded-xl bg-gray-50 p-2.5 min-[380px]:p-3 sm:p-4 dark:bg-gray-700/50">
+            <p className="hyphens-auto wrap-break-word text-[10px] font-medium leading-snug text-gray-500 dark:text-gray-400 sm:text-xs">
+                {label}
+            </p>
+            <p
+                className={clsx(
+                    'mt-0.5 min-w-0 wrap-break-word text-sm font-bold tabular-nums leading-tight tracking-tight',
+                    'min-[380px]:text-base sm:text-lg lg:text-xl',
+                    color ?? 'text-gray-900 dark:text-white',
+                )}
+            >
+                {value}
+            </p>
+            {sub && (
+                <p className="mt-0.5 text-[10px] leading-snug text-gray-400 sm:text-xs">{sub}</p>
+            )}
         </div>
     );
 }
@@ -276,16 +289,18 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                     {/* ── Score + metriche ────────────────────────────────────────────────── */}
                     <div className="grid gap-6 lg:grid-cols-3">
                         {/* Gauge */}
-                        <CardBox className="flex items-center justify-center">
-                            <ScoreGauge score={metrics.lifestyle_score} />
+                        <CardBox className="flex items-center justify-center p-3! sm:p-6!">
+                            <div className="max-[359px]:origin-top max-[359px]:scale-[0.88] sm:scale-100">
+                                <ScoreGauge score={metrics.lifestyle_score} />
+                            </div>
                         </CardBox>
 
                         {/* Metriche di dettaglio */}
-                        <CardBox className="lg:col-span-2">
-                            <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+                        <CardBox className="p-3! sm:p-6! lg:col-span-2">
+                            <h3 className="mb-3 font-semibold text-gray-900 dark:text-white sm:mb-4">
                                 Riepilogo storico completo
                             </h3>
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            <div className={moneyMetricGrid3}>
                                 <MetricCard
                                     label="Reddito Lordo"
                                     value={formatEur(metrics.gross_income)}
@@ -349,11 +364,11 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                         <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
                             Tendenza — ultimi 30 giorni
                         </h3>
-                        <div className="flex flex-wrap items-center gap-6">
+                        <div className="flex flex-wrap items-center gap-4 min-[380px]:gap-6">
                             {/* Score ultimi 30 gg */}
                             <div className="text-center">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Ultimi 30 gg</p>
-                                <p className="text-2xl font-bold"
+                                <p className="text-xl font-bold tabular-nums min-[380px]:text-2xl"
                                     style={{ color: trend.last30_score !== null ? (trend.last30_score >= 30 ? '#10b981' : trend.last30_score >= 10 ? '#f59e0b' : '#ef4444') : '#94a3b8' }}
                                 >
                                     {trend.last30_score !== null ? `${trend.last30_score.toFixed(1)}%` : '—'}
@@ -386,13 +401,13 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                             {/* Score 30 gg precedenti */}
                             <div className="text-center">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">30 gg precedenti</p>
-                                <p className="text-2xl font-bold text-gray-400 dark:text-gray-500">
+                                <p className="text-xl font-bold tabular-nums text-gray-400 dark:text-gray-500 min-[380px]:text-2xl">
                                     {trend.prev30_score !== null ? `${trend.prev30_score.toFixed(1)}%` : '—'}
                                 </p>
                             </div>
 
                             {/* Messaggio testuale */}
-                            <div className="ml-auto text-sm">
+                            <div className="w-full text-sm min-[480px]:ml-auto min-[480px]:w-auto">
                                 {trend.direction === 'up' && (
                                     <p className="text-emerald-600 dark:text-emerald-400">🎉 Stai migliorando il tuo stile di vita!</p>
                                 )}
@@ -472,7 +487,7 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                                         aria-hidden
                                                     />
                                                     <span
-                                                        className="break-words text-gray-700 dark:text-gray-300"
+                                                        className="wrap-break-word text-gray-700 dark:text-gray-300"
                                                         title={d.name}
                                                     >
                                                         {d.name}
@@ -514,7 +529,7 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                                             style={{ backgroundColor: row.color }}
                                                             aria-hidden
                                                         />
-                                                        <span className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-gray-900 dark:text-white">
+                                                        <span className="min-w-0 flex-1 wrap-break-word text-sm font-medium leading-snug text-gray-900 dark:text-white">
                                                             {row.fullName}
                                                         </span>
                                                     </div>
@@ -611,8 +626,8 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                             Dettaglio per Categoria
                         </h3>
                         {metrics.category_breakdown.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                            <div className="overflow-x-auto -mx-1 px-1 sm:mx-0 sm:px-0">
+                                <table className="w-full min-w-0 text-xs sm:text-sm">
                                     <thead>
                                         <tr className="border-b border-gray-100 dark:border-gray-700">
                                             <th className="pb-3 text-left font-medium text-gray-500 dark:text-gray-400">Categoria</th>
@@ -631,17 +646,17 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                                     cat.excluded && 'opacity-50'
                                                 )}
                                             >
-                                                <td className="py-3">
-                                                    <div className="flex items-center gap-2">
+                                                <td className="min-w-0 py-3">
+                                                    <div className="flex min-w-0 items-center gap-2">
                                                         <span
-                                                            className="inline-block h-2.5 w-2.5 rounded-full"
+                                                            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
                                                             style={{ backgroundColor: cat.color ?? categoryPalette[i % categoryPalette.length] }}
                                                         />
-                                                        <span>{cat.icon}</span>
-                                                        <span className="font-medium text-gray-900 dark:text-white">{cat.name}</span>
+                                                        <span className="shrink-0">{cat.icon}</span>
+                                                        <span className="min-w-0 wrap-break-word font-medium text-gray-900 dark:text-white">{cat.name}</span>
                                                     </div>
                                                 </td>
-                                                <td className="py-3 text-right text-gray-700 dark:text-gray-300">
+                                                <td className="max-w-[42vw] py-3 text-right tabular-nums text-gray-700 wrap-break-word dark:text-gray-300 sm:max-w-none">
                                                     {formatEur(cat.amount)}
                                                 </td>
                                                 <td className="py-3 text-right text-gray-500 dark:text-gray-400">
@@ -680,7 +695,7 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                     <tfoot>
                                         <tr className="border-t-2 border-gray-200 dark:border-gray-600">
                                             <td className="pt-3 font-semibold text-gray-900 dark:text-white">Totale</td>
-                                            <td className="pt-3 text-right font-semibold text-red-500">
+                                            <td className="pt-3 text-right font-semibold tabular-nums text-red-500 wrap-break-word">
                                                 {formatEur(metrics.total_expenses)}
                                             </td>
                                             <td className="pt-3 text-right font-medium text-gray-500">100%</td>

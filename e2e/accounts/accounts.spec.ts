@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { visibleHrefLocator } from '../helpers';
+import { visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
 
 /**
  * Test E2E — Conti
@@ -30,7 +30,7 @@ test.describe('Conti', () => {
     test('il form di creazione conto ha il campo nome e il submit', async ({ page }) => {
         await page.goto('/conti/crea');
         await expect(page.locator('input[name="name"]')).toBeVisible();
-        await expect(page.locator('[type="submit"]')).toBeVisible();
+        await expect(primaryFormSubmitLocator(page)).toBeVisible();
     });
 
     test('crea un nuovo conto e appare nella lista', async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe('Conti', () => {
             await saldoInput.fill('100');
         }
 
-        await page.locator('[type="submit"]').click();
+        await primaryFormSubmitLocator(page).click();
 
         await expect(page).toHaveURL(/\/conti/, { timeout: 10_000 });
         await expect(
@@ -64,7 +64,7 @@ test.describe('Conti', () => {
 
     test('submit senza nome rimane sulla pagina di creazione', async ({ page }) => {
         await page.goto('/conti/crea');
-        await page.locator('[type="submit"]').click();
+        await primaryFormSubmitLocator(page).click();
         expect(page.url()).toContain('/crea');
     });
 });

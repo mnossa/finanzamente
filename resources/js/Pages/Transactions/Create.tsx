@@ -11,6 +11,7 @@ import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TagAutocomplete from '@/Components/TagAutocomplete';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
@@ -218,7 +219,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-4">
+                            <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                                 {/* Importo e Data — in cima, visibili subito */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>

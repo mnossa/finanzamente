@@ -52,7 +52,7 @@ Webapp di gestione finanziaria personale, rivolta a utenti residenti in Italia t
 ## Best Practice
 
 - **Documentazione**: Commentare il codice dove necessario e mantenere aggiornata la documentazione.
-- **Testing**: Implementare test automatici per le funzionalità principali. Struttura: `tests/Feature/` per test di integrazione (rotte, controller, flussi utente) e `tests/Unit/` per test di logica isolata (modelli, service, helper). Le classi di test usano `PascalCase` con suffisso `Test` (es. `TransactionControllerTest`, `HouseholdTest`). Eseguire sempre con `make test`.
+- **Testing**: Implementare test automatici per le funzionalità principali. Struttura: `tests/Feature/` per test di integrazione (rotte, controller, flussi utente) e `tests/Unit/` per test di logica isolata (modelli, service, helper). Le classi di test usano `PascalCase` con suffisso `Test` (es. `TransactionControllerTest`, `HouseholdTest`). Eseguire sempre con `make test`. Dopo ogni modifica al codice seguire anche **`make pint-check`** e **`make playwright`**, come da _Orchestratore Workflow — punto 4 (Verifica prima di considerare un task completato)_.
   - **Obbligo di test per ogni nuova funzionalità**: ogni nuova feature introdotta nel codebase — incluse macro `Str::`, helper, observer, service, renderer personalizzati — deve essere accompagnata da almeno un test `Unit` o `Feature` che ne verifichi il comportamento. L'assenza di test è considerata un bug, non una lacuna minore.
   - **Test di regressione per integrazioni di terze parti**: quando si wrappano o si delegano classi di librerie esterne (es. `League\CommonMark`, `League\Config`), il test deve verificare che l'oggetto delegante implementi tutte le interfacce richieste dalla libreria (es. `ConfigurationAwareInterface`) per evitare errori di proprietà non inizializzata in produzione.
 - **CI/CD**: Integrare pipeline di build, test e deploy.
@@ -93,11 +93,13 @@ Il progetto utilizza un **Makefile** per semplificare le operazioni comuni di sv
 
 - **`make test`** - **Esegue l'intera suite di test PHPUnit** (comando da usare sempre per i test unitari/feature)
 - I test vengono eseguiti nel container Docker con SQLite in-memory per velocità e isolamento
+- **`make pint-check`** - Verifica stile PHP come in CI (non modifica i file); se fallisce usare **`make pint-fix`**
+- Dopo modifiche al codice: eseguire **`make test`**, **`make pint-check`** e **`make playwright`** in sequenza prima di chiudere il task (dettaglio in _Orchestratore Workflow — punto 4_)
 
 ### Test E2E Playwright
 
 - **`make e2e-seed`** - Prepara il database con l'utente E2E (migrate:fresh + E2ESeeder)
-- **`make playwright`** - Esegui i test E2E in modalità headless (richiede app attiva su porta 8080)
+- **`make playwright`** - Esegui i test E2E in modalità headless (il Makefile usa l'istanza E2E su porta **8081**; richiede stack Docker attivo, vedi target `playwright` nel `Makefile`)
 - **`make playwright-ui`** - Esegui i test E2E in modalità UI interattiva (solo locale)
 - **`make playwright-report`** - Apri il report HTML dell'ultima esecuzione
 
@@ -331,6 +333,11 @@ Il seeder `E2ESeeder` (`database/seeders/E2ESeeder.php`) crea:
 - Confronta il comportamento tra la versione principale e le tue modifiche quando rilevante
 - Chiediti: "Un ingegnere senior approverebbe questo?"
 - Esegui i test, controlla i log, dimostra la correttezza
+- **Dopo modifiche al codice** (backend PHP, frontend TypeScript/React, rotte, Blade con logica, migrazioni, configurazione con impatto su runtime): prima di chiudere il task eseguire **sempre** i gate di regressione sotto, in ordine; se qualcosa fallisce, correggere e ripetere fino a esito pulito:
+  1. **`make test`** — intera suite PHPUnit (`tests/Unit`, `tests/Feature`).
+  2. **`make pint-check`** — stile PHP come in CI (read-only); se segnala problemi, applicare **`make pint-fix`** e verificare le diff.
+  3. **`make playwright`** — test E2E Playwright headless (usa il target Makefile: prepara asset, seed E2E, istanza su porta **8081**). Richiede **Docker in esecuzione** (`make up` se lo stack non è attivo). Correggere eventuali fallimenti (UI, rotte, selettori, seeder E2E) prima di considerare il lavoro concluso.
+- **Eccezione pratica**: interventi che non toccano né PHP né TS/JS né markup navigabile (es. solo testo in `.md` senza impatto su build) possono omettere Playwright; restano obbligatori `make test` e `make pint-check` se esiste codice PHP modificato nello stesso intervento.
 
 ### 5. Pretendi Eleganza (Bilanciata)
 

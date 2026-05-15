@@ -13,6 +13,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
+import { moneyCardGrid3, moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 import { ProgressBar } from '@/Components/ProgressBar';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
@@ -88,10 +89,10 @@ function BudgetCard({ budget, onDeleteClick }: { budget: Budget; onDeleteClick: 
 
                 <div className="mt-4">
                     <div className="mb-1 flex items-end justify-between">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <span className={clsx('text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                             {formatCurrency(budget.spent, budget.currency.code)}
                         </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className={clsx('text-sm text-gray-500 dark:text-gray-400', moneyTabular)}>
                             / {formatCurrency(budget.amount, budget.currency.code)}
                         </span>
                     </div>
@@ -103,6 +104,7 @@ function BudgetCard({ budget, onDeleteClick }: { budget: Budget; onDeleteClick: 
                         <span>{budget.percentage.toFixed(1)}% utilizzato</span>
                         <span
                             className={clsx(
+                                moneyTabular,
                                 budget.is_exceeded && 'font-semibold text-red-500'
                             )}
                         >
@@ -218,12 +220,12 @@ export default function Index({ budgets }: IndexProps) {
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <div className="grid gap-4 sm:grid-cols-3">
+                            <div className={moneyKpiGrid3}>
                                 <div className="overflow-hidden rounded-xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-slate-300">
                                         Budget Totale
                                     </h3>
-                                    <p className="mt-2 text-3xl font-bold">
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
                                         {formatCurrency(totalBudgeted)}
                                     </p>
                                     <p className="mt-1 text-sm text-slate-400">
@@ -234,7 +236,7 @@ export default function Index({ budgets }: IndexProps) {
                                     <h3 className="text-sm font-medium text-emerald-100">
                                         Speso Finora
                                     </h3>
-                                    <p className="mt-2 text-3xl font-bold">
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
                                         {formatCurrency(totalSpent)}
                                     </p>
                                     <p className="mt-1 text-sm text-emerald-200">
@@ -255,7 +257,7 @@ export default function Index({ budgets }: IndexProps) {
                                     <h3 className="text-sm font-medium opacity-80">
                                         Budget Sforati
                                     </h3>
-                                    <p className="mt-2 text-3xl font-bold">{exceededCount}</p>
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>{exceededCount}</p>
                                     <p className="mt-1 text-sm opacity-80">
                                         {exceededCount === 0
                                             ? 'Ottimo lavoro!'
@@ -270,7 +272,7 @@ export default function Index({ budgets }: IndexProps) {
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                                         Budget Attivi
                                     </h3>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className={moneyCardGrid3}>
                                         {activeBudgets.map((budget) => (
                                             <BudgetCard key={budget.id} budget={budget} onDeleteClick={openDeleteDialog} />
                                         ))}
@@ -284,7 +286,7 @@ export default function Index({ budgets }: IndexProps) {
                                     <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
                                         Budget Passati
                                     </h3>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className={moneyCardGrid3}>
                                         {pastBudgets.map((budget) => (
                                             <BudgetCard key={budget.id} budget={budget} onDeleteClick={openDeleteDialog} />
                                         ))}

@@ -12,6 +12,7 @@ import { ProgressBar } from '@/Components/ProgressBar';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
+import { moneyCardGrid3, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -104,16 +105,16 @@ function GoalCard({ goal }: { goal: FinancialGoal }) {
             <div className="mt-4">
                 <div className="flex items-end justify-between">
                     <div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <p className={clsx('text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                             {formatCurrency(goal.current_amount, goal.currency.code)}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className={clsx('text-sm text-gray-500 dark:text-gray-400', moneyTabular)}>
                             di {formatCurrency(goal.target_amount, goal.currency.code)}
                         </p>
                     </div>
                     <div className="text-right">
                         <p
-                            className="text-3xl font-bold"
+                            className={clsx('text-3xl font-bold', moneyTabular)}
                             style={{ color: goal.color || '#6366f1' }}
                         >
                             {goal.progress_percentage}%
@@ -124,7 +125,7 @@ function GoalCard({ goal }: { goal: FinancialGoal }) {
                     <ProgressBar percentage={goal.progress_percentage} color={goal.color} />
                 </div>
                 {goal.remaining_amount > 0 && goal.status === 'in_progress' && (
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p className={clsx('mt-2 text-sm text-gray-500 dark:text-gray-400', moneyTabular)}>
                         Mancano ancora {formatCurrency(goal.remaining_amount, goal.currency.code)}
                     </p>
                 )}
@@ -170,12 +171,12 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                         </div>
                     </SectionCard>
                     {/* Statistiche */}
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className={moneyKpiGrid4}>
                         <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Obiettivi Attivi
                             </p>
-                            <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {stats.in_progress}
                             </p>
                         </CardBox>
@@ -183,7 +184,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Obiettivi Raggiunti
                             </p>
-                            <p className="mt-1 text-3xl font-bold text-green-500">
+                            <p className={clsx('mt-1 text-3xl font-bold text-green-500', moneyTabular)}>
                                 {stats.reached}
                             </p>
                         </CardBox>
@@ -191,7 +192,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Totale Risparmiato
                             </p>
-                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(stats.total_current)}
                             </p>
                         </CardBox>
@@ -199,7 +200,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Progresso Complessivo
                             </p>
-                            <p className="mt-1 text-3xl font-bold text-emerald-600">
+                            <p className={clsx('mt-1 text-3xl font-bold text-emerald-600', moneyTabular)}>
                                 {overallProgress}%
                             </p>
                             <div className="mt-2">
@@ -214,7 +215,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <h3 className="mb-4 font-medium text-gray-900 dark:text-white">
                                 🎯 In Corso ({inProgressGoals.length})
                             </h3>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className={moneyCardGrid3}>
                                 {inProgressGoals.map((goal) => (
                                     <GoalCard key={goal.id} goal={goal} />
                                 ))}
@@ -228,7 +229,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <h3 className="mb-4 font-medium text-gray-500 dark:text-gray-400">
                                 ✅ Raggiunti ({reachedGoals.length})
                             </h3>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className={moneyCardGrid3}>
                                 {reachedGoals.map((goal) => (
                                     <GoalCard key={goal.id} goal={goal} />
                                 ))}
@@ -242,7 +243,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <h3 className="mb-4 font-medium text-gray-400 dark:text-gray-500">
                                 ❌ Annullati ({cancelledGoals.length})
                             </h3>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className={moneyCardGrid3}>
                                 {cancelledGoals.map((goal) => (
                                     <GoalCard key={goal.id} goal={goal} />
                                 ))}

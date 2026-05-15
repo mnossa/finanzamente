@@ -7,6 +7,7 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import EmojiPicker from '@/Components/EmojiPicker';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { cats } from '@/utils/analytics';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -60,7 +61,7 @@ export default function Create({ categoryTypes }: CreateProps) {
 
             <PageContent maxWidth="2xl">
                     <CardBox>
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>
                                 <InputLabel htmlFor="name" value="Nome della categoria" />

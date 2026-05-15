@@ -7,6 +7,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
@@ -96,7 +97,7 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
 
             <PageContent maxWidth="2xl">
                     <CardBox className="overflow-hidden p-6 shadow-sm">
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Conto */}
                             <div>
                                 <InputLabel htmlFor="account_id" value="Conto" />

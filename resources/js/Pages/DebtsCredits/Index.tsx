@@ -12,6 +12,7 @@ import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
+import { moneyCardGrid3, moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -126,6 +127,7 @@ function DebtCreditCard({ item }: { item: DebtCredit }) {
                         <p
                             className={clsx(
                                 'text-lg font-bold',
+                                moneyTabular,
                                 isDebt ? 'text-red-500' : 'text-emerald-500'
                             )}
                         >
@@ -220,12 +222,12 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <div className="grid gap-4 sm:grid-cols-3">
+                            <div className={moneyKpiGrid3}>
                                 <div className="overflow-hidden rounded-xl bg-linear-to-br from-red-500 to-rose-600 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-red-100">
                                         Debiti Aperti
                                     </h3>
-                                    <p className="mt-2 text-3xl font-bold">
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
                                         {formatCurrency(summary.total_debts)}
                                     </p>
                                     <p className="mt-1 text-sm text-red-200">
@@ -236,7 +238,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     <h3 className="text-sm font-medium text-emerald-100">
                                         Crediti Aperti
                                     </h3>
-                                    <p className="mt-2 text-3xl font-bold">
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
                                         {formatCurrency(summary.total_credits)}
                                     </p>
                                     <p className="mt-1 text-sm text-emerald-200">
@@ -254,7 +256,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     <h3 className="text-sm font-medium opacity-80">
                                         Bilancio Netto
                                     </h3>
-                                    <p className="mt-2 text-3xl font-bold">
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
                                         {formatCurrency(
                                             summary.total_credits - summary.total_debts
                                         )}
@@ -275,7 +277,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                                         Aperti ({openItems.length})
                                     </h3>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className={moneyCardGrid3}>
                                         {openItems.map((item) => (
                                             <DebtCreditCard key={item.id} item={item} />
                                         ))}
@@ -289,7 +291,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
                                         Chiusi ({closedItems.length})
                                     </h3>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className={moneyCardGrid3}>
                                         {closedItems.map((item) => (
                                             <DebtCreditCard key={item.id} item={item} />
                                         ))}

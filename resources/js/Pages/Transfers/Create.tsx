@@ -9,6 +9,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { transfers } from '@/utils/analytics';
 import clsx from 'clsx';
 import { useMemo } from 'react';
@@ -113,7 +114,7 @@ export default function Create({ accounts }: CreateProps) {
                                 </LinkButton>
                             </div>
                         ) : (
-                            <form onSubmit={submit} className="space-y-4">
+                            <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                                 {/* Conti */}
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>

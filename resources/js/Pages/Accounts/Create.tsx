@@ -10,6 +10,7 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { accs } from '@/utils/analytics';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
@@ -109,7 +110,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                 Imposta il conto iniziale per tracciare saldo e movimenti.
                             </p>
                         </header>
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>
                                 <InputLabel htmlFor="name" value="Nome del conto" />

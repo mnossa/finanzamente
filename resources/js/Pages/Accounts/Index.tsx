@@ -12,6 +12,7 @@ import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
+import { moneyCardGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Account {
@@ -79,6 +80,7 @@ function AccountCard({ account }: { account: Account }) {
                         <p
                             className={clsx(
                                 'text-lg font-bold',
+                                moneyTabular,
                                 account.current_balance >= 0
                                     ? 'text-gray-900 dark:text-white'
                                     : 'text-red-500'
@@ -87,7 +89,7 @@ function AccountCard({ account }: { account: Account }) {
                             {formatCurrency(account.current_balance, account.currency_code)}
                         </p>
                         {account.current_balance !== account.initial_balance && (
-                            <p className="text-xs text-gray-400">
+                            <p className={clsx('text-xs text-gray-400', moneyTabular)}>
                                 Iniziale: {formatCurrency(account.initial_balance, account.currency_code)}
                             </p>
                         )}
@@ -170,7 +172,7 @@ export default function Index({
                                 <h3 className="text-sm font-medium text-slate-300">
                                     Patrimonio Totale
                                 </h3>
-                                <p className="mt-2 text-4xl font-bold">
+                                <p className={clsx('mt-2 text-4xl font-bold', moneyTabular)}>
                                     {formatCurrency(totalBalance)}
                                 </p>
                                 <p className="mt-1 text-sm text-slate-400">
@@ -184,7 +186,7 @@ export default function Index({
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                                         Conti Attivi
                                     </h3>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className={moneyCardGrid3}>
                                         {activeAccounts.map((account) => (
                                             <AccountCard key={account.id} account={account} />
                                         ))}
@@ -198,7 +200,7 @@ export default function Index({
                                     <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
                                         Conti Archiviati
                                     </h3>
-                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className={moneyCardGrid3}>
                                         {archivedAccounts.map((account) => (
                                             <AccountCard key={account.id} account={account} />
                                         ))}

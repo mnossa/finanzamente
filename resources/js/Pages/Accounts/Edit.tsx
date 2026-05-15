@@ -9,6 +9,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import clsx from 'clsx';
 
@@ -81,7 +82,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aggiorna conto</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Modifica i dettagli principali del conto e il suo stato.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>
                                 <InputLabel htmlFor="name" value="Nome del conto" />

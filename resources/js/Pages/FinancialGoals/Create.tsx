@@ -8,6 +8,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { goals } from '@/utils/analytics';
 import clsx from 'clsx';
 import { FormEventHandler, useState } from 'react';
@@ -80,7 +81,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo obiettivo finanziario</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Definisci target, scadenza e stile visuale per il tuo traguardo.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             <div>
                                 {/* Icon e Nome */}
                                 <div className="mb-6">

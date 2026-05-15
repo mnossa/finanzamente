@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -64,7 +65,7 @@ export default function Edit({ tag }: EditProps) {
 
             <PageContent maxWidth="2xl">
                     <CardBox className="overflow-hidden shadow-sm">
-                        <form onSubmit={submit} className="p-6">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="p-6">
                             <div className="space-y-6">
                                 {/* Nome */}
                                 <div>

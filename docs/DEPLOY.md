@@ -18,6 +18,10 @@
 Il file `.github/workflows/deploy-staging.yml` definisce la pipeline automatica di staging, attivata
 ad ogni **push sul branch `staging`**.
 
+Il file `.github/workflows/deploy.yml` definisce il deploy **produzione** (es. server Docker su Hetzner):
+dopo `php artisan up` esegue anche **`php artisan view:clear`** per svuotare la cache delle viste Blade compilate.
+Dettagli operativi: [HETZNER_SETUP.md](HETZNER_SETUP.md).
+
 
 La pipeline di staging è composta da tre job sequenziali:
 

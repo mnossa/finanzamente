@@ -11,6 +11,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React from 'react';
 import CardBox from '@/Components/CardBox';
+import { moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 interface Currency {
@@ -125,12 +126,12 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
 
             <PageContent>
                     {/* Statistiche */}
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className={moneyKpiGrid4}>
                         <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Totale Asset
                             </p>
-                            <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {stats.total_assets}
                             </p>
                         </CardBox>
@@ -139,7 +140,7 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {stat.icon} {stat.label}
                                 </p>
-                                <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
+                                <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                     {stat.count}
                                 </p>
                             </CardBox>

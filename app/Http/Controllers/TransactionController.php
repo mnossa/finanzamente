@@ -23,7 +23,115 @@ use Inertia\Response;
 
 class TransactionController extends Controller
 {
+    /** Chiavi ammesse per tornare all'indice transazioni con filtri/pagina. */
+    private const INDEX_RETURN_QUERY_KEYS = [
+        'account_id',
+        'category_id',
+        'type',
+        'from',
+        'to',
+        'is_tax_deductible',
+        'tag_id',
+        'page',
+    ];
+
     public function __construct(private CurrencyConverter $currency) {}
+
+    /**
+     * Normalizza i parametri di query per redirect verso `transactions.index`
+     * (da URL in GET modifica o da JSON/array nel body dopo POST/PATCH/DELETE).
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, int|string>
+     */
+    private function sanitizeReturnIndexQuery(array $input): array
+    {
+        $out = [];
+
+        if (isset($input['account_id']) && filter_var($input['account_id'], FILTER_VALIDATE_INT)) {
+            $out['account_id'] = (int) $input['account_id'];
+        }
+
+        if (isset($input['category_id'])) {
+            $cv = $input['category_id'];
+            if ($cv === '__none__') {
+                $out['category_id'] = '__none__';
+            } elseif (filter_var($cv, FILTER_VALIDATE_INT)) {
+                $out['category_id'] = (int) $cv;
+            }
+        }
+
+        if (isset($input['type']) && in_array($input['type'], ['income', 'expense'], true)) {
+            $out['type'] = $input['type'];
+        }
+
+        if (! empty($input['from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $input['from'])) {
+            $out['from'] = (string) $input['from'];
+        }
+        if (! empty($input['to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $input['to'])) {
+            $out['to'] = (string) $input['to'];
+        }
+
+        if (isset($input['is_tax_deductible'])) {
+            $v = $input['is_tax_deductible'];
+            $s = is_bool($v) ? ($v ? 'true' : 'false') : (string) $v;
+            if (in_array($s, ['true', 'false'], true)) {
+                $out['is_tax_deductible'] = $s;
+            }
+        }
+
+        if (isset($input['tag_id']) && filter_var($input['tag_id'], FILTER_VALIDATE_INT)) {
+            $out['tag_id'] = (int) $input['tag_id'];
+        }
+
+        if (isset($input['page'])) {
+            $p = filter_var($input['page'], FILTER_VALIDATE_INT);
+            if ($p !== false && $p >= 1) {
+                $out['page'] = $p;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Legge `return_index_query` dal body (stringa JSON o array) e restituisce query sicura per redirect.
+     *
+     * @return array<string, int|string>
+     */
+    private function returnIndexQueryFromRequest(Request $request): array
+    {
+        $raw = $request->input('return_index_query');
+        if (is_array($raw)) {
+            return $this->sanitizeReturnIndexQuery($raw);
+        }
+        if (is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+
+            return is_array($decoded) ? $this->sanitizeReturnIndexQuery($decoded) : [];
+        }
+
+        return [];
+    }
+
+    /**
+     * Parametri di ritorno dall'URL della richiesta GET (es. link modifica con filtri in query).
+     *
+     * @return array<string, int|string>
+     */
+    private function indexQueryFromCurrentUrl(Request $request): array
+    {
+        $allowed = array_flip(self::INDEX_RETURN_QUERY_KEYS);
+        $fromQuery = [];
+        foreach ($request->query() as $key => $value) {
+            if (! isset($allowed[$key]) || $value === null || $value === '') {
+                continue;
+            }
+            $fromQuery[$key] = $value;
+        }
+
+        return $this->sanitizeReturnIndexQuery($fromQuery);
+    }
 
     /**
      * Calcola i campi multi-currency da salvare sulla transazione, gestendo
@@ -518,7 +626,7 @@ class TransactionController extends Controller
     /**
      * Mostra i dettagli di una transazione.
      */
-    public function show(Transaction $transaction): Response
+    public function show(Request $request, Transaction $transaction): Response
     {
         $this->authorizeTransaction($transaction);
 
@@ -574,13 +682,14 @@ class TransactionController extends Controller
                     ] : null,
                 ]),
             ],
+            'indexQueryForReturn' => $this->indexQueryFromCurrentUrl($request),
         ]);
     }
 
     /**
      * Mostra il form per modificare una transazione.
      */
-    public function edit(Transaction $transaction): Response
+    public function edit(Request $request, Transaction $transaction): Response
     {
         $this->authorizeTransaction($transaction);
 
@@ -666,6 +775,7 @@ class TransactionController extends Controller
             'debtsCredits' => $debtsCredits,
             'currencies' => $this->currencyOptions(),
             'userDefaultCurrency' => Auth::user()->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
+            'indexQueryForReturn' => $this->indexQueryFromCurrentUrl($request),
         ]);
     }
 
@@ -801,8 +911,10 @@ class TransactionController extends Controller
                 ->with('success', 'Pagamento aggiornato con successo.');
         }
 
+        $returnQuery = $this->returnIndexQueryFromRequest($request);
+
         return redirect()
-            ->route('transactions.index')
+            ->route('transactions.index', $returnQuery)
             ->with('success', 'Transazione aggiornata con successo.');
     }
 
@@ -820,6 +932,7 @@ class TransactionController extends Controller
             'debt_credit_id' => 'sometimes|nullable|integer|exists:debt_credits,id',
             'is_tax_deductible' => 'sometimes|boolean',
             'account_id' => 'sometimes|integer|exists:accounts,id',
+            'return_index_query' => ['nullable', 'string', 'max:8192'],
         ]);
 
         $user = Auth::user();
@@ -858,7 +971,9 @@ class TransactionController extends Controller
         $newAccountId = $request->has('account_id') ? (int) $request->input('account_id') : null;
 
         if (empty($fields) && $newAccountId === null) {
-            return redirect()->route('transactions.index')
+            $returnQuery = $this->returnIndexQueryFromRequest($request);
+
+            return redirect()->route('transactions.index', $returnQuery)
                 ->with('info', 'Nessuna modifica da applicare.');
         }
 
@@ -888,7 +1003,9 @@ class TransactionController extends Controller
 
         $count = $transactions->count();
 
-        return redirect()->route('transactions.index')
+        $returnQuery = $this->returnIndexQueryFromRequest($request);
+
+        return redirect()->route('transactions.index', $returnQuery)
             ->with('success', "{$count} transazioni aggiornate con successo.");
     }
 
@@ -900,6 +1017,7 @@ class TransactionController extends Controller
         $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer',
+            'return_index_query' => ['nullable', 'string', 'max:8192'],
         ]);
 
         $user = Auth::user();
@@ -944,15 +1062,17 @@ class TransactionController extends Controller
             }
         }
 
+        $returnQuery = $this->returnIndexQueryFromRequest($request);
+
         return redirect()
-            ->route('transactions.index')
+            ->route('transactions.index', $returnQuery)
             ->with('success', "{$deletedCount} transazioni eliminate con successo.");
     }
 
     /**
      * Elimina una transazione (soft delete).
      */
-    public function destroy(Transaction $transaction): RedirectResponse
+    public function destroy(Request $request, Transaction $transaction): RedirectResponse
     {
         $this->authorizeTransaction($transaction);
 
@@ -966,8 +1086,10 @@ class TransactionController extends Controller
             // Elimina il trasferimento inter-household (che eliminerà automaticamente entrambe le transazioni)
             $interHouseholdTransfer->delete();
 
+            $returnQuery = $this->returnIndexQueryFromRequest($request);
+
             return redirect()
-                ->route('transactions.index')
+                ->route('transactions.index', $returnQuery)
                 ->with('success', 'Transazione e trasferimento inter-household eliminati con successo.');
         }
 
@@ -978,8 +1100,10 @@ class TransactionController extends Controller
 
         $transaction->delete();
 
+        $returnQuery = $this->returnIndexQueryFromRequest($request);
+
         return redirect()
-            ->route('transactions.index')
+            ->route('transactions.index', $returnQuery)
             ->with('success', 'Transazione eliminata con successo.');
     }
 

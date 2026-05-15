@@ -1,5 +1,34 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import axios from 'axios';
+import { router } from '@inertiajs/react';
+import type { PageProps } from '@/types';
+
+const THEME_STORAGE_KEY = 'fm-theme';
+
+function readStoredTheme(): string | undefined {
+    try {
+        const v = localStorage.getItem(THEME_STORAGE_KEY);
+        return v === 'dark' || v === 'light' ? v : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+function writeStoredTheme(theme: 'dark' | 'light'): void {
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+        /* ignore quota / private mode */
+    }
+}
+
+function clearStoredTheme(): void {
+    try {
+        localStorage.removeItem(THEME_STORAGE_KEY);
+    } catch {
+        /* ignore */
+    }
+}
 
 interface ThemeContextType {
     isDark: boolean;
@@ -22,12 +51,32 @@ export function ThemeProvider({
     initialTheme?: string;
     children: ReactNode;
 }) {
-    const [isDark, setIsDark] = useState(() => themeToIsDark(initialTheme));
+    const [isDark, setIsDark] = useState(() => {
+        if (initialTheme === 'dark' || initialTheme === 'light') {
+            return themeToIsDark(initialTheme);
+        }
+        return themeToIsDark(readStoredTheme());
+    });
 
-    // Inertia aggiorna `auth.user` a ogni visita: riallinea il tema locale al server
     useEffect(() => {
-        setIsDark(themeToIsDark(initialTheme));
-    }, [initialTheme]);
+        return router.on('success', (event) => {
+            const props = event.detail.page.props as Partial<PageProps>;
+            const user = props.auth?.user;
+            if (!user) {
+                setIsDark(false);
+                clearStoredTheme();
+                return;
+            }
+            const theme =
+                user.preferences && typeof user.preferences === 'object'
+                    ? (user.preferences as Record<string, unknown>).theme
+                    : undefined;
+            if (theme === 'dark' || theme === 'light') {
+                setIsDark(theme === 'dark');
+                writeStoredTheme(theme);
+            }
+        });
+    }, []);
 
     useEffect(() => {
         if (isDark) {
@@ -40,6 +89,7 @@ export function ThemeProvider({
     const toggleTheme = () => {
         const newIsDark = !isDark;
         setIsDark(newIsDark);
+        writeStoredTheme(newIsDark ? 'dark' : 'light');
 
         // Stesso endpoint definito in routes (it): user.preferences.theme
         axios.patch(route('user.preferences.theme'), { theme: newIsDark ? 'dark' : 'light' }, {

@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { getChartTooltipStyle, useChartDarkMode } from '@/Components/Charts/chartConfig';
 import React, { useState } from 'react';
+import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,7 +94,7 @@ function AllocationTooltip({ active, payload }: { active?: boolean; payload?: To
     return (
         <div style={getChartTooltipStyle(isDark)}>
             <p className="font-semibold">{d.name}</p>
-            <p className="text-blue-500 font-bold">{formatCurrency(d.value)}</p>
+            <p className={clsx('text-blue-500 font-bold', moneyTabular)}>{formatCurrency(d.value)}</p>
             <p className="text-gray-500 dark:text-gray-400 text-xs">
                 {d.payload.percentage.toFixed(1)}% del patrimonio
             </p>
@@ -126,7 +127,7 @@ function RiskGauge({ index, label }: { index: number; label: string }) {
                     style={{ left: `${pct}%` }}
                 />
             </div>
-            <p className={clsx('mt-2 text-center text-sm font-semibold', getRiskColor(index))}>
+            <p className={clsx('mt-2 text-center text-sm font-semibold', moneyTabular, getRiskColor(index))}>
                 {label} — {index.toFixed(1)}/7
             </p>
         </div>
@@ -179,16 +180,16 @@ function PositionModal({ position, onClose }: { position: Position; onClose: () 
                     </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className={clsx(moneyKpiGrid2, 'gap-3')}>
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Controvalore</p>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        <p className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
                             {formatCurrency(position.value)}
                         </p>
                     </div>
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Peso portafoglio</p>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        <p className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
                             {position.portfolio_percentage.toFixed(2)}%
                         </p>
                     </div>
@@ -211,7 +212,7 @@ function PositionModal({ position, onClose }: { position: Position; onClose: () 
                     {position.buy_price != null && (
                         <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
                             <p className="text-xs text-gray-500 dark:text-gray-400">Prezzo di carico</p>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            <p className={clsx('text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(position.buy_price)} {position.currency.code}
                             </p>
                         </div>
@@ -324,10 +325,10 @@ export default function AssetAllocationIndex({
                 ) : (
                     <>
                         {/* Totale + Rischio */}
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className={moneyKpiGrid2}>
                             <CardBox className="p-5 shadow-sm">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Patrimonio Totale</p>
-                                <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">
+                                <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                     {formatCurrency(totalValue)}
                                 </p>
                                 <p className="mt-2 text-xs text-gray-400">
@@ -396,10 +397,10 @@ export default function AssetAllocationIndex({
                                             <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
                                                 {entry.label}
                                             </span>
-                                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            <span className={clsx('text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
                                                 {formatCurrency(entry.value)}
                                             </span>
-                                            <span className="w-12 text-right text-xs text-gray-400">
+                                            <span className={clsx('w-12 text-right text-xs text-gray-400', moneyTabular)}>
                                                 {entry.percentage.toFixed(1)}%
                                             </span>
                                         </div>
@@ -440,10 +441,10 @@ export default function AssetAllocationIndex({
                                                 </p>
                                             </div>
                                             <div className="text-right flex-shrink-0">
-                                                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                <p className={clsx('text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
                                                     {formatCurrency(pos.value)}
                                                 </p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className={clsx('text-xs text-gray-400', moneyTabular)}>
                                                     {pos.portfolio_percentage.toFixed(1)}%
                                                 </p>
                                             </div>

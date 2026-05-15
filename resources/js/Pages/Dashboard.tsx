@@ -35,6 +35,7 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
+import { moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Account {
     id: number;
@@ -228,7 +229,7 @@ function StatCard({
     return (
         <CardBox className={className}>
             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-            <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className={clsx('mt-2 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>{value}</p>
             {(subtitle || trendLabel) && (
                 <div className="mt-2 flex items-center text-sm">
                     {trend && (
@@ -265,7 +266,7 @@ function AccountCard({ account }: { account: Account }) {
                     <p className="text-xs text-gray-500 dark:text-gray-400">{getAccountTypeLabel(account.type)}</p>
                 </div>
             </div>
-            <p className={clsx('text-sm font-semibold', account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500')}>
+            <p className={clsx('text-sm font-semibold', moneyTabular, account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500')}>
                 {formatCurrency(account.current_balance, account.currency_code)}
             </p>
         </div>
@@ -297,7 +298,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     {transaction.account.name} · {formatDate(transaction.date)}
                 </p>
             </div>
-            <p className={clsx('text-sm font-semibold shrink-0', isIncome ? 'text-green-500' : 'text-red-500')}>
+            <p className={clsx('text-sm font-semibold shrink-0', moneyTabular, isIncome ? 'text-green-500' : 'text-red-500')}>
                 {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
             </p>
         </Link>
@@ -328,9 +329,9 @@ function BudgetCard({ budget }: { budget: ActiveBudget }) {
             </div>
             <ProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} height="0.5rem" />
             <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span>{budget.currency_symbol}{budget.spent.toFixed(0)}</span>
-                <span>{budget.percentage}%</span>
-                <span>{budget.currency_symbol}{budget.amount.toFixed(0)}</span>
+                <span className={moneyTabular}>{budget.currency_symbol}{budget.spent.toFixed(0)}</span>
+                <span className={moneyTabular}>{budget.percentage}%</span>
+                <span className={moneyTabular}>{budget.currency_symbol}{budget.amount.toFixed(0)}</span>
             </div>
         </Link>
     );
@@ -360,7 +361,7 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
                     )}
                 </div>
             </div>
-            <span className={clsx('font-semibold', isDebt ? 'text-red-500' : 'text-emerald-500')}>
+            <span className={clsx('font-semibold', moneyTabular, isDebt ? 'text-red-500' : 'text-emerald-500')}>
                 {isDebt ? '-' : '+'}{item.currency_symbol}{item.amount.toFixed(2)}
             </span>
         </Link>
@@ -453,7 +454,7 @@ export default function Dashboard({
                 return (
                     <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                         <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
-                        <p className="mt-2 text-4xl font-bold">{formatCurrency(totalBalance)}</p>
+                        <p className={clsx('mt-2 text-4xl font-bold', moneyTabular)}>{formatCurrency(totalBalance)}</p>
                         <p className="mt-1 text-sm text-slate-400">
                             {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                         </p>
@@ -462,7 +463,7 @@ export default function Dashboard({
 
             case 'monthly_stats':
                 return (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className={moneyKpiGrid4}>
                         <StatCard title="Entrate" value={formatCurrency(monthlyStats.income)} subtitle={currentMonth} trend={incomeTrend >= 0 ? 'up' : 'down'} trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${lastMonth}`} />
                         <StatCard title="Uscite" value={formatCurrency(monthlyStats.expenses)} subtitle={currentMonth} trend={expensesTrend <= 0 ? 'up' : 'down'} trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${lastMonth}`} />
                         <StatCard title="Saldo Netto" value={formatCurrency(monthlyStats.net)} subtitle={currentMonth} trend={monthlyStats.net >= 0 ? 'up' : 'down'} />
@@ -571,14 +572,14 @@ export default function Dashboard({
                         </div>
                         <div className="p-4">
                             {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
-                                <div className="mb-4 grid grid-cols-2 gap-3">
+                                <div className={clsx('mb-4', moneyKpiGrid2)}>
                                     <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
                                         <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
-                                        <p className="text-lg font-bold text-red-500">{formatCurrency(debtsCreditsSummary.total_debts)}</p>
+                                        <p className={clsx('text-lg font-bold text-red-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_debts)}</p>
                                     </div>
                                     <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
                                         <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
-                                        <p className="text-lg font-bold text-emerald-500">{formatCurrency(debtsCreditsSummary.total_credits)}</p>
+                                        <p className={clsx('text-lg font-bold text-emerald-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_credits)}</p>
                                     </div>
                                 </div>
                             )}
@@ -638,7 +639,7 @@ export default function Dashboard({
                                 <>
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</span>
-                                        <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                        <span className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                             {formatCurrency(total_value)}
                                         </span>
                                     </div>
@@ -751,8 +752,8 @@ export default function Dashboard({
                                             </div>
                                             <ProgressBar percentage={goal.percentage} isExceeded={false} height="0.5rem" />
                                             <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                                                <span>{formatCurrency(goal.current_amount, goal.currency_code)}</span>
-                                                <span>{formatCurrency(goal.target_amount, goal.currency_code)}</span>
+                                                <span className={moneyTabular}>{formatCurrency(goal.current_amount, goal.currency_code)}</span>
+                                                <span className={moneyTabular}>{formatCurrency(goal.target_amount, goal.currency_code)}</span>
                                             </div>
                                         </Link>
                                     ))}

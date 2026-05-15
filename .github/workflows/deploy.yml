@@ -325,6 +325,7 @@ jobs:
               fi
               echo "==> [deploy] Fine manutenzione dopo rollback (artisan up)..."
               docker compose -f docker-compose.prod.yml exec -T app php artisan up || echo "==> [deploy] AVVISO: artisan up dopo rollback non riuscito (controlla manualmente)."
+              docker compose -f docker-compose.prod.yml exec -T app php artisan view:clear || echo "==> [deploy] AVVISO: view:clear dopo rollback non riuscito."
               echo "==> [deploy] Rollback riuscito. Versione runtime: ${PREVIOUS_TAG} (il job segnala fallimento deploy)."
               exit 1
             }
@@ -397,6 +398,12 @@ jobs:
             echo "==> [deploy] Fine manutenzione (artisan up)..."
             if ! docker compose -f docker-compose.prod.yml exec -T app php artisan up; then
               echo "==> [deploy] ERRORE: artisan up fallito dopo deploy riuscito."
+              exit 1
+            fi
+
+            echo "==> [deploy] Svuotamento cache view compilate (Blade)..."
+            if ! docker compose -f docker-compose.prod.yml exec -T app php artisan view:clear; then
+              echo "==> [deploy] ERRORE: view:clear fallito dopo deploy."
               exit 1
             fi
 

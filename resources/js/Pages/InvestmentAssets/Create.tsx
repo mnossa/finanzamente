@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AssetSearch from '@/Components/AssetSearch';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import { FormEventHandler } from 'react';
 import CardBox from '@/Components/CardBox';
@@ -69,7 +70,7 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
             <Head title="Nuovo Asset" />
 
             <PageContent maxWidth="2xl">
-                    <form onSubmit={submit}>
+                    <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit}>
                         <CardBox className="overflow-hidden shadow-sm">
                             <div className="p-6">
                                 {/* Ricerca Asset Online */}

@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import { FormEventHandler, useMemo } from 'react';
 import CardBox from '@/Components/CardBox';
@@ -120,7 +121,7 @@ export default function Edit({ investment, accounts, assets, assetTypes }: EditP
             <Head title="Modifica Investimento" />
 
             <PageContent maxWidth="2xl">
-                    <form onSubmit={submit}>
+                    <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit}>
                         <CardBox className="overflow-hidden shadow-sm">
                             <div className="p-6">
                                 {/* Asset */}

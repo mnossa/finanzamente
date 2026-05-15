@@ -12,6 +12,7 @@ import {
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
+import { moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 
@@ -217,7 +218,7 @@ export default function Dashboard({
                     <IndexPageMobileToolbar>{refreshToolbarButton}</IndexPageMobileToolbar>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className={moneyKpiGrid4}>
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-800">
                             <div className="p-6">
                                 <div className="flex items-center">
@@ -228,7 +229,7 @@ export default function Dashboard({
                                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             Totale Spese Fisse
                                         </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        <p className={clsx('text-2xl font-bold text-gray-900 dark:text-gray-100', moneyTabular)}>
                                             {formatCurrency(dashboardData.stats.total_fixed_expenses)}
                                         </p>
                                     </div>
@@ -246,7 +247,7 @@ export default function Dashboard({
                                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             Categorie Fisse
                                         </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        <p className={clsx('text-2xl font-bold text-gray-900 dark:text-gray-100', moneyTabular)}>
                                             {dashboardData.stats.categories_count}
                                         </p>
                                     </div>
@@ -264,7 +265,7 @@ export default function Dashboard({
                                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             Membri Household
                                         </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        <p className={clsx('text-2xl font-bold text-gray-900 dark:text-gray-100', moneyTabular)}>
                                             {dashboardData.stats.members_count}
                                         </p>
                                     </div>
@@ -282,7 +283,7 @@ export default function Dashboard({
                                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                             Membri Equilibrati
                                         </p>
-                                        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                        <p className={clsx('text-2xl font-bold text-gray-900 dark:text-gray-100', moneyTabular)}>
                                             {dashboardData.stats.balanced_members} / {dashboardData.stats.members_count}
                                         </p>
                                     </div>
@@ -371,7 +372,7 @@ export default function Dashboard({
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-lg font-bold">
+                                                <p className={clsx('text-lg font-bold', moneyTabular)}>
                                                     {member.balance >= 0 ? '+' : ''}{formatCurrency(member.balance)}
                                                 </p>
                                                 <p className="text-xs opacity-75">
@@ -399,10 +400,10 @@ export default function Dashboard({
                                                 {userContrib.user_name}
                                             </h4>
                                             <div className="text-right">
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                <p className={clsx('text-sm text-gray-600 dark:text-gray-400', moneyTabular)}>
                                                     Totale: {formatCurrency(userContrib.total_contributed)}
                                                 </p>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                <p className={clsx('text-sm text-gray-600 dark:text-gray-400', moneyTabular)}>
                                                     Previsto: {formatCurrency(userContrib.expected_contribution)}
                                                 </p>
                                             </div>
@@ -420,6 +421,7 @@ export default function Dashboard({
                                                         </span>
                                                         <span className={clsx(
                                                             "text-sm font-medium",
+                                                            moneyTabular,
                                                             catContrib.category_balance >= 0
                                                                 ? "text-green-600 dark:text-green-400"
                                                                 : "text-red-600 dark:text-red-400"
@@ -427,7 +429,7 @@ export default function Dashboard({
                                                             {catContrib.category_balance >= 0 ? '+' : ''}{formatCurrency(catContrib.category_balance)}
                                                         </span>
                                                     </div>
-                                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                                                    <div className={clsx('flex justify-between text-sm text-gray-600 dark:text-gray-400', moneyTabular)}>
                                                         <span>
                                                             Contribuito: {formatCurrency(catContrib.user_contributed)}
                                                             ({catContrib.contribution_percentage.toFixed(1)}%)

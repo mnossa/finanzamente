@@ -73,6 +73,11 @@ interface Transaction {
 
 interface ShowProps {
     transaction: Transaction;
+    indexQueryForReturn?: Record<string, string | number>;
+}
+
+function returnIndexQueryJson(q: Record<string, string | number>): string {
+    return Object.keys(q).length === 0 ? '' : JSON.stringify(q);
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -91,7 +96,7 @@ function formatDate(dateStr: string): string {
     });
 }
 
-export default function Show({ transaction }: ShowProps) {
+export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
@@ -102,8 +107,13 @@ export default function Show({ transaction }: ShowProps) {
         ? TAX_DEDUCTION_TYPES.find(t => t.value === transaction.tax_deduction_type)?.label
         : null;
 
+    const indexReturn = indexQueryForReturn ?? {};
+
     const handleDelete = () => {
-        router.delete(route('transactions.destroy', transaction.id));
+        const payload = returnIndexQueryJson(indexReturn);
+        router.delete(route('transactions.destroy', transaction.id), {
+            ...(payload ? { data: { return_index_query: payload } } : {}),
+        });
         setDeleteDialogOpen(false);
     };
 
@@ -112,7 +122,7 @@ export default function Show({ transaction }: ShowProps) {
             header={
                 <PageHeader
                     title={`Dettaglio Transazione`}
-                    backLink={route('transactions.index')}
+                    backLink={route('transactions.index', indexReturn)}
                 />
 
             }
@@ -434,7 +444,11 @@ export default function Show({ transaction }: ShowProps) {
 
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
-                        <LinkButton href={route('transactions.edit', transaction.id)} size="lg" icon={<PencilIcon />}>
+                        <LinkButton
+                            href={route('transactions.edit', { transaction: transaction.id, ...indexReturn })}
+                            size="lg"
+                            icon={<PencilIcon />}
+                        >
                             Modifica
                         </LinkButton>
                         <button

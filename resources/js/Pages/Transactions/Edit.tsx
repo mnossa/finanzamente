@@ -10,6 +10,7 @@ import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TagAutocomplete from '@/Components/TagAutocomplete';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
@@ -82,9 +83,27 @@ interface EditProps {
     debtsCredits: DebtCredit[];
     currencies: Currency[];
     userDefaultCurrency: string;
+    indexQueryForReturn?: Record<string, string | number>;
 }
 
-export default function Edit({ transaction, accounts, categories, debtsCredits, currencies, userDefaultCurrency }: EditProps) {
+function returnIndexQueryField(indexQueryForReturn?: Record<string, string | number>): string {
+    if (!indexQueryForReturn || Object.keys(indexQueryForReturn).length === 0) {
+        return '';
+    }
+
+    return JSON.stringify(indexQueryForReturn);
+}
+
+export default function Edit({
+    transaction,
+    accounts,
+    categories,
+    debtsCredits,
+    currencies,
+    userDefaultCurrency,
+    indexQueryForReturn,
+}: EditProps) {
+    const indexReturn = indexQueryForReturn ?? {};
     const { data, setData, patch, processing, errors } = useForm({
         account_id: String(transaction.account_id),
         category_id: String(transaction.category_id),
@@ -102,6 +121,7 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
         original_amount: transaction.original_amount ? String(transaction.original_amount) : '',
         original_currency_code: transaction.original_currency_code ?? '',
         manual_rate: '',
+        return_index_query: returnIndexQueryField(indexQueryForReturn),
     });
 
     const [showFx, setShowFx] = useState<boolean>(!!transaction.original_amount);
@@ -186,7 +206,7 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
             header={
                 <PageHeader
                     title="Modifica Transazione"
-                    backLink={route('transactions.index')}
+                    backLink={route('transactions.index', indexReturn)}
                 />
             }
         >
@@ -224,7 +244,7 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                             </div>
                         )}
 
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Importo e Data — visibili subito */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -592,7 +612,7 @@ export default function Edit({ transaction, accounts, categories, debtsCredits, 
                             {/* Azioni */}
                             <FormActionsBar className="justify-end">
                                 <Link
-                                    href={route('transactions.index')}
+                                    href={route('transactions.index', indexReturn)}
                                     className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
                                     {isInterHouseholdTransfer ? 'Torna Indietro' : 'Annulla'}

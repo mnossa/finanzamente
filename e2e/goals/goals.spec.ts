@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { visibleHrefLocator } from '../helpers';
+import { visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
 
 /**
  * Test E2E — Obiettivi Finanziari
@@ -34,7 +34,7 @@ test.describe('Obiettivi Finanziari', () => {
         await page.locator('input[name="name"]').fill(name);
         await page.locator('input[name="target_amount"]').fill('1000');
 
-        await page.locator('[type="submit"]').click();
+        await primaryFormSubmitLocator(page).click();
 
         await expect(page).toHaveURL(/obiettivi-finanziari/, { timeout: 10_000 });
         await expect(

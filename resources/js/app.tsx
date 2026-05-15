@@ -18,8 +18,18 @@ if (typeof window !== 'undefined') {
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Finanzamente';
+
+function extractInitialThemeFromPage(initialPage: { props?: Record<string, unknown> } | undefined): string | undefined {
+    const auth = initialPage?.props?.auth as { user?: { preferences?: Record<string, unknown> } } | undefined;
+    const raw =
+        auth?.user?.preferences && typeof auth.user.preferences === 'object'
+            ? (auth.user.preferences as Record<string, unknown>).theme
+            : undefined;
+    return raw === 'dark' || raw === 'light' ? raw : undefined;
+}
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -30,10 +40,15 @@ createInertiaApp({
         ),
     setup({ el, App, props }) {
         const root = createRoot(el);
+        const initialTheme = extractInitialThemeFromPage(props.initialPage);
         console.info('[Finanzamente] Mount Inertia React', {
             initialComponent: props.initialPage?.component,
         });
-        root.render(<App {...props} />);
+        root.render(
+            <ThemeProvider initialTheme={initialTheme}>
+                <App {...props} />
+            </ThemeProvider>,
+        );
     },
     progress: {
         color: '#4B5563',

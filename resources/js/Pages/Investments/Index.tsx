@@ -9,6 +9,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
+import { moneyCardGrid3, moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
 import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
@@ -143,10 +144,10 @@ function InvestmentCard({ investment }: { investment: Investment }) {
                     )}
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className={clsx(moneyKpiGrid2, 'mt-4')}>
                     <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">Acquisto</p>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
                             {formatCurrency(investment.total_buy_value, investment.asset.currency.code)}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -158,6 +159,7 @@ function InvestmentCard({ investment }: { investment: Investment }) {
                             <p className="text-xs text-gray-500 dark:text-gray-400">Vendita</p>
                             <p className={clsx(
                                 'font-medium',
+                                moneyTabular,
                                 investment.net_profit !== null && investment.net_profit >= 0
                                     ? 'text-green-600'
                                     : 'text-red-600'
@@ -171,10 +173,10 @@ function InvestmentCard({ investment }: { investment: Investment }) {
                     ) : (
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Stato</p>
-                            <p className="font-medium text-blue-600">
+                            <p className={clsx('font-medium text-blue-600', moneyTabular)}>
                                 🟢 Aperto
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                            <p className={clsx('text-xs text-gray-500 dark:text-gray-400', moneyTabular)}>
                                 @ {formatCurrency(investment.buy_price, investment.asset.currency.code)}/u
                             </p>
                         </div>
@@ -233,12 +235,12 @@ export default function Index({
                     </IndexPageMobileToolbar>
 
                     {/* Statistiche */}
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className={moneyKpiGrid4}>
                         <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Posizioni Aperte
                             </p>
-                            <p className="mt-1 text-3xl font-bold text-blue-600">
+                            <p className={clsx('mt-1 text-3xl font-bold text-blue-600', moneyTabular)}>
                                 {stats.open_count}
                             </p>
                         </CardBox>
@@ -246,7 +248,7 @@ export default function Index({
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Totale Investito
                             </p>
-                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(stats.total_invested)}
                             </p>
                         </CardBox>
@@ -256,6 +258,7 @@ export default function Index({
                             </p>
                             <p className={clsx(
                                 'mt-1 text-2xl font-bold',
+                                moneyTabular,
                                 stats.total_realized_profit >= 0 ? 'text-green-600' : 'text-red-600'
                             )}>
                                 {stats.total_realized_profit >= 0 ? '+' : ''}
@@ -266,7 +269,7 @@ export default function Index({
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Commissioni Pagate
                             </p>
-                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(stats.total_fees || 0)}
                             </p>
                         </CardBox>
@@ -279,7 +282,7 @@ export default function Index({
                             <h3 className="mb-4 font-medium text-gray-900 dark:text-white">
                                 🟢 Posizioni Aperte ({openInvestments.length})
                             </h3>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className={moneyCardGrid3}>
                                 {openInvestments.map((investment) => (
                                     <InvestmentCard key={investment.id} investment={investment} />
                                 ))}
@@ -293,7 +296,7 @@ export default function Index({
                             <h3 className="mb-4 font-medium text-gray-500 dark:text-gray-400">
                                 ⚪ Posizioni Chiuse ({closedInvestments.length})
                             </h3>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className={moneyCardGrid3}>
                                 {closedInvestments.map((investment) => (
                                     <InvestmentCard key={investment.id} investment={investment} />
                                 ))}

@@ -11,6 +11,7 @@ import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { FormEventHandler, useState } from 'react';
 import CardBox from '@/Components/CardBox';
+import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 
@@ -255,12 +256,12 @@ export default function Show({ goal, statuses }: ShowProps) {
                                             {goal.description}
                                         </p>
                                     )}
-                                    <div className="grid gap-4 sm:grid-cols-3">
+                                    <div className={moneyKpiGrid3}>
                                         <div>
                                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 Risparmiato
                                             </p>
-                                            <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                            <p className={clsx('text-xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                                 {formatCurrency(goal.current_amount, goal.currency.code)}
                                             </p>
                                         </div>
@@ -268,7 +269,7 @@ export default function Show({ goal, statuses }: ShowProps) {
                                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                                 Obiettivo
                                             </p>
-                                            <p className="text-xl font-bold" style={{ color: goalColor }}>
+                                            <p className={clsx('text-xl font-bold', moneyTabular)} style={{ color: goalColor }}>
                                                 {formatCurrency(goal.target_amount, goal.currency.code)}
                                             </p>
                                         </div>
@@ -278,6 +279,7 @@ export default function Show({ goal, statuses }: ShowProps) {
                                             </p>
                                             <p className={clsx(
                                                 'text-xl font-bold',
+                                                moneyTabular,
                                                 goal.remaining_amount > 0
                                                     ? 'text-gray-900 dark:text-white'
                                                     : 'text-green-500'

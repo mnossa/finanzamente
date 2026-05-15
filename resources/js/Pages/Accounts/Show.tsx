@@ -9,6 +9,7 @@ import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
+import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Category {
@@ -85,6 +86,7 @@ function TransactionRow({ transaction, currency }: { transaction: Transaction; c
             <p
                 className={clsx(
                     'font-semibold',
+                    moneyTabular,
                     isIncome ? 'text-green-500' : 'text-red-500'
                 )}
             >
@@ -127,12 +129,12 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                         </div>
                     </SectionCard>
                     {/* Riepilogo */}
-                    <div className="grid gap-4 sm:grid-cols-3">
+                    <div className={moneyKpiGrid3}>
                         <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Saldo corrente
                             </p>
-                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(account.current_balance, account.currency_code)}
                             </p>
                         </CardBox>
@@ -140,7 +142,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Saldo iniziale
                             </p>
-                            <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(account.initial_balance, account.currency_code)}
                             </p>
                         </CardBox>

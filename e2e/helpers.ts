@@ -9,6 +9,14 @@ export function visibleHrefLocator(page: Page, hrefSubstring: string): Locator {
 }
 
 /**
+ * Pulsante submit del form principale pagina (id `fm-mobile-primary-form`).
+ * Evita collisioni con altri submit nel layout (es. «Esci» nel menu utente).
+ */
+export function primaryFormSubmitLocator(page: Page): Locator {
+    return page.locator('#fm-mobile-primary-form').locator('[type="submit"]');
+}
+
+/**
  * Credenziali utente E2E (configurabili tramite variabili d'ambiente).
  * Corrispondono all'utente creato da E2ESeeder.
  */

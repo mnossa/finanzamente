@@ -8,6 +8,7 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
@@ -78,7 +79,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica posizione</h2>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna stato, importo e dettagli della posizione selezionata.</p>
                         </header>
-                        <form onSubmit={submit} className="space-y-4">
+                        <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             <div className="space-y-6">
                                 {/* Tipo */}
                                 <div>

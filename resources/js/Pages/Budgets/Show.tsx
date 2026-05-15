@@ -8,6 +8,7 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
+import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
@@ -99,10 +100,10 @@ export default function Show({ budget, transactions }: ShowProps) {
                         {/* Progresso */}
                         <div className="mb-6">
                             <div className="mb-2 flex items-end justify-between">
-                                <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                                <span className={clsx('text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                     {formatCurrency(budget.spent, budget.currency.code)}
                                 </span>
-                                <span className="text-lg text-gray-500 dark:text-gray-400">
+                                <span className={clsx('text-lg text-gray-500 dark:text-gray-400', moneyTabular)}>
                                     / {formatCurrency(budget.amount, budget.currency.code)}
                                 </span>
                             </div>
@@ -117,6 +118,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                                 <span
                                     className={clsx(
                                         'font-medium',
+                                        moneyTabular,
                                         budget.is_exceeded
                                             ? 'text-red-500'
                                             : 'text-emerald-500'
@@ -132,12 +134,12 @@ export default function Show({ budget, transactions }: ShowProps) {
                         </div>
 
                         {/* Statistiche */}
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className={moneyKpiGrid3}>
                             <div className="rounded-lg bg-gray-50 p-4 text-center dark:bg-gray-900">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Budget
                                 </p>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                <p className={clsx('text-xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                     {formatCurrency(budget.amount, budget.currency.code)}
                                 </p>
                             </div>
@@ -145,7 +147,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Speso
                                 </p>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                <p className={clsx('text-xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                     {formatCurrency(budget.spent, budget.currency.code)}
                                 </p>
                             </div>
@@ -156,6 +158,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                                 <p
                                     className={clsx(
                                         'text-xl font-bold',
+                                        moneyTabular,
                                         budget.is_exceeded
                                             ? 'text-red-500'
                                             : 'text-emerald-500'
@@ -211,7 +214,7 @@ export default function Show({ budget, transactions }: ShowProps) {
                                                 {transaction.account}
                                             </p>
                                         </div>
-                                        <p className="font-semibold text-red-500">
+                                        <p className={clsx('font-semibold text-red-500', moneyTabular)}>
                                             -{formatCurrency(transaction.amount, budget.currency.code)}
                                         </p>
                                     </Link>
