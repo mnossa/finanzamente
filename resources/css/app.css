@@ -4,6 +4,12 @@
 /* Nasconde elementi Alpine.js prima dell'inizializzazione */
 [x-cloak] { display: none !important; }
 
+html.fm-hide-balances .fm-sensitive-amount {
+    filter: blur(10px);
+    user-select: none;
+    pointer-events: none;
+}
+
 @layer base {
     /* Typography base - Font più leggibile per dati finanziari */
     html {

@@ -6,7 +6,9 @@ import {
 } from 'recharts';
 import { categoryPalette, formatEuro, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
 import { Link } from '@inertiajs/react';
-import CardBox from '@/Components/CardBox';
+import clsx from 'clsx';
+
+const CHART_HEIGHT = 256;
 
 export interface ExpenseCategory {
     name: string;
@@ -20,6 +22,7 @@ export interface ExpenseCategory {
 interface ExpenseTreemapProps {
     data: ExpenseCategory[];
     className?: string;
+    month?: string;
 }
 
 interface TooltipPayload {
@@ -79,6 +82,7 @@ function TreemapTooltip({ active, payload }: { active?: boolean; payload?: Toolt
 
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
+
     return (
         <div style={getChartTooltipStyle(isDark)}>
             <p className="font-semibold">
@@ -90,7 +94,7 @@ function TreemapTooltip({ active, payload }: { active?: boolean; payload?: Toolt
     );
 }
 
-export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps) {
+export default function ExpenseTreemap({ data, className, month }: ExpenseTreemapProps) {
     const [selected, setSelected] = useState<ExpenseCategory | null>(null);
 
     const chartData = useMemo(
@@ -102,27 +106,39 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
         [data],
     );
 
+    const transactionLinkParams = (categoryId: number) => {
+        const params: Record<string, string | number> = { category_id: categoryId };
+        if (month) {
+            const [y, m] = month.split('-');
+            const lastDay = new Date(Number(y), Number(m), 0).getDate();
+            params.from = `${month}-01`;
+            params.to = `${month}-${String(lastDay).padStart(2, '0')}`;
+        }
+
+        return params;
+    };
+
     if (!data.length) {
         return (
-            <CardBox className={className ?? ''}>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <div className={clsx('w-full', className)}>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                     Distribuzione spese del periodo
                 </p>
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessuna spesa registrata nel periodo selezionato
                 </div>
-            </CardBox>
+            </div>
         );
     }
 
     return (
-        <CardBox className={className ?? ''}>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div className={clsx('w-full', className)}>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
                 Distribuzione spese del periodo · clicca su una categoria per i dettagli
             </p>
 
-            <div className="mt-4">
-                <ResponsiveContainer width="99%" height={288}>
+            <div className="mt-3 sm:mt-4">
+                <ResponsiveContainer width="99%" height={CHART_HEIGHT}>
                     <Treemap
                         data={chartData}
                         dataKey="value"
@@ -142,7 +158,6 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                 </ResponsiveContainer>
             </div>
 
-            {/* Drill-down: dettaglio categoria selezionata */}
             {selected && (
                 <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
                     <div className="mb-2 flex items-center justify-between">
@@ -150,6 +165,7 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                             {selected.icon ?? '📁'} {selected.name}
                         </p>
                         <button
+                            type="button"
                             onClick={() => setSelected(null)}
                             className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                             aria-label="Chiudi dettaglio"
@@ -162,7 +178,7 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                         <span className="text-gray-500 dark:text-gray-400">({selected.percentage.toFixed(1)}% del totale)</span>
                         {selected.category_id && (
                             <Link
-                                href={route('transactions.index', { category_id: selected.category_id })}
+                                href={route('transactions.index', transactionLinkParams(selected.category_id))}
                                 className="ml-auto text-emerald-500 hover:text-emerald-600"
                             >
                                 Vedi transazioni →
@@ -172,7 +188,6 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                 </div>
             )}
 
-            {/* Lista categorie */}
             <div className="mt-4 space-y-2">
                 {data.slice(0, 5).map((d, i) => (
                     <div
@@ -194,6 +209,6 @@ export default function ExpenseTreemap({ data, className }: ExpenseTreemapProps)
                     </div>
                 ))}
             </div>
-        </CardBox>
+        </div>
     );
 }

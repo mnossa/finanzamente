@@ -10,7 +10,10 @@ import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TagAutocomplete from '@/Components/TagAutocomplete';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import TransactionCreateGuided from './TransactionCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
@@ -66,6 +69,29 @@ interface CreateProps {
 }
 
 export default function Create({ accounts, categories, defaultAccountId, defaultDebtCreditId, debtsCredits, currencies, userDefaultCurrency }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features) && accounts.length > 0 && categories.length > 0) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuova transazione"
+                        backLink={route('transactions.index')}
+                    />
+                }
+            >
+                <PageContent maxWidth="2xl">
+                    <TransactionCreateGuided
+                        accounts={accounts}
+                        categories={categories}
+                        defaultAccountId={defaultAccountId}
+                    />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const today = new Date().toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors } = useForm({

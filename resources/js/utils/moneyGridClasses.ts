@@ -3,7 +3,7 @@
  * sotto ~380px una colonna (nessun testo “schiacciato” affiancato), poi breakpoint standard.
  * Usare `moneyTabular` sugli elementi che mostrano importi formattati.
  */
-export const moneyTabular = 'tabular-nums';
+export const moneyTabular = 'tabular-nums fm-sensitive-amount';
 
 /** Due KPI affiancati da ~380px (es. patrimonio + rischio). */
 export const moneyKpiGrid2 =

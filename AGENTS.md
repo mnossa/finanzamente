@@ -64,5 +64,6 @@ All commands use the Makefile (see README.md for the full list). Key commands:
 - **Vite dev server** runs inside the `node` container on port 5174. Use `make dev` to start it.
 - **Demo users**: `mario.rossi@example.com` and `laura.bianchi@example.com`, both with password `password` (after `make demo-data`).
 - The app on port 8080 serves via Nginx → PHP-FPM. Port 8081 is the E2E-isolated instance.
+- **`app_e2e` E2E overrides:** `BREVO_ENABLED=false`, `FEATURE_GUIDED_CREATE_FORMS=false` (form classici per Playwright). Dopo modifiche env E2E: `make e2e-seed` per rigenerare `config_e2e.php`.
 - **`deploy.resources` in `docker-compose.yml`** (python-services service) has memory limits that are silently ignored with crun's `--cgroup-manager=disabled`. This is expected and harmless in the Cloud Agent environment.
 - The Docker socket needs `chmod 666 /var/run/docker.sock` after each `dockerd` restart since the agent user is not root.

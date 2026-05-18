@@ -62,6 +62,12 @@ interface Transaction {
         name: string;
     };
     tags: Tag[];
+    recurring_transaction_id: number | null;
+    recurring_summary: {
+        id: number;
+        description: string | null;
+        frequency: string;
+    } | null;
 }
 
 interface PaginatedData<T> {
@@ -462,6 +468,14 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
                             📋
                         </span>
                     )}
+                    {transaction.recurring_transaction_id && (
+                        <span
+                            className="ml-1.5 inline-flex items-center rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                            title="Generata da ricorrenza"
+                        >
+                            🔁
+                        </span>
+                    )}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
                     {transaction.account.name} · {formatDate(transaction.date)}
@@ -754,6 +768,13 @@ export default function Index({
                                 size="sm"
                             >
                                 Importa
+                            </LinkButton>
+                            <LinkButton
+                                href={route('transactions.export', filtersToQueryParams(filters))}
+                                variant="secondary"
+                                size="sm"
+                            >
+                                Esporta
                             </LinkButton>
                             <LinkButton
                                 href={route('transactions.create')}

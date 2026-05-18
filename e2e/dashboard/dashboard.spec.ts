@@ -16,6 +16,13 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveTitle(/Dashboard/i);
     });
 
+    test('su mobile le azioni rapide sono nascoste (usa bottom nav)', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/dashboard');
+        await expect(page.getByRole('heading', { name: 'Azioni rapide' })).toHaveCount(0);
+        await expect(page.getByRole('navigation', { name: /navigazione rapida/i })).toBeVisible();
+    });
+
     test('la navigazione principale è presente', async ({ page }) => {
         // Almeno una delle due nav (sidebar o bottom nav) deve essere visibile
         const navPrincipale = page.getByRole('navigation', { name: /navigazione principale/i });

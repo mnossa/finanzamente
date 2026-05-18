@@ -65,6 +65,7 @@ class HandleInertiaRequests extends Middleware
                 'role' => $userRole,
             ],
             'modules' => $availableModules,
+            'features' => config('features'),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
@@ -128,6 +129,18 @@ class HandleInertiaRequests extends Middleware
 
         if (str_starts_with($notificationKey, 'recurring_detect_')) {
             return route('recurrence-detection.index');
+        }
+
+        if (str_starts_with($notificationKey, 'recurring_remind_')) {
+            $parts = explode('_', $notificationKey);
+            $recurringId = $parts[2] ?? null;
+            if ($recurringId && is_numeric($recurringId)) {
+                return route('recurring-transactions.show', (int) $recurringId);
+            }
+        }
+
+        if (str_starts_with($notificationKey, 'inbox_telegram_')) {
+            return route('inbox.index');
         }
 
         if (str_starts_with($notificationKey, 'cohort_wants_share_')) {

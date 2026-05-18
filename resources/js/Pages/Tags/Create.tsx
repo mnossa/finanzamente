@@ -5,7 +5,10 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import TagCreateGuided from './TagCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { FormEventHandler } from 'react';
 import clsx from 'clsx';
@@ -32,6 +35,26 @@ const PRESET_COLORS = [
 ];
 
 export default function Create() {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Tag"
+                        backLink={route('tags.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Tag" />
+                <PageContent maxWidth="2xl">
+                    <TagCreateGuided />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         color: '#6366f1',

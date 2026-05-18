@@ -59,6 +59,8 @@ class InboxController extends Controller
             'accounts' => $accounts,
             'categories' => $categories,
             'pendingCount' => $pendingCount,
+            'telegramLinked' => $user->telegram_chat_id !== null,
+            'telegramBotUsername' => config('services.telegram.bot_username'),
         ]);
     }
 

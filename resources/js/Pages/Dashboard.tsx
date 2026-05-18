@@ -613,14 +613,16 @@ export default function Dashboard({
             case 'quick_actions': {
                 const compact = size === 'sm';
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white p-3 shadow-sm dark:bg-gray-800 sm:p-4">
-                        <h3 className="mb-2 font-semibold text-gray-900 dark:text-white sm:mb-3">Azioni rapide</h3>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-                            <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
-                            <QuickActionCard href={route('transactions.quick-session')} icon="⚡" label="Sessione Rapida" compact={compact} />
-                            <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" compact={compact} />
-                            <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" compact={compact} />
-                            <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" compact={compact} />
+                    <div className="hidden lg:block">
+                        <div className="overflow-hidden rounded-xl bg-white p-3 shadow-sm dark:bg-gray-800 sm:p-4">
+                            <h3 className="mb-2 font-semibold text-gray-900 dark:text-white sm:mb-3">Azioni rapide</h3>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+                                <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
+                                <QuickActionCard href={route('transactions.quick-session')} icon="⚡" label="Sessione Rapida" compact={compact} />
+                                <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" compact={compact} />
+                                <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" compact={compact} />
+                                <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" compact={compact} />
+                            </div>
                         </div>
                     </div>
                 );
@@ -704,6 +706,9 @@ export default function Dashboard({
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">📈 Patrimonio nel Tempo</h3>
+                            <Link href={route('analytics.net-worth')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                Dettaglio →
+                            </Link>
                         </div>
                         <div className={widgetBodyClass}>
                             <NetWorthChart data={netWorthData} />
@@ -716,6 +721,9 @@ export default function Dashboard({
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">💰 Panoramica Cashflow</h3>
+                            <Link href={route('analytics.cash-flow')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                Dettaglio →
+                            </Link>
                         </div>
                         <div className={widgetBodyClass}>
                             <CashFlowChart data={cashFlowData} />
@@ -728,6 +736,12 @@ export default function Dashboard({
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className={widgetHeaderClass}>
                             <h3 className="font-semibold text-gray-900 dark:text-white">🏷️ Spese per Categoria</h3>
+                            <Link
+                                href={route('analytics.expenses-by-category', { month: new Date().toISOString().slice(0, 7) })}
+                                className="text-sm text-emerald-500 hover:text-emerald-600"
+                            >
+                                Dettaglio →
+                            </Link>
                         </div>
                         <div className={widgetBodyClass}>
                             <ExpenseTreemap data={expenseCategories} />

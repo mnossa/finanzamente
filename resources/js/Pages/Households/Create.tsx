@@ -3,10 +3,32 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AuthenticatedSimpleLayout from '@/Layouts/AuthenticatedSimpleLayout';
-import { Head, useForm } from '@inertiajs/react';
+import HouseholdCreateGuided from './HouseholdCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 export default function Create() {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedSimpleLayout>
+                <Head title="Crea Household" />
+                <div className="mb-6 text-center">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Benvenuto in Finanzamente!
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        Per iniziare, crea la tua prima household.
+                    </p>
+                </div>
+                <HouseholdCreateGuided />
+            </AuthenticatedSimpleLayout>
+        );
+    }
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         financial_management_type: 'shared_wallet',

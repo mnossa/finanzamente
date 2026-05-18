@@ -17,8 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\URL;
 
 /**
  * TelegramWebhookController
@@ -88,6 +87,12 @@ class TelegramWebhookController extends Controller
             if (! Cache::add($cacheKey, now()->timestamp, now()->addHours(12))) {
                 return response('OK', 200);
             }
+        }
+
+        if (isset($update['callback_query'])) {
+            $this->handleCallbackQuery($update['callback_query']);
+
+            return response('OK', 200);
         }
 
         // Telegram invia solo aggiornamenti di tipo 'message'
@@ -162,7 +167,7 @@ class TelegramWebhookController extends Controller
         } else {
             $this->telegram->sendMessage(
                 $chatId,
-                '⚠️ Tipo di messaggio non supportato. Invia del testo (es. <i>15 Pizza</i>) oppure la foto di uno scontrino.'
+                '⚠️ Tipo di messaggio non supportato. Invia del testo (es. <i>15 Pizza</i>).'
             );
         }
 
@@ -215,7 +220,7 @@ class TelegramWebhookController extends Controller
 
         $this->telegram->sendMessage(
             $chatId,
-            "✅ <b>Account collegato con successo!</b>\n\nOra puoi inviare:\n• <code>15.50 Supermercato</code> → uscita\n• <code>+1500 Stipendio</code> → entrata\n• Foto di uno scontrino → OCR automatico\n\n🔧 <b>Opzionale:</b> aggiungi <code>@Conto</code>, <code>#Categoria</code> o data <code>DD/MM</code>\n\n💡 Usa /aiuto per la guida completa."
+            "✅ <b>Account collegato con successo!</b>\n\nOra puoi inviare:\n• <code>15.50 Supermercato</code> → uscita\n• <code>+1500 Stipendio</code> → entrata\n\n🔧 <b>Opzionale:</b> aggiungi <code>@Conto</code>, <code>#Categoria</code> o data <code>DD/MM</code>\n\n💡 Usa /aiuto per la guida completa."
         );
     }
 
@@ -224,7 +229,7 @@ class TelegramWebhookController extends Controller
      */
     private function handleAiutoCommand(string $chatId): void
     {
-        $inboxUrl = config('app.url').'/inbox';
+        $inboxUrl = $this->inboxUrl();
 
         $this->telegram->sendMessage(
             $chatId,
@@ -250,8 +255,6 @@ class TelegramWebhookController extends Controller
             ."<code>+500 Rimborso @Corrente 15/03</code>\n"
             ."<code>8.50 Bar #Svago 01/03</code>\n"
             ."<code>£30 cena pub @Revolut #Svago</code>\n\n"
-            ."<b>📸 Scontrino fotografato:</b>\n"
-            ."Invia direttamente la foto — l'OCR estrae importo e negozio automaticamente.\n\n"
             ."<b>⌨️ Comandi:</b>\n"
             ."/start TOKEN — collega il tuo account\n"
             ."/aiuto — questa guida\n"
@@ -456,12 +459,16 @@ class TelegramWebhookController extends Controller
 
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Ricevuto!</b>\n\n{$preview}{$extrasText}\n\n🔍 <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per revisionare e confermare."
+                "✅ <b>Ricevuto!</b>\n\n{$preview}{$extrasText}\n\n🔍 <a href=\"{$this->inboxUrl()}\">Vai all'Inbox</a> per revisionare e confermare."
             );
+
+            if ($amount !== null && (! $accountId || ! $categoryId)) {
+                $this->promptAccountOrCategorySelection($user, $chatId, $item, $type, ! $accountId, ! $categoryId);
+            }
         } else {
             $this->telegram->sendMessage(
                 $chatId,
-                "✅ <b>Ricevuto!</b>\n\n📝 <i>{$text}</i>\n\n⚠️ Nessun importo rilevato. <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per completare i dati."
+                "✅ <b>Ricevuto!</b>\n\n📝 <i>{$text}</i>\n\n⚠️ Nessun importo rilevato. <a href=\"{$this->inboxUrl()}\">Vai all'Inbox</a> per completare i dati."
             );
         }
     }
@@ -472,106 +479,12 @@ class TelegramWebhookController extends Controller
 
     private function handlePhotoMessage(array $message, User $user, string $chatId): void
     {
-        // Prendi la foto con la risoluzione più alta (ultimo elemento dell'array)
-        $photos = $message['photo'];
-        $bestPhoto = end($photos);
-        $fileId = $bestPhoto['file_id'] ?? null;
+        unset($message, $user);
 
-        if (! $fileId) {
-            $this->telegram->sendMessage($chatId, '❌ Impossibile accedere alla foto. Riprova.');
-
-            return;
-        }
-
-        // Scarica la foto
-        $imageContent = $this->telegram->downloadFile($fileId);
-        if (! $imageContent) {
-            $this->telegram->sendMessage($chatId, '❌ Impossibile scaricare la foto. Riprova.');
-
-            return;
-        }
-
-        // Salva l'immagine nel disco privato
-        $filename = 'inbox/'.now()->format('Y-m-d_His').'_'.Str::random(8).'.jpg';
-        Storage::disk('private')->put($filename, $imageContent);
-
-        // Invia feedback immediato (l'OCR può richiedere qualche secondo)
         $this->telegram->sendMessage(
             $chatId,
-            '📸 <b>Foto ricevuta!</b> Sto elaborando lo scontrino...'
+            "📸 <b>Foto non disponibile al momento</b>\n\nPer registrare una spesa invia un messaggio di testo, ad esempio:\n<code>15.50 Supermercato</code>\n\nPuoi usare i pulsanti dopo l'invio per scegliere conto e categoria.\n\n🔍 <a href=\"{$this->inboxUrl()}\">Vai all'Inbox</a>"
         );
-
-        // Estrazione OCR con Mistral Pixtral
-        $aiPayload = null;
-        $amount = null;
-        $description = null;
-        $status = 'draft';
-
-        try {
-            $aiPayload = $this->vision->extractFromReceipt($filename);
-
-            if ($aiPayload) {
-                $amount = $aiPayload['amt'] ?? null;
-                $description = $aiPayload['shop'] ?? null;
-                $status = 'needs_review';
-            }
-        } catch (\Throwable $e) {
-            Log::warning('TelegramWebhookController: errore OCR', ['error' => $e->getMessage()]);
-        }
-
-        // Prova a estrarre dettagli opzionali dalla didascalia
-        $caption = trim($message['caption'] ?? '');
-        $captionParsed = $caption ? $this->parseTextMessage($caption) : null;
-
-        $accountId = null;
-        $categoryId = null;
-        if ($captionParsed) {
-            [$accountId] = $this->resolveAccountByName($captionParsed['account_name'], $user);
-            [$categoryId] = $this->resolveCategoryByName($captionParsed['category_name'], $user);
-        }
-
-        // Crea l'elemento in Inbox
-        $item = InboxItem::create([
-            'user_id' => $user->id,
-            'household_id' => $user->active_household_id,
-            'status' => $status,
-            'source' => 'telegram_photo',
-            'raw_text' => $caption ?: null,
-            'image_path' => $filename,
-            'ai_payload' => $aiPayload,
-            'amount' => $amount,
-            'description' => $description,
-            'transaction_date' => isset($aiPayload['dt']) ? $aiPayload['dt'] : now()->toDateString(),
-            'account_id' => $accountId,
-            'category_id' => $categoryId,
-        ]);
-
-        AppNotification::create([
-            'user_id' => $user->id,
-            'title' => '📸 Scontrino in Inbox',
-            'message' => $aiPayload && $amount !== null
-                ? 'Scontrino elaborato: '.($description ?? 'negozio sconosciuto').' — €'.number_format((float) $amount, 2, ',', '.')
-                : 'Foto scontrino salvata in Inbox. Vai nell\'Inbox per completare i dati.',
-            'notification_key' => 'inbox_telegram_'.$item->id,
-        ]);
-
-        // Feedback con risultato OCR
-        if ($aiPayload && $amount !== null) {
-            $dateFormatted = $item->transaction_date?->format('d/m/Y') ?? '';
-            $preview = '💶 <b>€'.number_format((float) $amount, 2, ',', '.').'</b>'
-                .($description ? " – {$description}" : '')
-                .($dateFormatted ? " ({$dateFormatted})" : '');
-
-            $this->telegram->sendMessage(
-                $chatId,
-                "✅ <b>Scontrino elaborato!</b>\n\n{$preview}\n\n🔍 <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per verificare e confermare."
-            );
-        } else {
-            $this->telegram->sendMessage(
-                $chatId,
-                "✅ <b>Foto salvata!</b>\n\n⚠️ Non sono riuscito a estrarre tutti i dati. <a href=\"".config('app.url')."/inbox\">Vai all'Inbox</a> per inserire manualmente l'importo.\n\n💡 <i>Suggerimento: puoi aggiungere <code>@Conto #Categoria</code> come didascalia della foto.</i>"
-            );
-        }
     }
 
     // -------------------------------------------------------------------------
@@ -593,6 +506,13 @@ class TelegramWebhookController extends Controller
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
             ->first();
 
+        if (! $account) {
+            $account = Account::where('household_id', $user->active_household_id)
+                ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($name).'%'])
+                ->orderByRaw('LENGTH(name) ASC')
+                ->first();
+        }
+
         return [$account?->id, $account];
     }
 
@@ -610,6 +530,13 @@ class TelegramWebhookController extends Controller
         $category = Category::where('household_id', $user->active_household_id)
             ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
             ->first();
+
+        if (! $category) {
+            $category = Category::where('household_id', $user->active_household_id)
+                ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($name).'%'])
+                ->orderByRaw('LENGTH(name) ASC')
+                ->first();
+        }
 
         return [$category?->id, $category];
     }
@@ -638,6 +565,8 @@ class TelegramWebhookController extends Controller
      */
     private function parseTextMessage(string $text): array
     {
+        $text = $this->normalizeTelegramInput($text);
+
         $type = 'expense';
         $account_name = null;
         $category_name = null;
@@ -761,5 +690,165 @@ class TelegramWebhookController extends Controller
         }
 
         return $formatted.' '.$currencyCode;
+    }
+
+    private function inboxUrl(): string
+    {
+        return URL::route('inbox.index', absolute: true);
+    }
+
+    private function normalizeTelegramInput(string $text): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+        $text = preg_replace('/(\d)[.,](?=\s)/u', '$1', $text) ?? $text;
+        $text = preg_replace('/(\d),(\d{1,2})(?!\d)/u', '$1.$2', $text) ?? $text;
+
+        return trim($text);
+    }
+
+    private function handleCallbackQuery(array $callbackQuery): void
+    {
+        $callbackId = (string) ($callbackQuery['id'] ?? '');
+        $data = (string) ($callbackQuery['data'] ?? '');
+        $chatId = (string) ($callbackQuery['message']['chat']['id'] ?? '');
+        $user = User::where('telegram_chat_id', $chatId)->first();
+
+        if (! $user || $data === '') {
+            $this->telegram->answerCallbackQuery($callbackId);
+
+            return;
+        }
+
+        if (str_starts_with($data, 'account:')) {
+            $accountId = (int) substr($data, 8);
+            $pending = Cache::get("telegram_pending:{$chatId}");
+            if (is_array($pending) && isset($pending['inbox_item_id'])) {
+                $item = InboxItem::where('user_id', $user->id)->find($pending['inbox_item_id']);
+                if ($item) {
+                    $item->update(['account_id' => $accountId]);
+                    $pending['account_id'] = $accountId;
+                    Cache::put("telegram_pending:{$chatId}", $pending, now()->addMinutes(15));
+                    $this->telegram->answerCallbackQuery($callbackId, 'Conto selezionato');
+                    if (empty($pending['category_id'])) {
+                        $this->sendCategoryKeyboard($user, $chatId, (string) ($pending['type'] ?? 'expense'));
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        if (str_starts_with($data, 'category:')) {
+            $categoryId = (int) substr($data, 9);
+            $pending = Cache::get("telegram_pending:{$chatId}");
+            if (is_array($pending) && isset($pending['inbox_item_id'])) {
+                $item = InboxItem::where('user_id', $user->id)->find($pending['inbox_item_id']);
+                if ($item) {
+                    $item->update(['category_id' => $categoryId]);
+                    Cache::forget("telegram_pending:{$chatId}");
+                    $this->telegram->answerCallbackQuery($callbackId, 'Categoria selezionata');
+                    $this->telegram->sendMessage(
+                        $chatId,
+                        "✅ Dettagli aggiornati! <a href=\"{$this->inboxUrl()}\">Vai all'Inbox</a> per confermare."
+                    );
+
+                    return;
+                }
+            }
+        }
+
+        $this->telegram->answerCallbackQuery($callbackId);
+    }
+
+    private function promptAccountOrCategorySelection(
+        User $user,
+        string $chatId,
+        InboxItem $item,
+        string $type,
+        bool $needAccount,
+        bool $needCategory,
+    ): void {
+        Cache::put("telegram_pending:{$chatId}", [
+            'inbox_item_id' => $item->id,
+            'type' => $type,
+            'account_id' => $item->account_id,
+            'category_id' => $item->category_id,
+        ], now()->addMinutes(15));
+
+        if ($needAccount) {
+            $this->sendAccountKeyboard($user, $chatId);
+
+            return;
+        }
+
+        if ($needCategory) {
+            $this->sendCategoryKeyboard($user, $chatId, $type);
+        }
+    }
+
+    private function sendAccountKeyboard(User $user, string $chatId): void
+    {
+        $accounts = Account::where('household_id', $user->active_household_id)
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
+
+        if ($accounts->isEmpty()) {
+            return;
+        }
+
+        $rows = [];
+        $row = [];
+        foreach ($accounts as $account) {
+            $row[] = ['text' => $account->name, 'callback_data' => 'account:'.$account->id];
+            if (count($row) === 2) {
+                $rows[] = $row;
+                $row = [];
+            }
+        }
+        if ($row !== []) {
+            $rows[] = $row;
+        }
+
+        $this->telegram->sendMessage(
+            $chatId,
+            '🏦 <b>Scegli il conto:</b>',
+            'HTML',
+            $this->telegram->inlineKeyboard($rows),
+        );
+    }
+
+    private function sendCategoryKeyboard(User $user, string $chatId, string $type): void
+    {
+        $categories = Category::where('household_id', $user->active_household_id)
+            ->where('type', $type === 'income' ? 'income' : 'expense')
+            ->orderBy('name')
+            ->limit(8)
+            ->get();
+
+        if ($categories->isEmpty()) {
+            return;
+        }
+
+        $rows = [];
+        $row = [];
+        foreach ($categories as $category) {
+            $label = ($category->icon ? $category->icon.' ' : '').$category->name;
+            $row[] = ['text' => mb_strimwidth($label, 0, 32), 'callback_data' => 'category:'.$category->id];
+            if (count($row) === 2) {
+                $rows[] = $row;
+                $row = [];
+            }
+        }
+        if ($row !== []) {
+            $rows[] = $row;
+        }
+
+        $this->telegram->sendMessage(
+            $chatId,
+            '🏷️ <b>Scegli la categoria:</b>',
+            'HTML',
+            $this->telegram->inlineKeyboard($rows),
+        );
     }
 }

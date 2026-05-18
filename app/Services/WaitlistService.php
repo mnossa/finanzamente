@@ -51,6 +51,10 @@ class WaitlistService
      */
     public function subscribe(string $email): bool
     {
+        if (! config('services.brevo.enabled', false)) {
+            return false;
+        }
+
         $apiKey = config('services.brevo.api_key');
         $templateId = config('services.brevo.double_optin_template_id');
 
@@ -100,6 +104,10 @@ class WaitlistService
      */
     public function confirmSubscription(string $email): bool
     {
+        if (! config('services.brevo.enabled', false)) {
+            return false;
+        }
+
         $apiKey = config('services.brevo.api_key');
         $listId = config('services.brevo.waitlist_list_id');
 

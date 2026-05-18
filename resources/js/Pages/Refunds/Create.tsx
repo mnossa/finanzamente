@@ -8,7 +8,10 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import RefundCreateGuided from './RefundCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { refunds } from '@/utils/analytics';
 import clsx from 'clsx';
@@ -81,7 +84,49 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Create({ originalTransaction, refundableTransactions, totalRefundableCount, categories }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Rimborso"
+                        backLink={route('refunds.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Rimborso" />
+                <PageContent>
+                    {refundableTransactions.length === 0 && !originalTransaction ? (
+                        <SectionCard className="space-y-4">
+                            <div className="py-8 text-center">
+                                <div className="mb-4 text-4xl">💸</div>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                    Nessuna spesa da rimborsare
+                                </h3>
+                                <p className="mb-4 text-gray-500 dark:text-gray-400">
+                                    Non ci sono transazioni di spesa che possono essere rimborsate.
+                                </p>
+                                <LinkButton href={route('transactions.create')}>
+                                    Crea una Transazione
+                                </LinkButton>
+                            </div>
+                        </SectionCard>
+                    ) : (
+                        <RefundCreateGuided
+                            originalTransaction={originalTransaction}
+                            refundableTransactions={refundableTransactions}
+                            categories={categories}
+                        />
+                    )}
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const today = new Date().toISOString().split('T')[0];
+
     const [searchTerm, setSearchTerm] = useState('');
     const [transactions, setTransactions] = useState<RefundableTransaction[]>(refundableTransactions);
     const [isSearching, setIsSearching] = useState(false);

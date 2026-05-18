@@ -4,7 +4,10 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import InterHouseholdTransferCreateGuided from './InterHouseholdTransferCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
@@ -43,7 +46,62 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
 }
 
 export default function Create({ sourceAccounts, userHouseholds, activeHouseholdExcludesDefault }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Trasferimento tra Households"
+                        backLink={route('inter-household-transfers.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Trasferimento tra Households" />
+                <PageContent>
+                    <CardBox>
+                        {sourceAccounts.length === 0 ? (
+                            <div className="py-8 text-center">
+                                <div className="mb-4 text-4xl">🏦</div>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                    Nessun account disponibile
+                                </h3>
+                                <p className="mb-4 text-gray-600 dark:text-gray-400">
+                                    Devi prima creare almeno un account nella tua household attiva.
+                                </p>
+                                <Link
+                                    href={route('accounts.create')}
+                                    className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                                >
+                                    Crea Account
+                                </Link>
+                            </div>
+                        ) : userHouseholds.length === 0 ? (
+                            <div className="py-8 text-center">
+                                <div className="mb-4 text-4xl">🏠</div>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                    Nessuna household di destinazione
+                                </h3>
+                                <p className="text-gray-600 dark:text-gray-400">
+                                    Non ci sono altre households disponibili per i trasferimenti.
+                                </p>
+                            </div>
+                        ) : (
+                            <InterHouseholdTransferCreateGuided
+                                sourceAccounts={sourceAccounts}
+                                userHouseholds={userHouseholds}
+                                activeHouseholdExcludesDefault={activeHouseholdExcludesDefault}
+                            />
+                        )}
+                    </CardBox>
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const today = new Date().toISOString().split('T')[0];
+
     const [destAccounts, setDestAccounts] = useState<Account[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
 

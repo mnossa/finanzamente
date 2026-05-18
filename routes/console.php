@@ -14,6 +14,8 @@ Artisan::command('inspire', function () {
  */
 Schedule::command('recurring:generate')->dailyAt('00:01');
 
+Schedule::command('recurring:remind')->dailyAt('08:00');
+
 /**
  * Rigenera la sitemap.xml ogni notte alle 02:00.
  * Per aggiungere nuove rotte pubbliche, edita GenerateSitemap::handle().

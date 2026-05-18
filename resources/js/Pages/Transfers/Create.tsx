@@ -8,7 +8,10 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import TransferCreateGuided from './TransferCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { transfers } from '@/utils/analytics';
 import clsx from 'clsx';
@@ -34,7 +37,45 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
 }
 
 export default function Create({ accounts }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Trasferimento"
+                        backLink={route('transfers.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Trasferimento" />
+                <PageContent maxWidth="2xl">
+                    {accounts.length < 2 ? (
+                        <SectionCard className="space-y-4">
+                            <div className="py-8 text-center">
+                                <div className="mb-4 text-4xl">🏦</div>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                    Servono almeno due conti
+                                </h3>
+                                <p className="mb-4 text-gray-500 dark:text-gray-400">
+                                    Per effettuare un trasferimento devi avere almeno due conti attivi.
+                                </p>
+                                <LinkButton href={route('accounts.create')}>
+                                    Crea un Conto
+                                </LinkButton>
+                            </div>
+                        </SectionCard>
+                    ) : (
+                        <TransferCreateGuided accounts={accounts} />
+                    )}
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const today = new Date().toISOString().split('T')[0];
+
 
     const { data, setData, post, processing, errors } = useForm({
         source_account_id: '',

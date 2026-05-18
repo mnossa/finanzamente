@@ -10,6 +10,10 @@ class BrevoMarketingService
 {
     public function syncMarketingConsent(string $email, bool $isGranted): void
     {
+        if (! config('services.brevo.enabled', false)) {
+            return;
+        }
+
         $apiKey = config('services.brevo.api_key');
         if (empty($apiKey)) {
             return;

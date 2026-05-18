@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import clsx from 'clsx';
 import { cats } from '@/utils/analytics';
 
@@ -14,6 +14,8 @@ interface CategoryPickerProps {
     categories: Category[];
     value: string;
     onChange: (categoryId: string) => void;
+    /** Se impostato, nasconde i tab e mostra solo categorie di quel tipo. */
+    lockedType?: 'income' | 'expense';
     error?: string;
     className?: string;
 }
@@ -22,10 +24,17 @@ export default function CategoryPicker({
     categories,
     value,
     onChange,
+    lockedType,
     error,
     className,
 }: CategoryPickerProps) {
-    const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense');
+    const [activeTab, setActiveTab] = useState<'expense' | 'income'>(lockedType ?? 'expense');
+
+    useEffect(() => {
+        if (lockedType) {
+            setActiveTab(lockedType);
+        }
+    }, [lockedType]);
     const [search, setSearch] = useState('');
 
     const incomeCategories = useMemo(
@@ -101,7 +110,7 @@ export default function CategoryPicker({
                 </div>
             )}
 
-            {/* Tabs */}
+            {!lockedType && (
             <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-700">
                 <button
                     type="button"
@@ -134,6 +143,7 @@ export default function CategoryPicker({
                     </span>
                 </button>
             </div>
+            )}
 
             {/* Ricerca (mostra solo se ci sono più di 6 categorie nel tab attivo) */}
             {(activeTab === 'income' ? incomeCategories : expenseCategories).length > 6 && (

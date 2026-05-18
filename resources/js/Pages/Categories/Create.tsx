@@ -6,7 +6,10 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
 import EmojiPicker from '@/Components/EmojiPicker';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import CategoryCreateGuided from './CategoryCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { cats } from '@/utils/analytics';
 import clsx from 'clsx';
@@ -30,6 +33,26 @@ function getCategoryTypeIcon(type: string): string {
 }
 
 export default function Create({ categoryTypes }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuova Categoria"
+                        backLink={route('categories.index')}
+                    />
+                }
+            >
+                <Head title="Nuova Categoria" />
+                <PageContent maxWidth="2xl">
+                    <CategoryCreateGuided categoryTypes={categoryTypes} />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         type: 'expense',

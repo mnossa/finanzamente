@@ -5,7 +5,10 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import AssetSearch from '@/Components/AssetSearch';
-import { Head, Link, useForm } from '@inertiajs/react';
+import InvestmentAssetCreateGuided from './InvestmentAssetCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import { FormEventHandler } from 'react';
@@ -33,6 +36,26 @@ interface CreateProps {
 }
 
 export default function Create({ currencies, types, typeIcons }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Asset"
+                        backLink={route('investment-assets.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Asset" />
+                <PageContent maxWidth="2xl">
+                    <InvestmentAssetCreateGuided currencies={currencies} types={types} typeIcons={typeIcons} />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const { data, setData, post, processing, errors } = useForm({
         type: 'stock',
         symbol: '',

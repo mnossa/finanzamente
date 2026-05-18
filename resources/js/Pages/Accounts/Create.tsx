@@ -9,7 +9,10 @@ import ProBadge from '@/Components/ProBadge';
 import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import AccountCreateGuided from './AccountCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { accs } from '@/utils/analytics';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
@@ -36,6 +39,21 @@ interface CreateProps {
 const FEATURED_CURRENCY_CODES = ['EUR', 'USD', 'GBP', 'CHF'] as const;
 
 export default function Create({ accountTypes, currencies, defaultCurrency, accountsCount, maxAccounts }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={<PageHeader title="Nuovo conto" backLink={route('accounts.index')} />}
+            >
+                <Head title="Nuovo Conto" />
+                <PageContent maxWidth="2xl">
+                    <AccountCreateGuided accountTypes={accountTypes} defaultCurrency={defaultCurrency} />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const currenciesByCode = new Map(currencies.map((currency) => [currency.code, currency]));
     const featuredCurrencies = FEATURED_CURRENCY_CODES
         .map((code) => currenciesByCode.get(code))

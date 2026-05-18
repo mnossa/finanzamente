@@ -7,7 +7,10 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import FinancialGoalCreateGuided from './FinancialGoalCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { goals } from '@/utils/analytics';
 import clsx from 'clsx';
@@ -26,6 +29,26 @@ interface CreateProps {
 }
 
 export default function Create({ currencies, suggestedIcons }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Obiettivo"
+                        backLink={route('financial-goals.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Obiettivo" />
+                <PageContent maxWidth="2xl">
+                    <FinancialGoalCreateGuided currencies={currencies} suggestedIcons={suggestedIcons} />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const [showIconPicker, setShowIconPicker] = useState(false);
     
     const { data, setData, post, processing, errors } = useForm({

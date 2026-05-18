@@ -170,10 +170,12 @@ return [
     | BREVO_WAITLIST_LIST_ID: ID della lista Brevo per la waitlist Pro
     | BREVO_DOUBLE_OPTIN_TEMPLATE_ID: ID del template email per il double opt-in
     | BREVO_DOUBLE_OPTIN_REDIRECT_URL: URL di redirect dopo conferma double opt-in
+    | BREVO_ENABLED: false nel container app_e2e (test Playwright) per evitare chiamate API
     |
     */
     'brevo' => [
-        'api_key' => env('BREVO_API_KEY'),
+        'enabled' => filter_var(env('BREVO_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+        'api_key' => filter_var(env('BREVO_ENABLED', true), FILTER_VALIDATE_BOOLEAN) ? env('BREVO_API_KEY') : null,
         'waitlist_list_id' => (int) env('BREVO_WAITLIST_LIST_ID', 0),
         'marketing_list_id' => (int) env('BREVO_MARKETING_LIST_ID', 0),
         'double_optin_template_id' => (int) env('BREVO_DOUBLE_OPTIN_TEMPLATE_ID', 0),

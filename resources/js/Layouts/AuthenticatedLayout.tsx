@@ -3,6 +3,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import { nav } from '@/utils/analytics';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
+import BalancePrivacyToggle from '@/Components/BalancePrivacyToggle';
 import ProBadge from '@/Components/ProBadge';
 import { ActiveHousehold, AppNotification, PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -852,6 +853,9 @@ export default function Authenticated({
                                 )}
                             </div>
 
+                            {/* Nascondi saldi */}
+                            <BalancePrivacyToggle />
+
                             {/* Theme Toggle */}
                             <ThemeToggle />
 
@@ -981,10 +985,14 @@ function MobileBottomNav({
                             type="submit"
                             form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
                             onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className="flex min-w-[4.75rem] max-w-[5.5rem] shrink-0 items-center justify-center px-2 h-14 -mt-5 rounded-2xl bg-emerald-500 text-white text-[11px] font-bold leading-tight shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform sm:text-xs"
+                            className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
                             aria-label={primaryFab.ariaLabel}
                         >
-                            Salva
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                <polyline points="17 21 17 13 7 13 7 21" />
+                                <polyline points="7 3 7 8 15 8" />
+                            </svg>
                         </button>
                     ) : (
                         <Link

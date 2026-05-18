@@ -175,6 +175,8 @@ services:
       DB_DATABASE: finanzamente_e2e
       DB_USERNAME: finanzamente
       DB_PASSWORD: finanzamente
+      FEATURE_GUIDED_CREATE_FORMS: "false"
+      BREVO_ENABLED: "false"
     volumes:
       - ./:/var/www
     networks:

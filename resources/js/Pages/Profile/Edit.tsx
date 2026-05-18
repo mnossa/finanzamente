@@ -7,6 +7,7 @@ import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import ProfileQuizSettingsCard from './Partials/ProfileQuizSettingsCard';
 import ConsentPreferencesForm from './Partials/ConsentPreferencesForm';
+import NotificationPreferencesForm from './Partials/NotificationPreferencesForm';
 import PageHeader from '@/Components/PageHeader';
 import SectionCard from '@/Components/SectionCard';
 
@@ -76,6 +77,10 @@ export default function Edit({
 
                     <SectionCard className="lg:col-span-2">
                         <ConsentPreferencesForm className="w-full" consents={consents} />
+                    </SectionCard>
+
+                    <SectionCard className="lg:col-span-2">
+                        <NotificationPreferencesForm />
                     </SectionCard>
 
                     <SectionCard className="lg:col-span-2">

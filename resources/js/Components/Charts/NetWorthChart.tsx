@@ -8,8 +8,10 @@ import {
     YAxis,
     Tooltip,
 } from 'recharts';
-import CardBox from '@/Components/CardBox';
+import clsx from 'clsx';
 import { formatEuro, getChartMutedTextColor, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
+
+const CHART_HEIGHT = 256;
 
 function NetWorthTooltip({ payload, active, label }: { payload?: Array<{ value?: number }>; active?: boolean; label?: string }) {
     const isDark = useChartDarkMode();
@@ -42,11 +44,10 @@ interface NetWorthChartProps {
 const yAxisFormatter = (value: number): string => {
     const abs = Math.abs(value);
     if (abs >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000)     return `€${(value / 1_000).toFixed(0)}k`;
+    if (abs >= 1_000) return `€${(value / 1_000).toFixed(0)}k`;
+
     return `€${value.toFixed(0)}`;
 };
-
-const valueFormatter = (value: number) => formatEuro(value);
 
 export default function NetWorthChart({ data, className }: NetWorthChartProps) {
     const isDark = useChartDarkMode();
@@ -60,22 +61,22 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
 
     if (!data.length) {
         return (
-            <CardBox className={className ?? ''}>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <div className={clsx('w-full', className)}>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                     Andamento nel tempo
                 </p>
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun dato disponibile per il periodo selezionato
                 </div>
-            </CardBox>
+            </div>
         );
     }
 
     return (
-        <CardBox className={className ?? ''}>
+        <div className={clsx('w-full', className)}>
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                         Andamento nel tempo
                     </p>
                 </div>
@@ -98,8 +99,8 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                     </div>
                 )}
             </div>
-            <div className="mt-4">
-                <ResponsiveContainer width="99%" height={288}>
+            <div className="mt-3 sm:mt-4">
+                <ResponsiveContainer width="99%" height={CHART_HEIGHT}>
                     <ReAreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
                         <defs>
                             <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
@@ -133,6 +134,6 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                     </ReAreaChart>
                 </ResponsiveContainer>
             </div>
-        </CardBox>
+        </div>
     );
 }

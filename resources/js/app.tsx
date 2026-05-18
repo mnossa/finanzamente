@@ -19,6 +19,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { BalancePrivacyProvider } from '@/contexts/BalancePrivacyContext';
 import { registerSW } from 'virtual:pwa-register';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Finanzamente';
@@ -27,13 +28,24 @@ if (import.meta.env.PROD && typeof window !== 'undefined') {
     registerSW({ immediate: true });
 }
 
-function extractInitialThemeFromPage(initialPage: { props?: Record<string, unknown> } | undefined): string | undefined {
+function extractUserPreferences(initialPage: { props?: Record<string, unknown> } | undefined): Record<string, unknown> | undefined {
     const auth = initialPage?.props?.auth as { user?: { preferences?: Record<string, unknown> } } | undefined;
-    const raw =
-        auth?.user?.preferences && typeof auth.user.preferences === 'object'
-            ? (auth.user.preferences as Record<string, unknown>).theme
-            : undefined;
+
+    return auth?.user?.preferences && typeof auth.user.preferences === 'object'
+        ? (auth.user.preferences as Record<string, unknown>)
+        : undefined;
+}
+
+function extractInitialThemeFromPage(initialPage: { props?: Record<string, unknown> } | undefined): string | undefined {
+    const raw = extractUserPreferences(initialPage)?.theme;
+
     return raw === 'dark' || raw === 'light' ? raw : undefined;
+}
+
+function extractInitialHideBalances(initialPage: { props?: Record<string, unknown> } | undefined): boolean | undefined {
+    const raw = extractUserPreferences(initialPage)?.hide_balances;
+
+    return typeof raw === 'boolean' ? raw : undefined;
 }
 
 createInertiaApp({
@@ -46,12 +58,15 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         const initialTheme = extractInitialThemeFromPage(props.initialPage);
+        const initialHideBalances = extractInitialHideBalances(props.initialPage);
         console.info('[Finanzamente] Mount Inertia React', {
             initialComponent: props.initialPage?.component,
         });
         root.render(
             <ThemeProvider initialTheme={initialTheme}>
-                <App {...props} />
+                <BalancePrivacyProvider initialHideBalances={initialHideBalances}>
+                    <App {...props} />
+                </BalancePrivacyProvider>
             </ThemeProvider>,
         );
     },

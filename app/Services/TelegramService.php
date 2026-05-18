@@ -31,7 +31,10 @@ class TelegramService
     /**
      * Invia un messaggio di testo a una chat Telegram.
      */
-    public function sendMessage(string $chatId, string $text, string $parseMode = 'HTML'): bool
+    /**
+     * @param  array<string, mixed>|null  $replyMarkup
+     */
+    public function sendMessage(string $chatId, string $text, string $parseMode = 'HTML', ?array $replyMarkup = null): bool
     {
         if (! $this->isConfigured()) {
             Log::error('TelegramService: TELEGRAM_BOT_TOKEN non configurato, impossibile inviare messaggi');
@@ -40,11 +43,16 @@ class TelegramService
         }
 
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/sendMessage", [
+            $payload = [
                 'chat_id' => $chatId,
                 'text' => $text,
                 'parse_mode' => $parseMode,
-            ]);
+            ];
+            if ($replyMarkup !== null) {
+                $payload['reply_markup'] = json_encode($replyMarkup);
+            }
+
+            $response = Http::timeout(10)->post("{$this->baseUrl}/sendMessage", $payload);
 
             if (! $response->successful()) {
                 Log::warning('TelegramService: sendMessage rifiutato da API', [
@@ -117,7 +125,7 @@ class TelegramService
         try {
             $payload = [
                 'url' => $webhookUrl,
-                'allowed_updates' => ['message'],
+                'allowed_updates' => ['message', 'callback_query'],
             ];
 
             if ($secretToken !== null && $secretToken !== '') {
@@ -134,5 +142,35 @@ class TelegramService
 
             return false;
         }
+    }
+
+    public function answerCallbackQuery(string $callbackQueryId, ?string $text = null): bool
+    {
+        if (! $this->isConfigured()) {
+            return false;
+        }
+
+        try {
+            $payload = ['callback_query_id' => $callbackQueryId];
+            if ($text !== null) {
+                $payload['text'] = $text;
+            }
+
+            $response = Http::timeout(10)->post("{$this->baseUrl}/answerCallbackQuery", $payload);
+
+            return $response->successful();
+        } catch (\Throwable $e) {
+            Log::warning('TelegramService: answerCallbackQuery failed', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * @param  array<int, array<int, array<string, string>>>  $rows
+     */
+    public function inlineKeyboard(array $rows): array
+    {
+        return ['inline_keyboard' => $rows];
     }
 }

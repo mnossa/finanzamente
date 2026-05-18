@@ -64,6 +64,8 @@ interface Props extends PageProps {
     accounts: Account[];
     categories: Category[];
     pendingCount: number;
+    telegramLinked: boolean;
+    telegramBotUsername: string | null;
 }
 
 // -------------------------------------------------------------------------
@@ -614,7 +616,7 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
 // Pagina principale
 // -------------------------------------------------------------------------
 
-export default function InboxIndex({ items, accounts, categories, pendingCount }: Props) {
+export default function InboxIndex({ items, accounts, categories, pendingCount, telegramLinked, telegramBotUsername }: Props) {
     const [confirmingAll, setConfirmingAll] = useState(false);
     const [rejectingAll, setRejectingAll] = useState(false);
 
@@ -691,15 +693,38 @@ export default function InboxIndex({ items, accounts, categories, pendingCount }
                         <EmptyState
                             icon="📥"
                             title="Inbox vuota"
-                            description="Le spese inviate via Telegram appariranno qui in attesa di conferma."
+                            description={
+                                telegramLinked
+                                    ? 'Invia una spesa al bot Telegram: comparirà qui in attesa di conferma.'
+                                    : 'Le spese inviate via Telegram appariranno qui in attesa di conferma.'
+                            }
                             showCreateButton={false}
                         >
-                            <a
-                                href={route('telegram.link.show')}
-                                className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors"
-                            >
-                                Collega Telegram →
-                            </a>
+                            {telegramLinked ? (
+                                <div className="mt-4 space-y-3 text-left text-sm text-gray-600 dark:text-gray-300">
+                                    {telegramBotUsername && (
+                                        <p>
+                                            Bot collegato: <strong>@{telegramBotUsername}</strong>
+                                        </p>
+                                    )}
+                                    <p className="font-medium text-gray-800 dark:text-gray-100">Esempi di messaggio:</p>
+                                    <ul className="list-disc space-y-1 pl-5">
+                                        <li><code className="text-xs">15.50 Supermercato</code></li>
+                                        <li><code className="text-xs">15 Pizza @Corrente #Alimentari</code></li>
+                                        <li><code className="text-xs">+1500 Stipendio</code></li>
+                                    </ul>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Comandi utili: /lista, /saldo, /ultime
+                                    </p>
+                                </div>
+                            ) : (
+                                <a
+                                    href={route('telegram.link.show')}
+                                    className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors"
+                                >
+                                    Collega Telegram →
+                                </a>
+                            )}
                         </EmptyState>
                     </CardBox>
                 ) : (

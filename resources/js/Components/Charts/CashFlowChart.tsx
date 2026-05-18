@@ -9,8 +9,10 @@ import {
     Bar,
     Legend,
 } from 'recharts';
-import CardBox from '@/Components/CardBox';
+import clsx from 'clsx';
 import { formatEuro, getChartMutedTextColor, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
+
+const CHART_HEIGHT = 256;
 
 export interface CashFlowDataPoint {
     month: string;
@@ -28,7 +30,8 @@ interface CashFlowChartProps {
 const yAxisFormatter = (value: number): string => {
     const abs = Math.abs(value);
     if (abs >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000)     return `€${(value / 1_000).toFixed(0)}k`;
+    if (abs >= 1_000) return `€${(value / 1_000).toFixed(0)}k`;
+
     return `€${value.toFixed(0)}`;
 };
 
@@ -42,6 +45,7 @@ function CashFlowTooltip({ payload, active, label }: { payload?: Array<{ dataKey
     const tooltipStyle = getChartTooltipStyle(isDark);
 
     if (!active || !payload?.length) return null;
+
     return (
         <div style={{
             ...tooltipStyle,
@@ -62,23 +66,22 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
 
     if (!data.length) {
         return (
-            <CardBox className={className ?? ''}>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <div className={clsx('w-full', className)}>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                     Entrate vs Uscite mensili
                 </p>
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun dato disponibile per il periodo selezionato
                 </div>
-            </CardBox>
+            </div>
         );
     }
 
     return (
-        <CardBox className={className ?? ''}>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div className={clsx('w-full', className)}>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
                 Entrate vs Uscite mensili
             </p>
-            {/* Legenda personalizzata con spaziatura adeguata */}
             <div className="mt-3 flex items-center gap-6">
                 {[{ label: 'Entrate', color: '#10b981' }, { label: 'Uscite', color: '#f97316' }].map(({ label, color }) => (
                     <div key={label} className="flex items-center gap-2">
@@ -88,7 +91,7 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                 ))}
             </div>
             <div className="mt-2">
-                <ResponsiveContainer width="99%" height={288}>
+                <ResponsiveContainer width="99%" height={CHART_HEIGHT}>
                     <ReBarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                         <XAxis
@@ -113,7 +116,6 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                     </ReBarChart>
                 </ResponsiveContainer>
             </div>
-            {/* Linea risparmio netto sotto il grafico */}
             <div className="mt-3 flex flex-wrap gap-4 border-t border-gray-100 pt-3 dark:border-gray-700">
                 {data.slice(-6).map((d) => (
                     <div key={d.month} className="flex flex-col items-center">
@@ -130,6 +132,6 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
                     </div>
                 ))}
             </div>
-        </CardBox>
+        </div>
     );
 }

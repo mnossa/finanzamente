@@ -7,7 +7,10 @@ import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import RecurringTransactionCreateGuided from './RecurringTransactionCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { recurring } from '@/utils/analytics';
 import clsx from 'clsx';
@@ -49,7 +52,62 @@ interface CreateProps {
 }
 
 export default function Create({ accounts, categories, frequencies, debtsCredits }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuova Transazione Ricorrente"
+                    />
+                }
+            >
+                <Head title="Nuova Transazione Ricorrente" />
+                <PageContent maxWidth="2xl">
+                    <CardBox>
+                        {accounts.length === 0 ? (
+                            <div className="py-8 text-center">
+                                <div className="mb-4 text-4xl">🏦</div>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                    Nessun conto disponibile
+                                </h3>
+                                <p className="mb-4 text-gray-500 dark:text-gray-400">
+                                    Crea prima un conto per poter creare transazioni ricorrenti.
+                                </p>
+                                <LinkButton href={route('accounts.create')}>
+                                    Crea un Conto
+                                </LinkButton>
+                            </div>
+                        ) : categories.length === 0 ? (
+                            <div className="py-8 text-center">
+                                <div className="mb-4 text-4xl">🏷️</div>
+                                <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+                                    Nessuna categoria disponibile
+                                </h3>
+                                <p className="mb-4 text-gray-500 dark:text-gray-400">
+                                    Crea prima delle categorie per classificare le transazioni.
+                                </p>
+                                <LinkButton href={route('categories.create')}>
+                                    Crea una Categoria
+                                </LinkButton>
+                            </div>
+                        ) : (
+                            <RecurringTransactionCreateGuided
+                                accounts={accounts}
+                                categories={categories}
+                                frequencies={frequencies}
+                                debtsCredits={debtsCredits}
+                            />
+                        )}
+                    </CardBox>
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const today = new Date().toISOString().split('T')[0];
+
 
     const { data, setData, post, processing, errors } = useForm({
         account_id: accounts.length > 0 ? String(accounts[0].id) : '',

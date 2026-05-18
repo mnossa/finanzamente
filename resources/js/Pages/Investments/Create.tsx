@@ -7,7 +7,10 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import InvestmentCreateGuided from './InvestmentCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import { FormEventHandler, useMemo, useState, useEffect, useCallback } from 'react';
@@ -46,6 +49,26 @@ interface CreateProps {
 }
 
 export default function Create({ accounts, assets, assetTypes }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Investimento"
+                        backLink={route('investments.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Investimento" />
+                <PageContent maxWidth="2xl">
+                    <InvestmentCreateGuided accounts={accounts} assets={assets} assetTypes={assetTypes} />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     const { data, setData, post, processing, errors } = useForm({
         asset_id: '',
         account_id: '',

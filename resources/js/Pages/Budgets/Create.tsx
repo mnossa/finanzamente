@@ -7,7 +7,10 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
-import { Head, Link, useForm } from '@inertiajs/react';
+import BudgetCreateGuided from './BudgetCreateGuided';
+import { PageProps } from '@/types';
+import { isGuidedCreateEnabled } from '@/utils/guidedCreate';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { budgets } from '@/utils/analytics';
 import { FormEventHandler } from 'react';
@@ -31,6 +34,26 @@ interface CreateProps {
 }
 
 export default function Create({ categories, currencies }: CreateProps) {
+    const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
+
+    if (isGuidedCreateEnabled(features)) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <PageHeader
+                        title="Nuovo Budget"
+                        backLink={route('budgets.index')}
+                    />
+                }
+            >
+                <Head title="Nuovo Budget" />
+                <PageContent maxWidth="2xl">
+                    <BudgetCreateGuided categories={categories} currencies={currencies} />
+                </PageContent>
+            </AuthenticatedLayout>
+        );
+    }
+
     // Imposta il periodo corrente come mese attuale
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);

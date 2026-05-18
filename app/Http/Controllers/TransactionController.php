@@ -193,7 +193,7 @@ class TransactionController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color'])
+        $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color', 'recurringTransaction:id,description,frequency'])
             ->withCount(['refunds', 'attachments'])
             ->withSum(['refunds as total_refunded_amount' => function ($q) {
                 $q->where('status', 'completed');
@@ -282,6 +282,12 @@ class TransactionController extends Controller
                         'name' => $tag->name,
                         'color' => $tag->color,
                     ]),
+                    'recurring_transaction_id' => $transaction->recurring_transaction_id,
+                    'recurring_summary' => $transaction->recurringTransaction ? [
+                        'id' => $transaction->recurringTransaction->id,
+                        'description' => $transaction->recurringTransaction->description,
+                        'frequency' => $transaction->recurringTransaction->frequency,
+                    ] : null,
                 ];
             });
 
@@ -631,7 +637,7 @@ class TransactionController extends Controller
     {
         $this->authorizeTransaction($transaction);
 
-        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags', 'refunds.refundTransaction', 'attachments.uploader:id,name']);
+        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags', 'refunds.refundTransaction', 'attachments.uploader:id,name', 'recurringTransaction:id,description,frequency']);
 
         // Calcola informazioni sui rimborsi se è una spesa
         $refundInfo = null;
@@ -670,6 +676,12 @@ class TransactionController extends Controller
                 'tags' => $transaction->tags,
                 'transfer_id' => $transaction->transfer_id,
                 'refund_id' => $transaction->refund_id,
+                'recurring_transaction_id' => $transaction->recurring_transaction_id,
+                'recurring_summary' => $transaction->recurringTransaction ? [
+                    'id' => $transaction->recurringTransaction->id,
+                    'description' => $transaction->recurringTransaction->description,
+                    'frequency' => $transaction->recurringTransaction->frequency,
+                ] : null,
                 'refund_info' => $refundInfo,
                 'attachments' => $transaction->attachments->map(fn ($attachment) => [
                     'id' => $attachment->id,

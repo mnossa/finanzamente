@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\AssetPriceController;
 use App\Http\Controllers\AssetAllocationController;
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\BalancePrivacyPreferenceController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentImportController;
 use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
 use App\Http\Controllers\RecurrenceDetectionController;
@@ -33,6 +36,7 @@ use App\Http\Controllers\TaxDeductionExportController;
 use App\Http\Controllers\TelegramLinkController;
 use App\Http\Controllers\ThemePreferenceController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +68,10 @@ Route::middleware(['auth', 'verified', 'pre-launch'])->group(function () {
 // Rotte che richiedono autenticazione E household attiva
 Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/analisi/patrimonio', [AnalyticsController::class, 'netWorth'])->name('analytics.net-worth');
+    Route::get('/analisi/cashflow', [AnalyticsController::class, 'cashFlow'])->name('analytics.cash-flow');
+    Route::get('/analisi/spese-categoria', [AnalyticsController::class, 'expensesByCategory'])->name('analytics.expenses-by-category');
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
@@ -105,6 +113,8 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
 
     // Preferenze tema utente
     Route::patch('/utente/preferenze/tema', [ThemePreferenceController::class, 'update'])->name('user.preferences.theme');
+    Route::patch('/utente/preferenze/saldi', [BalancePrivacyPreferenceController::class, 'update'])->name('user.preferences.hide_balances');
+    Route::patch('/utente/preferenze/notifiche', [NotificationPreferenceController::class, 'update'])->name('user.preferences.notifications');
 
     // Modifica impostazioni quiz di profilazione dal profilo
     Route::get('/profilo/impostazioni-quiz', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
@@ -278,6 +288,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::get('/conti/{account}', [AccountController::class, 'show'])->name('accounts.show');
 
     Route::get('/transazioni', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transazioni/esporta', [TransactionExportController::class, 'export'])->name('transactions.export');
     Route::get('/transazioni/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
 
     Route::get('/categorie', [CategoryController::class, 'index'])->name('categories.index');

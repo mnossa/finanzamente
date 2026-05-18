@@ -68,6 +68,12 @@ interface Transaction {
     tags: Tag[];
     transfer_id: number | null;
     refund_id: number | null;
+    recurring_transaction_id: number | null;
+    recurring_summary: {
+        id: number;
+        description: string | null;
+        frequency: string;
+    } | null;
     refund_info: RefundInfo | null;
 }
 
@@ -255,6 +261,17 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
                                     )}
                                 </span>
                             </div>
+                            {transaction.recurring_summary && (
+                                <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
+                                    <span className="text-gray-500 dark:text-gray-400">Ricorrenza</span>
+                                    <Link
+                                        href={route('recurring-transactions.show', transaction.recurring_summary.id)}
+                                        className="text-sm font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400"
+                                    >
+                                        🔁 {transaction.recurring_summary.description || 'Vedi ricorrenza'} ({transaction.recurring_summary.frequency})
+                                    </Link>
+                                </div>
+                            )}
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
                                 <span className="text-gray-500 dark:text-gray-400">Tipo</span>
                                 <span

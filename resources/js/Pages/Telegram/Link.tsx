@@ -174,8 +174,8 @@ export default function TelegramLink({ linked, token, tokenExpiresAt, botUsernam
                             <span><strong>Testo:</strong> invia <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">15.50 Pizza</code> o <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">Supermercato 32</code></span>
                         </li>
                         <li className="flex gap-2">
-                            <span>📸</span>
-                            <span><strong>Foto scontrino:</strong> invia direttamente la foto — l'AI estrae importo, negozio e data.</span>
+                            <span>⌨️</span>
+                            <span><strong>Pulsanti rapidi:</strong> dopo l'invio potrai scegliere conto e categoria con un tap.</span>
                         </li>
                         <li className="flex gap-2">
                             <span>✅</span>
