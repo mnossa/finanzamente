@@ -37,6 +37,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
 import { moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { formatCurrency, formatDateShort } from '@/utils/format';
 
 /** Padding widget dashboard: compatto su mobile, come le altre sezioni. */
 const widgetHeaderClass =
@@ -93,6 +94,7 @@ interface ActiveBudget {
     spent: number;
     percentage: number;
     is_exceeded: boolean;
+    currency_code: string;
     currency_symbol: string;
 }
 
@@ -103,6 +105,7 @@ interface OpenDebtCredit {
     type: string;
     status: string;
     due_date: string | null;
+    currency_code: string;
     currency_symbol: string;
 }
 
@@ -189,21 +192,6 @@ interface DashboardProps {
     expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
     expenseDistributionData: ExpenseDistributionData;
-}
-
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
-
-function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('it-IT', {
-        day: '2-digit',
-        month: 'short',
-    }).format(date);
 }
 
 function getAccountTypeLabel(type: string): string {
@@ -303,7 +291,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     {transaction.description || transaction.category?.name || 'Transazione'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {transaction.account.name} · {formatDate(transaction.date)}
+                    {transaction.account.name} · {formatDateShort(transaction.date)}
                 </p>
             </div>
             <p className={clsx('text-sm font-semibold shrink-0', moneyTabular, isIncome ? 'text-green-500' : 'text-red-500')}>
@@ -337,9 +325,9 @@ function BudgetCard({ budget }: { budget: ActiveBudget }) {
             </div>
             <ProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} height="0.5rem" />
             <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                <span className={moneyTabular}>{budget.currency_symbol}{budget.spent.toFixed(0)}</span>
+                <span className={moneyTabular}>{formatCurrency(budget.spent, budget.currency_code)}</span>
                 <span className={moneyTabular}>{budget.percentage}%</span>
-                <span className={moneyTabular}>{budget.currency_symbol}{budget.amount.toFixed(0)}</span>
+                <span className={moneyTabular}>{formatCurrency(budget.amount, budget.currency_code)}</span>
             </div>
         </Link>
     );
@@ -364,13 +352,13 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
                     </p>
                     {item.due_date && (
                         <p className={clsx('text-xs', isOverdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400')}>
-                            Scadenza: {formatDate(item.due_date)}
+                            Scadenza: {formatDateShort(item.due_date)}
                         </p>
                     )}
                 </div>
             </div>
             <span className={clsx('font-semibold', moneyTabular, isDebt ? 'text-red-500' : 'text-emerald-500')}>
-                {isDebt ? '-' : '+'}{item.currency_symbol}{item.amount.toFixed(2)}
+                {isDebt ? '-' : '+'}{formatCurrency(item.amount, item.currency_code)}
             </span>
         </Link>
     );

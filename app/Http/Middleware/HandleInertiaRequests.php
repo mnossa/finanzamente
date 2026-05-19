@@ -139,6 +139,14 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
+        if (str_starts_with($notificationKey, 'recurring_sync_')) {
+            $parts = explode('_', $notificationKey);
+            $recurringId = $parts[2] ?? null;
+            if ($recurringId && is_numeric($recurringId)) {
+                return route('recurring-transactions.show', (int) $recurringId);
+            }
+        }
+
         if (str_starts_with($notificationKey, 'inbox_telegram_')) {
             return route('inbox.index');
         }

@@ -9,7 +9,7 @@ import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 import clsx from 'clsx';
 import PageHeader from '@/Components/PageHeader';
 
@@ -34,8 +34,13 @@ interface DebtCredit {
     currency_code: string;
     type: string;
     due_date: string | null;
+    start_date: string | null;
     status: string;
     description: string | null;
+    interest_rate: number | null;
+    interest_type: string;
+    interest_calculation_date: string | null;
+    has_linked_transactions: boolean;
 }
 
 interface EditProps {
@@ -46,14 +51,22 @@ interface EditProps {
 }
 
 export default function Edit({ debtCredit, currencies, types, statuses }: EditProps) {
+    const [showInterest, setShowInterest] = useState(
+        Boolean(debtCredit.interest_rate && debtCredit.interest_rate > 0)
+    );
+
     const { data, setData, put, processing, errors } = useForm({
         counterparty: debtCredit.counterparty,
         amount: debtCredit.amount.toString(),
         currency_code: debtCredit.currency_code,
         type: debtCredit.type,
         due_date: debtCredit.due_date || '',
+        start_date: debtCredit.start_date || '',
         status: debtCredit.status,
         description: debtCredit.description || '',
+        interest_rate: debtCredit.interest_rate?.toString() || '',
+        interest_type: debtCredit.interest_type || 'simple',
+        interest_calculation_date: debtCredit.interest_calculation_date || '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -87,6 +100,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                     <div className="mt-2 grid grid-cols-2 gap-4">
                                         <button
                                             type="button"
+                                            disabled={debtCredit.has_linked_transactions}
                                             onClick={() => setData('type', 'debt')}
                                             className={clsx(
                                                 'flex flex-col items-center rounded-xl border-2 p-4 transition-all',
@@ -109,6 +123,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                         </button>
                                         <button
                                             type="button"
+                                            disabled={debtCredit.has_linked_transactions}
                                             onClick={() => setData('type', 'credit')}
                                             className={clsx(
                                                 'flex flex-col items-center rounded-xl border-2 p-4 transition-all',
@@ -194,10 +209,11 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                         <select
                                             id="currency_code"
                                             value={data.currency_code}
+                                            disabled={debtCredit.has_linked_transactions}
                                             onChange={(e) =>
                                                 setData('currency_code', e.target.value)
                                             }
-                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 disabled:opacity-60"
                                             required
                                         >
                                             {currencies.map((curr) => (
@@ -211,6 +227,21 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                             className="mt-2"
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="start_date" value="Data di inizio (opzionale)" />
+                                    <TextInput
+                                        id="start_date"
+                                        type="date"
+                                        value={data.start_date}
+                                        className="mt-1 block w-full"
+                                        onChange={(e) => setData('start_date', e.target.value)}
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Utile per analisi e calcolo interessi nel tempo.
+                                    </p>
+                                    <InputError message={errors.start_date} className="mt-2" />
                                 </div>
 
                                 {/* Data Scadenza */}
@@ -227,6 +258,59 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                         onChange={(e) => setData('due_date', e.target.value)}
                                     />
                                     <InputError message={errors.due_date} className="mt-2" />
+                                </div>
+
+                                <div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowInterest(!showInterest)}
+                                        className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                                    >
+                                        {showInterest ? '▼' : '▶'} Interessi (facoltativo)
+                                    </button>
+                                    {showInterest && (
+                                        <div className="mt-3 space-y-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <InputLabel htmlFor="interest_rate" value="Tasso annuo (%)" />
+                                                    <TextInput
+                                                        id="interest_rate"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        max="100"
+                                                        value={data.interest_rate}
+                                                        className="mt-1 block w-full"
+                                                        onChange={(e) => setData('interest_rate', e.target.value)}
+                                                    />
+                                                    <InputError message={errors.interest_rate} className="mt-2" />
+                                                </div>
+                                                <div>
+                                                    <InputLabel htmlFor="interest_type" value="Tipo interesse" />
+                                                    <select
+                                                        id="interest_type"
+                                                        value={data.interest_type}
+                                                        onChange={(e) => setData('interest_type', e.target.value)}
+                                                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900"
+                                                    >
+                                                        <option value="simple">Semplice</option>
+                                                        <option value="compound">Composto</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <InputLabel htmlFor="interest_calculation_date" value="Data calcolo interessi" />
+                                                <TextInput
+                                                    id="interest_calculation_date"
+                                                    type="date"
+                                                    value={data.interest_calculation_date}
+                                                    className="mt-1 block w-full"
+                                                    onChange={(e) => setData('interest_calculation_date', e.target.value)}
+                                                />
+                                                <InputError message={errors.interest_calculation_date} className="mt-2" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Descrizione */}

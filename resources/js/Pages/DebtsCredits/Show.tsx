@@ -3,7 +3,8 @@ import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { StatusBadge } from '@/Components/StatusBadge';
@@ -64,23 +65,11 @@ interface ShowProps {
     statuses: Statuses;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
-
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-    });
-}
+import { formatCurrency, formatDateLong } from '@/utils/format';
 
 export default function Show({ debtCredit, transactions, types, statuses }: ShowProps) {
+    const { permissions } = usePage<PageProps>().props;
+    const canModify = permissions.canModify ?? false;
     const isDebt = debtCredit.type === 'debt';
     const initialAmount = debtCredit.initial_amount || debtCredit.amount;
     const paidPercent = initialAmount > 0 ? Math.min(100, (debtCredit.paid_amount / initialAmount) * 100) : 0;
@@ -108,9 +97,11 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                     title={`${debtCredit.type_label} - ${debtCredit.counterparty}`}
                     backLink={route('debts-credits.index')}
                     actions={
-                        <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
-                            Modifica
-                        </LinkButton>
+                        canModify ? (
+                            <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
+                                Modifica
+                            </LinkButton>
+                        ) : undefined
                     }
                 />
             }
@@ -118,11 +109,13 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
             <Head title={`${debtCredit.type_label} - ${debtCredit.counterparty}`} />
 
             <PageContent maxWidth="2xl">
-                    <IndexPageMobileToolbar>
-                        <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
-                            Modifica
-                        </LinkButton>
-                    </IndexPageMobileToolbar>
+                    {canModify && (
+                        <IndexPageMobileToolbar>
+                            <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>
+                                Modifica
+                            </LinkButton>
+                        </IndexPageMobileToolbar>
+                    )}
                     <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Dettaglio posizione" icon={<span className="text-sm leading-none">📌</span>} />
@@ -219,7 +212,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
                                 <span className="text-gray-500 dark:text-gray-400">Data di Scadenza</span>
                                 <span className={clsx('font-medium', debtCredit.status === 'overdue' ? 'text-red-500' : 'text-gray-900 dark:text-white')}>
-                                    {debtCredit.due_date ? formatDate(debtCredit.due_date) : 'Non impostata'}
+                                    {debtCredit.due_date ? formatDateLong(debtCredit.due_date) : 'Non impostata'}
                                 </span>
                             </div>
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
@@ -240,7 +233,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                         )}
                     </CardBox>
 
-                    {/* Azioni rapide */}
+                    {canModify && (
                     <div className="flex flex-wrap justify-center gap-3">
                         {debtCredit.status !== 'closed' && (
                             <Link
@@ -272,6 +265,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             <TrashIcon size={16} /> Elimina
                         </button>
                     </div>
+                    )}
 
                     {/* Lista transazioni collegate */}
                     <CardBox className="overflow-hidden shadow-sm">

@@ -152,6 +152,7 @@ class DashboardController extends Controller
                     'spent' => (float) $spent,
                     'percentage' => $percentage,
                     'is_exceeded' => $spent > $budget->amount,
+                    'currency_code' => $budget->currency_code,
                     'currency_symbol' => $budget->currency->symbol,
                 ];
             });
@@ -171,6 +172,7 @@ class DashboardController extends Controller
                 'type' => $dc->type,
                 'status' => $dc->status,
                 'due_date' => $dc->due_date?->format('Y-m-d'),
+                'currency_code' => $dc->currency_code,
                 'currency_symbol' => $dc->currency->symbol,
             ]);
 

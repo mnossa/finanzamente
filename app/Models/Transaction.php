@@ -56,6 +56,8 @@ class Transaction extends Model
         'inter_household_transfer_id',
         'refund_id',
         'debt_credit_id',
+        'split_group_id',
+        'is_split_primary',
         'is_tax_deductible',
         'tax_deduction_rate',
         'tax_deduction_type',
@@ -70,6 +72,7 @@ class Transaction extends Model
         'date' => 'date',
         'recurring' => 'boolean',
         'is_private' => 'boolean',
+        'is_split_primary' => 'boolean',
         'is_tax_deductible' => 'boolean',
         'tax_deduction_rate' => 'decimal:2',
     ];

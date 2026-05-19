@@ -1,11 +1,17 @@
+@php
+    $formatter = app(\App\Services\RecurringReminderFormatter::class);
+    $details = $formatter->format($recurringTransaction, $dueDate);
+@endphp
 <x-mail::message>
 # Promemoria ricorrenza
 
 Ciao {{ $user->name }},
 
-domani (**{{ $dueDate->format('d/m/Y') }}**) è prevista la transazione ricorrente:
+domani (**{{ $dueDate->format('d/m/Y') }}**) è prevista un'**{{ $details['direction_label'] }}** di **{{ $details['amount_formatted'] }}**.
 
-**{{ $recurringTransaction->description ?: 'Senza descrizione' }}** — €{{ number_format((float) $recurringTransaction->amount, 2, ',', '.') }}
+**Categoria:** {{ $details['category_name'] }}
+
+**Causale:** {{ $details['description'] }}
 
 <x-mail::button :url="route('recurring-transactions.show', $recurringTransaction)">
 Vedi ricorrenza

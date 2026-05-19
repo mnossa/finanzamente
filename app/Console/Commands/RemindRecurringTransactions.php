@@ -6,9 +6,11 @@ use App\Mail\RecurringReminderMail;
 use App\Models\AppNotification;
 use App\Models\Household;
 use App\Models\RecurringTransaction;
+use App\Services\RecurringReminderFormatter;
 use App\Services\RecurringTransactionService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 class RemindRecurringTransactions extends Command
@@ -17,8 +19,10 @@ class RemindRecurringTransactions extends Command
 
     protected $description = 'Invia promemoria il giorno prima della scadenza di una transazione ricorrente';
 
-    public function __construct(private RecurringTransactionService $recurringService)
-    {
+    public function __construct(
+        private RecurringTransactionService $recurringService,
+        private RecurringReminderFormatter $reminderFormatter,
+    ) {
         parent::__construct();
     }
 
@@ -28,7 +32,7 @@ class RemindRecurringTransactions extends Command
         $count = 0;
 
         RecurringTransaction::query()
-            ->with(['account.household.users'])
+            ->with(['account.household.users', 'category'])
             ->chunkById(100, function ($recurringTransactions) use ($tomorrow, &$count) {
                 foreach ($recurringTransactions as $recurring) {
                     if (! $this->recurringService->isActive($recurring)) {
@@ -58,6 +62,7 @@ class RemindRecurringTransactions extends Command
     private function notifyHouseholdMembers(Household $household, RecurringTransaction $recurring, Carbon $nextDue): void
     {
         $notificationKey = "recurring_remind_{$recurring->id}_{$nextDue->format('Y-m-d')}";
+        $details = $this->reminderFormatter->format($recurring, $nextDue);
 
         foreach ($household->users as $user) {
             $prefs = is_array($user->preferences) ? $user->preferences : [];
@@ -80,16 +85,19 @@ class RemindRecurringTransactions extends Command
                 if (! $exists) {
                     AppNotification::create([
                         'user_id' => $user->id,
-                        'title' => '🔁 Ricorrenza in scadenza domani',
-                        'message' => ($recurring->description ?: 'Transazione ricorrente')
-                            .' — prevista per il '.$nextDue->format('d/m/Y').'.',
+                        'title' => $details['title'],
+                        'message' => $details['message'],
                         'notification_key' => $notificationKey,
                     ]);
                 }
             }
 
             if (in_array('email', $channels, true) && $user->email) {
-                Mail::to($user->email)->send(new RecurringReminderMail($user, $recurring, $nextDue));
+                $emailCacheKey = "recurring_remind_email_{$user->id}_{$notificationKey}";
+                if (! Cache::has($emailCacheKey)) {
+                    Mail::to($user->email)->send(new RecurringReminderMail($user, $recurring, $nextDue));
+                    Cache::put($emailCacheKey, true, now()->addHours(48));
+                }
             }
         }
     }

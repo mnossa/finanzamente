@@ -138,6 +138,7 @@ class DebtCreditController extends Controller
             'interest_rate' => $validated['interest_rate'] ?? null,
             'interest_type' => $validated['interest_type'] ?? 'simple',
             'interest_calculation_date' => $validated['interest_calculation_date'] ?? now(),
+            'start_date' => $validated['start_date'] ?? null,
         ]);
 
         return redirect()
@@ -187,6 +188,7 @@ class DebtCreditController extends Controller
                 'type' => $debts_credit->type,
                 'type_label' => self::TYPES[$debts_credit->type],
                 'due_date' => $debts_credit->due_date?->format('Y-m-d'),
+                'start_date' => $debts_credit->start_date?->format('Y-m-d'),
                 'status' => $debts_credit->status,
                 'status_label' => self::STATUSES[$debts_credit->status],
                 'description' => $debts_credit->description,
@@ -223,11 +225,13 @@ class DebtCreditController extends Controller
                 'currency_code' => $debts_credit->currency_code,
                 'type' => $debts_credit->type,
                 'due_date' => $debts_credit->due_date?->format('Y-m-d'),
+                'start_date' => $debts_credit->start_date?->format('Y-m-d'),
                 'status' => $debts_credit->status,
                 'description' => $debts_credit->description,
                 'interest_rate' => $debts_credit->interest_rate,
                 'interest_type' => $debts_credit->interest_type,
                 'interest_calculation_date' => $debts_credit->interest_calculation_date?->format('Y-m-d'),
+                'has_linked_transactions' => $debts_credit->transactions()->exists(),
             ],
             'currencies' => $currencies,
             'types' => self::TYPES,
@@ -242,7 +246,37 @@ class DebtCreditController extends Controller
     {
         $this->authorizeDebtCredit($debts_credit);
 
-        $debts_credit->update($request->validated());
+        $validated = $request->validated();
+
+        if ($debts_credit->transactions()->exists()) {
+            if ($validated['type'] !== $debts_credit->type) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['type' => 'Non puoi cambiare il tipo: esistono transazioni collegate.']);
+            }
+            if ($validated['currency_code'] !== $debts_credit->currency_code) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['currency_code' => 'Non puoi cambiare la valuta: esistono transazioni collegate.']);
+            }
+        }
+
+        $paid = (float) $debts_credit->paid_amount;
+        $newAmount = (float) $validated['amount'];
+
+        if ($paid > 0 && $newAmount < $paid) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['amount' => 'L\'importo non può essere inferiore a quanto già pagato ('.number_format($paid, 2, ',', '.').').']);
+        }
+
+        $data = $validated;
+        $data['initial_amount'] = $newAmount;
+        if ($paid === 0.0) {
+            $data['amount'] = $newAmount;
+        }
+
+        $debts_credit->update($data);
 
         return redirect()
             ->route('debts-credits.index')

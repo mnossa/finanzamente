@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import { moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { formatCurrency } from '@/utils/format';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 
@@ -117,12 +118,6 @@ export default function Dashboard({
         window.location.reload();
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
-            style: 'currency',
-            currency: 'EUR'
-        }).format(amount);
-    };
 
     const getStatusColor = (status: string) => {
         switch (status) {

@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Http\Controllers\TelegramWebhookController;
 use App\Services\CurrencyConverter;
+use App\Services\ModuleAccessService;
 use App\Services\TelegramService;
 use App\Services\VisionService;
 use PHPUnit\Framework\TestCase;
@@ -17,6 +18,7 @@ class TelegramMessageParserTest extends TestCase
             $this->createMock(TelegramService::class),
             $this->createMock(VisionService::class),
             $this->createMock(CurrencyConverter::class),
+            $this->createMock(ModuleAccessService::class),
         );
         $method = new ReflectionMethod(TelegramWebhookController::class, 'parseTextMessage');
         $method->setAccessible(true);

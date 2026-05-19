@@ -14,6 +14,18 @@ use Illuminate\Support\Facades\Log;
  */
 class RecurringTransactionService
 {
+    public function __construct(
+        private readonly BusinessDayService $businessDayService,
+    ) {}
+
+    /**
+     * Applica posticipo a primo giorno lavorativo (weekend e festività IT).
+     */
+    public function resolveOccurrenceDate(Carbon $theoreticalDate): Carbon
+    {
+        return $this->businessDayService->adjustToNextWorkingDay($theoreticalDate);
+    }
+
     /**
      * Genera tutte le transazioni mancanti dalla data di inizio fino alla data target.
      *
@@ -213,10 +225,17 @@ class RecurringTransactionService
     private function calculateOccurrences(Carbon $startDate, Carbon $endDate, string $frequency): array
     {
         $occurrences = [];
+        $seenDates = [];
         $currentDate = $startDate->copy();
 
         while ($currentDate->lte($endDate)) {
-            $occurrences[] = $currentDate->copy();
+            $resolved = $this->resolveOccurrenceDate($currentDate->copy());
+            $dateKey = $resolved->toDateString();
+
+            if (! isset($seenDates[$dateKey])) {
+                $occurrences[] = $resolved;
+                $seenDates[$dateKey] = true;
+            }
 
             switch ($frequency) {
                 case 'daily':
@@ -430,5 +449,101 @@ class RecurringTransactionService
         }
 
         return $linkedTransactions->count();
+    }
+
+    /**
+     * Allinea le transazioni collegate alle occorrenze attese (add mancanti, remove eccedenze).
+     */
+    public function reconcileLinkedTransactions(RecurringTransaction $recurringTransaction): RecurringReconcileResult
+    {
+        $recurringTransaction->refresh();
+        $today = Carbon::today();
+
+        $endLimit = $recurringTransaction->end_date && $recurringTransaction->end_date->lt($today)
+            ? $recurringTransaction->end_date
+            : $today;
+
+        if ($recurringTransaction->start_date->gt($endLimit)) {
+            return new RecurringReconcileResult;
+        }
+
+        $expectedDates = collect($this->calculateOccurrences(
+            $recurringTransaction->start_date,
+            $endLimit,
+            $recurringTransaction->frequency
+        ))->map(fn (Carbon $d) => $d->toDateString())->flip();
+
+        $linked = Transaction::query()
+            ->where('recurring_transaction_id', $recurringTransaction->id)
+            ->get();
+
+        $result = new RecurringReconcileResult;
+        $affectedAccountIds = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($linked as $transaction) {
+                $dateKey = Carbon::parse($transaction->date)->toDateString();
+
+                if (! $expectedDates->has($dateKey)) {
+                    $affectedAccountIds[] = $transaction->account_id;
+                    $transaction->delete();
+                    $result->removed++;
+                }
+            }
+
+            foreach ($expectedDates->keys() as $expectedDate) {
+                $exists = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
+                    ->whereDate('date', $expectedDate)
+                    ->exists();
+
+                if (! $exists) {
+                    $this->createTransactionFromRecurring(
+                        $recurringTransaction,
+                        Carbon::parse($expectedDate)
+                    );
+                    $affectedAccountIds[] = $recurringTransaction->account_id;
+                    $result->created++;
+                }
+            }
+
+            $this->syncLastGeneratedDateFromLinkedTransactions($recurringTransaction);
+
+            foreach (array_unique(array_filter($affectedAccountIds)) as $accountId) {
+                Account::find($accountId)?->recalculateBalance();
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Errore riconciliazione ricorrenza', [
+                'recurring_transaction_id' => $recurringTransaction->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Sincronizza template e riconcilia occorrenze (uso job o update sincrono).
+     */
+    public function syncAndReconcile(RecurringTransaction $recurringTransaction, bool $reconcileSchedule = true): array
+    {
+        $synced = $this->syncLinkedTransactionsFromTemplate($recurringTransaction);
+        $reconcile = $reconcileSchedule
+            ? $this->reconcileLinkedTransactions($recurringTransaction)
+            : new RecurringReconcileResult;
+
+        return [
+            'synced' => $synced,
+            'reconcile' => $reconcile,
+        ];
+    }
+
+    public function countLinkedTransactions(RecurringTransaction $recurringTransaction): int
+    {
+        return Transaction::where('recurring_transaction_id', $recurringTransaction->id)->count();
     }
 }

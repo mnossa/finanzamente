@@ -9,7 +9,8 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { moneyCardGrid3, moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
@@ -56,25 +57,10 @@ interface IndexProps {
     statuses: Statuses;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
-
-function formatDate(dateStr: string | null): string {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    });
-}
-
+import { formatCurrency, formatDate } from '@/utils/format';
 import { StatusBadge } from '@/Components/StatusBadge';
 
-function DebtCreditCard({ item }: { item: DebtCredit }) {
+function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: boolean }) {
     const handleClose = () => {
         if (confirm('Vuoi segnare questo elemento come chiuso/saldato?')) {
             router.post(route('debts-credits.close', item.id));
@@ -144,42 +130,47 @@ function DebtCreditCard({ item }: { item: DebtCredit }) {
                 )}
             </Link>
 
-            <div className="mt-3 flex justify-end space-x-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-                {item.status !== 'closed' ? (
-                    <button
-                        onClick={handleClose}
-                        className="rounded px-3 py-1 text-sm text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+            {canModify && (
+                <div className="mt-3 flex justify-end space-x-2 border-t border-gray-100 pt-3 dark:border-gray-700">
+                    {item.status !== 'closed' ? (
+                        <button
+                            onClick={handleClose}
+                            className="rounded px-3 py-1 text-sm text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                        >
+                            ✓ Chiudi
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleReopen}
+                            className="rounded px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        >
+                            ↩ Riapri
+                        </button>
+                    )}
+                    <Link
+                        href={route('debts-credits.edit', item.id)}
+                        className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                        title="Modifica"
                     >
-                        ✓ Chiudi
-                    </button>
-                ) : (
+                        <PencilIcon size={18} />
+                    </Link>
                     <button
-                        onClick={handleReopen}
-                        className="rounded px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        onClick={handleDelete}
+                        className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                        title="Elimina"
                     >
-                        ↩ Riapri
+                        <TrashIcon size={18} />
                     </button>
-                )}
-                <Link
-                    href={route('debts-credits.edit', item.id)}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                    title="Modifica"
-                >
-                    <PencilIcon size={18} />
-                </Link>
-                <button
-                    onClick={handleDelete}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                    title="Elimina"
-                >
-                    <TrashIcon size={18} />
-                </button>
-            </div>
+                </div>
+            )}
         </CardBox>
     );
 }
 
 export default function Index({ debtsCredits, summary, types, statuses }: IndexProps) {
+    const { permissions } = usePage<PageProps>().props;
+    const canModify = permissions.canModify ?? false;
+
     const openItems = debtsCredits.filter((item) => item.status !== 'closed');
     const closedItems = debtsCredits.filter((item) => item.status === 'closed');
 
@@ -279,7 +270,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     </h3>
                                     <div className={moneyCardGrid3}>
                                         {openItems.map((item) => (
-                                            <DebtCreditCard key={item.id} item={item} />
+                                            <DebtCreditCard key={item.id} item={item} canModify={canModify} />
                                         ))}
                                     </div>
                                 </div>
@@ -293,7 +284,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     </h3>
                                     <div className={moneyCardGrid3}>
                                         {closedItems.map((item) => (
-                                            <DebtCreditCard key={item.id} item={item} />
+                                            <DebtCreditCard key={item.id} item={item} canModify={canModify} />
                                         ))}
                                     </div>
                                 </div>

@@ -992,9 +992,10 @@ class RecurrenceDetectionTest extends TestCase
         )->recurring;
 
         $this->assertNotNull($recurring->end_date);
+        // 1 feb 2026 è domenica → occorrenza posticipata al primo giorno lavorativo (2 feb)
         $this->assertDatabaseHas('transactions', [
             'recurring_transaction_id' => $recurring->id,
-            'date' => '2026-02-01 00:00:00',
+            'date' => '2026-02-02 00:00:00',
             'amount' => -30.00,
         ]);
     }
@@ -1062,9 +1063,10 @@ class RecurrenceDetectionTest extends TestCase
         )->recurring;
 
         $this->assertNull($recurring->end_date);
+        // 1 feb 2026 è domenica → occorrenza posticipata al primo giorno lavorativo (2 feb)
         $this->assertDatabaseHas('transactions', [
             'recurring_transaction_id' => $recurring->id,
-            'date' => '2026-02-01 00:00:00',
+            'date' => '2026-02-02 00:00:00',
             'amount' => -30.00,
         ]);
     }

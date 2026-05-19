@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\AppNotification;
 use App\Models\Category;
+use App\Models\DebtCredit;
+use App\Models\Household;
 use App\Models\InboxItem;
 use App\Models\TelegramLinkToken;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\CurrencyConverter;
+use App\Services\ModuleAccessService;
 use App\Services\TelegramService;
 use App\Services\VisionService;
 use Carbon\Carbon;
@@ -46,6 +49,7 @@ class TelegramWebhookController extends Controller
         private TelegramService $telegram,
         private VisionService $vision,
         private CurrencyConverter $currency,
+        private ModuleAccessService $moduleAccess,
     ) {}
 
     /**
@@ -157,6 +161,36 @@ class TelegramWebhookController extends Controller
 
                 return response('OK', 200);
             }
+
+            if (str_starts_with($text, '/casa')) {
+                $this->handleCasaCommand($user, $chatId);
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/debiti')) {
+                $this->handleDebtsListCommand($user, $chatId, 'debt');
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/crediti')) {
+                $this->handleDebtsListCommand($user, $chatId, 'credit');
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/debito')) {
+                $this->handleCreateDebtCreditCommand($user, $chatId, 'debt', $text);
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/credito')) {
+                $this->handleCreateDebtCreditCommand($user, $chatId, 'credit', $text);
+
+                return response('OK', 200);
+            }
         }
 
         // Determina il tipo di messaggio e processa
@@ -260,9 +294,170 @@ class TelegramWebhookController extends Controller
             ."/aiuto — questa guida\n"
             ."/saldo — mostra i saldi dei tuoi conti\n"
             ."/ultime — mostra le ultime 5 transazioni\n"
-            ."/lista — mostra conti e categorie disponibili\n\n"
+            ."/lista — mostra conti e categorie disponibili\n"
+            ."/casa — cambia nucleo familiare attivo\n"
+            ."/debiti — elenco debiti aperti\n"
+            ."/crediti — elenco crediti aperti\n"
+            ."/debito 500 Mario Rossi — crea un debito\n"
+            ."/credito 200 Cliente — crea un credito\n\n"
             ."🔍 <a href=\"{$inboxUrl}\">Vai all'Inbox</a> per revisionare le voci."
         );
+    }
+
+    private function handleCasaCommand(User $user, string $chatId): void
+    {
+        $households = $user->households()->orderBy('name')->get();
+
+        if ($households->isEmpty()) {
+            $this->telegram->sendMessage($chatId, '⚠️ Nessun nucleo disponibile sul tuo account.');
+
+            return;
+        }
+
+        $activeId = $user->active_household_id;
+        $lines = ["🏠 <b>I tuoi nuclei:</b>\n"];
+        foreach ($households as $household) {
+            $marker = $household->id === $activeId ? '✅ ' : '• ';
+            $lines[] = "{$marker}<b>{$household->name}</b>";
+        }
+        $lines[] = "\nTocca un pulsante per attivare il nucleo:";
+
+        $keyboard = $households->map(fn (Household $h) => [[
+            'text' => ($h->id === $activeId ? '✅ ' : '').$h->name,
+            'callback_data' => 'household:'.$h->id,
+        ]])->values()->all();
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines), 'HTML', [
+            'inline_keyboard' => $keyboard,
+        ]);
+    }
+
+    private function handleDebtsListCommand(User $user, string $chatId, string $type): void
+    {
+        if (! $this->moduleAccess->canAccessModuleById($user, 'debts_credits')) {
+            $this->telegram->sendMessage($chatId, '⚠️ Il modulo Debiti/Crediti non è disponibile sul tuo piano.');
+
+            return;
+        }
+
+        if (! $user->active_household_id) {
+            $this->telegram->sendMessage($chatId, '⚠️ Seleziona prima un nucleo con /casa.');
+
+            return;
+        }
+
+        $label = $type === 'debt' ? 'debiti' : 'crediti';
+        $items = DebtCredit::where('household_id', $user->active_household_id)
+            ->where('type', $type)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderByRaw("CASE status WHEN 'overdue' THEN 0 ELSE 1 END")
+            ->orderBy('due_date')
+            ->limit(5)
+            ->get();
+
+        if ($items->isEmpty()) {
+            $this->telegram->sendMessage($chatId, "📭 Nessun {$label} aperto.");
+
+            return;
+        }
+
+        $lines = ['📋 <b>'.ucfirst($label).' aperti:</b>', ''];
+        foreach ($items as $item) {
+            $remaining = $item->getRemainingAmount();
+            $formatted = $this->formatAmount($remaining, $item->currency_code);
+            $due = $item->due_date ? ' — scad. '.$item->due_date->format('d/m/Y') : '';
+            $lines[] = "• <b>{$item->counterparty}</b>: {$formatted}{$due}";
+        }
+
+        $this->telegram->sendMessage($chatId, implode("\n", $lines));
+    }
+
+    private function handleCreateDebtCreditCommand(User $user, string $chatId, string $type, string $text): void
+    {
+        if (! $this->moduleAccess->canAccessModuleById($user, 'debts_credits')) {
+            $this->telegram->sendMessage($chatId, '⚠️ Il modulo Debiti/Crediti non è disponibile sul tuo piano.');
+
+            return;
+        }
+
+        if (! $user->active_household_id) {
+            $this->telegram->sendMessage($chatId, '⚠️ Seleziona prima un nucleo con /casa.');
+
+            return;
+        }
+
+        if (! $this->userCanModifyHousehold($user)) {
+            $this->telegram->sendMessage($chatId, '⚠️ Non hai permessi di modifica su questo nucleo.');
+
+            return;
+        }
+
+        $rest = trim(substr($text, strpos($text, ' ') ?: strlen($text)));
+        if (! preg_match('/^([\d.,]+)\s+(.+)$/u', $rest, $m)) {
+            $example = $type === 'debt' ? '/debito 500 Mario Rossi' : '/credito 200 Cliente SPA';
+            $this->telegram->sendMessage($chatId, "⚠️ Sintassi: <code>{$example}</code>");
+
+            return;
+        }
+
+        $amount = (float) str_replace(',', '.', $m[1]);
+        $counterparty = trim($m[2]);
+
+        if ($amount < 0.01) {
+            $this->telegram->sendMessage($chatId, '⚠️ Importo non valido.');
+
+            return;
+        }
+
+        if (! $user->isPro()) {
+            $max = config('plans.base_limits.max_debts_credits', 5);
+            $count = DebtCredit::where('household_id', $user->active_household_id)
+                ->whereIn('status', ['open', 'overdue'])
+                ->count();
+            if ($count >= $max) {
+                $this->telegram->sendMessage($chatId, "⚠️ Limite di {$max} posizioni attive raggiunto (piano Base).");
+
+                return;
+            }
+        }
+
+        $debtCredit = DebtCredit::create([
+            'household_id' => $user->active_household_id,
+            'user_id' => $user->id,
+            'counterparty' => $counterparty,
+            'amount' => $amount,
+            'initial_amount' => $amount,
+            'paid_amount' => 0,
+            'currency_code' => 'EUR',
+            'type' => $type,
+            'status' => 'open',
+        ]);
+
+        $typeLabel = $type === 'debt' ? 'Debito' : 'Credito';
+        $formatted = $this->formatAmount($amount, 'EUR');
+        $this->telegram->sendMessage(
+            $chatId,
+            "✅ <b>{$typeLabel} creato</b>\n{$counterparty}: {$formatted}"
+        );
+    }
+
+    private function userCanModifyHousehold(User $user): bool
+    {
+        if (! $user->active_household_id) {
+            return false;
+        }
+
+        $membership = $user->households()
+            ->where('households.id', $user->active_household_id)
+            ->first();
+
+        if (! $membership) {
+            return false;
+        }
+
+        $permissions = json_decode($membership->pivot->permissions ?? '{}', true);
+
+        return ($permissions['manage'] ?? false) === true;
     }
 
     /**
@@ -735,6 +930,18 @@ class TelegramWebhookController extends Controller
                         return;
                     }
                 }
+            }
+        }
+
+        if (str_starts_with($data, 'household:')) {
+            $householdId = (int) substr($data, 10);
+            if ($user->households()->where('households.id', $householdId)->exists()) {
+                $user->update(['active_household_id' => $householdId]);
+                $name = Household::find($householdId)?->name ?? 'Nucleo';
+                $this->telegram->answerCallbackQuery($callbackId, 'Nucleo attivato');
+                $this->telegram->sendMessage($chatId, "✅ Nucleo attivo: <b>{$name}</b>");
+
+                return;
             }
         }
 

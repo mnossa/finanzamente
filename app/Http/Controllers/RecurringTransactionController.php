@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRecurringTransactionRequest;
 use App\Http\Requests\UpdateRecurringTransactionRequest;
+use App\Jobs\SyncRecurringTransactionJob;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\DebtCredit;
@@ -317,6 +318,12 @@ class RecurringTransactionController extends Controller
 
         $validated = $request->validated();
 
+        $scheduleChanged = $recurringTransaction->start_date->toDateString() !== $validated['start_date']
+            || ($recurringTransaction->end_date?->toDateString() ?? null) !== ($validated['end_date'] ?? null)
+            || $recurringTransaction->frequency !== $validated['frequency'];
+
+        $linkedCount = $this->recurringService->countLinkedTransactions($recurringTransaction);
+
         // Determina il segno dell'importo
         $category = Category::find($validated['category_id']);
         $amount = abs($validated['amount']);
@@ -335,11 +342,28 @@ class RecurringTransactionController extends Controller
             'debt_credit_id' => $validated['debt_credit_id'] ?? null,
         ]);
 
-        $syncedCount = $this->recurringService->syncLinkedTransactionsFromTemplate($recurringTransaction);
+        if ($linkedCount >= 10) {
+            SyncRecurringTransactionJob::dispatch(
+                $recurringTransaction->id,
+                (int) Auth::id(),
+                $scheduleChanged
+            );
+
+            return redirect()
+                ->route('recurring-transactions.index')
+                ->with('success', 'Ricorrenza salvata. L\'aggiornamento delle transazioni collegate è in corso: riceverai una notifica al termine.');
+        }
+
+        $result = $this->recurringService->syncAndReconcile($recurringTransaction, $scheduleChanged);
+        $syncedCount = $result['synced'];
+        $reconcile = $result['reconcile'];
 
         $message = 'Transazione ricorrente aggiornata con successo.';
         if ($syncedCount > 0) {
             $message .= " {$syncedCount} transazioni collegate sono state allineate.";
+        }
+        if ($reconcile->totalChanges() > 0) {
+            $message .= " Occorrenze: {$reconcile->created} aggiunte, {$reconcile->removed} rimosse.";
         }
 
         return redirect()

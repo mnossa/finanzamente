@@ -38,8 +38,18 @@ class StoreTransactionRequest extends FormRequest
             ->pluck('id')
             ->toArray();
 
+        $hasSplits = is_array($this->input('splits')) && count($this->input('splits', [])) >= 2;
+
         return [
-            'account_id' => ['required', 'integer', Rule::in($accessibleAccountIds)],
+            'account_id' => [
+                Rule::requiredIf(! $hasSplits),
+                'nullable',
+                'integer',
+                Rule::in($accessibleAccountIds),
+            ],
+            'splits' => ['nullable', 'array', 'min:2'],
+            'splits.*.account_id' => ['required', 'integer', Rule::in($accessibleAccountIds)],
+            'splits.*.amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'category_id' => ['required', 'exists:categories,id'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'date' => ['required', 'date'],

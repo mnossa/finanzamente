@@ -42,7 +42,7 @@ export default defineConfig(({ mode, command }) => {
                     background_color: '#ffffff',
                     display: 'standalone',
                     orientation: 'portrait',
-                    start_url: '/dashboard',
+                    start_url: '/dashboard?source=pwa',
                     scope: '/',
                     lang: 'it',
                     icons: [

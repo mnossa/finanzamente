@@ -21,6 +21,7 @@ import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import { useFxPreview } from '@/hooks/useFxPreview';
 import { useFormTimer } from '@/hooks/useFormTimer';
 import { tx } from '@/utils/analytics';
+import SplitPaymentSection, { SplitLine } from '@/Components/SplitPaymentSection';
 import { useState, useEffect, useRef } from 'react';
 
 interface Category {
@@ -94,7 +95,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
 
     const today = new Date().toISOString().split('T')[0];
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         account_id: defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : ''),
         category_id: '',
         amount: '',
@@ -111,8 +112,17 @@ export default function Create({ accounts, categories, defaultAccountId, default
         original_amount: '',
         original_currency_code: '',
         manual_rate: '',
+        splits: [] as SplitLine[],
     });
 
+    const [splitEnabled, setSplitEnabled] = useState(false);
+    const [splits, setSplits] = useState<SplitLine[]>(() => [
+        { account_id: defaultAccountId || (accounts[0] ? String(accounts[0].id) : ''), amount: '' },
+        {
+            account_id: accounts[1] ? String(accounts[1].id) : (accounts[0] ? String(accounts[0].id) : ''),
+            amount: '',
+        },
+    ]);
     const [showFx, setShowFx] = useState(false);
     const { getElapsedSeconds } = useFormTimer();
     const submitted = useRef(false);
@@ -172,6 +182,19 @@ export default function Create({ accounts, categories, defaultAccountId, default
             setData('new_tag_names', data.new_tag_names.filter((n) => n !== tagName));
         }
     };
+
+    transform((formData) => ({
+        ...formData,
+        splits: splitEnabled
+            ? splits.map((line) => ({
+                  account_id: Number(line.account_id),
+                  amount: line.amount,
+              }))
+            : [],
+        account_id: splitEnabled && splits[0]?.account_id
+            ? splits[0].account_id
+            : formData.account_id,
+    }));
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -300,7 +323,18 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                     />
                                 </div>
 
+                                <SplitPaymentSection
+                                    enabled={splitEnabled}
+                                    onToggle={setSplitEnabled}
+                                    accounts={accounts}
+                                    splits={splits}
+                                    onSplitsChange={setSplits}
+                                    totalAmount={data.amount}
+                                    errors={errors as Record<string, string>}
+                                />
+
                                 {/* Conto */}
+                                {!splitEnabled && (
                                 <div>
                                     <InputLabel htmlFor="account_id" value="Conto" />
                                     <select
@@ -319,6 +353,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                     </select>
                                     <InputError message={errors.account_id} className="mt-1" />
                                 </div>
+                                )}
 
                                 {/* Descrizione */}
                                 <div>

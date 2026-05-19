@@ -30,6 +30,7 @@ class DebtCredit extends Model
         'currency_code',
         'type',
         'due_date',
+        'start_date',
         'status',
         'description',
         'interest_rate',
@@ -43,6 +44,7 @@ class DebtCredit extends Model
         'paid_amount' => 'decimal:2',
         'interest_rate' => 'decimal:2',
         'due_date' => 'date',
+        'start_date' => 'date',
         'interest_calculation_date' => 'date',
     ];
 

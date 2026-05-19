@@ -13,6 +13,7 @@ use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\CurrencyConverter;
+use App\Services\TransactionSplitService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -569,13 +570,36 @@ class TransactionController extends Controller
     /**
      * Salva una nuova transazione.
      */
-    public function store(StoreTransactionRequest $request): RedirectResponse
+    public function store(StoreTransactionRequest $request, TransactionSplitService $splitService): RedirectResponse
     {
         $user = Auth::user();
         $validated = $request->validated();
 
         // Determina il segno dell'importo in base al tipo di categoria
         $category = Category::find($validated['category_id']);
+
+        if (! empty($validated['splits']) && count($validated['splits']) >= 2) {
+            $tagIds = $this->resolveTagIds(
+                $validated['tag_ids'] ?? [],
+                $validated['new_tag_names'] ?? [],
+                $user->active_household_id,
+                $user->id
+            );
+            $validated['tag_ids'] = $tagIds;
+
+            $transactions = $splitService->createSplit($user, $validated, $validated['splits'], $category);
+            $primary = $transactions->first();
+
+            if ($primary?->debt_credit_id) {
+                return redirect()
+                    ->route('debts-credits.show', $primary->debt_credit_id)
+                    ->with('success', 'Pagamento diviso registrato con successo.');
+            }
+
+            return redirect()
+                ->route('transactions.index')
+                ->with('success', 'Pagamento diviso registrato con successo.');
+        }
         $amount = abs($validated['amount']);
         if ($category && $category->type === 'expense') {
             $amount = -$amount;

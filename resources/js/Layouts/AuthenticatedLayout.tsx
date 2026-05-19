@@ -10,6 +10,8 @@ import { Link, router, usePage } from '@inertiajs/react';
 import React, { PropsWithChildren, ReactNode, useState, useEffect, FormEvent, useRef } from 'react';
 import { useModules } from '@/hooks/useModules';
 import UmamiAnalytics from '@/Components/UmamiAnalytics';
+import OfflineGate from '@/Components/OfflineGate';
+import PwaInstallBanner from '@/Components/PwaInstallBanner';
 import axios from 'axios';
 import { FM_MOBILE_PRIMARY_FORM_ID, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 
@@ -616,6 +618,7 @@ export default function Authenticated({
     const filteredNavigationSections = getFilteredSections(allNavigationSections);
 
     return (
+        <OfflineGate>
         <>
             <UmamiAnalytics enabled={privacy?.analytics_enabled ?? false} />
             <div className="flex h-screen bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 overflow-hidden">
@@ -927,7 +930,9 @@ export default function Authenticated({
 
             {/* Bottom Navigation — mobile only */}
             <MobileBottomNav isRouteActive={isRouteActive} onMenuOpen={() => setSidebarOpen(true)} />
+            <PwaInstallBanner />
         </>
+        </OfflineGate>
     );
 }
 
