@@ -23,7 +23,7 @@ class RequiresPro
             return $next($request);
         }
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() && ! $request->inertia()) {
             return response()->json([
                 'message' => 'Questa funzionalità è disponibile solo nel piano Pro.',
             ], 403);

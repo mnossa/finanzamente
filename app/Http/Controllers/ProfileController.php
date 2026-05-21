@@ -202,7 +202,7 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('success', 'Tutti i consensi opzionali sono stati revocati.');
     }
 
-    public function syncAnalyticsConsent(Request $request): JsonResponse
+    public function syncAnalyticsConsent(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'analytics_tracking' => 'required|boolean',
@@ -220,6 +220,10 @@ class ProfileController extends Controller
                 'user_agent' => $request->userAgent(),
             ]
         );
+
+        if ($request->inertia()) {
+            return back();
+        }
 
         return response()->json(['status' => 'ok']);
     }

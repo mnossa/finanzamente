@@ -158,6 +158,31 @@ class AnalyticsInfrastructureTest extends TestCase
         );
     }
 
+    public function test_sync_analytics_consent_returns_inertia_compatible_response(): void
+    {
+        $user = $this->makeUser();
+
+        $this->actingAs($user)
+            ->from(route('dashboard'))
+            ->withHeaders([
+                'X-Inertia' => 'true',
+                'X-Requested-With' => 'XMLHttpRequest',
+                'Accept' => 'text/html, application/xhtml+xml',
+            ])
+            ->post(route('profile.consents.sync-analytics'), [
+                'analytics_tracking' => true,
+            ])
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue(
+            Consent::where('user_id', $user->id)
+                ->where('purpose', 'analytics_tracking')
+                ->where('status', 'granted')
+                ->exists()
+        );
+    }
+
     public function test_guest_cannot_access_sync_analytics_endpoint(): void
     {
         $this->post(route('profile.consents.sync-analytics'), [
