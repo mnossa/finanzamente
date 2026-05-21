@@ -21,13 +21,9 @@ import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { BalancePrivacyProvider } from '@/contexts/BalancePrivacyContext';
 import NavigationBlockingOverlay from '@/Components/NavigationBlockingOverlay';
-import { registerSW } from 'virtual:pwa-register';
+import PwaUpdatePrompt from '@/Components/PwaUpdatePrompt';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Finanzamente';
-
-if (import.meta.env.PROD && typeof window !== 'undefined') {
-    registerSW({ immediate: true });
-}
 
 function extractUserPreferences(initialPage: { props?: Record<string, unknown> } | undefined): Record<string, unknown> | undefined {
     const auth = initialPage?.props?.auth as { user?: { preferences?: Record<string, unknown> } } | undefined;
@@ -68,6 +64,7 @@ createInertiaApp({
                 <BalancePrivacyProvider initialHideBalances={initialHideBalances}>
                     <NavigationBlockingOverlay>
                         <App {...props} />
+                        <PwaUpdatePrompt />
                     </NavigationBlockingOverlay>
                 </BalancePrivacyProvider>
             </ThemeProvider>,

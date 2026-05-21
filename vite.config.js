@@ -27,7 +27,7 @@ export default defineConfig(({ mode, command }) => {
             }),
             react(),
             VitePWA({
-                registerType: 'autoUpdate',
+                registerType: 'prompt',
                 includeAssets: [
                     'images/finanzamente-logo.webp',
                     'pwa/icon-192.png',
