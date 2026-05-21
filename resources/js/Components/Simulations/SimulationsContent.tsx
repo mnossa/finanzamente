@@ -1,5 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from '@inertiajs/react';
+import React, { useCallback, useMemo, useState } from 'react';
+import SimulationSavePanel, { type SavedScenarioListItem } from '@/Components/Simulations/SimulationSavePanel';
+import {
+    createInitialTabStates,
+    hydrateTabState,
+    type CompoundTabState,
+    type DebtVsInvestTabState,
+    type EmergencyTabState,
+    type SimulationTabId,
+    type SimulationTabStates,
+    type StressTestTabState,
+} from '@/utils/simulationTabState';
 import CardBox from '@/Components/CardBox';
 import clsx from 'clsx';
 import {
@@ -53,6 +63,8 @@ export interface SimulationsContentProps {
     historicalData: HistoricalData;
     crisisScenarios: CrisisScenario[];
     showRegistrationCta?: boolean;
+    canSave?: boolean;
+    savedScenarios?: SavedScenarioListItem[];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -163,15 +175,25 @@ function SimTooltip({
 
 // ─── Tab A: Interesse Composto ────────────────────────────────────────────────
 
-function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: PresetScenario[] }) {
+function CompoundInterestSimulator({
+    presetScenarios,
+    state,
+    onStateChange,
+}: {
+    presetScenarios: PresetScenario[];
+    state: CompoundTabState;
+    onStateChange: (patch: Partial<CompoundTabState>) => void;
+}) {
     const isDark = useChartDarkMode();
 
-    const [initialCapital, setInitialCapital] = useState(10000);
-    const [monthlyContribution, setMonthlyContribution] = useState(300);
-    const [annualReturn, setAnnualReturn] = useState(7);
-    const [years, setYears] = useState(20);
-    const [inflationEnabled, setInflationEnabled] = useState(false);
-    const [inflationRate, setInflationRate] = useState(2.5);
+    const {
+        initialCapital,
+        monthlyContribution,
+        annualReturn,
+        years,
+        inflationEnabled,
+        inflationRate,
+    } = state;
 
     const data = useMemo(() => {
         const points = [];
@@ -265,7 +287,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                         min={0}
                         max={100000}
                         step={500}
-                        onChange={setInitialCapital}
+                        onChange={(v) => onStateChange({ initialCapital: v })}
                         format={(v) => formatEuro(v)}
                     />
                     <SliderField
@@ -274,7 +296,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                         min={0}
                         max={3000}
                         step={50}
-                        onChange={setMonthlyContribution}
+                        onChange={(v) => onStateChange({ monthlyContribution: v })}
                         format={(v) => formatEuro(v)}
                     />
                     <SliderField
@@ -283,7 +305,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                         min={1}
                         max={15}
                         step={0.5}
-                        onChange={setAnnualReturn}
+                        onChange={(v) => onStateChange({ annualReturn: v })}
                         format={(v) => `${v}%`}
                     />
                     <SliderField
@@ -292,7 +314,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                         min={5}
                         max={40}
                         step={1}
-                        onChange={setYears}
+                        onChange={(v) => onStateChange({ years: v })}
                         format={(v) => `${v} anni`}
                     />
 
@@ -303,7 +325,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                             {presetScenarios.map((s) => (
                                 <button
                                     key={s.id}
-                                    onClick={() => setAnnualReturn(s.return)}
+                                    onClick={() => onStateChange({ annualReturn: s.return })}
                                     title={s.description}
                                     className={clsx(
                                         'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
@@ -329,7 +351,7 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                                 role="switch"
                                 aria-label="Correggi per inflazione"
                                 aria-checked={inflationEnabled}
-                                onClick={() => setInflationEnabled(!inflationEnabled)}
+                                onClick={() => onStateChange({ inflationEnabled: !inflationEnabled })}
                                 className={clsx(
                                     'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200',
                                     inflationEnabled ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-600',
@@ -349,9 +371,9 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
                                     label="Tasso d'inflazione annuo"
                                     value={inflationRate}
                                     min={0.5}
-                                    max={8}
+                                    max={20}
                                     step={0.5}
-                                    onChange={setInflationRate}
+                                    onChange={(v) => onStateChange({ inflationRate: v })}
                                     format={(v) => `${v}%`}
                                 />
                             </div>
@@ -468,14 +490,16 @@ function CompoundInterestSimulator({ presetScenarios }: { presetScenarios: Prese
 
 // ─── Tab B: Debito vs Investimento ────────────────────────────────────────────
 
-function DebtVsInvestmentSimulator() {
+function DebtVsInvestmentSimulator({
+    state,
+    onStateChange,
+}: {
+    state: DebtVsInvestTabState;
+    onStateChange: (patch: Partial<DebtVsInvestTabState>) => void;
+}) {
     const isDark = useChartDarkMode();
 
-    const [capital, setCapital] = useState(10000);
-    const [debtRate, setDebtRate] = useState(5);
-    const [investReturn, setInvestReturn] = useState(7);
-    const [taxRate, setTaxRate] = useState(26);
-    const [years, setYears] = useState(10);
+    const { capital, debtRate, investReturn, taxRate, years } = state;
 
     const data = useMemo(() => {
         const netInvestReturn = investReturn * (1 - taxRate / 100);
@@ -514,7 +538,7 @@ function DebtVsInvestmentSimulator() {
                         min={1000}
                         max={100000}
                         step={1000}
-                        onChange={setCapital}
+                        onChange={(v) => onStateChange({ capital: v })}
                         format={(v) => formatEuro(v)}
                     />
                     <SliderField
@@ -523,7 +547,7 @@ function DebtVsInvestmentSimulator() {
                         min={1}
                         max={20}
                         step={0.5}
-                        onChange={setDebtRate}
+                        onChange={(v) => onStateChange({ debtRate: v })}
                         format={(v) => `${v}%`}
                     />
                     <SliderField
@@ -532,7 +556,7 @@ function DebtVsInvestmentSimulator() {
                         min={1}
                         max={15}
                         step={0.5}
-                        onChange={setInvestReturn}
+                        onChange={(v) => onStateChange({ investReturn: v })}
                         format={(v) => `${v}%`}
                     />
                     <SliderField
@@ -541,7 +565,7 @@ function DebtVsInvestmentSimulator() {
                         min={0}
                         max={43}
                         step={1}
-                        onChange={setTaxRate}
+                        onChange={(v) => onStateChange({ taxRate: v })}
                         format={(v) => `${v}%`}
                     />
                     <SliderField
@@ -550,7 +574,7 @@ function DebtVsInvestmentSimulator() {
                         min={1}
                         max={30}
                         step={1}
-                        onChange={setYears}
+                        onChange={(v) => onStateChange({ years: v })}
                         format={(v) => `${v} anni`}
                     />
                 </CardBox>
@@ -641,11 +665,14 @@ function DebtVsInvestmentSimulator() {
 
 // ─── Tab C: Fondo di Emergenza ────────────────────────────────────────────────
 
-function EmergencyFundSimulator() {
-    const [monthlyExpenses, setMonthlyExpenses] = useState(2000);
-    const [safetyMonths, setSafetyMonths] = useState(6);
-    const [currentFund, setCurrentFund] = useState(3000);
-    const [monthlySaving, setMonthlySaving] = useState(300);
+function EmergencyFundSimulator({
+    state,
+    onStateChange,
+}: {
+    state: EmergencyTabState;
+    onStateChange: (patch: Partial<EmergencyTabState>) => void;
+}) {
+    const { monthlyExpenses, safetyMonths, currentFund, monthlySaving } = state;
 
     const targetAmount = monthlyExpenses * safetyMonths;
     const remaining = Math.max(0, targetAmount - currentFund);
@@ -692,7 +719,7 @@ function EmergencyFundSimulator() {
                         min={500}
                         max={10000}
                         step={100}
-                        onChange={setMonthlyExpenses}
+                        onChange={(v) => onStateChange({ monthlyExpenses: v })}
                         format={(v) => formatEuro(v)}
                     />
                     <SliderField
@@ -701,7 +728,7 @@ function EmergencyFundSimulator() {
                         min={0}
                         max={50000}
                         step={500}
-                        onChange={setCurrentFund}
+                        onChange={(v) => onStateChange({ currentFund: v })}
                         format={(v) => formatEuro(v)}
                     />
                     <SliderField
@@ -710,7 +737,7 @@ function EmergencyFundSimulator() {
                         min={0}
                         max={2000}
                         step={50}
-                        onChange={setMonthlySaving}
+                        onChange={(v) => onStateChange({ monthlySaving: v })}
                         format={(v) => formatEuro(v)}
                     />
 
@@ -721,7 +748,7 @@ function EmergencyFundSimulator() {
                             {safetyLevels.map((level) => (
                                 <button
                                     key={level.months}
-                                    onClick={() => setSafetyMonths(level.months)}
+                                    onClick={() => onStateChange({ safetyMonths: level.months })}
                                     className={clsx(
                                         'rounded-xl border p-3 text-center transition-all',
                                         safetyMonths === level.months
@@ -808,12 +835,18 @@ function EmergencyFundSimulator() {
 
 // ─── Tab D: Stress Test Cigno Nero ────────────────────────────────────────────
 
-function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScenario[] }) {
+function StressTestSimulator({
+    crisisScenarios,
+    state,
+    onStateChange,
+}: {
+    crisisScenarios: CrisisScenario[];
+    state: StressTestTabState;
+    onStateChange: (patch: Partial<StressTestTabState>) => void;
+}) {
     const isDark = useChartDarkMode();
 
-    const [portfolioValue, setPortfolioValue] = useState(50000);
-    const [equityPercent, setEquityPercent] = useState(70);
-    const [selectedCrisisId, setSelectedCrisisId] = useState(crisisScenarios[0]?.id ?? '');
+    const { portfolioValue, equityPercent, selectedCrisisId } = state;
 
     const selectedCrisis = crisisScenarios.find((c) => c.id === selectedCrisisId) ?? crisisScenarios[0];
 
@@ -858,7 +891,7 @@ function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScena
                         min={1000}
                         max={500000}
                         step={1000}
-                        onChange={setPortfolioValue}
+                        onChange={(v) => onStateChange({ portfolioValue: v })}
                         format={(v) => formatEuro(v)}
                     />
                     <SliderField
@@ -867,7 +900,7 @@ function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScena
                         min={0}
                         max={100}
                         step={10}
-                        onChange={setEquityPercent}
+                        onChange={(v) => onStateChange({ equityPercent: v })}
                         format={(v) => `${v}% Azioni / ${100 - v}% Obbligazioni`}
                     />
 
@@ -878,7 +911,7 @@ function StressTestSimulator({ crisisScenarios }: { crisisScenarios: CrisisScena
                             {crisisScenarios.map((crisis) => (
                                 <button
                                     key={crisis.id}
-                                    onClick={() => setSelectedCrisisId(crisis.id)}
+                                    onClick={() => onStateChange({ selectedCrisisId: crisis.id })}
                                     className={clsx(
                                         'w-full rounded-xl border p-3 text-left transition-all',
                                         selectedCrisisId === crisis.id
@@ -1038,8 +1071,31 @@ export default function SimulationsContent({
     historicalData,
     crisisScenarios,
     showRegistrationCta = false,
+    canSave = false,
+    savedScenarios = [],
 }: SimulationsContentProps) {
+    const defaultCrisisId = crisisScenarios[0]?.id ?? '';
     const [activeTab, setActiveTab] = useState<TabId>('compound');
+    const [tabStates, setTabStates] = useState<SimulationTabStates>(() => createInitialTabStates(defaultCrisisId));
+    const [loadedScenarioId, setLoadedScenarioId] = useState<number | null>(null);
+
+    const patchTabState = useCallback(<T extends SimulationTabId>(tab: T, patch: Partial<SimulationTabStates[T]>) => {
+        setTabStates((prev) => ({
+            ...prev,
+            [tab]: { ...prev[tab], ...patch },
+        }));
+    }, []);
+
+    const handleLoadScenario = useCallback(
+        (tab: SimulationTabId, payload: Record<string, unknown>) => {
+            setTabStates((prev) => ({
+                ...prev,
+                [tab]: hydrateTabState(tab, payload, defaultCrisisId),
+            }));
+            setActiveTab(tab);
+        },
+        [defaultCrisisId],
+    );
 
     return (
         <div className="space-y-4">
@@ -1091,18 +1147,43 @@ export default function SimulationsContent({
                     </div>
                 </div>
 
+                {canSave && (
+                    <SimulationSavePanel
+                        activeTab={activeTab}
+                        tabStates={tabStates}
+                        savedScenarios={savedScenarios}
+                        loadedScenarioId={loadedScenarioId}
+                        onLoadScenario={handleLoadScenario}
+                        onLoadedScenarioChange={setLoadedScenarioId}
+                    />
+                )}
+
                 {/* Contenuto tab */}
                 {activeTab === 'compound' && (
-                    <CompoundInterestSimulator presetScenarios={presetScenarios} />
+                    <CompoundInterestSimulator
+                        presetScenarios={presetScenarios}
+                        state={tabStates.compound}
+                        onStateChange={(patch) => patchTabState('compound', patch)}
+                    />
                 )}
                 {activeTab === 'debt_vs_invest' && (
-                    <DebtVsInvestmentSimulator />
+                    <DebtVsInvestmentSimulator
+                        state={tabStates.debt_vs_invest}
+                        onStateChange={(patch) => patchTabState('debt_vs_invest', patch)}
+                    />
                 )}
                 {activeTab === 'emergency' && (
-                    <EmergencyFundSimulator />
+                    <EmergencyFundSimulator
+                        state={tabStates.emergency}
+                        onStateChange={(patch) => patchTabState('emergency', patch)}
+                    />
                 )}
                 {activeTab === 'stress_test' && (
-                    <StressTestSimulator crisisScenarios={crisisScenarios} />
+                    <StressTestSimulator
+                        crisisScenarios={crisisScenarios}
+                        state={tabStates.stress_test}
+                        onStateChange={(patch) => patchTabState('stress_test', patch)}
+                    />
                 )}
 
                 {/* Disclaimer */}
@@ -1115,18 +1196,19 @@ export default function SimulationsContent({
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                                    Salva i tuoi scenari nel tuo profilo
+                                    Vuoi passare dalla stima al tuo bilancio reale?
                                 </h3>
                                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                    Crea un account gratuito per collegare simulazioni, budget e obiettivi ai tuoi dati reali.
+                                    Registrati gratis per dashboard, budget e obiettivi con i tuoi dati reali.
+                                    Le simulazioni qui restano strumenti educativi nel browser e non si salvano nel profilo.
                                 </p>
                             </div>
-                            <Link
+                            <a
                                 href={route('register')}
                                 className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
                             >
                                 Registrati gratis
-                            </Link>
+                            </a>
                         </div>
                     </CardBox>
                 )}

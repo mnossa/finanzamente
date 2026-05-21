@@ -54,7 +54,20 @@ php artisan recurring:generate
 php artisan recurring:generate --date=2026-01-31
 ```
 
-### 4. Service Layer
+### 4. Cambio importo (fork automatico)
+
+Quando modifichi **solo l'importo** (o l'importo insieme ad altri campi) dalla pagina di modifica:
+
+- Le transazioni già generate **mantengono l'importo storico**.
+- La ricorrenza attuale riceve una `end_date` e viene collegata alla nuova ricorrenza (`successor` / `predecessor`).
+- La nuova ricorrenza parte dalla **data di decorrenza** (default: prossima occorrenza non ancora generata; modificabile in UI).
+- Aggiornamenti a categoria, descrizione o conto **senza** cambio importo continuano a propagarsi su tutte le transazioni collegate.
+
+### 5. Suffisso periodo in descrizione
+
+Ogni transazione generata automaticamente include in descrizione un suffisso in italiano (es. ` - Marzo 2026` per ricorrenze mensili), per distinguere le occorrenze in estratto conto e lista transazioni.
+
+### 6. Service Layer
 
 Il `RecurringTransactionService` centralizza tutta la logica di generazione:
 

@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TagAutocomplete from '@/Components/TagAutocomplete';
 import TextInput from '@/Components/TextInput';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
+import SplitPaymentSection, { type SplitLine } from '@/Components/SplitPaymentSection';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
@@ -52,7 +53,16 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
     const [txType, setTxType] = useState<'income' | 'expense'>('expense');
     const [selectedTagsList, setSelectedTagsList] = useState<Tag[]>([]);
 
-    const { data, setData, post, processing, errors } = useForm({
+    const [splitEnabled, setSplitEnabled] = useState(false);
+    const [splits, setSplits] = useState<SplitLine[]>(() => [
+        { account_id: defaultAccountId || (accounts[0] ? String(accounts[0].id) : ''), amount: '' },
+        {
+            account_id: accounts[1] ? String(accounts[1].id) : (accounts[0] ? String(accounts[0].id) : ''),
+            amount: '',
+        },
+    ]);
+
+    const { data, setData, post, processing, errors, transform } = useForm({
         account_id: defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : ''),
         category_id: '',
         amount: '',
@@ -69,7 +79,19 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
         original_amount: '',
         original_currency_code: '',
         manual_rate: '',
+        splits: [] as Array<{ account_id: number; amount: string }>,
     });
+
+    transform((formData) => ({
+        ...formData,
+        splits: splitEnabled
+            ? splits.map((line) => ({
+                  account_id: Number(line.account_id),
+                  amount: line.amount,
+              }))
+            : [],
+        account_id: splitEnabled && splits[0]?.account_id ? splits[0].account_id : formData.account_id,
+    }));
 
     const filteredCategories = useMemo(
         () => categories.filter((c) => c.type === txType),
@@ -114,8 +136,20 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
                 return data.amount !== '' && Number(data.amount) > 0;
             case 2:
                 return Boolean(data.date);
-            case 3:
+            case 3: {
+                if (splitEnabled) {
+                    if (accounts.length < 2) {
+                        return false;
+                    }
+                    const total = parseFloat(data.amount) || 0;
+                    const sum = splits.reduce((acc, line) => acc + (parseFloat(line.amount) || 0), 0);
+                    const hasTwoLines = splits.filter((l) => l.account_id && parseFloat(l.amount) > 0).length >= 2;
+
+                    return hasTwoLines && Math.abs(sum - total) <= 0.02;
+                }
+
                 return Boolean(data.account_id);
+            }
             case 4:
                 return Boolean(data.category_id);
             case 5:
@@ -233,23 +267,43 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
                     )}
 
                     {step === 3 && (
-                        <div className="space-y-2">
-                            {accounts.map((account) => (
-                                <button
-                                    key={account.id}
-                                    type="button"
-                                    onClick={() => setData('account_id', String(account.id))}
-                                    className={clsx(
-                                        'w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors',
-                                        data.account_id === String(account.id)
-                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                            : 'border-gray-200 dark:border-gray-600',
-                                    )}
-                                >
-                                    {account.name}
-                                </button>
-                            ))}
+                        <div className="space-y-4">
+                            {accounts.length >= 2 ? (
+                                <SplitPaymentSection
+                                    enabled={splitEnabled}
+                                    onToggle={setSplitEnabled}
+                                    accounts={accounts}
+                                    splits={splits}
+                                    onSplitsChange={setSplits}
+                                    totalAmount={data.amount}
+                                    errors={errors}
+                                />
+                            ) : (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Serve almeno un secondo conto per ripartire il pagamento su più conti.
+                                </p>
+                            )}
+                            {!splitEnabled && (
+                                <div className="space-y-2">
+                                    {accounts.map((account) => (
+                                        <button
+                                            key={account.id}
+                                            type="button"
+                                            onClick={() => setData('account_id', String(account.id))}
+                                            className={clsx(
+                                                'w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors',
+                                                data.account_id === String(account.id)
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                                                    : 'border-gray-200 dark:border-gray-600',
+                                            )}
+                                        >
+                                            {account.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             <InputError message={errors.account_id} />
+                            <InputError message={errors.splits} />
                         </div>
                     )}
 
@@ -382,7 +436,17 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
                             </div>
                             <div className="flex justify-between gap-4">
                                 <dt className="text-gray-500">Conto</dt>
-                                <dd className="text-right">{selectedAccount?.name}</dd>
+                                <dd className="text-right">
+                                    {splitEnabled
+                                        ? splits
+                                              .filter((l) => l.account_id && parseFloat(l.amount) > 0)
+                                              .map((l) => {
+                                                  const acc = accounts.find((a) => String(a.id) === l.account_id);
+                                                  return `${acc?.name ?? 'Conto'}: ${formatCurrency(Number(l.amount))}`;
+                                              })
+                                              .join(' · ')
+                                        : selectedAccount?.name}
+                                </dd>
                             </div>
                             <div className="flex justify-between gap-4">
                                 <dt className="text-gray-500">Categoria</dt>

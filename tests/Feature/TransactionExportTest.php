@@ -39,6 +39,10 @@ class TransactionExportTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $disposition = (string) $response->headers->get('Content-Disposition');
+        $this->assertStringContainsString('attachment', $disposition);
+        $this->assertStringContainsString('transazioni-', $disposition);
+        $this->assertStringContainsString('.csv', $disposition);
         $this->assertStringContainsString('Descrizione', $response->streamedContent());
     }
 

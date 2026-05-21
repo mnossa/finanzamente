@@ -56,6 +56,36 @@ test.describe('Transazioni', () => {
             .toBeTruthy();
     });
 
+    test('esporta scarica un file CSV', async ({ page }) => {
+        const exportLink = page.getByRole('link', { name: 'Esporta' }).filter({ visible: true });
+        await expect(exportLink).toBeVisible();
+        const downloadPromise = page.waitForEvent('download');
+        await exportLink.click();
+        const download = await downloadPromise;
+        expect(download.suggestedFilename()).toMatch(/^transazioni-\d{4}-\d{2}-\d{2}_.*\.csv$/);
+    });
+
+    test('i filtri si applicano solo dopo la CTA Applica filtri', async ({ page }) => {
+        const filterDetails = page.locator('details').filter({ has: page.getByTestId('filter-summary') });
+        const filterSummary = filterDetails.locator('summary');
+        await filterSummary.click();
+        await expect(page.getByLabel('Cerca nella descrizione')).toBeVisible({ timeout: 8_000 });
+
+        const applyButton = page.getByTestId('apply-filters');
+        await expect(applyButton).toBeVisible();
+        await expect(applyButton).toBeDisabled();
+
+        const descriptionInput = page.getByLabel('Cerca nella descrizione');
+        const marker = `e2e-filtro-${Date.now()}`;
+        await descriptionInput.fill(marker);
+
+        await expect(applyButton).toBeEnabled();
+        await expect(page).not.toHaveURL(new RegExp(`description=${encodeURIComponent(marker)}`));
+
+        await applyButton.click();
+        await expect(page).toHaveURL(new RegExp(`description=${encodeURIComponent(marker)}`));
+    });
+
     test('navigazione paginazione funziona se ci sono più pagine', async ({ page }) => {
         const pagination = page.getByRole('navigation', { name: /paginazione/i });
         if (await pagination.isVisible()) {
@@ -65,6 +95,12 @@ test.describe('Transazioni', () => {
                 await expect(page).toHaveURL(/page=2/);
             }
         }
+    });
+
+    test('il form di creazione espone il pagamento su più conti', async ({ page }) => {
+        await visibleHrefLocator(page, '/transazioni/crea').click();
+        await expect(page).toHaveURL('/transazioni/crea');
+        await expect(page.getByText(/pagamento su più conti/i)).toBeVisible({ timeout: 8_000 });
     });
 
     test('il form di creazione espone il toggle "valuta diversa dal conto"', async ({ page }) => {

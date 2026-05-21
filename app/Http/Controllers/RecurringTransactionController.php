@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\RecurringTransactionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -306,6 +307,9 @@ class RecurringTransactionController extends Controller
             'categories' => $categories,
             'debtsCredits' => $debtsCredits,
             'frequencies' => self::FREQUENCIES,
+            'nextEffectiveDate' => $this->recurringService
+                ->defaultEffectiveDateForAmountChange($recurringTransaction)
+                ->format('Y-m-d'),
         ]);
     }
 
@@ -329,6 +333,41 @@ class RecurringTransactionController extends Controller
         $amount = abs($validated['amount']);
         if ($category && $category->type === 'expense') {
             $amount = -$amount;
+        }
+
+        $amountChanged = abs((float) $recurringTransaction->amount - (float) $amount) > 0.001;
+
+        if ($amountChanged) {
+            try {
+                $effectiveDate = ! empty($validated['effective_date'])
+                    ? Carbon::parse($validated['effective_date'])
+                    : $this->recurringService->defaultEffectiveDateForAmountChange($recurringTransaction);
+
+                $account = Account::findOrFail($validated['account_id']);
+
+                $newRecurring = $this->recurringService->forkOnAmountChange($recurringTransaction, [
+                    'account_id' => (int) $validated['account_id'],
+                    'category_id' => (int) $validated['category_id'],
+                    'amount' => $amount,
+                    'currency_code' => $account->currency_code ?? 'EUR',
+                    'frequency' => $validated['frequency'],
+                    'description' => $validated['description'] ?? null,
+                    'debt_credit_id' => $validated['debt_credit_id'] ?? null,
+                ], $effectiveDate);
+
+                return redirect()
+                    ->route('recurring-transactions.edit', $newRecurring)
+                    ->with(
+                        'success',
+                        'Importo aggiornato: la ricorrenza precedente è stata chiusa e ne è stata creata una nuova dal '
+                        .$effectiveDate->format('d/m/Y').'. Le transazioni già registrate mantengono l\'importo storico.'
+                    );
+            } catch (\InvalidArgumentException $e) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['effective_date' => $e->getMessage()]);
+            }
         }
 
         $recurringTransaction->update([

@@ -54,6 +54,7 @@ class UpdateRecurringTransactionRequest extends FormRequest
                         ->whereIn('status', ['open', 'overdue']);
                 }),
             ],
+            'effective_date' => ['nullable', 'date'],
         ];
     }
 

@@ -157,6 +157,21 @@ function filtersToQueryParams(f: Filters): Record<string, string> {
     return o;
 }
 
+function filtersQuerySignature(f: Filters): string {
+    const params = filtersToQueryParams(f);
+    const keys = Object.keys(params).sort();
+    const sorted: Record<string, string> = {};
+    keys.forEach((k) => {
+        sorted[k] = params[k];
+    });
+
+    return JSON.stringify(sorted);
+}
+
+function countActiveFilters(f: Filters): number {
+    return Object.values(f).filter((v) => v !== undefined && v !== '').length;
+}
+
 function computeNextFilters(filters: Filters, categories: Category[], key: string, value: string): Filters {
     const next: Filters = { ...filters };
     if (!value) {
@@ -430,6 +445,7 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
     const isTransfer = transaction.transfer_id !== null;
     const isRefund = transaction.refund_id !== null;
     const hasRefunds = transaction.has_refunds;
+    const isRecurring = transaction.recurring_transaction_id !== null;
 
     return (
         <div className={clsx(
@@ -463,6 +479,16 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
                 {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
             </div>
 
+            {isRecurring && (
+                <span
+                    className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
+                    title="Generata da ricorrenza"
+                    aria-label="Generata da ricorrenza"
+                >
+                    🔁
+                </span>
+            )}
+
             {/* Corpo — link su tutta la riga su mobile */}
             <Link
                 href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
@@ -478,14 +504,6 @@ function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect
                     {transaction.is_tax_deductible && (
                         <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                             📋
-                        </span>
-                    )}
-                    {transaction.recurring_transaction_id && (
-                        <span
-                            className="ml-1.5 inline-flex items-center rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
-                            title="Generata da ricorrenza"
-                        >
-                            🔁
                         </span>
                     )}
                 </p>
@@ -573,6 +591,11 @@ export default function Index({
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
     const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
+    const [draftFilters, setDraftFilters] = React.useState<Filters>({ ...filters });
+
+    useEffect(() => {
+        setDraftFilters({ ...filters });
+    }, [filters]);
 
     const returnQuery = useMemo(
         () => buildReturnIndexQuery(filters, transactions.current_page),
@@ -580,11 +603,11 @@ export default function Index({
     );
 
     const visibleCategories = useMemo(() => {
-        const base = filters.type ? categories.filter((c) => c.type === filters.type) : categories;
-        if (!filters.category_id || filters.category_id === '__none__') {
+        const base = draftFilters.type ? categories.filter((c) => c.type === draftFilters.type) : categories;
+        if (!draftFilters.category_id || draftFilters.category_id === '__none__') {
             return base;
         }
-        const selected = categories.find((c) => String(c.id) === String(filters.category_id));
+        const selected = categories.find((c) => String(c.id) === String(draftFilters.category_id));
         if (!selected) {
             return base;
         }
@@ -593,7 +616,7 @@ export default function Index({
         }
 
         return [...base, selected];
-    }, [categories, filters.type, filters.category_id]);
+    }, [categories, draftFilters.type, draftFilters.category_id]);
 
     // Polling import attivi: aggiorna il banner e ricarica la pagina quando terminano
     type ActiveImport = { id: number; status: string; rows_total: number; rows_imported: number; created_at: string };
@@ -741,34 +764,52 @@ export default function Index({
         });
     };
 
-    const handleFilterChange = (key: string, value: string) => {
-        const next = computeNextFilters(filters, categories, key, value);
-        if (value) {
-            const filterMap: Record<string, Parameters<typeof filtersAnalytics.applied>[0]> = {
-                account_id: 'account',
-                category_id: 'category',
-                type: 'type',
-                from: 'date_from',
-                to: 'date_to',
-                tag_id: 'tag',
-                description: 'description',
-                amount_min: 'amount',
-                amount_max: 'amount',
-            };
-            if (filterMap[key]) filtersAnalytics.applied(filterMap[key]);
-        }
-        router.get(route('transactions.index'), filtersToQueryParams(next), {
+    const updateDraftFilter = (key: string, value: string) => {
+        setDraftFilters((prev) => computeNextFilters(prev, categories, key, value));
+    };
+
+    const hasFilters = countActiveFilters(filters) > 0;
+    const hasDraftFilters = countActiveFilters(draftFilters) > 0;
+    const hasPendingFilterChanges = filtersQuerySignature(draftFilters) !== filtersQuerySignature(filters);
+
+    const applyFilters = () => {
+        const filterMap: Record<string, Parameters<typeof filtersAnalytics.applied>[0]> = {
+            account_id: 'account',
+            category_id: 'category',
+            type: 'type',
+            from: 'date_from',
+            to: 'date_to',
+            tag_id: 'tag',
+            description: 'description',
+            amount_min: 'amount',
+            amount_max: 'amount',
+        };
+        (Object.keys(filterMap) as Array<keyof typeof filterMap>).forEach((key) => {
+            const draftVal = draftFilters[key as keyof Filters];
+            const appliedVal = filters[key as keyof Filters];
+            if (draftVal && draftVal !== appliedVal && filterMap[key]) {
+                filtersAnalytics.applied(filterMap[key]);
+            }
+        });
+
+        router.get(route('transactions.index'), filtersToQueryParams(draftFilters), {
             preserveState: true,
             replace: true,
         });
     };
 
-    const hasFilters = Object.values(filters).some((v) => v !== undefined && v !== '');
-
     const clearFilters = () => {
-        if (hasFilters) filtersAnalytics.cleared();
+        if (hasFilters || hasDraftFilters) {
+            filtersAnalytics.cleared();
+        }
+        setDraftFilters({});
         router.get(route('transactions.index'));
     };
+
+    const exportHref = useMemo(
+        () => route('transactions.export', filtersToQueryParams(filters)),
+        [filters],
+    );
 
     return (
         <AuthenticatedLayout
@@ -784,11 +825,7 @@ export default function Index({
                             >
                                 Importa
                             </LinkButton>
-                            <LinkButton
-                                href={route('transactions.export', filtersToQueryParams(filters))}
-                                variant="secondary"
-                                size="sm"
-                            >
+                            <LinkButton native href={exportHref} variant="secondary" size="sm">
                                 Esporta
                             </LinkButton>
                             <LinkButton
@@ -872,12 +909,22 @@ export default function Index({
                         >
                             Importa
                         </LinkButton>
+                        <LinkButton
+                            native
+                            data-testid="transactions-export"
+                            href={exportHref}
+                            variant="secondary"
+                            size="sm"
+                            className="w-full justify-center sm:w-auto"
+                        >
+                            Esporta
+                        </LinkButton>
                     </IndexPageMobileToolbar>
 
                     {/* Filtri */}
                     <CardBox className="overflow-hidden p-0 shadow-sm">
                         {/* Header filtri — sempre visibile */}
-                        <details className="group" {...(hasFilters ? { open: true } : {})}>
+                        <details className="group" {...(hasFilters || hasDraftFilters ? { open: true } : {})}>
                             <summary data-testid="filter-summary" className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 <span className="flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -886,7 +933,12 @@ export default function Index({
                                     Filtri
                                     {hasFilters && (
                                         <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                                            {Object.values(filters).filter(Boolean).length}
+                                            {countActiveFilters(filters)}
+                                        </span>
+                                    )}
+                                    {hasPendingFilterChanges && (
+                                        <span className="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                            da applicare
                                         </span>
                                     )}
                                 </span>
@@ -900,8 +952,8 @@ export default function Index({
                                 <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
                                     <select
                                         className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.account_id || ''}
-                                        onChange={(e) => handleFilterChange('account_id', e.target.value)}
+                                        value={draftFilters.account_id || ''}
+                                        onChange={(e) => updateDraftFilter('account_id', e.target.value)}
                                     >
                                         <option value="">Tutti i conti</option>
                                         {accounts.map((account) => (
@@ -912,8 +964,8 @@ export default function Index({
                                     </select>
                                     <select
                                         className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.type || ''}
-                                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                                        value={draftFilters.type || ''}
+                                        onChange={(e) => updateDraftFilter('type', e.target.value)}
                                     >
                                         <option value="">Tutti i tipi</option>
                                         <option value="income">Entrate</option>
@@ -921,8 +973,8 @@ export default function Index({
                                     </select>
                                     <select
                                         className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={filters.category_id || ''}
-                                        onChange={(e) => handleFilterChange('category_id', e.target.value)}
+                                        value={draftFilters.category_id || ''}
+                                        onChange={(e) => updateDraftFilter('category_id', e.target.value)}
                                     >
                                         <option value="">Tutte le categorie</option>
                                         <option value="__none__">— Senza categoria</option>
@@ -937,8 +989,8 @@ export default function Index({
                                         <input
                                             type="date"
                                             className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={filters.from || ''}
-                                            onChange={(e) => handleFilterChange('from', e.target.value)}
+                                            value={draftFilters.from || ''}
+                                            onChange={(e) => updateDraftFilter('from', e.target.value)}
                                             aria-label="Data da"
                                         />
                                     </div>
@@ -947,16 +999,16 @@ export default function Index({
                                         <input
                                             type="date"
                                             className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={filters.to || ''}
-                                            onChange={(e) => handleFilterChange('to', e.target.value)}
+                                            value={draftFilters.to || ''}
+                                            onChange={(e) => updateDraftFilter('to', e.target.value)}
                                             aria-label="Data a"
                                         />
                                     </div>
                                     {tags.length > 0 && (
                                         <select
                                             className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={filters.tag_id || ''}
-                                            onChange={(e) => handleFilterChange('tag_id', e.target.value)}
+                                            value={draftFilters.tag_id || ''}
+                                            onChange={(e) => updateDraftFilter('tag_id', e.target.value)}
                                         >
                                             <option value="">Tutti i tag</option>
                                             {tags.map((tag) => (
@@ -971,8 +1023,14 @@ export default function Index({
                                         <input
                                             type="search"
                                             className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={filters.description || ''}
-                                            onChange={(e) => handleFilterChange('description', e.target.value)}
+                                            value={draftFilters.description || ''}
+                                            onChange={(e) => updateDraftFilter('description', e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    applyFilters();
+                                                }
+                                            }}
                                             placeholder="es. supermercato coop"
                                             aria-label="Cerca nella descrizione"
                                         />
@@ -984,8 +1042,8 @@ export default function Index({
                                             min="0"
                                             step="0.01"
                                             className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={filters.amount_min || ''}
-                                            onChange={(e) => handleFilterChange('amount_min', e.target.value)}
+                                            value={draftFilters.amount_min || ''}
+                                            onChange={(e) => updateDraftFilter('amount_min', e.target.value)}
                                             aria-label="Importo minimo"
                                         />
                                     </div>
@@ -996,20 +1054,31 @@ export default function Index({
                                             min="0"
                                             step="0.01"
                                             className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={filters.amount_max || ''}
-                                            onChange={(e) => handleFilterChange('amount_max', e.target.value)}
+                                            value={draftFilters.amount_max || ''}
+                                            onChange={(e) => updateDraftFilter('amount_max', e.target.value)}
                                             aria-label="Importo massimo"
                                         />
                                     </div>
-                                    {hasFilters && (
+                                    <div className="col-span-2 flex w-full flex-col gap-2 border-t border-gray-100 pt-3 sm:col-span-full sm:flex-row sm:items-center sm:justify-end dark:border-gray-700">
                                         <button
                                             type="button"
-                                            onClick={clearFilters}
-                                            className="col-span-2 sm:col-span-1 text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 py-2 sm:py-0"
+                                            data-testid="apply-filters"
+                                            onClick={applyFilters}
+                                            disabled={!hasPendingFilterChanges}
+                                            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:focus:ring-offset-gray-900"
                                         >
-                                            Pulisci filtri
+                                            Applica filtri
                                         </button>
-                                    )}
+                                        {(hasFilters || hasDraftFilters) && (
+                                            <button
+                                                type="button"
+                                                onClick={clearFilters}
+                                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 sm:w-auto"
+                                            >
+                                                Pulisci filtri
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </details>

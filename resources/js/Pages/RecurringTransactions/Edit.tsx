@@ -57,9 +57,17 @@ interface EditProps {
     categories: Category[];
     frequencies: Frequencies;
     debtsCredits: DebtCredit[];
+    nextEffectiveDate: string;
 }
 
-export default function Edit({ recurringTransaction, accounts, categories, frequencies, debtsCredits }: EditProps) {
+export default function Edit({
+    recurringTransaction,
+    accounts,
+    categories,
+    frequencies,
+    debtsCredits,
+    nextEffectiveDate,
+}: EditProps) {
     const { data, setData, put, processing, errors } = useForm({
         account_id: String(recurringTransaction.account_id),
         category_id: String(recurringTransaction.category_id),
@@ -69,7 +77,11 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
         end_date: recurringTransaction.end_date || '',
         description: recurringTransaction.description || '',
         debt_credit_id: recurringTransaction.debt_credit_id ? String(recurringTransaction.debt_credit_id) : '',
+        effective_date: nextEffectiveDate,
     });
+
+    const amountChanged =
+        data.amount !== '' && Math.abs(Number(data.amount) - Number(recurringTransaction.amount)) > 0.001;
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
     const isExpense = selectedCategory?.type === 'expense';
@@ -152,6 +164,29 @@ export default function Edit({ recurringTransaction, accounts, categories, frequ
                                         />
                                     </div>
                                     <InputError message={errors.amount} className="mt-2" />
+                                    {amountChanged && (
+                                        <div className="mt-3 space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                                            <p>
+                                                Stai modificando l&apos;importo: le transazioni già registrate restano con
+                                                l&apos;importo precedente. Da{' '}
+                                                <strong>
+                                                    {new Date(`${data.effective_date}T12:00:00`).toLocaleDateString('it-IT')}
+                                                </strong>{' '}
+                                                verrà creata una nuova ricorrenza con il nuovo importo.
+                                            </p>
+                                            <div>
+                                                <InputLabel htmlFor="effective_date" value="Data di decorrenza nuovo importo" />
+                                                <TextInput
+                                                    id="effective_date"
+                                                    type="date"
+                                                    className="mt-1 block w-full"
+                                                    value={data.effective_date}
+                                                    onChange={(e) => setData('effective_date', e.target.value)}
+                                                />
+                                                <InputError message={errors.effective_date} className="mt-2" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>

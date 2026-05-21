@@ -41,12 +41,17 @@ class SimulationTest extends TestCase
     }
 
     #[Test]
-    public function authenticated_user_can_access_public_simulations_page(): void
+    public function authenticated_user_sees_authenticated_simulations_page(): void
     {
         $this->withoutVite()
             ->actingAs($this->user)
             ->get(route('simulations.public'))
-            ->assertStatus(200);
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Simulations/Index')
+                ->where('canSave', true)
+                ->has('savedScenarios')
+            );
     }
 
     #[Test]
@@ -59,6 +64,7 @@ class SimulationTest extends TestCase
             ->has('presetScenarios')
             ->has('historicalData')
             ->has('crisisScenarios')
+            ->where('canRegister', true)
         );
     }
 
@@ -137,5 +143,21 @@ class SimulationTest extends TestCase
             Route::has('simulations.public'),
             'La rotta simulations.public deve esistere'
         );
+    }
+
+    #[Test]
+    public function simulations_page_hides_register_cta_in_prelaunch_mode(): void
+    {
+        config([
+            'prelaunch.enabled' => true,
+            'prelaunch.owner_email' => 'owner@example.com',
+        ]);
+
+        $this->withoutVite()
+            ->get(route('simulations.public'))
+            ->assertInertia(fn ($page) => $page
+                ->component('Simulations/PublicIndex')
+                ->where('canRegister', false)
+            );
     }
 }

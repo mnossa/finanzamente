@@ -94,6 +94,6 @@ class RecurringTransactionSyncTest extends TestCase
         $linked->refresh();
         $this->assertSame($newCategory->id, $linked->category_id);
         $this->assertSame(-30.00, (float) $linked->amount);
-        $this->assertSame('Abbonamento premium', $linked->description);
+        $this->assertStringStartsWith('Abbonamento premium', $linked->description);
     }
 }

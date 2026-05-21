@@ -81,7 +81,7 @@
                 type="button"
                 class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
             >
-                Accetta analytics
+                Accetta
             </button>
             <button
                 id="analytics-consent-reject"

@@ -30,6 +30,8 @@ class RecurringTransaction extends Model
         'description',
         'last_generated_date',
         'debt_credit_id',
+        'successor_recurring_transaction_id',
+        'predecessor_recurring_transaction_id',
     ];
 
     protected $casts = [

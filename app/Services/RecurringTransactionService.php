@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
+use App\Support\RecurringOccurrenceLabel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -199,7 +200,11 @@ class RecurringTransactionService
             'amount' => $recurringTransaction->amount,
             'currency_code' => $recurringTransaction->currency_code,
             'date' => $date,
-            'description' => $recurringTransaction->description,
+            'description' => RecurringOccurrenceLabel::buildDescriptionWithOccurrence(
+                $recurringTransaction->description,
+                $date,
+                $recurringTransaction->frequency,
+            ),
             'recurring' => true,
             'recurring_transaction_id' => $recurringTransaction->id,
             'debt_credit_id' => $recurringTransaction->debt_credit_id,
@@ -417,8 +422,13 @@ class RecurringTransactionService
     /**
      * Allinea tutte le transazioni collegate al template della ricorrenza aggiornato.
      */
-    public function syncLinkedTransactionsFromTemplate(RecurringTransaction $recurringTransaction): int
-    {
+    /**
+     * @param  array<string>|null  $fields  Campi da sincronizzare; null = tutti tranne amount se escluso esplicitamente
+     */
+    public function syncLinkedTransactionsFromTemplate(
+        RecurringTransaction $recurringTransaction,
+        ?array $fields = null,
+    ): int {
         $linkedTransactions = Transaction::query()
             ->where('recurring_transaction_id', $recurringTransaction->id)
             ->get();
@@ -427,19 +437,47 @@ class RecurringTransactionService
             return 0;
         }
 
+        $syncFields = $fields ?? [
+            'account_id',
+            'category_id',
+            'amount',
+            'currency_code',
+            'description',
+            'debt_credit_id',
+        ];
+
         $affectedAccountIds = [];
 
         foreach ($linkedTransactions as $transaction) {
             $affectedAccountIds[] = $transaction->account_id;
 
-            $transaction->update([
-                'account_id' => $recurringTransaction->account_id,
-                'category_id' => $recurringTransaction->category_id,
-                'amount' => $recurringTransaction->amount,
-                'currency_code' => $recurringTransaction->currency_code,
-                'description' => $recurringTransaction->description,
-                'debt_credit_id' => $recurringTransaction->debt_credit_id,
-            ]);
+            $updates = [];
+            if (in_array('account_id', $syncFields, true)) {
+                $updates['account_id'] = $recurringTransaction->account_id;
+            }
+            if (in_array('category_id', $syncFields, true)) {
+                $updates['category_id'] = $recurringTransaction->category_id;
+            }
+            if (in_array('amount', $syncFields, true)) {
+                $updates['amount'] = $recurringTransaction->amount;
+            }
+            if (in_array('currency_code', $syncFields, true)) {
+                $updates['currency_code'] = $recurringTransaction->currency_code;
+            }
+            if (in_array('description', $syncFields, true)) {
+                $updates['description'] = RecurringOccurrenceLabel::buildDescriptionWithOccurrence(
+                    $recurringTransaction->description,
+                    Carbon::parse($transaction->date),
+                    $recurringTransaction->frequency,
+                );
+            }
+            if (in_array('debt_credit_id', $syncFields, true)) {
+                $updates['debt_credit_id'] = $recurringTransaction->debt_credit_id;
+            }
+
+            if ($updates !== []) {
+                $transaction->update($updates);
+            }
 
             $affectedAccountIds[] = $recurringTransaction->account_id;
         }
@@ -545,5 +583,75 @@ class RecurringTransactionService
     public function countLinkedTransactions(RecurringTransaction $recurringTransaction): int
     {
         return Transaction::where('recurring_transaction_id', $recurringTransaction->id)->count();
+    }
+
+    /**
+     * Data di decorrenza predefinita per un cambio importo: prossima occorrenza non ancora generata.
+     */
+    public function defaultEffectiveDateForAmountChange(RecurringTransaction $recurringTransaction): Carbon
+    {
+        $next = $this->calculateNextDueDate($recurringTransaction);
+        if ($next) {
+            return $next;
+        }
+
+        if ($recurringTransaction->last_generated_date) {
+            return $this->resolveOccurrenceDate($recurringTransaction->last_generated_date->copy()->addDay());
+        }
+
+        return $this->resolveOccurrenceDate($recurringTransaction->start_date->copy());
+    }
+
+    /**
+     * Chiude la ricorrenza corrente e ne crea una nuova dal cambio importo in avanti.
+     *
+     * @param  array{account_id: int, category_id: int, amount: float, frequency: string, description: ?string, debt_credit_id: ?int, currency_code: string}  $attributes
+     */
+    public function forkOnAmountChange(
+        RecurringTransaction $old,
+        array $attributes,
+        Carbon $effectiveDate,
+    ): RecurringTransaction {
+        $effectiveDate = $this->resolveOccurrenceDate($effectiveDate);
+
+        if ($old->last_generated_date && $effectiveDate->lte($old->last_generated_date)) {
+            throw new \InvalidArgumentException(
+                'La data di decorrenza deve essere successiva all\'ultima occorrenza già registrata.'
+            );
+        }
+
+        if ($effectiveDate->lt($old->start_date)) {
+            throw new \InvalidArgumentException('La data di decorrenza non può precedere la data di inizio della ricorrenza.');
+        }
+
+        return DB::transaction(function () use ($old, $attributes, $effectiveDate) {
+            $closeEnd = $effectiveDate->copy()->subDay();
+            if ($closeEnd->lt($old->start_date)) {
+                $closeEnd = $old->start_date->copy();
+            }
+
+            $old->update(['end_date' => $closeEnd]);
+
+            $new = RecurringTransaction::create([
+                'user_id' => $old->user_id,
+                'account_id' => $attributes['account_id'],
+                'category_id' => $attributes['category_id'],
+                'amount' => $attributes['amount'],
+                'currency_code' => $attributes['currency_code'],
+                'frequency' => $attributes['frequency'],
+                'start_date' => $effectiveDate,
+                'end_date' => null,
+                'description' => $attributes['description'] ?? null,
+                'debt_credit_id' => $attributes['debt_credit_id'] ?? null,
+                'last_generated_date' => null,
+                'predecessor_recurring_transaction_id' => $old->id,
+            ]);
+
+            $old->update(['successor_recurring_transaction_id' => $new->id]);
+
+            $this->generateTransactionsUntil($new);
+
+            return $new;
+        });
     }
 }

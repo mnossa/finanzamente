@@ -7,6 +7,7 @@ use App\Models\Consent;
 use App\Services\HouseholdPermissionService;
 use App\Services\ModuleAccessService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -114,6 +115,9 @@ class HandleInertiaRequests extends Middleware
                         ->where('status', 'granted')
                         ->exists()
                     : false,
+            ],
+            'marketing' => fn () => [
+                'can_register' => Route::has('register') && ! config('prelaunch.enabled', false),
             ],
         ];
     }

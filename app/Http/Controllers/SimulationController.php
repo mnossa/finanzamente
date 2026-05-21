@@ -2,24 +2,61 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SavedSimulationScenario;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class SimulationController extends Controller
 {
     /**
-     * Mostra la pagina delle simulazioni finanziarie.
+     * Simulazioni finanziarie: layout marketing per guest, dashboard per utenti autenticati.
      */
-    public function index()
+    public function index(Request $request): Response
     {
-        return Inertia::render('Simulations/PublicIndex', [
+        $sharedProps = [
             'presetScenarios' => $this->getPresetScenarios(),
             'historicalData' => $this->getHistoricalData(),
             'crisisScenarios' => $this->getCrisisScenarios(),
+        ];
+
+        if ($request->user() && $request->user()->active_household_id) {
+            return Inertia::render('Simulations/Index', [
+                ...$sharedProps,
+                'canSave' => true,
+                'savedScenarios' => $this->savedScenariosForUser($request),
+            ]);
+        }
+
+        return Inertia::render('Simulations/PublicIndex', [
+            ...$sharedProps,
+            'canRegister' => Route::has('register') && ! config('prelaunch.enabled', false),
         ]);
     }
 
     /**
+     * @return array<int, array{id: int, name: string, tab: string, payload: array<string, mixed>, updated_at: string|null}>
+     */
+    private function savedScenariosForUser(Request $request): array
+    {
+        $user = $request->user();
+        if (! $user || ! $user->active_household_id) {
+            return [];
+        }
+
+        return SavedSimulationScenario::query()
+            ->where('household_id', $user->active_household_id)
+            ->orderByDesc('updated_at')
+            ->get()
+            ->map(fn (SavedSimulationScenario $s) => SimulationScenarioController::formatForFrontend($s))
+            ->all();
+    }
+
+    /**
      * Scenari di portafoglio predefiniti basati su dati storici.
+     *
+     * @return array<int, array<string, mixed>>
      */
     private function getPresetScenarios(): array
     {
@@ -46,7 +83,7 @@ class SimulationController extends Controller
     }
 
     /**
-     * Dati storici di riferimento per le simulazioni.
+     * @return array<string, float>
      */
     private function getHistoricalData(): array
     {
@@ -59,8 +96,7 @@ class SimulationController extends Controller
     }
 
     /**
-     * Scenari di crisi storici per lo stress test.
-     * I rendimenti mensili sono approssimazioni basate sull'indice S&P 500.
+     * @return array<int, array<string, mixed>>
      */
     private function getCrisisScenarios(): array
     {
@@ -72,13 +108,9 @@ class SimulationController extends Controller
                 'peak_drop' => -57,
                 'recovery_months' => 49,
                 'monthly_returns' => [
-                    // 2007
                     1.4, 0.1, 1.0, 4.3, 3.3, -1.8, -3.1, 1.3, 3.6, 1.5, -4.4, -0.9,
-                    // 2008
                     -6.1, -3.5, -0.6, 4.8, 1.1, -8.6, -1.0, 1.2, -9.1, -16.9, -7.5, 1.0,
-                    // 2009
                     -8.6, -11.0, 8.5, 9.4, 5.3, 0.0, 7.4, 3.4, 3.6, -2.0, 5.7, 1.8,
-                    // 2010
                     -3.7, 2.9, 5.9, 1.5, -8.2, -5.4, 6.9, -4.7, 8.8, 3.7, 0.0, 6.5,
                 ],
                 'labels' => [
@@ -99,9 +131,7 @@ class SimulationController extends Controller
                 'peak_drop' => -34,
                 'recovery_months' => 5,
                 'monthly_returns' => [
-                    // 2020
                     5.0, -8.4, -12.5, 12.7, 4.8, 1.8, 5.5, 7.2, -3.9, -2.8, 10.8, 3.7,
-                    // 2021
                     -1.1, 2.8, 4.2, 5.3, 0.6, 2.2, 2.4, 3.0, -4.8, 7.0, -0.8, 4.5,
                 ],
                 'labels' => [
@@ -118,15 +148,10 @@ class SimulationController extends Controller
                 'peak_drop' => -49,
                 'recovery_months' => 85,
                 'monthly_returns' => [
-                    // 1999
                     5.2, -2.0, 9.7, -3.1, -2.2, 2.4, -1.6, 6.2, -3.3, 6.3, 2.0, 5.8,
-                    // 2000
                     -5.1, -2.0, 9.7, -3.1, -2.1, 2.4, -1.6, 6.2, -3.3, -0.5, -8.0, 0.5,
-                    // 2001
                     3.5, -9.2, -6.4, 7.7, 0.7, -2.5, -1.1, -6.4, -8.2, 1.8, 7.5, 0.8,
-                    // 2002
                     -1.6, -2.1, 3.7, -6.1, -0.9, -7.2, -7.9, 0.5, -11.0, 8.6, 5.7, -6.0,
-                    // 2003
                     -2.7, -1.7, 0.8, 8.1, 5.1, 1.1, 1.6, 1.8, -1.2, 5.5, 0.7, 5.1,
                 ],
                 'labels' => [

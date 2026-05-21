@@ -29,6 +29,7 @@ use App\Http\Controllers\ProfileQuizController;
 use App\Http\Controllers\RecurrenceDetectionController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
+use App\Http\Controllers\SimulationScenarioController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
@@ -67,6 +68,10 @@ Route::middleware(['auth', 'verified', 'pre-launch'])->group(function () {
 // Rotte che richiedono autenticazione E household attiva
 Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::post('/simulazioni/scenari', [SimulationScenarioController::class, 'store'])->name('simulation-scenarios.store');
+    Route::put('/simulazioni/scenari/{saved_simulation_scenario}', [SimulationScenarioController::class, 'update'])->name('simulation-scenarios.update');
+    Route::delete('/simulazioni/scenari/{saved_simulation_scenario}', [SimulationScenarioController::class, 'destroy'])->name('simulation-scenarios.destroy');
 
     Route::get('/analisi/patrimonio', [AnalyticsController::class, 'netWorth'])->name('analytics.net-worth');
     Route::get('/analisi/cashflow', [AnalyticsController::class, 'cashFlow'])->name('analytics.cash-flow');

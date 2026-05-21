@@ -2,7 +2,11 @@ import { Head } from '@inertiajs/react';
 import MarketingToolLayout from '@/Layouts/MarketingToolLayout';
 import SimulationsContent, { type SimulationsContentProps } from '@/Components/Simulations/SimulationsContent';
 
-export default function SimulationsPublicIndex(props: SimulationsContentProps) {
+interface PublicIndexProps extends SimulationsContentProps {
+    canRegister: boolean;
+}
+
+export default function SimulationsPublicIndex({ canRegister, ...simulationProps }: PublicIndexProps) {
     return (
         <MarketingToolLayout>
             <Head title="Simulazioni Finanziarie — Strumenti gratuiti" />
@@ -14,7 +18,7 @@ export default function SimulationsPublicIndex(props: SimulationsContentProps) {
                     Strumenti educativi gratuiti per esplorare risparmio, investimenti e fondo di emergenza.
                 </p>
             </div>
-            <SimulationsContent {...props} showRegistrationCta />
+            <SimulationsContent {...simulationProps} showRegistrationCta={canRegister} />
         </MarketingToolLayout>
     );
 }

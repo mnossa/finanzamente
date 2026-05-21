@@ -5,11 +5,13 @@ namespace App\Providers;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\InterHouseholdTransfer;
+use App\Models\SavedSimulationScenario;
 use App\Models\Transaction;
 use App\Models\Transfer;
 use App\Policies\AccountPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\InterHouseholdTransferPolicy;
+use App\Policies\SavedSimulationScenarioPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TransferPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -27,6 +29,7 @@ class AuthServiceProvider extends ServiceProvider
         InterHouseholdTransfer::class => InterHouseholdTransferPolicy::class,
         Transaction::class => TransactionPolicy::class,
         Transfer::class => TransferPolicy::class,
+        SavedSimulationScenario::class => SavedSimulationScenarioPolicy::class,
     ];
 
     public function boot(): void

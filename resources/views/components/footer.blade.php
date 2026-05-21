@@ -29,6 +29,7 @@
                     <li><a href="{{ route('home') }}#funzionalita"
                             class="hover:text-white transition-colors">Funzionalità</a></li>
                     <li><a href="{{ route('home') }}#piani" class="hover:text-white transition-colors">Prezzi</a></li>
+                    <li><a href="{{ route('simulations.public') }}" class="hover:text-white transition-colors">Simulazioni finanziarie</a></li>
                     @if (!config('prelaunch.enabled') && Route::has('register'))
                         <li><a href="{{ route('register') }}" class="hover:text-white transition-colors">Registrati</a>
                         </li>

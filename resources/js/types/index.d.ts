@@ -116,6 +116,9 @@ export type PageProps<
     privacy?: {
         analytics_enabled: boolean;
     };
+    marketing?: {
+        can_register: boolean;
+    };
 };
 
 export interface AppNotification {
