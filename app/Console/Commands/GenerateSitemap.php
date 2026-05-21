@@ -39,6 +39,7 @@ class GenerateSitemap extends Command
         'landing.pianificatori' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
         'landing.tech-savvy' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
         'landing.crescita' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.8],
+        'simulations.public' => [Url::CHANGE_FREQUENCY_MONTHLY, 0.85],
     ];
 
     /**

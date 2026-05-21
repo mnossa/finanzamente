@@ -167,7 +167,7 @@ export const refunds = {
 
 // ─── Filtri lista transazioni ─────────────────────────────────────────────────
 
-export type FilterType = 'account' | 'category' | 'type' | 'date_from' | 'date_to' | 'tag';
+export type FilterType = 'account' | 'category' | 'type' | 'date_from' | 'date_to' | 'tag' | 'description' | 'amount';
 
 export const filtersAnalytics = {
     applied: (filterType: FilterType) =>

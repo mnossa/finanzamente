@@ -14,7 +14,9 @@ use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\CurrencyConverter;
 use App\Services\TransactionSplitService;
+use App\Support\TransactionSearchTokens;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +35,9 @@ class TransactionController extends Controller
         'to',
         'is_tax_deductible',
         'tag_id',
+        'description',
+        'amount_min',
+        'amount_max',
         'page',
     ];
 
@@ -92,7 +97,41 @@ class TransactionController extends Controller
             }
         }
 
+        if (! empty($input['description']) && is_string($input['description'])) {
+            $desc = trim($input['description']);
+            if ($desc !== '' && mb_strlen($desc) <= 120) {
+                $out['description'] = $desc;
+            }
+        }
+
+        if (isset($input['amount_min']) && $input['amount_min'] !== '' && is_numeric($input['amount_min'])) {
+            $min = (float) $input['amount_min'];
+            if ($min >= 0) {
+                $out['amount_min'] = (string) round($min, 2);
+            }
+        }
+
+        if (isset($input['amount_max']) && $input['amount_max'] !== '' && is_numeric($input['amount_max'])) {
+            $max = (float) $input['amount_max'];
+            if ($max >= 0) {
+                $out['amount_max'] = (string) round($max, 2);
+            }
+        }
+
         return $out;
+    }
+
+    /**
+     * Query di ritorno all'indice dopo create/update/delete: mantiene filtri ma riparte da pagina 1.
+     *
+     * @return array<string, int|string>
+     */
+    private function returnIndexQueryAfterMutation(Request $request): array
+    {
+        $query = $this->returnIndexQueryFromRequest($request);
+        unset($query['page']);
+
+        return $query;
     }
 
     /**
@@ -240,7 +279,22 @@ class TransactionController extends Controller
             });
         }
 
-        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id'];
+        $descriptionTokens = TransactionSearchTokens::fromQuery($request->input('description'));
+        foreach ($descriptionTokens as $token) {
+            $query->where('description', 'like', '%'.$token.'%');
+        }
+
+        $amountMin = $request->filled('amount_min') && is_numeric($request->amount_min)
+            ? (float) $request->amount_min
+            : null;
+        $amountMax = $request->filled('amount_max') && is_numeric($request->amount_max)
+            ? (float) $request->amount_max
+            : null;
+        if ($amountMin !== null || $amountMax !== null) {
+            $this->applyAbsoluteAmountRangeFilter($query, $amountMin, $amountMax);
+        }
+
+        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id', 'description', 'amount_min', 'amount_max'];
 
         $transactions = $query
             ->orderBy('date', 'desc')
@@ -949,7 +1003,7 @@ class TransactionController extends Controller
                 ->with('success', 'Pagamento aggiornato con successo.');
         }
 
-        $returnQuery = $this->returnIndexQueryFromRequest($request);
+        $returnQuery = $this->returnIndexQueryAfterMutation($request);
 
         return redirect()
             ->route('transactions.index', $returnQuery)
@@ -1041,7 +1095,7 @@ class TransactionController extends Controller
 
         $count = $transactions->count();
 
-        $returnQuery = $this->returnIndexQueryFromRequest($request);
+        $returnQuery = $this->returnIndexQueryAfterMutation($request);
 
         return redirect()->route('transactions.index', $returnQuery)
             ->with('success', "{$count} transazioni aggiornate con successo.");
@@ -1100,7 +1154,7 @@ class TransactionController extends Controller
             }
         }
 
-        $returnQuery = $this->returnIndexQueryFromRequest($request);
+        $returnQuery = $this->returnIndexQueryAfterMutation($request);
 
         return redirect()
             ->route('transactions.index', $returnQuery)
@@ -1124,7 +1178,7 @@ class TransactionController extends Controller
             // Elimina il trasferimento inter-household (che eliminerà automaticamente entrambe le transazioni)
             $interHouseholdTransfer->delete();
 
-            $returnQuery = $this->returnIndexQueryFromRequest($request);
+            $returnQuery = $this->returnIndexQueryAfterMutation($request);
 
             return redirect()
                 ->route('transactions.index', $returnQuery)
@@ -1138,11 +1192,39 @@ class TransactionController extends Controller
 
         $transaction->delete();
 
-        $returnQuery = $this->returnIndexQueryFromRequest($request);
+        $returnQuery = $this->returnIndexQueryAfterMutation($request);
 
         return redirect()
             ->route('transactions.index', $returnQuery)
             ->with('success', 'Transazione eliminata con successo.');
+    }
+
+    /**
+     * Filtra per valore assoluto dell'importo (entrate positive e uscite negative).
+     *
+     * @param  Builder<Transaction>  $query
+     */
+    private function applyAbsoluteAmountRangeFilter($query, ?float $min, ?float $max): void
+    {
+        $query->where(function ($q) use ($min, $max) {
+            $q->where(function ($positive) use ($min, $max) {
+                $positive->where('transactions.amount', '>=', 0);
+                if ($min !== null && $min >= 0) {
+                    $positive->where('transactions.amount', '>=', $min);
+                }
+                if ($max !== null && $max >= 0) {
+                    $positive->where('transactions.amount', '<=', $max);
+                }
+            })->orWhere(function ($negative) use ($min, $max) {
+                $negative->where('transactions.amount', '<', 0);
+                if ($min !== null && $min >= 0) {
+                    $negative->where('transactions.amount', '<=', -$min);
+                }
+                if ($max !== null && $max >= 0) {
+                    $negative->where('transactions.amount', '>=', -$max);
+                }
+            });
+        });
     }
 
     /**

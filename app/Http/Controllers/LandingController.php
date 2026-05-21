@@ -109,12 +109,12 @@ class LandingController extends Controller
 
     public function pianificatori(): View
     {
-        SEOMeta::setTitle('Finanzamente Pro per Pianificatori — Simulazioni finanziarie e obiettivi illimitati');
-        SEOMeta::setDescription('Simula scenari finanziari, pianifica obiettivi illimitati e gestisci ricorrenti senza limiti. Finanzamente Pro per chi vuole costruire il proprio futuro finanziario.');
+        SEOMeta::setTitle('Finanzamente per Pianificatori — Simulazioni gratuite e obiettivi finanziari');
+        SEOMeta::setDescription('Simulazioni finanziarie gratuite e strumenti Pro per obiettivi illimitati e ricorrenti automatiche. Pianifica il tuo futuro con Finanzamente.');
         SEOMeta::setKeywords(['simulazioni finanziarie', 'obiettivi finanziari', 'pianificazione finanziaria', 'risparmio', 'futuro finanziario']);
         SEOMeta::setCanonical(url('/per-pianificatori'));
         OpenGraph::setTitle('Finanzamente Pro — Per pianificatori finanziari');
-        OpenGraph::setDescription('Simulazioni, obiettivi illimitati e ricorrenti senza limiti. Costruisci il tuo futuro finanziario con Finanzamente Pro.');
+        OpenGraph::setDescription('Simulazioni gratuite e obiettivi illimitati con Pro. Costruisci il tuo futuro finanziario con Finanzamente.');
         OpenGraph::setUrl(url('/per-pianificatori'));
         OpenGraph::addProperty('type', 'website');
         TwitterCard::setTitle('Finanzamente Pro per Pianificatori');

@@ -20,6 +20,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { BalancePrivacyProvider } from '@/contexts/BalancePrivacyContext';
+import NavigationBlockingOverlay from '@/Components/NavigationBlockingOverlay';
 import { registerSW } from 'virtual:pwa-register';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Finanzamente';
@@ -65,7 +66,9 @@ createInertiaApp({
         root.render(
             <ThemeProvider initialTheme={initialTheme}>
                 <BalancePrivacyProvider initialHideBalances={initialHideBalances}>
-                    <App {...props} />
+                    <NavigationBlockingOverlay>
+                        <App {...props} />
+                    </NavigationBlockingOverlay>
                 </BalancePrivacyProvider>
             </ThemeProvider>,
         );

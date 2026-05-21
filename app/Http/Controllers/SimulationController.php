@@ -11,7 +11,7 @@ class SimulationController extends Controller
      */
     public function index()
     {
-        return Inertia::render('Simulations/Index', [
+        return Inertia::render('Simulations/PublicIndex', [
             'presetScenarios' => $this->getPresetScenarios(),
             'historicalData' => $this->getHistoricalData(),
             'crisisScenarios' => $this->getCrisisScenarios(),

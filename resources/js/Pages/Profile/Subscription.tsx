@@ -260,7 +260,6 @@ export default function Subscription({ subscription, currentPlan, plans, proEnab
                 {/* Feature contestuale se l'utente è stato reindirizzato da un modulo Pro */}
                 {!isProUser && fromFeature && (() => {
                     const featureLabels: Record<string, { name: string; description: string }> = {
-                        simulations: { name: 'Simulazioni finanziarie', description: 'proiezioni e scenari per il tuo futuro finanziario' },
                         inter_household_transfers: { name: 'Trasferimenti tra Household', description: 'fondi trasferibili tra le tue diverse household' },
                         inbox: { name: 'Inbox Telegram', description: 'conferma e gestisci transazioni direttamente da Telegram' },
                         tax_refund_730: { name: 'Detrazioni fiscali / 730', description: 'tracciamento spese detraibili e report per la dichiarazione' },

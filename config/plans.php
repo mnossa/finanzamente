@@ -73,7 +73,6 @@ return [
                 'Investimenti e portafoglio',
                 'Tracker spese detraibili (mediche, mutuo…)',
                 'Household illimitate con membri',
-                'Simulazioni finanziarie',
                 'Lifestyle Inflation Score',
                 // --- espandibili ---
                 'Conti bancari illimitati',

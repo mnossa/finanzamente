@@ -59,13 +59,59 @@ interface PaginatedData<T> {
     links: Array<{ url: string | null; label: string; active: boolean }>;
 }
 
+interface ArchiveItem {
+    id: number;
+    status: 'confirmed' | 'rejected';
+    type: 'income' | 'expense';
+    amount: string | null;
+    currency_code: string | null;
+    description: string | null;
+    transaction_date: string | null;
+    category: { id: number; name: string } | null;
+    updated_at: string | null;
+}
+
 interface Props extends PageProps {
     items: PaginatedData<InboxItem>;
     accounts: Account[];
     categories: Category[];
     pendingCount: number;
+    archiveCount: number;
+    recentArchive: ArchiveItem[];
     telegramLinked: boolean;
     telegramBotUsername: string | null;
+}
+
+function ArchiveRow({ item }: { item: ArchiveItem }) {
+    const isIncome = item.type === 'income';
+    const label = item.status === 'confirmed' ? 'Confermata' : 'Scartata';
+    const badgeClass = item.status === 'confirmed'
+        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400';
+
+    return (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                    {item.description || item.category?.name || 'Voce inbox'}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {item.transaction_date ? formatDate(item.transaction_date) : '—'}
+                    {item.category ? ` · ${item.category.name}` : ''}
+                </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+                {item.amount !== null && (
+                    <span className={clsx('text-sm font-semibold', isIncome ? 'text-emerald-600' : 'text-rose-600')}>
+                        {isIncome ? '+' : '−'}{formatCurrency(Math.abs(parseFloat(item.amount)))}
+                    </span>
+                )}
+                <span className={clsx('inline-flex rounded-full px-2 py-0.5 text-xs font-medium', badgeClass)}>
+                    {label}
+                </span>
+            </div>
+        </div>
+    );
 }
 
 // -------------------------------------------------------------------------
@@ -616,7 +662,16 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
 // Pagina principale
 // -------------------------------------------------------------------------
 
-export default function InboxIndex({ items, accounts, categories, pendingCount, telegramLinked, telegramBotUsername }: Props) {
+export default function InboxIndex({
+    items,
+    accounts,
+    categories,
+    pendingCount,
+    archiveCount,
+    recentArchive,
+    telegramLinked,
+    telegramBotUsername,
+}: Props) {
     const [confirmingAll, setConfirmingAll] = useState(false);
     const [rejectingAll, setRejectingAll] = useState(false);
 
@@ -745,6 +800,29 @@ export default function InboxIndex({ items, accounts, categories, pendingCount, 
                     <Pagination
                         data={items}
                     />
+                )}
+
+                {archiveCount > 0 && (
+                    <CardBox className="mt-4">
+                        <details className="group">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                                <span>Archivio ({archiveCount})</span>
+                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                    Ultime voci confermate o scartate
+                                </span>
+                            </summary>
+                            <div className="mt-3 space-y-2 border-t border-slate-100 pt-3 dark:border-slate-700">
+                                {recentArchive.map((item) => (
+                                    <ArchiveRow key={item.id} item={item} />
+                                ))}
+                                {archiveCount > recentArchive.length && (
+                                    <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                                        Mostrate le ultime {recentArchive.length} di {archiveCount} voci in archivio.
+                                    </p>
+                                )}
+                            </div>
+                        </details>
+                    </CardBox>
                 )}
             </PageContent>
         </AuthenticatedLayout>

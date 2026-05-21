@@ -27,18 +27,42 @@ class InboxController extends Controller
     public function __construct(private CurrencyConverter $currency) {}
 
     /**
-     * Mostra l'elenco delle voci in Inbox.
-     * Vengono mostrate prima le voci in attesa (draft/needs_review), poi le confermate.
+     * Mostra l'elenco delle voci in Inbox (solo in attesa di revisione).
      */
     public function index(): Response
     {
         $user = Auth::user();
 
         $items = InboxItem::where('user_id', $user->id)
+            ->whereIn('status', ['draft', 'needs_review'])
             ->with(['category', 'account'])
-            ->orderByRaw("CASE WHEN status IN ('draft','needs_review') THEN 0 ELSE 1 END")
             ->orderByDesc('created_at')
             ->paginate(20);
+
+        $archiveCount = InboxItem::where('user_id', $user->id)
+            ->whereIn('status', ['confirmed', 'rejected'])
+            ->count();
+
+        $recentArchive = InboxItem::where('user_id', $user->id)
+            ->whereIn('status', ['confirmed', 'rejected'])
+            ->with(['category'])
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (InboxItem $item) => [
+                'id' => $item->id,
+                'status' => $item->status,
+                'type' => $item->type,
+                'amount' => $item->amount,
+                'currency_code' => $item->currency_code,
+                'description' => $item->description,
+                'transaction_date' => $item->transaction_date?->format('Y-m-d'),
+                'category' => $item->category ? [
+                    'id' => $item->category->id,
+                    'name' => $item->category->name,
+                ] : null,
+                'updated_at' => $item->updated_at?->toIso8601String(),
+            ]);
 
         $accounts = Account::where('household_id', $user->active_household_id)
             ->select('id', 'name', 'currency_code')
@@ -59,6 +83,8 @@ class InboxController extends Controller
             'accounts' => $accounts,
             'categories' => $categories,
             'pendingCount' => $pendingCount,
+            'archiveCount' => $archiveCount,
+            'recentArchive' => $recentArchive,
             'telegramLinked' => $user->telegram_chat_id !== null,
             'telegramBotUsername' => config('services.telegram.bot_username'),
         ]);

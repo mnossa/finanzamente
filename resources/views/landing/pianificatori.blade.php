@@ -61,7 +61,8 @@
                 <div class="text-center p-4">
                     <div class="text-3xl mb-3" aria-hidden="true">🔮</div>
                     <h3 class="text-base font-semibold text-surface-900 mb-1">Simulazioni "se risparmiassi..."</h3>
-                    <p class="text-sm text-surface-600">Proiezioni basate sui tuoi dati reali: cambia le variabili e vedi quando raggiungi l'obiettivo.</p>
+                    <p class="text-sm text-surface-600">Strumenti gratuiti per esplorare scenari: interesse composto, fondo emergenza e stress test.</p>
+                    <a href="{{ url('/simulazioni') }}" class="mt-2 inline-block text-sm font-semibold text-primary-600 hover:text-primary-700">Prova le simulazioni →</a>
                 </div>
                 <div class="text-center p-4">
                     <div class="text-3xl mb-3" aria-hidden="true">🔄</div>
@@ -81,7 +82,7 @@
                         "Se risparmio X al mese, quando raggiungo Y?"
                     </h2>
                     <p class="text-surface-600 leading-relaxed">
-                        Finanzamente Pro risponde a questa domanda con <strong>proiezioni basate sui tuoi dati reali</strong>. Non stime generiche, ma <strong>simulazioni che tengono conto delle tue ricorrenti, delle tue entrate e delle tue abitudini di spesa effettive</strong>.
+                        Finanzamente ti aiuta a rispondere con <strong>simulazioni educative gratuite</strong> e, con un account, <strong>proiezioni collegate ai tuoi dati reali</strong> — ricorrenti, entrate e abitudini di spesa effettive.
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-6 shadow-soft-lg border border-surface-200">
@@ -134,7 +135,7 @@
     <section class="py-14 sm:py-20 bg-gradient-to-r from-violet-600 to-indigo-700 text-white text-center">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
             <h2 class="text-2xl sm:text-3xl font-bold mb-4">Crea il tuo primo obiettivo finanziario oggi</h2>
-            <p class="text-violet-100 mb-5">Simulazioni, obiettivi illimitati e ricorrenti automatiche.</p>
+            <p class="text-violet-100 mb-5">Simulazioni gratuite, obiettivi illimitati e ricorrenti automatiche con Pro.</p>
             <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-8 text-sm text-violet-200">
                 <span>✓ €2,99/mese</span>
                 <span>✓ Nessun conto bancario da collegare</span>

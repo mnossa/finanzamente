@@ -179,7 +179,7 @@ const navigationSections: NavigationSection[] = [
         defaultExpanded: true,
         items: [
             { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard, moduleId: 'dashboard' },
-            { name: 'Simulazioni', href: 'simulations.index', routeMatch: 'simulations.*', icon: Icons.Simulation, moduleId: 'simulations', requiresPro: true },
+            { name: 'Simulazioni', href: 'simulations.public', routeMatch: 'simulations.*', icon: Icons.Simulation },
         ]
     },
     {

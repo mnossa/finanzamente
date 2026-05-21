@@ -29,7 +29,6 @@ use App\Http\Controllers\ProfileQuizController;
 use App\Http\Controllers\RecurrenceDetectionController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\RefundController;
-use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaxDeductionExportController;
@@ -82,10 +81,8 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::post('/notifiche/{notification}/segna-letto', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifiche/segna-tutte-lette', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
-    // ===== ROTTE PRO — Simulazioni, Inbox, Telegram =====
+    // ===== ROTTE PRO — Inbox, Telegram =====
     Route::middleware(['requires-pro'])->group(function () {
-        Route::get('/simulazioni', [SimulationController::class, 'index'])->name('simulations.index');
-
         // Inbox / Staging Area (voci da Telegram o manuali, in attesa di revisione)
         Route::get('/posta-in-arrivo', [InboxController::class, 'index'])->name('inbox.index');
         Route::put('/posta-in-arrivo/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');

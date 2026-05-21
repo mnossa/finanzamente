@@ -4,6 +4,7 @@ use App\Http\Controllers\HouseholdInvitationController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\RobotsController;
+use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WaitlistController;
 use App\Http\Controllers\WelcomeController;
@@ -49,6 +50,9 @@ Route::get('/per-lavoratori', [LandingController::class, 'lavoratori'])->name('l
 Route::get('/per-pianificatori', [LandingController::class, 'pianificatori'])->name('landing.pianificatori');
 Route::get('/per-tech-savvy', [LandingController::class, 'techSavvy'])->name('landing.tech-savvy');
 Route::get('/crescita-personale', [LandingController::class, 'crescita'])->name('landing.crescita');
+
+// Simulazioni finanziarie — area open (React/Inertia)
+Route::get('/simulazioni', [SimulationController::class, 'index'])->name('simulations.public');
 
 // robots.txt dinamico con Sitemap URL corretto
 Route::get('/robots.txt', [RobotsController::class, 'index']);

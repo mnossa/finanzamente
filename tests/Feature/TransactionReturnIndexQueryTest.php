@@ -70,7 +70,7 @@ class TransactionReturnIndexQueryTest extends TestCase
         $query = (string) parse_url($location, PHP_URL_QUERY);
         parse_str($query, $params);
         $this->assertSame((string) $account->id, $params['account_id']);
-        $this->assertSame('3', $params['page']);
         $this->assertSame('expense', $params['type']);
+        $this->assertArrayNotHasKey('page', $params, 'Dopo modifica si riparte dalla pagina 1');
     }
 }

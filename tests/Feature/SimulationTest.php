@@ -33,30 +33,29 @@ class SimulationTest extends TestCase
     }
 
     #[Test]
-    public function unauthenticated_user_cannot_access_simulations(): void
+    public function guest_can_access_public_simulations_page(): void
     {
-        $this->get(route('simulations.index'))
-            ->assertRedirect(route('login'));
+        $this->withoutVite()
+            ->get(route('simulations.public'))
+            ->assertOk();
     }
 
     #[Test]
-    public function authenticated_user_can_access_simulations_page(): void
+    public function authenticated_user_can_access_public_simulations_page(): void
     {
-        $response = $this->withoutVite()
+        $this->withoutVite()
             ->actingAs($this->user)
-            ->get(route('simulations.index'));
-
-        $response->assertStatus(200);
+            ->get(route('simulations.public'))
+            ->assertStatus(200);
     }
 
     #[Test]
     public function simulations_page_renders_correct_inertia_component(): void
     {
         $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('simulations.index'));
+            ->get(route('simulations.public'));
 
-        $response->assertInertia(fn ($page) => $page->component('Simulations/Index')
+        $response->assertInertia(fn ($page) => $page->component('Simulations/PublicIndex')
             ->has('presetScenarios')
             ->has('historicalData')
             ->has('crisisScenarios')
@@ -67,8 +66,7 @@ class SimulationTest extends TestCase
     public function simulations_page_returns_three_preset_scenarios(): void
     {
         $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('simulations.index'));
+            ->get(route('simulations.public'));
 
         $response->assertInertia(fn ($page) => $page->has('presetScenarios', 3)
             ->where('presetScenarios.0.id', 'conservative')
@@ -81,8 +79,7 @@ class SimulationTest extends TestCase
     public function simulations_page_returns_historical_data(): void
     {
         $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('simulations.index'));
+            ->get(route('simulations.public'));
 
         $response->assertInertia(fn ($page) => $page->has('historicalData.sp500_avg_return')
             ->has('historicalData.avg_inflation_italy')
@@ -95,8 +92,7 @@ class SimulationTest extends TestCase
     public function simulations_page_returns_three_crisis_scenarios(): void
     {
         $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('simulations.index'));
+            ->get(route('simulations.public'));
 
         $response->assertInertia(fn ($page) => $page->has('crisisScenarios', 3)
             ->where('crisisScenarios.0.id', 'crisis_2008')
@@ -109,8 +105,7 @@ class SimulationTest extends TestCase
     public function crisis_scenarios_have_required_fields(): void
     {
         $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('simulations.index'));
+            ->get(route('simulations.public'));
 
         $response->assertInertia(fn ($page) => $page->has('crisisScenarios.0.id')
             ->has('crisisScenarios.0.name')
@@ -126,8 +121,7 @@ class SimulationTest extends TestCase
     public function preset_scenarios_have_required_fields(): void
     {
         $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('simulations.index'));
+            ->get(route('simulations.public'));
 
         $response->assertInertia(fn ($page) => $page->has('presetScenarios.0.id')
             ->has('presetScenarios.0.name')
@@ -137,11 +131,11 @@ class SimulationTest extends TestCase
     }
 
     #[Test]
-    public function simulations_route_has_correct_name(): void
+    public function simulations_public_route_has_correct_name(): void
     {
         $this->assertTrue(
-            Route::has('simulations.index'),
-            'La rotta simulations.index deve esistere'
+            Route::has('simulations.public'),
+            'La rotta simulations.public deve esistere'
         );
     }
 }

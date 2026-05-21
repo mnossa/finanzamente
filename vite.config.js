@@ -32,19 +32,23 @@ export default defineConfig(({ mode, command }) => {
                     'images/finanzamente-logo.webp',
                     'pwa/icon-192.png',
                     'pwa/icon-512.png',
+                    'pwa/icon-maskable-512.png',
                     'pwa/apple-touch-icon.png',
                 ],
                 manifest: {
+                    id: '/',
                     name: 'Finanzamente',
                     short_name: 'Finanzamente',
                     description: 'Gestione finanziaria personale e familiare',
                     theme_color: '#4f4ce5',
                     background_color: '#ffffff',
                     display: 'standalone',
+                    display_override: ['standalone', 'browser'],
                     orientation: 'portrait',
                     start_url: '/dashboard?source=pwa',
                     scope: '/',
                     lang: 'it',
+                    categories: ['finance', 'productivity'],
                     icons: [
                         {
                             src: '/pwa/icon-192.png',
@@ -59,7 +63,7 @@ export default defineConfig(({ mode, command }) => {
                             purpose: 'any',
                         },
                         {
-                            src: '/pwa/icon-512.png',
+                            src: '/pwa/icon-maskable-512.png',
                             sizes: '512x512',
                             type: 'image/png',
                             purpose: 'maskable',

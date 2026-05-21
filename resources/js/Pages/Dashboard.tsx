@@ -274,7 +274,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     return (
         <Link
             href={route('transactions.show', transaction.id)}
-            className="flex items-center gap-2 border-b border-gray-100 py-2 last:border-0 -mx-3 px-1 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 sm:-mx-4 sm:px-3"
+            className="flex items-center gap-2 rounded-lg px-1 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 sm:px-2"
         >
             <div
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm"

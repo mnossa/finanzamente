@@ -186,14 +186,6 @@ class ModuleAccessService
         ],
 
         // Moduli Pro — Analisi avanzata
-        'simulations' => [
-            'id' => 'simulations',
-            'name' => 'Simulazioni',
-            'category' => 'planning',
-            'routes' => ['simulations.*'],
-            'requires' => [],
-            'requires_plan' => 'pro',
-        ],
         'lifestyle_score' => [
             'id' => 'lifestyle_score',
             'name' => 'Lifestyle Inflation Score',

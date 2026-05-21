@@ -93,12 +93,15 @@ interface Filters {
     to?: string;
     tag_id?: string;
     is_tax_deductible?: string;
+    description?: string;
+    amount_min?: string;
+    amount_max?: string;
 }
 
 /** Parametri ammessi per redirect verso indice (allineati al backend). */
 type IndexReturnQuery = Record<string, string | number>;
 
-function buildReturnIndexQuery(filters: Filters, currentPage: number): IndexReturnQuery {
+function buildReturnIndexQuery(filters: Filters, currentPage: number, includePage = true): IndexReturnQuery {
     const q: IndexReturnQuery = {};
     if (filters.account_id) {
         q.account_id = filters.account_id;
@@ -121,15 +124,24 @@ function buildReturnIndexQuery(filters: Filters, currentPage: number): IndexRetu
     if (filters.is_tax_deductible !== undefined && filters.is_tax_deductible !== '') {
         q.is_tax_deductible = filters.is_tax_deductible;
     }
-    if (currentPage > 1) {
+    if (filters.description) {
+        q.description = filters.description;
+    }
+    if (filters.amount_min) {
+        q.amount_min = filters.amount_min;
+    }
+    if (filters.amount_max) {
+        q.amount_max = filters.amount_max;
+    }
+    if (includePage && currentPage > 1) {
         q.page = currentPage;
     }
 
     return q;
 }
 
-function returnIndexQueryJson(filters: Filters, currentPage: number): string {
-    const payload = buildReturnIndexQuery(filters, currentPage);
+function returnIndexQueryJson(filters: Filters, currentPage: number, includePage = false): string {
+    const payload = buildReturnIndexQuery(filters, currentPage, includePage);
 
     return Object.keys(payload).length === 0 ? '' : JSON.stringify(payload);
 }
@@ -739,6 +751,9 @@ export default function Index({
                 from: 'date_from',
                 to: 'date_to',
                 tag_id: 'tag',
+                description: 'description',
+                amount_min: 'amount',
+                amount_max: 'amount',
             };
             if (filterMap[key]) filtersAnalytics.applied(filterMap[key]);
         }
@@ -951,6 +966,41 @@ export default function Index({
                                             ))}
                                         </select>
                                     )}
+                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-2">
+                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Cerca nella descrizione</span>
+                                        <input
+                                            type="search"
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.description || ''}
+                                            onChange={(e) => handleFilterChange('description', e.target.value)}
+                                            placeholder="es. supermercato coop"
+                                            aria-label="Cerca nella descrizione"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-36">
+                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Importo da (€)</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.amount_min || ''}
+                                            onChange={(e) => handleFilterChange('amount_min', e.target.value)}
+                                            aria-label="Importo minimo"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-36">
+                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Importo a (€)</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={filters.amount_max || ''}
+                                            onChange={(e) => handleFilterChange('amount_max', e.target.value)}
+                                            aria-label="Importo massimo"
+                                        />
+                                    </div>
                                     {hasFilters && (
                                         <button
                                             type="button"
@@ -970,8 +1020,8 @@ export default function Index({
                         {transactions.data.length > 0 ? (
                             <>
                                 {/* Barra selezione multipla */}
-                                <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-                                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
+                                    <label className="flex shrink-0 items-center gap-2 cursor-pointer select-none">
                                         <input
                                             type="checkbox"
                                             checked={isAllSelected}
@@ -988,17 +1038,19 @@ export default function Index({
                                         </span>
                                     </label>
                                     {selectedIds.size > 0 && (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                                             <button
+                                                type="button"
                                                 onClick={() => setBulkEditOpen(true)}
-                                                className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                                                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 sm:w-auto sm:py-1.5"
                                             >
                                                 <PencilIcon size={15} />
                                                 Modifica selezionate
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={handleBulkDelete}
-                                                className="flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:py-1.5"
                                             >
                                                 <TrashIcon size={15} />
                                                 Elimina selezionate
