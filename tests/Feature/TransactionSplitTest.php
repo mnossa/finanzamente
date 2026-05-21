@@ -63,6 +63,54 @@ class TransactionSplitTest extends TestCase
     }
 
     #[Test]
+    public function can_store_transaction_with_empty_splits_array(): void
+    {
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'account_id' => $this->accountA->id,
+            'category_id' => $this->category->id,
+            'amount' => 25,
+            'date' => now()->toDateString(),
+            'description' => 'Senza split',
+            'splits' => [],
+        ])->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $transaction = Transaction::where('description', 'Senza split')->first();
+        $this->assertNotNull($transaction);
+        $this->assertNull($transaction->split_group_id);
+        $this->assertSame($this->accountA->id, $transaction->account_id);
+    }
+
+    #[Test]
+    public function can_store_transaction_without_splits_key(): void
+    {
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'account_id' => $this->accountA->id,
+            'category_id' => $this->category->id,
+            'amount' => 15,
+            'date' => now()->toDateString(),
+            'description' => 'Chiave splits assente',
+        ])->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertNotNull(Transaction::where('description', 'Chiave splits assente')->first());
+    }
+
+    #[Test]
+    public function rejects_split_payment_with_only_one_line(): void
+    {
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'account_id' => $this->accountA->id,
+            'category_id' => $this->category->id,
+            'amount' => 40,
+            'date' => now()->toDateString(),
+            'splits' => [
+                ['account_id' => $this->accountA->id, 'amount' => 40],
+            ],
+        ])->assertSessionHasErrors('splits');
+    }
+
+    #[Test]
     public function can_create_split_payment_across_two_accounts(): void
     {
         $this->actingAs($this->user)->post(route('transactions.store'), [

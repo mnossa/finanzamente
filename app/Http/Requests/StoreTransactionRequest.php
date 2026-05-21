@@ -23,6 +23,15 @@ class StoreTransactionRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $splits = $this->input('splits');
+
+        if (! is_array($splits) || $splits === []) {
+            $this->merge(['splits' => null]);
+        }
+    }
+
     public function rules(): array
     {
         $user = Auth::user();
@@ -38,7 +47,7 @@ class StoreTransactionRequest extends FormRequest
             ->pluck('id')
             ->toArray();
 
-        $hasSplits = is_array($this->input('splits')) && count($this->input('splits', [])) >= 2;
+        $hasSplits = $this->hasSplitPayment();
 
         return [
             'account_id' => [
@@ -107,6 +116,12 @@ class StoreTransactionRequest extends FormRequest
             'tax_year.min' => "L'anno fiscale non è valido.",
             'tax_year.max' => "L'anno fiscale non è valido.",
             'debt_credit_id.exists' => 'Il debito/credito selezionato non è valido o è stato già chiuso.',
+            'splits.min' => 'Servono almeno due conti per un pagamento diviso.',
         ];
+    }
+
+    private function hasSplitPayment(): bool
+    {
+        return is_array($this->input('splits')) && count($this->input('splits')) >= 2;
     }
 }
