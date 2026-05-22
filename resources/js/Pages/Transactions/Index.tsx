@@ -216,7 +216,19 @@ function computeNextFilters(filters: Filters, categories: Category[], key: strin
 interface DebtCredit {
     id: number;
     description: string;
+    counterparty: string;
     type: 'debt' | 'credit';
+}
+
+function formatDebtCreditOptionLabel(dc: DebtCredit): string {
+    const icon = dc.type === 'debt' ? '🔴' : '🟢';
+    const party = dc.counterparty.trim();
+    const desc = dc.description?.trim() ?? '';
+    if (desc && desc !== party) {
+        return `${icon} ${party} — ${desc}`;
+    }
+
+    return `${icon} ${party}`;
 }
 
 interface IndexProps {
@@ -397,7 +409,7 @@ function BulkEditModal({
                             <option value={REMOVE}>Rimuovi collegamento</option>
                             {debtCredits.map((dc) => (
                                 <option key={dc.id} value={String(dc.id)}>
-                                    {dc.type === 'debt' ? '🔴' : '🟢'} {dc.description}
+                                    {formatDebtCreditOptionLabel(dc)}
                                 </option>
                             ))}
                         </select>

@@ -21,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -373,8 +374,9 @@ class TransactionController extends Controller
             ->get(['id', 'name', 'type', 'color', 'icon']);
 
         $debtCredits = DebtCredit::where('household_id', $householdId)
+            ->orderBy('counterparty')
             ->orderBy('description')
-            ->get(['id', 'description', 'type']);
+            ->get(['id', 'description', 'counterparty', 'type']);
 
         $tags = Tag::forUser($user->id, $householdId)
             ->orderBy('name')
@@ -1024,18 +1026,26 @@ class TransactionController extends Controller
      */
     public function bulkUpdate(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+        $householdId = (int) $user->active_household_id;
+
         $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer',
             'category_id' => 'sometimes|nullable|integer|exists:categories,id',
             'is_private' => 'sometimes|boolean',
-            'debt_credit_id' => 'sometimes|nullable|integer|exists:debt_credits,id',
+            'debt_credit_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('debts_credits', 'id')->where(function ($query) use ($householdId) {
+                    $query->where('household_id', $householdId);
+                }),
+            ],
             'is_tax_deductible' => 'sometimes|boolean',
             'account_id' => 'sometimes|integer|exists:accounts,id',
             'return_index_query' => ['nullable', 'string', 'max:8192'],
         ]);
-
-        $user = Auth::user();
         $ids = $request->input('ids');
 
         $transactions = Transaction::with('account')
