@@ -61,6 +61,49 @@ class RecurrenceDetectionTest extends TestCase
     }
 
     #[Test]
+    public function detect_frequency_identifies_monthly_pattern_from_start_of_month_dates(): void
+    {
+        $dates = collect(range(1, 3))->map(
+            fn (int $i) => Carbon::now()->subMonths(3 - $i)->startOfMonth()
+        )->all();
+
+        $reflection = new \ReflectionClass($this->service);
+        $method = $reflection->getMethod('detectFrequency');
+        $method->setAccessible(true);
+
+        $this->assertSame('monthly', $method->invoke($this->service, $dates));
+    }
+
+    #[Test]
+    public function collapse_keeps_three_monthly_representatives(): void
+    {
+        $transactions = collect(range(1, 3))->map(fn (int $i) => Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -25.00,
+            'currency_code' => 'EUR',
+            'date' => Carbon::now()->subMonths(3 - $i)->startOfMonth(),
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]));
+
+        $reflection = new \ReflectionClass($this->service);
+        $method = $reflection->getMethod('collapseSamePeriodTransactions');
+        $method->setAccessible(true);
+
+        $representatives = $method->invoke(
+            $this->service,
+            $transactions->sortBy('date')->values(),
+            'monthly'
+        );
+
+        $this->assertCount(3, $representatives);
+    }
+
+    #[Test]
     public function it_detects_monthly_recurring_pattern(): void
     {
         // 4 transazioni mensili dello stesso importo e categoria
@@ -754,6 +797,154 @@ class RecurrenceDetectionTest extends TestCase
             ->where('suggestions.0.missing_occurrences', 1)
             ->where('suggestions.0.has_internal_gaps', true)
             ->where('suggestions.0.has_trailing_gap', false)
+            ->has('suggestions.0.gaps', 1)
+            ->where('suggestions.0.gaps.0.type', 'internal')
+            ->has('suggestions.0.gaps.0.missing_period_labels')
+        );
+    }
+
+    #[Test]
+    public function index_exposes_date_drift_when_monthly_days_vary(): void
+    {
+        $transactions = collect([5, 6, 7])->map(fn (int $day, int $index) => Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'date' => Carbon::create(2025, 1 + $index, $day),
+            'description' => 'Affitto drift',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]));
+
+        RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'description' => 'Affitto drift',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.85,
+            'status' => 'pending',
+            'transaction_ids' => $transactions->pluck('id')->all(),
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('recurrence-detection.index'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('RecurringTransactions/Suggestions')
+            ->where('suggestions.0.has_date_drift', true)
+            ->where('suggestions.0.anchor_day', 5)
+            ->has('suggestions.0.date_alignment_preview', 2)
+        );
+    }
+
+    #[Test]
+    public function accept_shift_transactions_aligns_linked_dates(): void
+    {
+        $transactions = collect([
+            Carbon::create(2025, 1, 5),
+            Carbon::create(2025, 2, 6),
+            Carbon::create(2025, 3, 7),
+        ])->map(fn (Carbon $date) => Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'date' => $date,
+            'description' => 'Affitto drift',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]));
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'description' => 'Affitto drift',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.85,
+            'status' => 'pending',
+            'transaction_ids' => $transactions->pluck('id')->all(),
+        ]);
+
+        $result = $this->service->acceptSuggestion(
+            $suggestion,
+            app(RecurringTransactionService::class),
+            'active',
+            'shift_transactions',
+        );
+
+        $this->assertGreaterThanOrEqual(2, $result->alignedTransactionCount);
+        $this->assertSame(
+            '2025-01-05',
+            Transaction::find($transactions[0]->id)->date->format('Y-m-d')
+        );
+        $this->assertSame(
+            '2025-02-05',
+            Transaction::find($transactions[1]->id)->date->format('Y-m-d')
+        );
+        $this->assertSame(
+            '2025-03-05',
+            Transaction::find($transactions[2]->id)->date->format('Y-m-d')
+        );
+    }
+
+    #[Test]
+    public function accept_anchor_start_sets_canonical_start_without_shifting_transactions(): void
+    {
+        $transactions = collect([
+            Carbon::create(2025, 1, 5),
+            Carbon::create(2025, 2, 6),
+            Carbon::create(2025, 3, 7),
+        ])->map(fn (Carbon $date) => Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'date' => $date,
+            'description' => 'Affitto drift',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]));
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -80.00,
+            'currency_code' => 'EUR',
+            'description' => 'Affitto drift',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.85,
+            'status' => 'pending',
+            'transaction_ids' => $transactions->pluck('id')->all(),
+        ]);
+
+        $result = $this->service->acceptSuggestion(
+            $suggestion,
+            app(RecurringTransactionService::class),
+            'active',
+            'anchor_start',
+        );
+
+        $this->assertSame(0, $result->alignedTransactionCount);
+        $this->assertSame('2025-01-05', $result->recurring->start_date->format('Y-m-d'));
+        $this->assertSame(
+            '2025-01-05',
+            Transaction::find($transactions[0]->id)->date->format('Y-m-d')
         );
     }
 
@@ -800,7 +991,7 @@ class RecurrenceDetectionTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('RecurringTransactions/Suggestions')
             ->where('suggestions.0.has_trailing_gap', true)
-            ->where('suggestions.0.trailing_missing_occurrences', 3)
+            ->where('suggestions.0.trailing_missing_occurrences', 4)
         );
     }
 

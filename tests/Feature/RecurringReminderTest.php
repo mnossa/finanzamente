@@ -10,6 +10,7 @@ use App\Models\Household;
 use App\Models\RecurringTransaction;
 use App\Models\User;
 use App\Services\RecurringReminderFormatter;
+use App\Services\RecurringTransactionService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -78,6 +79,8 @@ class RecurringReminderTest extends TestCase
     #[Test]
     public function remind_command_sends_enriched_notification_and_dedupes_email(): void
     {
+        Carbon::setTestNow('2026-06-04');
+
         Mail::fake();
         Cache::flush();
 
@@ -87,19 +90,22 @@ class RecurringReminderTest extends TestCase
             'name' => 'Stipendio',
         ]);
 
-        $tomorrow = Carbon::tomorrow();
+        $tomorrow = Carbon::parse('2026-06-05');
 
-        RecurringTransaction::create([
+        $recurring = RecurringTransaction::create([
             'user_id' => $this->user->id,
             'account_id' => $this->account->id,
             'category_id' => $category->id,
             'amount' => 1500,
             'currency_code' => 'EUR',
             'frequency' => 'monthly',
-            'start_date' => $tomorrow->copy()->subMonth()->toDateString(),
+            'start_date' => '2026-05-05',
             'description' => 'Stipendio mensile',
-            'last_generated_date' => $tomorrow->copy()->subMonth()->toDateString(),
+            'last_generated_date' => '2026-05-05',
         ]);
+
+        $nextDue = app(RecurringTransactionService::class)->calculateNextDueDate($recurring->fresh());
+        $this->assertSame($tomorrow->toDateString(), $nextDue?->toDateString());
 
         Artisan::call('recurring:remind');
 
@@ -114,5 +120,7 @@ class RecurringReminderTest extends TestCase
         Artisan::call('recurring:remind');
 
         Mail::assertSent(RecurringReminderMail::class, 1);
+
+        Carbon::setTestNow();
     }
 }

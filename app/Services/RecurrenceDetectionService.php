@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\RecurringTransaction;
 use App\Models\RecurringTransactionSuggestion;
 use App\Models\Transaction;
+use App\Support\RecurrenceDateTolerance;
 use DomainException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -27,26 +28,6 @@ class RecurrenceDetectionService
      * Tolleranza percentuale massima nella varianza dei gap tra date (15 %).
      */
     private const GAP_TOLERANCE = 0.15;
-
-    /**
-     * Gap attesi in giorni per ciascuna frequenza.
-     */
-    private const FREQUENCY_GAPS = [
-        'daily' => 1,
-        'weekly' => 7,
-        'monthly' => 30,
-        'yearly' => 365,
-    ];
-
-    /**
-     * Finestre di accettazione (±giorni) per ciascuna frequenza.
-     */
-    private const FREQUENCY_WINDOWS = [
-        'daily' => 0,
-        'weekly' => 1,
-        'monthly' => 5,
-        'yearly' => 15,
-    ];
 
     private const VARIABLE_AMOUNT_LOOKBACK_MONTHS = 8;
 
@@ -140,7 +121,8 @@ class RecurrenceDetectionService
     public function acceptSuggestion(
         RecurringTransactionSuggestion $suggestion,
         RecurringTransactionService $recurringService,
-        string $mode = 'auto'
+        string $mode = 'auto',
+        ?string $dateAlignmentMode = null,
     ): AcceptedRecurringSuggestion {
         $ids = array_values(array_filter(array_map(
             static fn (mixed $id): int => (int) $id,
@@ -169,7 +151,44 @@ class RecurrenceDetectionService
                 ->filter(fn (Transaction $t) => Carbon::parse($t->date)->gt($today))
                 ->values();
 
-            $startDate = $transactions->first()->date;
+            $alignment = $this->analyzeDateAlignment(
+                $suggestion->detected_frequency,
+                $transactions,
+            );
+            $alignedCount = 0;
+
+            if ($dateAlignmentMode === 'shift_transactions' && $alignment['has_date_drift']) {
+                $shiftMap = collect($alignment['per_transaction'])
+                    ->keyBy('id')
+                    ->map(fn (array $row) => $row['suggested_date']);
+
+                foreach ($historicalTransactions as $transaction) {
+                    $suggestedDate = $shiftMap->get($transaction->id);
+                    if ($suggestedDate === null) {
+                        continue;
+                    }
+
+                    $transaction->update(['date' => $suggestedDate]);
+                    $alignedCount++;
+                }
+
+                $transactions = Transaction::withTrashed()
+                    ->whereIn('id', $ids)
+                    ->where('account_id', $suggestion->account_id)
+                    ->orderBy('date')
+                    ->get();
+
+                $historicalTransactions = $transactions
+                    ->filter(fn (Transaction $t) => Carbon::parse($t->date)->lte($today))
+                    ->values();
+            }
+
+            $startDate = $this->resolveStartDateForAccept(
+                $transactions,
+                $suggestion->detected_frequency,
+                $dateAlignmentMode,
+                $alignment,
+            );
             $lastDate = $historicalTransactions->isNotEmpty()
                 ? Carbon::parse($historicalTransactions->last()->date)
                 : Carbon::parse($transactions->last()->date);
@@ -238,7 +257,11 @@ class RecurrenceDetectionService
                 'removed_future_transactions' => $futureTransactions->count(),
             ]);
 
-            return new AcceptedRecurringSuggestion($recurring->fresh(), $futureTransactions->count());
+            return new AcceptedRecurringSuggestion(
+                $recurring->fresh(),
+                $futureTransactions->count(),
+                $alignedCount,
+            );
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Errore accettazione suggerimento ricorrenza', [
@@ -266,6 +289,13 @@ class RecurrenceDetectionService
 
         $frequency = $this->detectFrequency($dates);
         if ($frequency === null) {
+            return null;
+        }
+
+        $representatives = $this->collapseSamePeriodTransactions($sorted, $frequency);
+        $collapsedDates = $representatives->map(fn (Transaction $t) => Carbon::parse($t->date))->all();
+
+        if (count($collapsedDates) < self::MIN_OCCURRENCES) {
             return null;
         }
 
@@ -305,8 +335,8 @@ class RecurrenceDetectionService
 
         $medianGap = $this->median($gaps);
 
-        foreach (self::FREQUENCY_GAPS as $frequency => $expectedGap) {
-            $window = self::FREQUENCY_WINDOWS[$frequency];
+        foreach (RecurrenceDateTolerance::FREQUENCY_GAPS as $frequency => $expectedGap) {
+            $window = RecurrenceDateTolerance::FREQUENCY_WINDOWS[$frequency];
             if (abs($medianGap - $expectedGap) <= $window) {
                 // Verifica che la varianza sia contenuta
                 $variance = $this->relativeVariance($gaps, $medianGap);
@@ -474,55 +504,90 @@ class RecurrenceDetectionService
      *   has_internal_gaps: bool,
      *   internal_missing_occurrences: int,
      *   has_trailing_gap: bool,
-     *   trailing_missing_occurrences: int
+     *   trailing_missing_occurrences: int,
+     *   gaps: array<int, array{
+     *     type: string,
+     *     after_date: string,
+     *     before_date: string|null,
+     *     gap_days: int,
+     *     estimated_missing: int,
+     *     missing_period_labels: string[]
+     *   }>
      * }
      */
     public function calculateGapInsights(string $frequency, array $dates): array
     {
+        $empty = [
+            'has_gaps' => false,
+            'missing_occurrences' => 0,
+            'largest_gap_days' => 0,
+            'has_internal_gaps' => false,
+            'internal_missing_occurrences' => 0,
+            'has_trailing_gap' => false,
+            'trailing_missing_occurrences' => 0,
+            'gaps' => [],
+        ];
+
         if (count($dates) < 2) {
-            return [
-                'has_gaps' => false,
-                'missing_occurrences' => 0,
-                'largest_gap_days' => 0,
-                'has_internal_gaps' => false,
-                'internal_missing_occurrences' => 0,
-                'has_trailing_gap' => false,
-                'trailing_missing_occurrences' => 0,
-            ];
+            return $empty;
         }
 
         usort($dates, fn (Carbon $a, Carbon $b) => $a->lt($b) ? -1 : 1);
 
-        $expectedGapDays = self::FREQUENCY_GAPS[$frequency] ?? 30;
-        $window = self::FREQUENCY_WINDOWS[$frequency] ?? 0;
-        $maxAllowedGap = $expectedGapDays + $window;
+        $maxAllowedGap = RecurrenceDateTolerance::maxAllowedGapDays($frequency);
+        $expectedGapDays = RecurrenceDateTolerance::expectedGapDaysForFrequency($frequency);
 
         $missingOccurrences = 0;
         $largestGapDays = 0;
         $internalMissingOccurrences = 0;
+        $gaps = [];
 
         for ($i = 1; $i < count($dates); $i++) {
-            $gapDays = $dates[$i - 1]->diffInDays($dates[$i]);
+            $afterDate = $dates[$i - 1];
+            $beforeDate = $dates[$i];
+            $gapDays = (int) $afterDate->diffInDays($beforeDate);
+
             if ($gapDays <= $maxAllowedGap) {
                 continue;
             }
 
             $largestGapDays = max($largestGapDays, $gapDays);
-            $estimatedMissing = max(1, (int) floor($gapDays / $expectedGapDays) - 1);
+            $missingLabels = $this->missingPeriodLabelsBetween($afterDate, $beforeDate, $frequency, $dates);
+            $estimatedMissing = max(1, count($missingLabels));
+
             $missingOccurrences += $estimatedMissing;
             $internalMissingOccurrences += $estimatedMissing;
+
+            $gaps[] = [
+                'type' => 'internal',
+                'after_date' => $afterDate->toDateString(),
+                'before_date' => $beforeDate->toDateString(),
+                'gap_days' => $gapDays,
+                'estimated_missing' => $estimatedMissing,
+                'missing_period_labels' => $missingLabels,
+            ];
         }
 
         $lastDate = end($dates);
-        $trailingGapDays = $lastDate instanceof Carbon ? $lastDate->diffInDays(Carbon::today()) : 0;
+        $trailingGapDays = $lastDate instanceof Carbon ? (int) $lastDate->diffInDays(Carbon::today()) : 0;
         $hasTrailingGap = $trailingGapDays > $maxAllowedGap;
-        $trailingMissingOccurrences = $hasTrailingGap
-            ? max(1, (int) floor($trailingGapDays / $expectedGapDays) - 1)
-            : 0;
+        $trailingMissingOccurrences = 0;
+        $trailingLabels = [];
 
-        if ($hasTrailingGap) {
+        if ($hasTrailingGap && $lastDate instanceof Carbon) {
+            $trailingLabels = $this->missingPeriodLabelsBetween($lastDate, Carbon::today(), $frequency, $dates);
+            $trailingMissingOccurrences = max(1, count($trailingLabels));
             $largestGapDays = max($largestGapDays, $trailingGapDays);
             $missingOccurrences += $trailingMissingOccurrences;
+
+            $gaps[] = [
+                'type' => 'trailing',
+                'after_date' => $lastDate->toDateString(),
+                'before_date' => null,
+                'gap_days' => $trailingGapDays,
+                'estimated_missing' => $trailingMissingOccurrences,
+                'missing_period_labels' => $trailingLabels,
+            ];
         }
 
         return [
@@ -533,7 +598,89 @@ class RecurrenceDetectionService
             'internal_missing_occurrences' => $internalMissingOccurrences,
             'has_trailing_gap' => $hasTrailingGap,
             'trailing_missing_occurrences' => $trailingMissingOccurrences,
+            'gaps' => $gaps,
         ];
+    }
+
+    /**
+     * Analizza deriva delle date rispetto a un giorno/settimana canonico.
+     *
+     * @param  Collection<Transaction>  $transactions
+     * @return array{
+     *   has_date_drift: bool,
+     *   anchor_day: int|null,
+     *   anchor_weekday: int|null,
+     *   max_deviation_days: int,
+     *   per_transaction: array<int, array{id: int, current_date: string, suggested_date: string}>
+     * }
+     */
+    public function analyzeDateAlignment(string $frequency, Collection $transactions): array
+    {
+        $sorted = $transactions->sortBy('date')->values();
+        if ($sorted->isEmpty()) {
+            return [
+                'has_date_drift' => false,
+                'anchor_day' => null,
+                'anchor_weekday' => null,
+                'max_deviation_days' => 0,
+                'per_transaction' => [],
+            ];
+        }
+
+        $anchor = $this->resolveDateAnchor($frequency, $sorted);
+        $perTransaction = [];
+        $maxDeviation = 0;
+
+        foreach ($sorted as $transaction) {
+            $current = Carbon::parse($transaction->date);
+            $suggested = $this->applyAnchorToDate($current, $frequency, $anchor);
+            $deviation = (int) $current->diffInDays($suggested);
+            $maxDeviation = max($maxDeviation, $deviation);
+
+            if (! $current->isSameDay($suggested)) {
+                $perTransaction[] = [
+                    'id' => $transaction->id,
+                    'current_date' => $current->toDateString(),
+                    'suggested_date' => $suggested->toDateString(),
+                ];
+            }
+        }
+
+        return [
+            'has_date_drift' => $perTransaction !== [],
+            'anchor_day' => $anchor['day'] ?? null,
+            'anchor_weekday' => $anchor['weekday'] ?? null,
+            'max_deviation_days' => $maxDeviation,
+            'per_transaction' => $perTransaction,
+        ];
+    }
+
+    /**
+     * Coppie di transazioni cadute nello stesso periodo (possibili doppioni).
+     *
+     * @param  Collection<Transaction>  $transactions
+     * @return array<int, array{transaction_ids: int[], days_apart: int}>
+     */
+    public function detectSamePeriodCollisions(string $frequency, Collection $transactions): array
+    {
+        $sorted = $transactions->sortBy('date')->values();
+        $minGap = RecurrenceDateTolerance::minimumGapBetweenPeriods($frequency);
+        $collisions = [];
+
+        for ($i = 1; $i < $sorted->count(); $i++) {
+            $previous = Carbon::parse($sorted[$i - 1]->date);
+            $current = Carbon::parse($sorted[$i]->date);
+            $daysApart = (int) abs($previous->diffInDays($current));
+
+            if ($daysApart < $minGap) {
+                $collisions[] = [
+                    'transaction_ids' => [$sorted[$i - 1]->id, $sorted[$i]->id],
+                    'days_apart' => $daysApart,
+                ];
+            }
+        }
+
+        return $collisions;
     }
 
     /**
@@ -546,7 +693,7 @@ class RecurrenceDetectionService
         ?string $description = null,
         ?int $accountId = null
     ): bool {
-        $expectedGapDays = self::FREQUENCY_GAPS[$frequency] ?? 30;
+        $expectedGapDays = RecurrenceDateTolerance::expectedGapDaysForFrequency($frequency);
         $graceDays = max(2, $expectedGapDays * 2);
         $staleThreshold = Carbon::today()->subDays($graceDays);
 
@@ -658,6 +805,13 @@ class RecurrenceDetectionService
             return null;
         }
 
+        $representatives = $this->collapseSamePeriodTransactions($sorted, $frequency);
+        $collapsedDates = $representatives->map(fn (Transaction $t) => Carbon::parse($t->date))->all();
+
+        if (count($collapsedDates) < self::MIN_OCCURRENCES) {
+            return null;
+        }
+
         $latest = $sorted->last();
         $confidence = min(0.9, max(0.5, $this->calculateConfidence($sorted, $frequency) - 0.1));
 
@@ -691,5 +845,190 @@ class RecurrenceDetectionService
         $relativeVariance = abs($stdDev / $mean);
 
         return $relativeVariance <= self::VARIABLE_AMOUNT_MAX_VARIANCE;
+    }
+
+    /**
+     * Riduce transazioni nello stesso periodo a un rappresentante per periodo.
+     *
+     * @param  Collection<Transaction>  $sorted
+     * @return Collection<Transaction>
+     */
+    private function collapseSamePeriodTransactions(Collection $sorted, string $frequency): Collection
+    {
+        $minGap = RecurrenceDateTolerance::minimumGapBetweenPeriods($frequency);
+        $periodTransactions = [];
+        $representatives = collect();
+
+        foreach ($sorted as $transaction) {
+            if ($periodTransactions === []) {
+                $periodTransactions[] = $transaction;
+
+                continue;
+            }
+
+            $lastDate = Carbon::parse(end($periodTransactions)->date);
+            $currentDate = Carbon::parse($transaction->date);
+
+            if ((int) abs($currentDate->diffInDays($lastDate)) < $minGap) {
+                $periodTransactions[] = $transaction;
+            } else {
+                $representatives->push($this->pickRepresentativeFromPeriod($periodTransactions));
+                $periodTransactions = [$transaction];
+            }
+        }
+
+        if ($periodTransactions !== []) {
+            $representatives->push($this->pickRepresentativeFromPeriod($periodTransactions));
+        }
+
+        return $representatives->values();
+    }
+
+    /**
+     * @param  Transaction[]  $periodTransactions
+     */
+    private function pickRepresentativeFromPeriod(array $periodTransactions): Transaction
+    {
+        usort(
+            $periodTransactions,
+            fn (Transaction $a, Transaction $b) => Carbon::parse($a->date)->lt(Carbon::parse($b->date)) ? -1 : 1
+        );
+
+        $middleIndex = (int) floor((count($periodTransactions) - 1) / 2);
+
+        return $periodTransactions[$middleIndex];
+    }
+
+    /**
+     * @param  Collection<Transaction>  $transactions
+     * @return array{day?: int, weekday?: int, month?: int, month_day?: int}
+     */
+    private function resolveDateAnchor(string $frequency, Collection $transactions): array
+    {
+        return match ($frequency) {
+            'weekly' => [
+                'weekday' => (int) $transactions
+                    ->map(fn (Transaction $t) => Carbon::parse($t->date)->dayOfWeek)
+                    ->countBy()
+                    ->sortDesc()
+                    ->keys()
+                    ->first(),
+            ],
+            'yearly' => [
+                'month' => (int) $transactions
+                    ->map(fn (Transaction $t) => Carbon::parse($t->date)->month)
+                    ->countBy()
+                    ->sortDesc()
+                    ->keys()
+                    ->first(),
+                'month_day' => (int) $transactions
+                    ->map(fn (Transaction $t) => Carbon::parse($t->date)->day)
+                    ->countBy()
+                    ->sortDesc()
+                    ->keys()
+                    ->first(),
+            ],
+            'daily' => [],
+            default => [
+                'day' => (int) $transactions
+                    ->map(fn (Transaction $t) => Carbon::parse($t->date)->day)
+                    ->countBy()
+                    ->sortDesc()
+                    ->keys()
+                    ->first(),
+            ],
+        };
+    }
+
+    /**
+     * @param  array{day?: int, weekday?: int, month?: int, month_day?: int}  $anchor
+     */
+    private function applyAnchorToDate(Carbon $date, string $frequency, array $anchor): Carbon
+    {
+        return match ($frequency) {
+            'weekly' => $date->copy()->addDays(
+                ($anchor['weekday'] ?? $date->dayOfWeek) - $date->dayOfWeek
+            ),
+            'yearly' => $date->copy()
+                ->month($anchor['month'] ?? $date->month)
+                ->day(min(
+                    $anchor['month_day'] ?? $date->day,
+                    $date->copy()->month($anchor['month'] ?? $date->month)->daysInMonth
+                )),
+            'daily' => $date->copy(),
+            default => $date->copy()->day(min($anchor['day'] ?? $date->day, $date->daysInMonth)),
+        };
+    }
+
+    /**
+     * @param  Collection<Transaction>  $transactions
+     * @param  array{
+     *   has_date_drift: bool,
+     *   anchor_day: int|null,
+     *   anchor_weekday: int|null,
+     *   max_deviation_days: int,
+     *   per_transaction: array<int, array{id: int, current_date: string, suggested_date: string}>
+     * }  $alignment
+     */
+    private function resolveStartDateForAccept(
+        Collection $transactions,
+        string $frequency,
+        ?string $dateAlignmentMode,
+        array $alignment,
+    ): Carbon {
+        $first = Carbon::parse($transactions->first()->date);
+
+        if ($dateAlignmentMode !== 'anchor_start' || ! $alignment['has_date_drift']) {
+            return $first;
+        }
+
+        return $this->applyAnchorToDate(
+            $first,
+            $frequency,
+            $this->resolveDateAnchor($frequency, $transactions->sortBy('date')->values()),
+        );
+    }
+
+    /**
+     * @param  Carbon[]  $actualDates
+     * @return string[]
+     */
+    private function missingPeriodLabelsBetween(
+        Carbon $afterDate,
+        Carbon $beforeDate,
+        string $frequency,
+        array $actualDates,
+    ): array {
+        $window = RecurrenceDateTolerance::windowDaysForFrequency($frequency);
+        $projected = RecurrenceDateTolerance::projectOccurrencesBetween(
+            $afterDate->copy(),
+            $beforeDate->copy(),
+            $frequency,
+        );
+
+        $labels = [];
+        foreach ($projected as $occurrence) {
+            if ($occurrence->isSameDay($afterDate) || $occurrence->isSameDay($beforeDate)) {
+                continue;
+            }
+
+            if ($occurrence->lte($afterDate) || $occurrence->gte($beforeDate)) {
+                continue;
+            }
+
+            $covered = false;
+            foreach ($actualDates as $actual) {
+                if ($actual->diffInDays($occurrence) <= $window) {
+                    $covered = true;
+                    break;
+                }
+            }
+
+            if (! $covered) {
+                $labels[] = RecurrenceDateTolerance::labelForOccurrenceDate($occurrence, $frequency);
+            }
+        }
+
+        return array_values(array_unique($labels));
     }
 }

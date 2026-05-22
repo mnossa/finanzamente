@@ -29,6 +29,26 @@ interface TransactionPreview {
     amount: number;
 }
 
+interface GapDetail {
+    type: 'internal' | 'trailing';
+    after_date: string;
+    before_date: string | null;
+    gap_days: number;
+    estimated_missing: number;
+    missing_period_labels: string[];
+}
+
+interface DateAlignmentPreview {
+    id: number;
+    current_date: string;
+    suggested_date: string;
+}
+
+interface SamePeriodCollision {
+    transaction_ids: number[];
+    days_apart: number;
+}
+
 interface Suggestion {
     id: number;
     amount: number;
@@ -48,6 +68,13 @@ interface Suggestion {
     internal_missing_occurrences: number;
     has_trailing_gap: boolean;
     trailing_missing_occurrences: number;
+    gaps: GapDetail[];
+    has_date_drift: boolean;
+    anchor_day: number | null;
+    anchor_weekday: number | null;
+    max_deviation_days: number;
+    date_alignment_preview: DateAlignmentPreview[];
+    same_period_collisions: SamePeriodCollision[];
     first_transaction_date: string | null;
     last_transaction_date: string | null;
     amount_change_guidance: {
@@ -100,23 +127,47 @@ function formatDate(dateString: string): string {
     }).format(new Date(dateString));
 }
 
+type DateAlignmentMode = 'anchor_start' | 'shift_transactions';
+
 function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
     suggestion: Suggestion;
-    onAccept: (mode?: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps') => void;
+    onAccept: (
+        mode?: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps',
+        dateAlignmentMode?: DateAlignmentMode,
+    ) => void;
     onIgnore: () => void;
     processing: boolean;
 }) {
     const [expanded, setExpanded] = useState(false);
     const [showGuidanceDetails, setShowGuidanceDetails] = useState(false);
     const [showActionLegend, setShowActionLegend] = useState(false);
+    const [dateAlignmentMode, setDateAlignmentMode] = useState<DateAlignmentMode | null>(null);
     const isExpense = suggestion.amount < 0;
     const hasGuidance = Boolean(
-        suggestion.will_auto_close || suggestion.has_gaps || suggestion.amount_change_guidance
+        suggestion.will_auto_close || suggestion.has_gaps || suggestion.has_date_drift || suggestion.amount_change_guidance
     );
     const hasManualActive = suggestion.has_gaps || suggestion.amount_change_guidance?.recommended_mode === 'active';
     const hasManualClosed = suggestion.has_gaps || suggestion.amount_change_guidance?.recommended_mode === 'closed';
     const hasFillGapsMode = suggestion.has_gaps;
     const hasAutoMode = true;
+
+    const requiresDateAlignmentChoice = suggestion.has_date_drift && dateAlignmentMode === null;
+    const acceptDisabled = processing || requiresDateAlignmentChoice;
+
+    const acceptWithOptions = (
+        mode: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps' = 'auto',
+    ) => {
+        if (requiresDateAlignmentChoice) {
+            return;
+        }
+        onAccept(mode, dateAlignmentMode ?? undefined);
+    };
+
+    const anchorLabel = suggestion.detected_frequency === 'weekly' && suggestion.anchor_weekday !== null
+        ? ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'][suggestion.anchor_weekday]
+        : suggestion.anchor_day !== null
+            ? `giorno ${suggestion.anchor_day}`
+            : 'data canonica';
 
     return (
         <CardBox
@@ -190,6 +241,11 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                             ⛳ Buchi rilevati
                         </span>
                     )}
+                    {suggestion.has_date_drift && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                            📅 Date non uniformi
+                        </span>
+                    )}
                     {suggestion.will_auto_close && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
                             ⏹ Auto-dismessa
@@ -225,7 +281,32 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                                 )}
                                 {suggestion.has_gaps && (
                                     <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-800/60 dark:bg-indigo-900/20 dark:text-indigo-300">
-                                        Ho trovato buchi nel pattern ({suggestion.missing_occurrences} occorrenze mancanti, gap max {suggestion.largest_gap_days} giorni).
+                                        <p>
+                                            Ho trovato buchi nel pattern ({suggestion.missing_occurrences} occorrenze mancanti, gap max {suggestion.largest_gap_days} giorni).
+                                        </p>
+                                        {suggestion.gaps.length > 0 && (
+                                            <ol className="mt-2 list-decimal list-inside space-y-1">
+                                                {suggestion.gaps.map((gap, index) => (
+                                                    <li key={`${gap.type}-${gap.after_date}-${index}`}>
+                                                        {gap.type === 'trailing' ? (
+                                                            <>
+                                                                Dopo il {formatDate(gap.after_date)} fino a oggi ({gap.gap_days} giorni)
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Tra {formatDate(gap.after_date)} e {formatDate(gap.before_date ?? '')}
+                                                                {' '}({gap.gap_days} giorni)
+                                                            </>
+                                                        )}
+                                                        {gap.missing_period_labels.length > 0 && (
+                                                            <span className="block pl-4 text-indigo-700/90 dark:text-indigo-200">
+                                                                Mancanti: {gap.missing_period_labels.join(', ')}
+                                                            </span>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        )}
                                         {suggestion.has_trailing_gap && suggestion.has_internal_gaps ? (
                                             <span className="block mt-1">
                                                 Ci sono sia buchi interni che un buco finale: in genere conviene <span className="font-semibold">Forza Dismessa</span> (serie probabilmente terminata), poi verifica manualmente eventuali mesi mancanti.
@@ -238,6 +319,58 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                                             <span className="block mt-1">
                                                 I buchi risultano interni alla serie ({suggestion.internal_missing_occurrences}): in genere conviene <span className="font-semibold">Forza Attiva</span>, verificando eventuali dimenticanze.
                                             </span>
+                                        )}
+                                    </div>
+                                )}
+                                {suggestion.has_date_drift && (
+                                    <div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-800 dark:border-violet-800/60 dark:bg-violet-900/20 dark:text-violet-300">
+                                        <p className="font-semibold">Date non uniformi (scostamento max {suggestion.max_deviation_days} giorni)</p>
+                                        <p className="mt-1">
+                                            Giorno ricorrente suggerito: <span className="font-semibold">{anchorLabel}</span>.
+                                            Scegli come uniformare prima di accettare:
+                                        </p>
+                                        <div className="mt-2 space-y-1">
+                                            <label className="flex items-start gap-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name={`alignment-${suggestion.id}`}
+                                                    className="mt-0.5"
+                                                    checked={dateAlignmentMode === 'anchor_start'}
+                                                    onChange={() => setDateAlignmentMode('anchor_start')}
+                                                />
+                                                <span>
+                                                    Solo data di inizio ricorrenza sul {anchorLabel} (le transazioni restano come sono)
+                                                </span>
+                                            </label>
+                                            <label className="flex items-start gap-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name={`alignment-${suggestion.id}`}
+                                                    className="mt-0.5"
+                                                    checked={dateAlignmentMode === 'shift_transactions'}
+                                                    onChange={() => setDateAlignmentMode('shift_transactions')}
+                                                />
+                                                <span>
+                                                    Allinea anche le date delle transazioni collegate ({suggestion.date_alignment_preview.length} da aggiornare)
+                                                </span>
+                                            </label>
+                                        </div>
+                                        {suggestion.date_alignment_preview.length > 0 && expanded && (
+                                            <ul className="mt-2 space-y-0.5 pl-4 text-violet-700/90 dark:text-violet-200">
+                                                {suggestion.date_alignment_preview.slice(0, 5).map((row) => (
+                                                    <li key={row.id}>
+                                                        {formatDate(row.current_date)} → {formatDate(row.suggested_date)}
+                                                    </li>
+                                                ))}
+                                                {suggestion.date_alignment_preview.length > 5 && (
+                                                    <li>…e altre {suggestion.date_alignment_preview.length - 5}</li>
+                                                )}
+                                            </ul>
+                                        )}
+                                        {suggestion.same_period_collisions.length > 0 && (
+                                            <p className="mt-2 text-violet-700/90 dark:text-violet-200">
+                                                Attenzione: {suggestion.same_period_collisions.length} coppie di movimenti molto vicini nello stesso periodo (possibili doppioni manuali).
+                                            </p>
                                         )}
                                     </div>
                                 )}
@@ -308,32 +441,32 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                         <>
                             <button
                                 type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('active')}
+                                disabled={acceptDisabled}
+                                onClick={() => acceptWithOptions('active')}
                                 className="w-full min-h-[44px] rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                             >
                                 Forza Attiva
                             </button>
                             <button
                                 type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('active_fill_gaps')}
+                                disabled={acceptDisabled}
+                                onClick={() => acceptWithOptions('active_fill_gaps')}
                                 className="w-full min-h-[44px] rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-teal-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                             >
                                 Attiva + Inserisci Buchi
                             </button>
                             <button
                                 type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('closed')}
+                                disabled={acceptDisabled}
+                                onClick={() => acceptWithOptions('closed')}
                                 className="w-full min-h-[44px] rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                             >
                                 Forza Dismessa
                             </button>
                             <button
                                 type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('closed_fill_gaps')}
+                                disabled={acceptDisabled}
+                                onClick={() => acceptWithOptions('closed_fill_gaps')}
                                 className="w-full min-h-[44px] rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                             >
                                 Dismessa + Inserisci Buchi
@@ -345,7 +478,7 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                                 <button
                                     type="button"
                                     disabled={processing}
-                                    onClick={() => onAccept('closed')}
+                                    onClick={() => acceptWithOptions('closed')}
                                     className="w-full min-h-[44px] rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                                 >
                                     Forza Dismessa
@@ -355,7 +488,7 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                                 <button
                                     type="button"
                                     disabled={processing}
-                                    onClick={() => onAccept('active')}
+                                    onClick={() => acceptWithOptions('active')}
                                     className="w-full min-h-[44px] rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                                 >
                                     Forza Attiva
@@ -363,8 +496,8 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                             )}
                             <button
                                 type="button"
-                                disabled={processing}
-                                onClick={() => onAccept('auto')}
+                                disabled={acceptDisabled}
+                                onClick={() => acceptWithOptions('auto')}
                                 className="w-full min-h-[44px] rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 sm:w-auto sm:min-h-0"
                             >
                                 Applica Auto
@@ -418,10 +551,14 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
 
     const handleAccept = (
         suggestion: Suggestion,
-        mode: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps' = 'auto'
+        mode: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps' = 'auto',
+        dateAlignmentMode?: 'anchor_start' | 'shift_transactions',
     ) => {
         setProcessingId(suggestion.id);
-        router.post(route('recurrence-detection.accept', suggestion.id), { mode }, {
+        router.post(route('recurrence-detection.accept', suggestion.id), {
+            mode,
+            date_alignment_mode: dateAlignmentMode,
+        }, {
             onFinish: () => setProcessingId(null),
         });
     };
@@ -504,7 +641,7 @@ export default function Suggestions({ suggestions }: SuggestionsProps) {
                                 key={suggestion.id}
                                 suggestion={suggestion}
                                 processing={processingId === suggestion.id}
-                                onAccept={(mode) => handleAccept(suggestion, mode ?? 'auto')}
+                                onAccept={(mode, dateAlignmentMode) => handleAccept(suggestion, mode ?? 'auto', dateAlignmentMode)}
                                 onIgnore={() => handleIgnore(suggestion)}
                             />
                         ))}

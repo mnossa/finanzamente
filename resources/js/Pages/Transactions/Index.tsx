@@ -4,8 +4,8 @@ import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
-import EyeIcon from '@/Components/Icons/EyeIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
+import TransactionListRow from '@/Components/TransactionListRow';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import SectionBadge from '@/Components/SectionBadge';
@@ -13,7 +13,6 @@ import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
-import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
 import CardBox from '@/Components/CardBox';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -94,6 +93,7 @@ interface Filters {
     tag_id?: string;
     is_tax_deductible?: string;
     description?: string;
+    description_regex?: string;
     amount_min?: string;
     amount_max?: string;
 }
@@ -127,6 +127,9 @@ function buildReturnIndexQuery(filters: Filters, currentPage: number, includePag
     if (filters.description) {
         q.description = filters.description;
     }
+    if (filters.description_regex === '1') {
+        q.description_regex = '1';
+    }
     if (filters.amount_min) {
         q.amount_min = filters.amount_min;
     }
@@ -149,10 +152,16 @@ function returnIndexQueryJson(filters: Filters, currentPage: number, includePage
 function filtersToQueryParams(f: Filters): Record<string, string> {
     const o: Record<string, string> = {};
     (Object.entries(f) as [keyof Filters, string | undefined][]).forEach(([k, v]) => {
+        if (k === 'description_regex') {
+            return;
+        }
         if (v !== undefined && v !== '') {
             o[k] = v;
         }
     });
+    if (f.description_regex === '1' && f.description) {
+        o.description_regex = '1';
+    }
 
     return o;
 }
@@ -169,7 +178,13 @@ function filtersQuerySignature(f: Filters): string {
 }
 
 function countActiveFilters(f: Filters): number {
-    return Object.values(f).filter((v) => v !== undefined && v !== '').length;
+    return (Object.entries(f) as [keyof Filters, string | undefined][]).filter(([k, v]) => {
+        if (k === 'description_regex') {
+            return false;
+        }
+
+        return v !== undefined && v !== '';
+    }).length;
 }
 
 function computeNextFilters(filters: Filters, categories: Category[], key: string, value: string): Filters {
@@ -428,149 +443,6 @@ function BulkEditModal({
                         Applica modifiche
                     </button>
                 </div>
-            </div>
-        </div>
-    );
-}
-
-
-function TransactionRow({ transaction, onDeleteClick, isSelected, onToggleSelect, indexQuery }: {
-    transaction: Transaction;
-    onDeleteClick: (id: number, description: string) => void;
-    isSelected: boolean;
-    onToggleSelect: (id: number) => void;
-    indexQuery: IndexReturnQuery;
-}) {
-    const isIncome = transaction.amount > 0;
-    const isTransfer = transaction.transfer_id !== null;
-    const isRefund = transaction.refund_id !== null;
-    const hasRefunds = transaction.has_refunds;
-    const isRecurring = transaction.recurring_transaction_id !== null;
-
-    return (
-        <div className={clsx(
-            "group flex items-center border-b border-gray-100 py-3 last:border-0 -mx-4 px-3 sm:px-4 transition-colors",
-            isSelected ? "bg-emerald-50 dark:bg-emerald-900/20" : "hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
-        )}>
-            {/* Checkbox */}
-            <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => onToggleSelect(transaction.id)}
-                className="mr-2 h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-            />
-
-            {/* Icona categoria */}
-            <div
-                className="mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base"
-                style={{
-                    backgroundColor: isTransfer
-                        ? '#f59e0b20'
-                        : isRefund
-                          ? '#3b82f620'
-                          : transaction.category?.color
-                            ? `${transaction.category.color}20`
-                            : isIncome
-                              ? '#22c55e20'
-                              : '#ef444420',
-                }}
-            >
-                {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
-            </div>
-
-            {isRecurring && (
-                <span
-                    className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm text-violet-700 dark:bg-violet-900/40 dark:text-violet-300"
-                    title="Generata da ricorrenza"
-                    aria-label="Generata da ricorrenza"
-                >
-                    🔁
-                </span>
-            )}
-
-            {/* Corpo — link su tutta la riga su mobile */}
-            <Link
-                href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
-                className="min-w-0 flex-1"
-            >
-                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
-                    {transaction.description || transaction.category?.name || 'Transazione'}
-                    {transaction.is_private && (
-                        <span className="ml-1.5 inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            🔒
-                        </span>
-                    )}
-                    {transaction.is_tax_deductible && (
-                        <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                            📋
-                        </span>
-                    )}
-                </p>
-                <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                    {transaction.account.name} · {formatDate(transaction.date)}
-                    {isTransfer && <span className="ml-1 text-amber-500">· Trasferimento</span>}
-                    {isRefund && <span className="ml-1 text-blue-500">· Rimborso</span>}
-                    {hasRefunds && (
-                        <span className={clsx('ml-1', transaction.is_fully_refunded ? 'text-green-500' : 'text-amber-500')}>
-                            · {transaction.is_fully_refunded ? '✓ Rimborsato' : '◐ Parz. rimborsato'}
-                        </span>
-                    )}
-                </p>
-                {transaction.tags && transaction.tags.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                        {transaction.tags.map((tag) => (
-                            <span
-                                key={tag.id}
-                                className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                                style={{
-                                    backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
-                                    color: tag.color || '#374151',
-                                }}
-                            >
-                                {tag.name}
-                            </span>
-                        ))}
-                    </div>
-                )}
-            </Link>
-
-            {/* Importo + azioni */}
-            <div className="ml-2 flex shrink-0 items-center gap-1 sm:gap-2">
-                <p className={clsx('text-base font-semibold tabular-nums', isIncome ? 'text-green-500' : 'text-red-500')}>
-                    {isIncome ? '+' : ''}
-                    {formatCurrency(transaction.amount, transaction.account.currency_code)}
-                </p>
-                {/* Azioni — visibili solo su desktop o al hover */}
-                <div className="hidden sm:flex items-center gap-1">
-                    <Link
-                        href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
-                        title="Visualizza"
-                    >
-                        <EyeIcon size={16} />
-                    </Link>
-                    <Link
-                        href={route('transactions.edit', { transaction: transaction.id, ...indexQuery })}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                        title="Modifica"
-                    >
-                        <PencilIcon size={16} />
-                    </Link>
-                    <button
-                        onClick={() => onDeleteClick(transaction.id, transaction.description || transaction.category?.name || 'questa transazione')}
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                        title="Elimina"
-                    >
-                        <TrashIcon size={16} />
-                    </button>
-                </div>
-                {/* Freccia chevron su mobile */}
-                <span className="sm:hidden text-gray-300 dark:text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m9 18 6-6-6-6" />
-                    </svg>
-                </span>
             </div>
         </div>
     );
@@ -1031,9 +903,41 @@ export default function Index({
                                                     applyFilters();
                                                 }
                                             }}
-                                            placeholder="es. supermercato coop"
+                                            placeholder={
+                                                draftFilters.description_regex === '1'
+                                                    ? 'es. ^Pagamento|carte'
+                                                    : 'es. supermercato coop'
+                                            }
                                             aria-label="Cerca nella descrizione"
                                         />
+                                        <label className="mt-1 flex cursor-pointer items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                            <input
+                                                id="filter-description-regex"
+                                                type="checkbox"
+                                                checked={draftFilters.description_regex === '1'}
+                                                onChange={(e) => {
+                                                    setDraftFilters((prev) => {
+                                                        const next = { ...prev };
+                                                        if (e.target.checked) {
+                                                            next.description_regex = '1';
+                                                        } else {
+                                                            delete next.description_regex;
+                                                        }
+
+                                                        return next;
+                                                    });
+                                                }}
+                                                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800"
+                                            />
+                                            Usa espressione regolare
+                                        </label>
+                                        {draftFilters.description_regex === '1' && (
+                                            <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-500">
+                                                Esempi: <code className="text-gray-600 dark:text-gray-400">^Bolletta</code>,{' '}
+                                                <code className="text-gray-600 dark:text-gray-400">carte|pos</code>,{' '}
+                                                <code className="text-gray-600 dark:text-gray-400">ess.*unga</code>
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-36">
                                         <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Importo da (€)</span>
@@ -1129,7 +1033,7 @@ export default function Index({
                                 </div>
                                 <div className="p-4">
                                     {transactions.data.map((transaction) => (
-                                        <TransactionRow
+                                        <TransactionListRow
                                             key={transaction.id}
                                             transaction={transaction}
                                             onDeleteClick={openDeleteDialog}

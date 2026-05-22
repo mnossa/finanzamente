@@ -84,13 +84,15 @@ class RecurrenceDetectionController extends Controller
 
         $validated = $request->validate([
             'mode' => 'nullable|in:auto,active,closed,closed_fill_gaps,active_fill_gaps',
+            'date_alignment_mode' => 'nullable|in:anchor_start,shift_transactions',
         ]);
 
         try {
             $result = $this->detectionService->acceptSuggestion(
                 $suggestion,
                 $this->recurringService,
-                $validated['mode'] ?? 'auto'
+                $validated['mode'] ?? 'auto',
+                $validated['date_alignment_mode'] ?? null,
             );
         } catch (DomainException $e) {
             return redirect()->route('recurrence-detection.index')
@@ -98,6 +100,12 @@ class RecurrenceDetectionController extends Controller
         }
 
         $message = 'Ricorrenza creata e transazioni collegate.';
+        if ($result->alignedTransactionCount > 0) {
+            $message .= sprintf(
+                ' Uniformate %d date delle transazioni collegate.',
+                $result->alignedTransactionCount
+            );
+        }
         if ($result->removedFutureTransactionCount > 0) {
             $message .= sprintf(
                 ' Rimosse %d transazioni future già registrate (verranno ricreate allo scadenziario dalla ricorrenza).',
@@ -138,17 +146,27 @@ class RecurrenceDetectionController extends Controller
 
         // Include soft-delete: altrimenti l'anteprima risulta vuota se l'utente ha eliminato
         // movimenti dopo il rilevamento, e acceptSuggestion andrebbe in errore su ->first().
-        $transactions = Transaction::withTrashed()
+        $transactionModels = Transaction::withTrashed()
             ->whereIn('id', $ids)
             ->where('account_id', $s->account_id)
             ->orderBy('date')
-            ->get(['id', 'date', 'description', 'amount'])
-            ->map(fn ($t) => [
-                'id' => $t->id,
-                'date' => $t->date->format('Y-m-d'),
-                'description' => $t->description,
-                'amount' => (float) $t->amount,
-            ]);
+            ->get(['id', 'date', 'description', 'amount']);
+
+        $transactions = $transactionModels->map(fn ($t) => [
+            'id' => $t->id,
+            'date' => $t->date->format('Y-m-d'),
+            'description' => $t->description,
+            'amount' => (float) $t->amount,
+        ]);
+
+        $dateAlignment = $this->detectionService->analyzeDateAlignment(
+            $s->detected_frequency,
+            $transactionModels,
+        );
+        $samePeriodCollisions = $this->detectionService->detectSamePeriodCollisions(
+            $s->detected_frequency,
+            $transactionModels,
+        );
 
         $lastTransactionDate = $transactions->isNotEmpty()
             ? Carbon::parse($transactions->last()['date'])
@@ -187,6 +205,13 @@ class RecurrenceDetectionController extends Controller
             'internal_missing_occurrences' => $gapInsights['internal_missing_occurrences'],
             'has_trailing_gap' => $gapInsights['has_trailing_gap'],
             'trailing_missing_occurrences' => $gapInsights['trailing_missing_occurrences'],
+            'gaps' => $gapInsights['gaps'],
+            'has_date_drift' => $dateAlignment['has_date_drift'],
+            'anchor_day' => $dateAlignment['anchor_day'],
+            'anchor_weekday' => $dateAlignment['anchor_weekday'],
+            'max_deviation_days' => $dateAlignment['max_deviation_days'],
+            'date_alignment_preview' => $dateAlignment['per_transaction'],
+            'same_period_collisions' => $samePeriodCollisions,
             'first_transaction_date' => $transactions->isNotEmpty()
                 ? $transactions->first()['date']
                 : null,

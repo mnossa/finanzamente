@@ -36,7 +36,7 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
-import { moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
 
 /** Padding widget dashboard: compatto su mobile, come le altre sezioni. */
@@ -177,8 +177,8 @@ interface DashboardProps {
     recentTransactions: Transaction[];
     monthlyStats: MonthlyStats;
     lastMonthStats: MonthlyStats;
-    currentMonth: string;
-    lastMonth: string;
+    periodLabel: string;
+    previousPeriodLabel: string;
     activeBudgets: ActiveBudget[];
     openDebtsCredits: OpenDebtCredit[];
     debtsCreditsSummary: DebtsCreditsSummary;
@@ -370,8 +370,8 @@ export default function Dashboard({
     recentTransactions,
     monthlyStats,
     lastMonthStats,
-    currentMonth,
-    lastMonth,
+    periodLabel,
+    previousPeriodLabel,
     activeBudgets,
     openDebtsCredits,
     debtsCreditsSummary,
@@ -459,11 +459,21 @@ export default function Dashboard({
 
             case 'monthly_stats':
                 return (
-                    <div className={moneyKpiGrid4}>
-                        <StatCard title="Entrate" value={formatCurrency(monthlyStats.income)} subtitle={currentMonth} trend={incomeTrend >= 0 ? 'up' : 'down'} trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${lastMonth}`} />
-                        <StatCard title="Uscite" value={formatCurrency(monthlyStats.expenses)} subtitle={currentMonth} trend={expensesTrend <= 0 ? 'up' : 'down'} trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${lastMonth}`} />
-                        <StatCard title="Saldo Netto" value={formatCurrency(monthlyStats.net)} subtitle={currentMonth} trend={monthlyStats.net >= 0 ? 'up' : 'down'} />
-                        <StatCard title="Transazioni" value={monthlyStats.transaction_count.toString()} subtitle={currentMonth} />
+                    <div className={moneyKpiGrid2}>
+                        <StatCard
+                            title="Entrate"
+                            value={formatCurrency(monthlyStats.income)}
+                            subtitle={periodLabel}
+                            trend={incomeTrend >= 0 ? 'up' : 'down'}
+                            trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${previousPeriodLabel.toLowerCase()}`}
+                        />
+                        <StatCard
+                            title="Uscite"
+                            value={formatCurrency(monthlyStats.expenses)}
+                            subtitle={periodLabel}
+                            trend={expensesTrend <= 0 ? 'up' : 'down'}
+                            trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${previousPeriodLabel.toLowerCase()}`}
+                        />
                     </div>
                 );
 

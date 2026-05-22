@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
+use App\Support\RecurrenceDateTolerance;
 use App\Support\RecurringOccurrenceLabel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -67,12 +68,11 @@ class RecurringTransactionService
                     continue;
                 }
 
-                // Verifica che non esista già una transazione per questa data
-                $exists = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
-                    ->whereDate('date', $occurrenceDate->toDateString())
-                    ->exists();
-
-                if (! $exists) {
+                if (! RecurrenceDateTolerance::hasOccurrenceNearDate(
+                    $recurringTransaction->id,
+                    $occurrenceDate,
+                    $recurringTransaction->frequency,
+                )) {
                     $this->createTransactionFromRecurring($recurringTransaction, $occurrenceDate->copy());
                     $generatedCount++;
                     $lastGenerated = $occurrenceDate->copy();
@@ -126,11 +126,11 @@ class RecurringTransactionService
         DB::beginTransaction();
         try {
             foreach ($occurrences as $occurrenceDate) {
-                $exists = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
-                    ->whereDate('date', $occurrenceDate->toDateString())
-                    ->exists();
-
-                if (! $exists) {
+                if (! RecurrenceDateTolerance::hasOccurrenceNearDate(
+                    $recurringTransaction->id,
+                    $occurrenceDate,
+                    $recurringTransaction->frequency,
+                )) {
                     $this->createTransactionFromRecurring($recurringTransaction, $occurrenceDate->copy());
                     $generatedCount++;
                 }
@@ -159,12 +159,11 @@ class RecurringTransactionService
             return null;
         }
 
-        // Verifica che non esista già
-        $exists = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
-            ->whereDate('date', $nextDate)
-            ->exists();
-
-        if ($exists) {
+        if (RecurrenceDateTolerance::hasOccurrenceNearDate(
+            $recurringTransaction->id,
+            $nextDate,
+            $recurringTransaction->frequency,
+        )) {
             return null;
         }
 
@@ -505,44 +504,87 @@ class RecurringTransactionService
             return new RecurringReconcileResult;
         }
 
-        $expectedDates = collect($this->calculateOccurrences(
+        $expectedOccurrences = $this->calculateOccurrences(
             $recurringTransaction->start_date,
             $endLimit,
             $recurringTransaction->frequency
-        ))->map(fn (Carbon $d) => $d->toDateString())->flip();
+        );
+        $frequency = $recurringTransaction->frequency;
 
         $linked = Transaction::query()
             ->where('recurring_transaction_id', $recurringTransaction->id)
+            ->orderBy('date')
+            ->orderBy('id')
             ->get();
 
         $result = new RecurringReconcileResult;
         $affectedAccountIds = [];
+        $slotAssignments = [];
+        $toRemove = [];
+
+        foreach ($linked as $transaction) {
+            $txDate = Carbon::parse($transaction->date);
+            $slotIndex = RecurrenceDateTolerance::findMatchingExpectedSlotIndex(
+                $txDate,
+                $expectedOccurrences,
+                $frequency,
+            );
+
+            if ($slotIndex === null) {
+                $toRemove[] = $transaction;
+
+                continue;
+            }
+
+            if (! isset($slotAssignments[$slotIndex])) {
+                $slotAssignments[$slotIndex] = $transaction;
+
+                continue;
+            }
+
+            $existing = $slotAssignments[$slotIndex];
+            $expectedDate = $expectedOccurrences[$slotIndex];
+            $existingDistance = (int) abs(Carbon::parse($existing->date)->diffInDays($expectedDate));
+            $newDistance = (int) abs($txDate->diffInDays($expectedDate));
+
+            if ($newDistance < $existingDistance) {
+                $toRemove[] = $existing;
+                $slotAssignments[$slotIndex] = $transaction;
+            } elseif ($newDistance === $existingDistance && $txDate->lt(Carbon::parse($existing->date))) {
+                $toRemove[] = $existing;
+                $slotAssignments[$slotIndex] = $transaction;
+            } else {
+                $toRemove[] = $transaction;
+            }
+        }
 
         DB::beginTransaction();
         try {
-            foreach ($linked as $transaction) {
-                $dateKey = Carbon::parse($transaction->date)->toDateString();
-
-                if (! $expectedDates->has($dateKey)) {
-                    $affectedAccountIds[] = $transaction->account_id;
-                    $transaction->delete();
-                    $result->removed++;
-                }
+            foreach ($toRemove as $transaction) {
+                $affectedAccountIds[] = $transaction->account_id;
+                $transaction->delete();
+                $result->removed++;
             }
 
-            foreach ($expectedDates->keys() as $expectedDate) {
-                $exists = Transaction::where('recurring_transaction_id', $recurringTransaction->id)
-                    ->whereDate('date', $expectedDate)
-                    ->exists();
-
-                if (! $exists) {
-                    $this->createTransactionFromRecurring(
-                        $recurringTransaction,
-                        Carbon::parse($expectedDate)
-                    );
-                    $affectedAccountIds[] = $recurringTransaction->account_id;
-                    $result->created++;
+            foreach ($expectedOccurrences as $index => $expectedDate) {
+                if (isset($slotAssignments[$index])) {
+                    continue;
                 }
+
+                if (RecurrenceDateTolerance::hasOccurrenceNearDate(
+                    $recurringTransaction->id,
+                    $expectedDate,
+                    $frequency,
+                )) {
+                    continue;
+                }
+
+                $this->createTransactionFromRecurring(
+                    $recurringTransaction,
+                    $expectedDate->copy()
+                );
+                $affectedAccountIds[] = $recurringTransaction->account_id;
+                $result->created++;
             }
 
             $this->syncLastGeneratedDateFromLinkedTransactions($recurringTransaction);

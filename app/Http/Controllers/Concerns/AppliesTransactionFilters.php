@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Models\Transaction;
 use App\Models\User;
+use App\Support\TransactionDescriptionFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -13,7 +15,19 @@ trait AppliesTransactionFilters
      */
     protected function transactionFilterKeys(): array
     {
-        return ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id'];
+        return [
+            'account_id',
+            'category_id',
+            'type',
+            'from',
+            'to',
+            'is_tax_deductible',
+            'tag_id',
+            'description',
+            'description_regex',
+            'amount_min',
+            'amount_max',
+        ];
     }
 
     protected function applyTransactionFilters(Builder $query, Request $request, int $householdId, User $user): Builder
@@ -57,6 +71,50 @@ trait AppliesTransactionFilters
             });
         }
 
+        TransactionDescriptionFilter::apply(
+            $query,
+            $request->input('description'),
+            $request->boolean('description_regex')
+        );
+
+        $amountMin = $request->filled('amount_min') && is_numeric($request->amount_min)
+            ? (float) $request->amount_min
+            : null;
+        $amountMax = $request->filled('amount_max') && is_numeric($request->amount_max)
+            ? (float) $request->amount_max
+            : null;
+        if ($amountMin !== null || $amountMax !== null) {
+            $this->applyAbsoluteAmountRangeFilter($query, $amountMin, $amountMax);
+        }
+
         return $query;
+    }
+
+    /**
+     * Filtra per valore assoluto dell'importo (entrate positive e uscite negative).
+     *
+     * @param  Builder<Transaction>  $query
+     */
+    protected function applyAbsoluteAmountRangeFilter(Builder $query, ?float $min, ?float $max): void
+    {
+        $query->where(function ($q) use ($min, $max) {
+            $q->where(function ($positive) use ($min, $max) {
+                $positive->where('transactions.amount', '>=', 0);
+                if ($min !== null && $min >= 0) {
+                    $positive->where('transactions.amount', '>=', $min);
+                }
+                if ($max !== null && $max >= 0) {
+                    $positive->where('transactions.amount', '<=', $max);
+                }
+            })->orWhere(function ($negative) use ($min, $max) {
+                $negative->where('transactions.amount', '<', 0);
+                if ($min !== null && $min >= 0) {
+                    $negative->where('transactions.amount', '<=', -$min);
+                }
+                if ($max !== null && $max >= 0) {
+                    $negative->where('transactions.amount', '>=', -$max);
+                }
+            });
+        });
     }
 }

@@ -66,7 +66,7 @@ class ActiveAccountsTotalsTest extends TestCase
     }
 
     #[Test]
-    public function dashboard_monthly_stats_ignore_archived_accounts_transactions(): void
+    public function dashboard_period_stats_ignore_archived_accounts_transactions(): void
     {
         $activeAccount = Account::factory()->create([
             'household_id' => $this->household->id,

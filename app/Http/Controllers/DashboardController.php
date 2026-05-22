@@ -101,17 +101,19 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Statistiche mensili (mese corrente)
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $endOfMonth = Carbon::now()->endOfMonth();
+        // Statistiche rolling: ultimi 30 giorni vs 30 giorni precedenti
+        $periodLabel = 'Ultimi 30 giorni';
+        $previousPeriodLabel = '30 giorni precedenti';
 
-        $monthlyStats = $this->getMonthlyStats($householdId, $user->id, $startOfMonth, $endOfMonth);
+        $endOfPeriod = Carbon::now()->endOfDay();
+        $startOfPeriod = Carbon::now()->subDays(29)->startOfDay();
 
-        // Statistiche mese precedente (per confronto)
-        $startOfLastMonth = Carbon::now()->subMonth()->startOfMonth();
-        $endOfLastMonth = Carbon::now()->subMonth()->endOfMonth();
+        $monthlyStats = $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod);
 
-        $lastMonthStats = $this->getMonthlyStats($householdId, $user->id, $startOfLastMonth, $endOfLastMonth);
+        $endOfPrevious = Carbon::now()->subDays(30)->endOfDay();
+        $startOfPrevious = Carbon::now()->subDays(59)->startOfDay();
+
+        $lastMonthStats = $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious);
 
         // Controlla e crea notifiche per budget e trend di spesa/entrate
         (new BudgetNotificationService)->checkAndNotify($user, $householdId);
@@ -119,8 +121,8 @@ class DashboardController extends Controller
             $user,
             $monthlyStats,
             $lastMonthStats,
-            Carbon::now()->translatedFormat('F Y'),
-            Carbon::now()->subMonth()->translatedFormat('F Y')
+            $periodLabel,
+            $previousPeriodLabel
         );
 
         // Budget attivi (con spesa calcolata)
@@ -199,8 +201,8 @@ class DashboardController extends Controller
             'recentTransactions' => $recentTransactions,
             'monthlyStats' => $monthlyStats,
             'lastMonthStats' => $lastMonthStats,
-            'currentMonth' => Carbon::now()->translatedFormat('F Y'),
-            'lastMonth' => Carbon::now()->subMonth()->translatedFormat('F Y'),
+            'periodLabel' => $periodLabel,
+            'previousPeriodLabel' => $previousPeriodLabel,
             'activeBudgets' => $activeBudgets,
             'openDebtsCredits' => $openDebtsCredits,
             'debtsCreditsSummary' => $debtsCreditsSummary,
@@ -321,9 +323,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Calcola le statistiche per un determinato periodo.
+     * Calcola entrate, uscite e conteggio transazioni per un intervallo di date.
      */
-    private function getMonthlyStats(int $householdId, int $userId, Carbon $startDate, Carbon $endDate): array
+    private function getPeriodStats(int $householdId, int $userId, Carbon $startDate, Carbon $endDate): array
     {
         $query = Transaction::whereHas('account', function ($query) use ($householdId) {
             $query->where('household_id', $householdId)

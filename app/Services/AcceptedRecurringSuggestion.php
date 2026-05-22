@@ -12,5 +12,6 @@ final class AcceptedRecurringSuggestion
     public function __construct(
         public readonly RecurringTransaction $recurring,
         public readonly int $removedFutureTransactionCount,
+        public readonly int $alignedTransactionCount = 0,
     ) {}
 }

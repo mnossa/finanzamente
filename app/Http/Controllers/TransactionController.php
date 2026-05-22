@@ -14,7 +14,7 @@ use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\CurrencyConverter;
 use App\Services\TransactionSplitService;
-use App\Support\TransactionSearchTokens;
+use App\Support\TransactionDescriptionFilter;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -101,6 +101,13 @@ class TransactionController extends Controller
             $desc = trim($input['description']);
             if ($desc !== '' && mb_strlen($desc) <= 120) {
                 $out['description'] = $desc;
+            }
+        }
+
+        if (! empty($out['description']) && ! empty($input['description_regex'])) {
+            $regexFlag = $input['description_regex'];
+            if (in_array((string) $regexFlag, ['1', 'true', 'on'], true) || $regexFlag === true || $regexFlag === 1) {
+                $out['description_regex'] = '1';
             }
         }
 
@@ -279,10 +286,11 @@ class TransactionController extends Controller
             });
         }
 
-        $descriptionTokens = TransactionSearchTokens::fromQuery($request->input('description'));
-        foreach ($descriptionTokens as $token) {
-            $query->where('description', 'like', '%'.$token.'%');
-        }
+        TransactionDescriptionFilter::apply(
+            $query,
+            $request->input('description'),
+            $request->boolean('description_regex')
+        );
 
         $amountMin = $request->filled('amount_min') && is_numeric($request->amount_min)
             ? (float) $request->amount_min
@@ -294,7 +302,7 @@ class TransactionController extends Controller
             $this->applyAbsoluteAmountRangeFilter($query, $amountMin, $amountMax);
         }
 
-        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id', 'description', 'amount_min', 'amount_max'];
+        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id', 'description', 'description_regex', 'amount_min', 'amount_max'];
 
         $transactions = $query
             ->orderBy('date', 'desc')

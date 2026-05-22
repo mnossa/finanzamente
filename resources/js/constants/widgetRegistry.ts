@@ -20,9 +20,9 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     },
     {
         id: 'monthly_stats',
-        title: 'Statistiche Mensili',
-        description: 'Entrate, uscite, saldo netto e transazioni del mese corrente.',
-        defaultSize: 'xl',
+        title: 'Entrate e uscite',
+        description: 'Entrate e uscite degli ultimi 30 giorni, con confronto sui 30 giorni precedenti.',
+        defaultSize: 'lg',
         defaultVisible: true,
         allowedSizes: ALL_SIZES,
     },

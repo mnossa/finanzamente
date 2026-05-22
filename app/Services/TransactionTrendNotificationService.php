@@ -9,7 +9,7 @@ use Carbon\Carbon;
 /**
  * TransactionTrendNotificationService
  *
- * Confronta le statistiche mensili correnti con quelle del mese precedente
+ * Confronta le statistiche degli ultimi 30 giorni con i 30 giorni precedenti
  * e crea notifiche in-app quando si rilevano variazioni significative
  * (aumento o calo superiore alla soglia configurata).
  *
@@ -54,7 +54,7 @@ class TransactionTrendNotificationService
     ];
 
     /**
-     * Verifica le variazioni di trend mensile e crea notifiche se necessario.
+     * Verifica le variazioni di trend su finestra rolling 30 giorni e crea notifiche se necessario.
      *
      * @param  array  $currentStats  ['income' => float, 'expenses' => float, ...]
      * @param  array  $lastMonthStats  ['income' => float, 'expenses' => float, ...]

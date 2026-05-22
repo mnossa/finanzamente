@@ -57,7 +57,8 @@ class RecurringTransactionReconcileTest extends TestCase
     #[Test]
     public function reconcile_adds_missing_and_removes_extra_linked_transactions(): void
     {
-        $start = Carbon::today()->subMonths(2)->startOfMonth();
+        Carbon::setTestNow('2025-06-01');
+        $start = Carbon::parse('2025-01-10');
 
         $recurring = RecurringTransaction::create([
             'user_id' => $this->user->id,
@@ -76,12 +77,12 @@ class RecurringTransactionReconcileTest extends TestCase
             'category_id' => $this->category->id,
             'amount' => -10,
             'currency_code' => 'EUR',
-            'date' => $start->toDateString(),
+            'date' => '2025-01-10',
             'recurring' => true,
             'recurring_transaction_id' => $recurring->id,
         ]);
 
-        $orphanDate = Carbon::today()->subDays(5)->toDateString();
+        $orphanDate = '2025-03-25';
         Transaction::create([
             'user_id' => $this->user->id,
             'account_id' => $this->account->id,
@@ -103,6 +104,8 @@ class RecurringTransactionReconcileTest extends TestCase
                 ->whereDate('date', $orphanDate)
                 ->first()
         );
+
+        Carbon::setTestNow();
     }
 
     #[Test]

@@ -86,6 +86,13 @@ test.describe('Transazioni', () => {
         await expect(page).toHaveURL(new RegExp(`description=${encodeURIComponent(marker)}`));
     });
 
+    test('checkbox regex descrizione è presente nel pannello filtri', async ({ page }) => {
+        const filterDetails = page.locator('details').filter({ has: page.getByTestId('filter-summary') });
+        await filterDetails.locator('summary').click();
+        await expect(page.getByLabel('Cerca nella descrizione')).toBeVisible({ timeout: 8_000 });
+        await expect(page.getByLabel('Usa espressione regolare')).toBeVisible();
+    });
+
     test('navigazione paginazione funziona se ci sono più pagine', async ({ page }) => {
         const pagination = page.getByRole('navigation', { name: /paginazione/i });
         if (await pagination.isVisible()) {
