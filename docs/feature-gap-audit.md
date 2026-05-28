@@ -9,7 +9,7 @@ Confrontare feature dichiarate in documentazione/regole con feature realmente pr
 Fonti dichiarato:
 
 - `README.md`
-- `.cursorrules`
+- `.cursor/rules/*.mdc` (always-on: `core`, `agent-workflow`) · index: `.cursorrules` · `docs/agent/`
 - `docs/features/*.md`
 - `docs/servizi-integrati.md`
 
@@ -93,7 +93,7 @@ Esito remediation (2026-04-28):
 
 Problema:
 
-- Feature dichiarate distribuite tra `README`, `.cursorrules`, `docs/features`.
+- Feature dichiarate distribuite tra `README`, `.cursor/rules/`, `docs/agent/`, `docs/features`.
 - Manca matrice unica "feature -> route/controller/page/test".
 
 Miglioria:

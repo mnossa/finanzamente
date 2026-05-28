@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreInvestmentPacRequest;
 use App\Models\Account;
 use App\Models\InvestmentAsset;
 use App\Models\InvestmentPac;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,6 +25,8 @@ class InvestmentPacController extends Controller
             ->map(fn (InvestmentPac $pac) => [
                 'id' => $pac->id,
                 'amount' => (float) $pac->amount,
+                'adjust_for_inflation' => (bool) $pac->adjust_for_inflation,
+                'inflation_rate_annual' => $pac->inflation_rate_annual !== null ? (float) $pac->inflation_rate_annual : null,
                 'currency_code' => $pac->currency_code,
                 'frequency' => $pac->frequency,
                 'start_date' => $pac->start_date?->format('Y-m-d'),
@@ -61,22 +63,16 @@ class InvestmentPacController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreInvestmentPacRequest $request): RedirectResponse
     {
         $user = Auth::user();
-        $validated = $request->validate([
-            'account_id' => ['nullable', 'integer', 'exists:accounts,id'],
-            'investment_asset_id' => ['required', 'integer', 'exists:investment_assets,id'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
-            'currency_code' => ['required', 'string', 'size:3', 'exists:currencies,code'],
-            'frequency' => ['required', 'in:monthly'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'notes' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
+        $adjustForInflation = $request->boolean('adjust_for_inflation');
 
         InvestmentPac::create([
             ...$validated,
+            'adjust_for_inflation' => $adjustForInflation,
+            'inflation_rate_annual' => $adjustForInflation ? $validated['inflation_rate_annual'] : null,
             'household_id' => $user->active_household_id,
             'user_id' => $user->id,
             'status' => 'active',

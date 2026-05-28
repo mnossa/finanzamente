@@ -28,12 +28,17 @@ export default defineConfig(({ mode, command }) => {
             react(),
             VitePWA({
                 registerType: 'prompt',
+                injectRegister: false,
+                filename: 'sw.js',
+                manifestFilename: 'manifest.webmanifest',
                 includeAssets: [
                     'images/finanzamente-logo.webp',
                     'pwa/icon-192.png',
                     'pwa/icon-512.png',
                     'pwa/icon-maskable-512.png',
                     'pwa/apple-touch-icon.png',
+                    'pwa/apple-splash-1170x2532.png',
+                    'pwa/apple-splash-1284x2778.png',
                 ],
                 manifest: {
                     id: '/',
@@ -41,20 +46,28 @@ export default defineConfig(({ mode, command }) => {
                     short_name: 'Finanzamente',
                     description: 'Gestione finanziaria personale e familiare',
                     theme_color: '#4f4ce5',
-                    background_color: '#ffffff',
+                    background_color: '#4f4ce5',
                     display: 'standalone',
                     display_override: ['standalone', 'browser'],
                     orientation: 'portrait',
                     start_url: '/dashboard?source=pwa',
                     scope: '/',
                     lang: 'it',
+                    dir: 'ltr',
                     categories: ['finance', 'productivity'],
+                    prefer_related_applications: false,
                     icons: [
                         {
                             src: '/pwa/icon-192.png',
                             sizes: '192x192',
                             type: 'image/png',
                             purpose: 'any',
+                        },
+                        {
+                            src: '/pwa/icon-192.png',
+                            sizes: '192x192',
+                            type: 'image/png',
+                            purpose: 'maskable',
                         },
                         {
                             src: '/pwa/icon-512.png',
@@ -71,6 +84,9 @@ export default defineConfig(({ mode, command }) => {
                     ],
                 },
                 workbox: {
+                    cleanupOutdatedCaches: true,
+                    clientsClaim: true,
+                    skipWaiting: false,
                     navigateFallback: '/dashboard',
                     navigateFallbackDenylist: [
                         /^\/login/,
@@ -79,9 +95,23 @@ export default defineConfig(({ mode, command }) => {
                         /^\/reset-password/,
                         /^\/verify-email/,
                         /^\/sanctum/,
+                        /^\/api\//,
                     ],
                     globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,woff2}'],
                     runtimeCaching: [
+                        {
+                            urlPattern: ({ request, sameOrigin }) =>
+                                sameOrigin && request.mode === 'navigate',
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'finanzamente-pages',
+                                expiration: {
+                                    maxEntries: 48,
+                                    maxAgeSeconds: 60 * 60 * 24,
+                                },
+                                networkTimeoutSeconds: 8,
+                            },
+                        },
                         {
                             urlPattern: /^https:\/\/fonts\.bunny\.net\/.*/i,
                             handler: 'CacheFirst',

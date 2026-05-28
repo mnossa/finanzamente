@@ -202,6 +202,9 @@ reset-mysql-root-password-step:
 exec:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app $(cmd)
 
+pwa-icons:
+	$(MAKE) exec cmd="php scripts/generate-pwa-icons-from-logo.php"
+
 composer-install:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec \
 		-e HOME=/tmp \

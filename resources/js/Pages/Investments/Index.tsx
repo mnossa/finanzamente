@@ -202,6 +202,9 @@ export default function Index({
                     title="Investimenti"
                     actions={
                         <IndexPageHeaderActions>
+                            <LinkButton href={route('investment-pacs.index')} variant="secondary">
+                                PAC
+                            </LinkButton>
                             <LinkButton href={route('investments.import')}>📥 Importa CSV</LinkButton>
                             <LinkButton href={route('investments.create')} icon={<PlusIcon />}>
                                 Nuovo Investimento
@@ -224,6 +227,14 @@ export default function Index({
                     </SectionCard>
 
                     <IndexPageMobileToolbar>
+                        <LinkButton
+                            href={route('investment-pacs.index')}
+                            variant="secondary"
+                            size="sm"
+                            className="w-full justify-center sm:w-auto"
+                        >
+                            PAC
+                        </LinkButton>
                         <LinkButton
                             href={route('investments.import')}
                             variant="secondary"

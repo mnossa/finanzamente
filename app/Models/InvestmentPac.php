@@ -15,6 +15,9 @@ class InvestmentPac extends Model
         'account_id',
         'investment_asset_id',
         'amount',
+        'adjust_for_inflation',
+        'inflation_rate_annual',
+        'last_inflation_adjusted_at',
         'currency_code',
         'frequency',
         'start_date',
@@ -26,6 +29,9 @@ class InvestmentPac extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'adjust_for_inflation' => 'boolean',
+        'inflation_rate_annual' => 'decimal:2',
+        'last_inflation_adjusted_at' => 'date',
         'start_date' => 'date',
         'end_date' => 'date',
         'last_executed_at' => 'date',

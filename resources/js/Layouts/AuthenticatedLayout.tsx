@@ -219,6 +219,7 @@ const navigationSections: NavigationSection[] = [
         defaultExpanded: false,
         items: [
             { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments', requiresPro: true },
+            { name: 'PAC', href: 'investment-pacs.index', routeMatch: 'investment-pacs.*', icon: Icons.Repeat, moduleId: 'investments', requiresPro: true },
             { name: 'Asset Allocation', href: 'asset-allocation.index', routeMatch: 'asset-allocation.*', icon: Icons.BarChart2, moduleId: 'asset_allocation', requiresPro: true },
             { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets', requiresPro: true },
             { name: 'Analisi Investimenti', href: 'investment-analyses.index', routeMatch: 'investment-analyses.*', icon: Icons.TrendingUp, moduleId: 'investment_analyses', requiresPro: true },

@@ -1,0 +1,17 @@
+---
+description: Authenticated dashboard — React, Inertia, TypeScript, Tailwind
+globs: resources/js/**/*
+alwaysApply: false
+---
+
+# React / Inertia Dashboard
+
+- **Scope**: Authenticated app only. No Blade in dashboard pages.
+- **Stack**: React + Inertia.js + TypeScript.
+- **Styling**: Tailwind only. Conditional classes: `clsx`. Every component accepts `className`.
+- **Structure**: Reusable UI (tables, buttons, forms, modals). Logic in hooks/services; global state via Context or Zustand (Redux only if justified).
+- **A11y & perf**: WCAG 2.1; avoid unnecessary re-renders.
+- **Tests**: Add/maintain tests for main components when behavior changes.
+- **UI copy**: Italian labels, messages, placeholders.
+
+After TS/JS changes: `make test` (if PHP tests cover), `make pint-check` (if PHP touched), `make playwright` per `agent-workflow`.

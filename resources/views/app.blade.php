@@ -11,11 +11,7 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="apple-mobile-web-app-title" content="Finanzamente">
-        <link rel="icon" type="image/webp" href="{{ asset('images/finanzamente-logo.webp') }}">
-        <link rel="apple-touch-icon" href="{{ asset('pwa/apple-touch-icon.png') }}">
-        @if (file_exists(public_path('build/manifest.webmanifest')))
-            <link rel="manifest" href="{{ asset('build/manifest.webmanifest') }}">
-        @endif
+        @include('partials.pwa-head')
 
         <title inertia>{{ config('app.name', 'Finanzamente') }}</title>
 

@@ -31,6 +31,8 @@ class RunInvestmentPacs extends Command
                 continue;
             }
 
+            $this->applyInflationIfDue($pac, $today);
+
             Investment::create([
                 'user_id' => $pac->user_id,
                 'household_id' => $pac->household_id,
@@ -50,5 +52,21 @@ class RunInvestmentPacs extends Command
         $this->info("PAC eseguiti: {$count}");
 
         return self::SUCCESS;
+    }
+
+    private function applyInflationIfDue(InvestmentPac $pac, Carbon $today): void
+    {
+        if (! $pac->adjust_for_inflation || $pac->inflation_rate_annual === null) {
+            return;
+        }
+
+        $anchor = $pac->last_inflation_adjusted_at ?? $pac->start_date;
+        if (Carbon::parse($anchor)->diffInYears($today) < 1) {
+            return;
+        }
+
+        $pac->amount = round((float) $pac->amount * (1 + ((float) $pac->inflation_rate_annual / 100)), 2);
+        $pac->last_inflation_adjusted_at = $today->toDateString();
+        $pac->save();
     }
 }

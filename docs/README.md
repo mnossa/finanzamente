@@ -1,5 +1,12 @@
 # Documentazione — Finanzamente
 
+## Agenti Cursor (riferimento on-demand)
+
+| File | Contenuto |
+|---|---|
+| [agent/README.md](agent/README.md) | Indice regole agente, Makefile, E2E, architettura |
+| Regole scoped | `.cursor/rules/*.mdc` · indice breve: `.cursorrules` |
+
 ## Infrastruttura e Deploy
 
 | File | Contenuto |

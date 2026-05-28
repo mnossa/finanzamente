@@ -347,26 +347,37 @@ function BulkEditModal({
         state.new_tag_names.trim() !== '';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40"
                 onClick={onClose}
             />
-            <div className="relative z-10 w-full max-w-lg rounded-xl bg-white dark:bg-gray-800 shadow-xl">
-                <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div className="flex min-h-full items-center justify-center">
+            <div
+                className="relative z-10 flex w-full max-w-lg max-h-[calc(100dvh-2rem)] flex-col rounded-xl bg-white dark:bg-gray-800 shadow-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="bulk-edit-modal-title"
+            >
+                <div className="flex shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                    <h2
+                        id="bulk-edit-modal-title"
+                        className="text-lg font-semibold text-gray-900 dark:text-white"
+                    >
                         Modifica in massa — {count} transazioni
                     </h2>
                     <button
+                        type="button"
                         onClick={onClose}
                         className="rounded p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                        aria-label="Chiudi"
                     >
                         ✕
                     </button>
                 </div>
 
-                <div className="p-6 space-y-5">
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-6 scrollbar-hide">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         Solo i campi che modifichi verranno aggiornati. I campi su «—» rimarranno invariati per ogni transazione.
                     </p>
@@ -474,7 +485,7 @@ function BulkEditModal({
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div className="flex shrink-0 justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
                     <button
                         type="button"
                         onClick={onClose}
@@ -496,6 +507,7 @@ function BulkEditModal({
                         Applica modifiche
                     </button>
                 </div>
+            </div>
             </div>
         </div>
     );
