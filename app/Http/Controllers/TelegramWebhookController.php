@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\DebtCredit;
 use App\Models\Household;
 use App\Models\InboxItem;
+use App\Models\RecurringTransaction;
 use App\Models\TelegramLinkToken;
 use App\Models\Transaction;
 use App\Models\User;
@@ -191,6 +192,18 @@ class TelegramWebhookController extends Controller
 
                 return response('OK', 200);
             }
+
+            if (str_starts_with($text, '/ricorrenze')) {
+                $this->handleRecurringListCommand($user, $chatId);
+
+                return response('OK', 200);
+            }
+
+            if (str_starts_with($text, '/households')) {
+                $this->handleHouseholdsOverviewCommand($user, $chatId);
+
+                return response('OK', 200);
+            }
         }
 
         // Determina il tipo di messaggio e processa
@@ -299,7 +312,9 @@ class TelegramWebhookController extends Controller
             ."/debiti — elenco debiti aperti\n"
             ."/crediti — elenco crediti aperti\n"
             ."/debito 500 Mario Rossi — crea un debito\n"
-            ."/credito 200 Cliente — crea un credito\n\n"
+            ."/credito 200 Cliente — crea un credito\n"
+            ."/ricorrenze — mostra ricorrenze attive\n"
+            ."/households — panoramica nuclei\n\n"
             ."🔍 <a href=\"{$inboxUrl}\">Vai all'Inbox</a> per revisionare le voci."
         );
     }
@@ -964,6 +979,13 @@ class TelegramWebhookController extends Controller
             }
         }
 
+        if ($data === 'category_manual') {
+            $this->telegram->answerCallbackQuery($callbackId, 'Categoria manuale');
+            $this->telegram->sendMessage($chatId, '✍️ Scrivi la categoria nel prossimo messaggio usando #NomeCategoria, poi reinvia la transazione.');
+
+            return;
+        }
+
         $this->telegram->answerCallbackQuery($callbackId);
     }
 
@@ -1030,7 +1052,7 @@ class TelegramWebhookController extends Controller
         $categories = Category::where('household_id', $user->active_household_id)
             ->where('type', $type === 'income' ? 'income' : 'expense')
             ->orderBy('name')
-            ->limit(8)
+            ->limit(20)
             ->get();
 
         if ($categories->isEmpty()) {
@@ -1050,6 +1072,10 @@ class TelegramWebhookController extends Controller
         if ($row !== []) {
             $rows[] = $row;
         }
+        $rows[] = [[
+            'text' => '✍️ Inserisci categoria manuale',
+            'callback_data' => 'category_manual',
+        ]];
 
         $this->telegram->sendMessage(
             $chatId,
@@ -1057,5 +1083,44 @@ class TelegramWebhookController extends Controller
             'HTML',
             $this->telegram->inlineKeyboard($rows),
         );
+    }
+
+    private function handleRecurringListCommand(User $user, string $chatId): void
+    {
+        $items = RecurringTransaction::where('user_id', $user->id)
+            ->where('active', true)
+            ->orderBy('next_date')
+            ->limit(8)
+            ->get(['description', 'amount', 'frequency', 'next_date']);
+
+        if ($items->isEmpty()) {
+            $this->telegram->sendMessage($chatId, '📭 Nessuna ricorrenza attiva.');
+
+            return;
+        }
+
+        $lines = ['🔁 <b>Ricorrenze attive:</b>', ''];
+        foreach ($items as $item) {
+            $lines[] = "• {$item->description} — {$item->amount} ({$item->frequency}) prossimo: ".$item->next_date?->format('d/m/Y');
+        }
+        $this->telegram->sendMessage($chatId, implode("\n", $lines));
+    }
+
+    private function handleHouseholdsOverviewCommand(User $user, string $chatId): void
+    {
+        $households = $user->households()->withCount('users')->get(['households.id', 'households.name']);
+        if ($households->isEmpty()) {
+            $this->telegram->sendMessage($chatId, '⚠️ Nessuna household disponibile.');
+
+            return;
+        }
+        $lines = ['🏠 <b>Panoramica household:</b>', ''];
+        foreach ($households as $household) {
+            $accounts = Account::where('household_id', $household->id)->count();
+            $openDebts = DebtCredit::where('household_id', $household->id)->whereIn('status', ['open', 'overdue'])->count();
+            $marker = $household->id === $user->active_household_id ? '✅ ' : '• ';
+            $lines[] = "{$marker}<b>{$household->name}</b> — membri {$household->users_count}, conti {$accounts}, debiti/crediti aperti {$openDebts}";
+        }
+        $this->telegram->sendMessage($chatId, implode("\n", $lines));
     }
 }

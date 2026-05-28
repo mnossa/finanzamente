@@ -114,7 +114,7 @@ jobs:
     needs: test
 
     outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
+      image-tag: latest
       tags: ${{ steps.meta.outputs.tags }}
 
     steps:
@@ -142,15 +142,16 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Ruota tag latest -> previous
+        run: |
+          docker buildx imagetools create -t mnossa/finanzamente:previous mnossa/finanzamente:latest || true
+
       - name: Calcola tag immagine
         id: meta
         uses: docker/metadata-action@v6.0.0
         with:
           images: mnossa/finanzamente
           tags: |
-            # Tag con SHA breve (es. sha-abc1234)
-            type=sha,format=short
-            # Tag "latest" solo su main
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build e push immagine app (multi-stage)
@@ -200,13 +201,13 @@ jobs:
             set -e
 
             DEPLOY_DIR="/opt/finanzamente"
-            IMAGE_TAG="sha-$(echo '${{ github.sha }}' | cut -c1-7)"
+            IMAGE_TAG="latest"
             CONTAINER_NAME="finanzamente-app"
 
             echo "==> [deploy] Versione: ${IMAGE_TAG}"
             cd "${DEPLOY_DIR}"
 
-            PREVIOUS_TAG=$(grep "^IMAGE_TAG=" .env | cut -d= -f2 || true)
+            PREVIOUS_TAG="previous"
             echo "==> [deploy] Versione precedente: ${PREVIOUS_TAG:-<nessuna>}"
 
             wait_app_healthy() {
@@ -306,10 +307,6 @@ jobs:
               trap - ERR
               echo "==> [deploy] ERRORE! Rollback verso: ${PREVIOUS_TAG:-<nessuno>}"
               docker compose -f docker-compose.prod.yml logs app --tail=80 || true
-              if [ -z "${PREVIOUS_TAG}" ] || [ "${PREVIOUS_TAG}" = "${IMAGE_TAG}" ]; then
-                echo "==> [deploy] CRITICO: nessuna IMAGE_TAG precedente distinta — rollback automatico impossibile."
-                exit 1
-              fi
               sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${PREVIOUS_TAG}|" .env
               if ! docker compose -f docker-compose.prod.yml up -d --remove-orphans; then
                 echo "==> [deploy] CRITICO: docker compose up dopo rollback fallito."

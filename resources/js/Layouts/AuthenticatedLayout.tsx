@@ -472,6 +472,7 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const { auth, activeHousehold, notifications, plan: planData, isAdmin, privacy } = usePage<PageProps>().props;
+    const features = usePage<PageProps & { features?: Record<string, boolean> }>().props.features ?? {};
     const user = auth.user;
     const { isModuleEnabled, isPro } = useModules();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -530,7 +531,6 @@ export default function Authenticated({
         const currentAnalyticsEnabled = privacy?.analytics_enabled ?? false;
 
         if (shouldEnableAnalytics === currentAnalyticsEnabled) {
-            window.localStorage.removeItem(BLADE_ANALYTICS_CONSENT_KEY);
             return;
         }
 
@@ -544,7 +544,6 @@ export default function Authenticated({
                 preserveState: true,
                 preserveScroll: true,
                 onSuccess: () => {
-                    window.localStorage.removeItem(BLADE_ANALYTICS_CONSENT_KEY);
                     analyticsSyncInFlight.current = false;
                 },
                 onError: () => {
@@ -567,6 +566,9 @@ export default function Authenticated({
             .map(section => ({
                 ...section,
                 items: section.items.filter(item => {
+                    if (item.href === 'transactions.quick-session' && features.quick_session_enabled === false) {
+                        return false;
+                    }
                     // Le voci Pro sono sempre visibili (badge + redirect)
                     if (item.requiresPro) return true;
                     // Le voci senza moduleId sono sempre visibili

@@ -8,11 +8,15 @@ type RecurringReminderPrefs = {
     enabled: boolean;
     channels: Array<'in_app' | 'email'>;
 };
+type MonthlySpendingPrefs = {
+    enabled: boolean;
+    channels: Array<'in_app' | 'email'>;
+};
 
 export default function NotificationPreferencesForm() {
     const { auth } = usePage<PageProps>().props;
     const prefs = (auth.user?.preferences as Record<string, unknown> | undefined)?.notifications as
-        | { recurring_reminder?: RecurringReminderPrefs }
+        | { recurring_reminder?: RecurringReminderPrefs; monthly_spending?: MonthlySpendingPrefs }
         | undefined;
 
     const initial: RecurringReminderPrefs = {
@@ -23,6 +27,9 @@ export default function NotificationPreferencesForm() {
     const [enabled, setEnabled] = useState(initial.enabled);
     const [inApp, setInApp] = useState(initial.channels.includes('in_app'));
     const [email, setEmail] = useState(initial.channels.includes('email'));
+    const [monthlyEnabled, setMonthlyEnabled] = useState(prefs?.monthly_spending?.enabled ?? true);
+    const [monthlyInApp, setMonthlyInApp] = useState((prefs?.monthly_spending?.channels ?? ['in_app']).includes('in_app'));
+    const [monthlyEmail, setMonthlyEmail] = useState((prefs?.monthly_spending?.channels ?? ['in_app']).includes('email'));
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -40,6 +47,18 @@ export default function NotificationPreferencesForm() {
                     recurring_reminder: {
                         enabled,
                         channels: channels.length > 0 ? channels : ['in_app'],
+                    },
+                    monthly_spending: {
+                        enabled: monthlyEnabled,
+                        channels: [
+                            ...(monthlyInApp ? ['in_app'] : []),
+                            ...(monthlyEmail ? ['email'] : []),
+                        ].length > 0
+                            ? [
+                                ...(monthlyInApp ? ['in_app'] : []),
+                                ...(monthlyEmail ? ['email'] : []),
+                            ]
+                            : ['in_app'],
                     },
                 },
                 {
@@ -89,6 +108,39 @@ export default function NotificationPreferencesForm() {
                             type="checkbox"
                             checked={email}
                             onChange={(e) => setEmail(e.target.checked)}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        Email
+                    </label>
+                </div>
+            )}
+
+            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                    type="checkbox"
+                    checked={monthlyEnabled}
+                    onChange={(e) => setMonthlyEnabled(e.target.checked)}
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                Attiva riepilogo spesa mensile
+            </label>
+
+            {monthlyEnabled && (
+                <div className="mt-3 space-y-2 pl-6">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={monthlyInApp}
+                            onChange={(e) => setMonthlyInApp(e.target.checked)}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        Notifica in app
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={monthlyEmail}
+                            onChange={(e) => setMonthlyEmail(e.target.checked)}
                             className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                         />
                         Email

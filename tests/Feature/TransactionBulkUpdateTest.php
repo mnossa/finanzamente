@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\DebtCredit;
 use App\Models\Household;
+use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,5 +67,59 @@ class TransactionBulkUpdateTest extends TestCase
 
         $this->assertSame($debtCredit->id, $tx1->fresh()->debt_credit_id);
         $this->assertSame($debtCredit->id, $tx2->fresh()->debt_credit_id);
+    }
+
+    #[Test]
+    public function bulk_update_can_replace_tags_for_selected_transactions(): void
+    {
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $household->users()->attach($user->id, [
+            'role' => 'owner',
+            'permissions' => json_encode(['manage' => true]),
+        ]);
+        $user->update(['active_household_id' => $household->id]);
+
+        $account = Account::factory()->create([
+            'household_id' => $household->id,
+            'owner_user_id' => $user->id,
+        ]);
+
+        $tx1 = Transaction::factory()->create([
+            'account_id' => $account->id,
+            'user_id' => $user->id,
+            'amount' => -50,
+        ]);
+        $tx2 = Transaction::factory()->create([
+            'account_id' => $account->id,
+            'user_id' => $user->id,
+            'amount' => -30,
+        ]);
+
+        $existingTag = Tag::create([
+            'household_id' => $household->id,
+            'user_id' => $user->id,
+            'name' => 'Casa',
+            'color' => '#6366f1',
+        ]);
+
+        $response = $this->actingAs($user)->patch(route('transactions.bulk-update'), [
+            'ids' => [$tx1->id, $tx2->id],
+            'tag_ids' => [$existingTag->id],
+            'new_tag_names' => ['Auto'],
+        ]);
+
+        $response->assertRedirect(route('transactions.index'));
+        $autoTag = Tag::where('household_id', $household->id)->where('name', 'AUTO')->first();
+        $this->assertNotNull($autoTag);
+
+        $this->assertEqualsCanonicalizing(
+            [$existingTag->id, $autoTag->id],
+            $tx1->fresh()->tags()->pluck('tags.id')->all()
+        );
+        $this->assertEqualsCanonicalizing(
+            [$existingTag->id, $autoTag->id],
+            $tx2->fresh()->tags()->pluck('tags.id')->all()
+        );
     }
 }

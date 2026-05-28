@@ -12,6 +12,7 @@ import PageHeader from '@/Components/PageHeader';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { useState } from 'react';
 
 interface Currency {
     code: string;
@@ -43,6 +44,8 @@ interface DebtCredit {
     paid_amount: number;
     remaining_amount: number;
     interest_rate: number | null;
+    tan_rate: number | null;
+    taeg_rate: number | null;
     interest_type: string | null;
     accrued_interest: number;
     total_with_interest: number;
@@ -56,6 +59,7 @@ interface DebtCredit {
     created_by: string;
     created_at: string;
     updated_at: string;
+    adjustments: Array<{ id: number; amount: number; effective_date: string; reason: string | null; notes: string | null; user: string | null }>;
 }
 
 interface ShowProps {
@@ -73,6 +77,8 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
     const isDebt = debtCredit.type === 'debt';
     const initialAmount = debtCredit.initial_amount || debtCredit.amount;
     const paidPercent = initialAmount > 0 ? Math.min(100, (debtCredit.paid_amount / initialAmount) * 100) : 0;
+    const [adjustmentAmount, setAdjustmentAmount] = useState('');
+    const [adjustmentReason, setAdjustmentReason] = useState('');
 
     const handleClose = () => {
         if (confirm('Vuoi segnare questo elemento come chiuso/saldato?')) {
@@ -88,6 +94,15 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
         if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
             router.delete(route('debts-credits.destroy', debtCredit.id));
         }
+    };
+
+    const handleNonMonetaryReduction = () => {
+        if (!adjustmentAmount || Number(adjustmentAmount) <= 0) return;
+        router.post(route('debts-credits.adjustments.store', debtCredit.id), {
+            amount: adjustmentAmount,
+            reason: adjustmentReason || null,
+            effective_date: new Date().toISOString().slice(0, 10),
+        });
     };
 
     return (
@@ -210,6 +225,10 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                                 <span className="font-medium text-gray-900 dark:text-white">{debtCredit.currency.code} ({debtCredit.currency.symbol})</span>
                             </div>
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
+                                <span className="text-gray-500 dark:text-gray-400">TAN/TAEG</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{debtCredit.tan_rate ?? '—'}% / {debtCredit.taeg_rate ?? '—'}%</span>
+                            </div>
+                            <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
                                 <span className="text-gray-500 dark:text-gray-400">Data di Scadenza</span>
                                 <span className={clsx('font-medium', debtCredit.status === 'overdue' ? 'text-red-500' : 'text-gray-900 dark:text-white')}>
                                     {debtCredit.due_date ? formatDateLong(debtCredit.due_date) : 'Non impostata'}
@@ -265,6 +284,18 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             <TrashIcon size={16} /> Elimina
                         </button>
                     </div>
+                    )}
+
+                    {canModify && debtCredit.status !== 'closed' && (
+                        <CardBox className="p-4 shadow-sm">
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Riduzione non monetaria</h3>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Usa questo flusso per ridurre il debito senza una transazione di conto (es. cessione bene).</p>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                <input value={adjustmentAmount} onChange={(e) => setAdjustmentAmount(e.target.value)} type="number" min="0.01" step="0.01" placeholder="Importo" className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800" />
+                                <input value={adjustmentReason} onChange={(e) => setAdjustmentReason(e.target.value)} type="text" placeholder="Motivo (opzionale)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800" />
+                                <button type="button" onClick={handleNonMonetaryReduction} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Registra riduzione</button>
+                            </div>
+                        </CardBox>
                     )}
 
                     {/* Lista transazioni collegate */}

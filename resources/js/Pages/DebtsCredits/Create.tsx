@@ -60,6 +60,8 @@ export default function Create({ currencies, types }: CreateProps) {
         type: 'debt',
         due_date: '',
         description: '',
+        tan_rate: '',
+        taeg_rate: '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -252,6 +254,39 @@ export default function Create({ currencies, types }: CreateProps) {
                                         message={errors.description}
                                         className="mt-2"
                                     />
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel htmlFor="tan_rate" value="TAN % (opzionale)" />
+                                        <TextInput
+                                            id="tan_rate"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="100"
+                                            value={data.tan_rate}
+                                            className="mt-1 block w-full"
+                                            onChange={(e) => setData('tan_rate', e.target.value)}
+                                            placeholder="es. 4.50"
+                                        />
+                                        <InputError message={errors.tan_rate} className="mt-2" />
+                                    </div>
+                                    <div>
+                                        <InputLabel htmlFor="taeg_rate" value="TAEG % (opzionale)" />
+                                        <TextInput
+                                            id="taeg_rate"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="100"
+                                            value={data.taeg_rate}
+                                            className="mt-1 block w-full"
+                                            onChange={(e) => setData('taeg_rate', e.target.value)}
+                                            placeholder="es. 6.20"
+                                        />
+                                        <InputError message={errors.taeg_rate} className="mt-2" />
+                                    </div>
                                 </div>
                             </div>
 

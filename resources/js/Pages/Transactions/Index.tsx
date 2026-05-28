@@ -96,6 +96,7 @@ interface Filters {
     description_regex?: string;
     amount_min?: string;
     amount_max?: string;
+    currency_code?: string;
 }
 
 /** Parametri ammessi per redirect verso indice (allineati al backend). */
@@ -135,6 +136,9 @@ function buildReturnIndexQuery(filters: Filters, currentPage: number, includePag
     }
     if (filters.amount_max) {
         q.amount_max = filters.amount_max;
+    }
+    if (filters.currency_code) {
+        q.currency_code = filters.currency_code;
     }
     if (includePage && currentPage > 1) {
         q.page = currentPage;
@@ -239,6 +243,8 @@ interface IndexProps {
     tags: Array<{ id: number; name: string; color: string | null }>;
     filters: Filters;
     activeImports: Array<{ id: number; status: string; rows_total: number; rows_imported: number; created_at: string }>;
+    summary: { count: number; income: number; expenses: number; net: number };
+    currencies: Array<{ code: string; name: string; symbol: string | null }>;
 }
 
 // Sentinel: campo non modificato
@@ -254,6 +260,8 @@ interface BulkEditState {
     debt_credit_id: string;   // UNCHANGED | REMOVE | '<number>'
     is_tax_deductible: TriState;
     account_id: string;       // UNCHANGED | '<number>'
+    tag_ids: string[];
+    new_tag_names: string;
 }
 
 const defaultBulkEdit: BulkEditState = {
@@ -262,6 +270,8 @@ const defaultBulkEdit: BulkEditState = {
     debt_credit_id: UNCHANGED,
     is_tax_deductible: UNCHANGED,
     account_id: UNCHANGED,
+    tag_ids: [],
+    new_tag_names: '',
 };
 
 function TriStateButton({
@@ -303,6 +313,7 @@ function BulkEditModal({
     categories,
     accounts,
     debtCredits,
+    tags,
     onClose,
     onConfirm,
 }: {
@@ -311,6 +322,7 @@ function BulkEditModal({
     categories: Category[];
     accounts: Array<{ id: number; name: string }>;
     debtCredits: DebtCredit[];
+    tags: Array<{ id: number; name: string; color: string | null }>;
     onClose: () => void;
     onConfirm: (state: BulkEditState) => void;
 }) {
@@ -330,7 +342,9 @@ function BulkEditModal({
         state.is_private !== UNCHANGED ||
         state.debt_credit_id !== UNCHANGED ||
         state.is_tax_deductible !== UNCHANGED ||
-        state.account_id !== UNCHANGED;
+        state.account_id !== UNCHANGED ||
+        state.tag_ids.length > 0 ||
+        state.new_tag_names.trim() !== '';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -431,6 +445,33 @@ function BulkEditModal({
                             ))}
                         </select>
                     </div>
+
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tag esistenti</label>
+                        <select
+                            multiple
+                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                            value={state.tag_ids}
+                            onChange={(e) => set('tag_ids', Array.from(e.target.selectedOptions).map((o) => o.value))}
+                        >
+                            {tags.map((tag) => (
+                                <option key={tag.id} value={String(tag.id)}>
+                                    {tag.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nuovi tag (separati da virgola)</label>
+                        <input
+                            type="text"
+                            value={state.new_tag_names}
+                            onChange={(e) => set('new_tag_names', e.target.value)}
+                            placeholder="es. lavoro, rimborsi"
+                            className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
@@ -469,6 +510,8 @@ export default function Index({
     tags,
     filters,
     activeImports,
+    summary,
+    currencies,
 }: IndexProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
@@ -634,6 +677,15 @@ export default function Index({
         if (state.account_id !== UNCHANGED) {
             payload.account_id = Number(state.account_id);
         }
+        if (state.tag_ids.length > 0) {
+            payload.tag_ids = state.tag_ids.map((id) => Number(id));
+        }
+        if (state.new_tag_names.trim() !== '') {
+            payload.new_tag_names = state.new_tag_names
+                .split(',')
+                .map((name) => name.trim())
+                .filter(Boolean);
+        }
 
         const rq = returnIndexQueryJson(filters, transactions.current_page);
         if (rq) {
@@ -667,6 +719,7 @@ export default function Index({
             description: 'description',
             amount_min: 'amount',
             amount_max: 'amount',
+            currency_code: 'type',
         };
         (Object.keys(filterMap) as Array<keyof typeof filterMap>).forEach((key) => {
             const draftVal = draftFilters[key as keyof Filters];
@@ -732,6 +785,7 @@ export default function Index({
                 categories={categories}
                 accounts={accounts}
                 debtCredits={debtCredits}
+                tags={tags}
                 onClose={() => setBulkEditOpen(false)}
                 onConfirm={handleBulkEdit}
             />
@@ -975,6 +1029,18 @@ export default function Index({
                                             aria-label="Importo massimo"
                                         />
                                     </div>
+                                    <select
+                                        className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={draftFilters.currency_code || ''}
+                                        onChange={(e) => updateDraftFilter('currency_code', e.target.value)}
+                                    >
+                                        <option value="">Tutte le valute</option>
+                                        {currencies.map((currency) => (
+                                            <option key={currency.code} value={currency.code}>
+                                                {currency.code} - {currency.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <div className="col-span-2 flex w-full flex-col gap-2 border-t border-gray-100 pt-3 sm:col-span-full sm:flex-row sm:items-center sm:justify-end dark:border-gray-700">
                                         <button
                                             type="button"
@@ -1002,6 +1068,24 @@ export default function Index({
 
                     {/* Lista Transazioni */}
                     <CardBox className="overflow-hidden shadow-sm">
+                        <div className="grid grid-cols-2 gap-3 border-b border-gray-100 px-4 py-3 text-sm sm:grid-cols-4 dark:border-gray-700">
+                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Transazioni</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">{summary.count}</p>
+                            </div>
+                            <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-900/20">
+                                <p className="text-xs text-emerald-600 dark:text-emerald-400">Entrate</p>
+                                <p className="font-semibold text-emerald-700 dark:text-emerald-300">+{summary.income.toFixed(2)}</p>
+                            </div>
+                            <div className="rounded-lg bg-red-50 p-2 dark:bg-red-900/20">
+                                <p className="text-xs text-red-600 dark:text-red-400">Uscite</p>
+                                <p className="font-semibold text-red-700 dark:text-red-300">-{summary.expenses.toFixed(2)}</p>
+                            </div>
+                            <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
+                                <p className="text-xs text-blue-600 dark:text-blue-400">Saldo</p>
+                                <p className="font-semibold text-blue-700 dark:text-blue-300">{summary.net >= 0 ? '+' : ''}{summary.net.toFixed(2)}</p>
+                            </div>
+                        </div>
                         {transactions.data.length > 0 ? (
                             <>
                                 {/* Barra selezione multipla */}

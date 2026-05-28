@@ -39,6 +39,7 @@ class TransactionController extends Controller
         'description',
         'amount_min',
         'amount_max',
+        'currency_code',
         'page',
     ];
 
@@ -124,6 +125,10 @@ class TransactionController extends Controller
             if ($max >= 0) {
                 $out['amount_max'] = (string) round($max, 2);
             }
+        }
+
+        if (! empty($input['currency_code']) && is_string($input['currency_code']) && preg_match('/^[A-Za-z]{3}$/', $input['currency_code'])) {
+            $out['currency_code'] = strtoupper((string) $input['currency_code']);
         }
 
         return $out;
@@ -286,6 +291,9 @@ class TransactionController extends Controller
                 $q->where('tags.id', $request->tag_id);
             });
         }
+        if ($request->filled('currency_code')) {
+            $query->where('currency_code', strtoupper((string) $request->currency_code));
+        }
 
         TransactionDescriptionFilter::apply(
             $query,
@@ -303,7 +311,12 @@ class TransactionController extends Controller
             $this->applyAbsoluteAmountRangeFilter($query, $amountMin, $amountMax);
         }
 
-        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id', 'description', 'description_regex', 'amount_min', 'amount_max'];
+        $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id', 'description', 'description_regex', 'amount_min', 'amount_max', 'currency_code'];
+
+        $summaryQuery = clone $query;
+        $summaryIncome = (float) (clone $summaryQuery)->where('transactions.amount', '>', 0)->sum('transactions.amount');
+        $summaryExpenses = (float) abs((float) (clone $summaryQuery)->where('transactions.amount', '<', 0)->sum('transactions.amount'));
+        $summaryCount = (int) (clone $summaryQuery)->count();
 
         $transactions = $query
             ->orderBy('date', 'desc')
@@ -393,6 +406,13 @@ class TransactionController extends Controller
                 ->whereIn('status', ['pending', 'processing'])
                 ->orderBy('created_at', 'desc')
                 ->get(['id', 'status', 'rows_total', 'rows_imported', 'created_at']),
+            'summary' => [
+                'count' => $summaryCount,
+                'income' => $summaryIncome,
+                'expenses' => $summaryExpenses,
+                'net' => $summaryIncome - $summaryExpenses,
+            ],
+            'currencies' => $this->currencyOptions(),
         ]);
     }
 
@@ -575,6 +595,8 @@ class TransactionController extends Controller
             'categories' => $categories,
             'sessionTransactions' => $sessionTransactions,
             'defaultAccountId' => $request->query('account_id'),
+            'currencies' => $this->currencyOptions(),
+            'userDefaultCurrency' => $user->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
         ]);
     }
 
@@ -595,15 +617,22 @@ class TransactionController extends Controller
 
         $account = Account::find($validated['account_id']);
 
+        $currencyFields = $this->applyCurrencyFields(
+            $validated,
+            $account,
+            Carbon::parse($validated['date']),
+            $amount,
+        );
+
         $transaction = Transaction::create([
             'user_id' => $user->id,
             'account_id' => $validated['account_id'],
             'category_id' => $validated['category_id'],
             'amount' => $amount,
-            'currency_code' => $account->currency_code,
             'date' => $validated['date'],
             'description' => $validated['description'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
+            ...$currencyFields,
         ]);
 
         $account->current_balance += $amount;
@@ -1044,6 +1073,10 @@ class TransactionController extends Controller
             ],
             'is_tax_deductible' => 'sometimes|boolean',
             'account_id' => 'sometimes|integer|exists:accounts,id',
+            'tag_ids' => ['sometimes', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
+            'new_tag_names' => ['sometimes', 'array'],
+            'new_tag_names.*' => ['string', 'max:50'],
             'return_index_query' => ['nullable', 'string', 'max:8192'],
         ]);
         $ids = $request->input('ids');
@@ -1080,7 +1113,9 @@ class TransactionController extends Controller
 
         $newAccountId = $request->has('account_id') ? (int) $request->input('account_id') : null;
 
-        if (empty($fields) && $newAccountId === null) {
+        $hasTagSync = $request->has('tag_ids') || $request->has('new_tag_names');
+
+        if (empty($fields) && $newAccountId === null && ! $hasTagSync) {
             $returnQuery = $this->returnIndexQueryFromRequest($request);
 
             return redirect()->route('transactions.index', $returnQuery)
@@ -1109,6 +1144,16 @@ class TransactionController extends Controller
 
             $transaction->fill($fields);
             $transaction->save();
+
+            if ($hasTagSync) {
+                $tagIds = $this->resolveTagIds(
+                    $request->input('tag_ids', []),
+                    $request->input('new_tag_names', []),
+                    $householdId,
+                    $user->id
+                );
+                $transaction->tags()->sync($tagIds);
+            }
         }
 
         $count = $transactions->count();

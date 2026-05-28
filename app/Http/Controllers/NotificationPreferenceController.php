@@ -15,7 +15,10 @@ class NotificationPreferenceController extends Controller
         $validated = $request->validate([
             'recurring_reminder.enabled' => ['required', 'boolean'],
             'recurring_reminder.channels' => ['required', 'array'],
-            'recurring_reminder.channels.*' => ['in:in_app,email'],
+            'recurring_reminder.channels.*' => ['in:in_app,email,push'],
+            'monthly_spending.enabled' => ['required', 'boolean'],
+            'monthly_spending.channels' => ['required', 'array'],
+            'monthly_spending.channels.*' => ['in:in_app,email,push'],
         ]);
 
         $user = $request->user();
@@ -24,11 +27,16 @@ class NotificationPreferenceController extends Controller
             'enabled' => $validated['recurring_reminder']['enabled'],
             'channels' => array_values(array_unique($validated['recurring_reminder']['channels'])),
         ];
+        $preferences['notifications']['monthly_spending'] = [
+            'enabled' => $validated['monthly_spending']['enabled'],
+            'channels' => array_values(array_unique($validated['monthly_spending']['channels'])),
+        ];
         $user->preferences = $preferences;
         $user->save();
 
         return response()->json([
             'recurring_reminder' => $preferences['notifications']['recurring_reminder'],
+            'monthly_spending' => $preferences['notifications']['monthly_spending'],
         ]);
     }
 }

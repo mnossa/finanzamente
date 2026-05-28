@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\ModelChanged;
 use App\Models\DebtCredit;
+use App\Models\DebtCreditAdjustment;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\DB;
 
@@ -67,8 +68,10 @@ class UpdateDebtCreditBalance
             // Ricalcola l'importo totale pagato sommando tutte le transazioni associate
             $totalPaid = Transaction::where('debt_credit_id', $debtCreditId)
                 ->sum(DB::raw('ABS(amount)'));
+            $totalAdjusted = DebtCreditAdjustment::where('debt_credit_id', $debtCreditId)
+                ->sum('amount');
 
-            $debtCredit->paid_amount = $totalPaid;
+            $debtCredit->paid_amount = (float) $totalPaid + (float) $totalAdjusted;
 
             // Aggiorna lo stato del debito/credito
             $remaining = $debtCredit->getRemainingAmount();

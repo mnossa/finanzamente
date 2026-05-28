@@ -51,6 +51,8 @@ interface Props extends PageProps {
     categories: Category[];
     sessionTransactions: SessionTransaction[];
     defaultAccountId: string | null;
+    currencies: Array<{ code: string; name: string; symbol: string | null }>;
+    userDefaultCurrency: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,12 +112,17 @@ interface FormState {
     date: string;
     description: string;
     is_private: boolean;
+    original_amount: string;
+    original_currency_code: string;
+    manual_rate: string;
 }
 
-function QuickEntryForm({ accounts, categories, defaultAccountId }: {
+function QuickEntryForm({ accounts, categories, defaultAccountId, currencies, userDefaultCurrency }: {
     accounts: Account[];
     categories: Category[];
     defaultAccountId: string | null;
+    currencies: Array<{ code: string; name: string; symbol: string | null }>;
+    userDefaultCurrency: string;
 }) {
     const amountRef = useRef<HTMLInputElement>(null);
 
@@ -126,6 +133,9 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
         date: new Date().toISOString().split('T')[0],
         description: '',
         is_private: false,
+        original_amount: '',
+        original_currency_code: '',
+        manual_rate: '',
     });
 
     // Focus sull'importo al caricamento e dopo ogni submit riuscito
@@ -141,7 +151,7 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
         post(route('transactions.quick-store'), {
             preserveScroll: true,
             onSuccess: () => {
-                reset('amount', 'description', 'category_id');
+                reset('amount', 'description', 'category_id', 'original_amount', 'original_currency_code', 'manual_rate');
                 setTimeout(() => amountRef.current?.focus(), 100);
             },
         });
@@ -269,6 +279,54 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
                 />
             </div>
 
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+                <div>
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        Importo originale
+                    </label>
+                    <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={data.original_amount}
+                        onChange={(e) => setData('original_amount', e.target.value)}
+                        placeholder="Facoltativo"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 dark:text-white"
+                    />
+                </div>
+                <div>
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        Valuta origine
+                    </label>
+                    <select
+                        value={data.original_currency_code}
+                        onChange={(e) => setData('original_currency_code', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 dark:text-white"
+                    >
+                        <option value="">Default conto ({userDefaultCurrency})</option>
+                        {currencies.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                                {currency.code} - {currency.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="mb-0.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                        Cambio manuale
+                    </label>
+                    <input
+                        type="number"
+                        min="0.0001"
+                        step="0.0001"
+                        value={data.manual_rate}
+                        onChange={(e) => setData('manual_rate', e.target.value)}
+                        placeholder="Facoltativo"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 dark:text-white"
+                    />
+                </div>
+            </div>
+
             <div className="flex items-center justify-between gap-3 pt-1">
                 <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
                     <input
@@ -300,7 +358,7 @@ function QuickEntryForm({ accounts, categories, defaultAccountId }: {
 // Main Page
 // ---------------------------------------------------------------------------
 
-export default function QuickSession({ accounts, categories, sessionTransactions, defaultAccountId }: Props) {
+export default function QuickSession({ accounts, categories, sessionTransactions, defaultAccountId, currencies, userDefaultCurrency }: Props) {
     const hasSessions = sessionTransactions.length > 0;
 
     function handleEndSession() {
@@ -341,6 +399,8 @@ export default function QuickSession({ accounts, categories, sessionTransactions
                         accounts={accounts}
                         categories={categories}
                         defaultAccountId={defaultAccountId}
+                        currencies={currencies}
+                        userDefaultCurrency={userDefaultCurrency}
                     />
                 </CardBox>
 

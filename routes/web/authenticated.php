@@ -11,6 +11,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\DebtCreditController;
+use App\Http\Controllers\DuplicateTransactionCandidateController;
 use App\Http\Controllers\ExpenseDistributionController;
 use App\Http\Controllers\FinancialGoalController;
 use App\Http\Controllers\FixedExpenseController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\InvestmentAnalysisController;
 use App\Http\Controllers\InvestmentAssetController;
 use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentImportController;
+use App\Http\Controllers\InvestmentPacController;
 use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
@@ -159,6 +161,9 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::post('/transazioni', [TransactionController::class, 'store'])->name('transactions.store');
         Route::delete('/transazioni/in-blocco', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
         Route::patch('/transazioni/in-blocco', [TransactionController::class, 'bulkUpdate'])->name('transactions.bulk-update');
+        Route::get('/transazioni/duplicati', [DuplicateTransactionCandidateController::class, 'index'])->name('transactions.duplicates.index');
+        Route::post('/transazioni/duplicati/{candidate}/ignora', [DuplicateTransactionCandidateController::class, 'markIgnored'])->name('transactions.duplicates.ignore');
+        Route::post('/transazioni/duplicati/{candidate}/valido', [DuplicateTransactionCandidateController::class, 'markValid'])->name('transactions.duplicates.valid');
         Route::get('/transazioni/{transaction}/modifica', [TransactionController::class, 'edit'])->name('transactions.edit');
         Route::patch('/transazioni/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
         Route::delete('/transazioni/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
@@ -219,6 +224,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::put('/debiti-crediti/{debts_credit}', [DebtCreditController::class, 'update'])->name('debts-credits.update');
         Route::post('/debiti-crediti/{debts_credit}/chiudi', [DebtCreditController::class, 'close'])->name('debts-credits.close');
         Route::post('/debiti-crediti/{debts_credit}/riapri', [DebtCreditController::class, 'reopen'])->name('debts-credits.reopen');
+        Route::post('/debiti-crediti/{debts_credit}/adjustments', [DebtCreditController::class, 'addAdjustment'])->name('debts-credits.adjustments.store');
         Route::delete('/debiti-crediti/{debts_credit}', [DebtCreditController::class, 'destroy'])->name('debts-credits.destroy');
 
         // Recurrence Detection - avvia rilevamento e gestione suggerimenti
@@ -272,6 +278,9 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
             Route::delete('/investimenti/importa/layout/{bankImportLayout}', [InvestmentImportController::class, 'destroyLayout'])->name('investments.import.layouts.destroy');
             Route::get('/investimenti/crea', [InvestmentController::class, 'create'])->name('investments.create');
             Route::post('/investimenti', [InvestmentController::class, 'store'])->name('investments.store');
+            Route::get('/investimenti/pac', [InvestmentPacController::class, 'index'])->name('investment-pacs.index');
+            Route::get('/investimenti/pac/crea', [InvestmentPacController::class, 'create'])->name('investment-pacs.create');
+            Route::post('/investimenti/pac', [InvestmentPacController::class, 'store'])->name('investment-pacs.store');
             Route::get('/investimenti/{investment}/modifica', [InvestmentController::class, 'edit'])->name('investments.edit');
             Route::put('/investimenti/{investment}', [InvestmentController::class, 'update'])->name('investments.update');
             Route::post('/investimenti/{investment}/vendi', [InvestmentController::class, 'sell'])->name('investments.sell');

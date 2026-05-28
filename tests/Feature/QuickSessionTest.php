@@ -104,12 +104,16 @@ class QuickSessionTest extends TestCase
                 'amount' => 25.50,
                 'date' => now()->toDateString(),
                 'description' => 'Pizza',
+                'original_amount' => 30,
+                'original_currency_code' => 'USD',
+                'manual_rate' => 0.85,
             ]);
 
         $response->assertRedirect(route('transactions.quick-session'));
         $this->assertDatabaseHas('transactions', [
             'user_id' => $this->user->id,
             'description' => 'Pizza',
+            'original_currency_code' => 'USD',
         ]);
     }
 

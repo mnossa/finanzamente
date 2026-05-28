@@ -38,6 +38,8 @@ interface DebtCredit {
     status: string;
     description: string | null;
     interest_rate: number | null;
+    tan_rate: number | null;
+    taeg_rate: number | null;
     interest_type: string;
     interest_calculation_date: string | null;
     has_linked_transactions: boolean;
@@ -65,6 +67,8 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
         status: debtCredit.status,
         description: debtCredit.description || '',
         interest_rate: debtCredit.interest_rate?.toString() || '',
+        tan_rate: debtCredit.tan_rate?.toString() || '',
+        taeg_rate: debtCredit.taeg_rate?.toString() || '',
         interest_type: debtCredit.interest_type || 'simple',
         interest_calculation_date: debtCredit.interest_calculation_date || '',
     });
@@ -296,6 +300,36 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
                                                         <option value="simple">Semplice</option>
                                                         <option value="compound">Composto</option>
                                                     </select>
+                                                </div>
+                                            </div>
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <InputLabel htmlFor="tan_rate" value="TAN (%)" />
+                                                    <TextInput
+                                                        id="tan_rate"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        max="100"
+                                                        value={data.tan_rate}
+                                                        className="mt-1 block w-full"
+                                                        onChange={(e) => setData('tan_rate', e.target.value)}
+                                                    />
+                                                    <InputError message={errors.tan_rate} className="mt-2" />
+                                                </div>
+                                                <div>
+                                                    <InputLabel htmlFor="taeg_rate" value="TAEG (%)" />
+                                                    <TextInput
+                                                        id="taeg_rate"
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        max="100"
+                                                        value={data.taeg_rate}
+                                                        className="mt-1 block w-full"
+                                                        onChange={(e) => setData('taeg_rate', e.target.value)}
+                                                    />
+                                                    <InputError message={errors.taeg_rate} className="mt-2" />
                                                 </div>
                                             </div>
                                             <div>

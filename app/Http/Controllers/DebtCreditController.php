@@ -6,10 +6,13 @@ use App\Http\Requests\StoreDebtCreditRequest;
 use App\Http\Requests\UpdateDebtCreditRequest;
 use App\Models\Currency;
 use App\Models\DebtCredit;
+use App\Models\DebtCreditAdjustment;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,6 +50,8 @@ class DebtCreditController extends Controller
                 'paid_amount' => $dc->paid_amount,
                 'remaining_amount' => $dc->getRemainingAmount(),
                 'interest_rate' => $dc->interest_rate,
+                'tan_rate' => $dc->tan_rate,
+                'taeg_rate' => $dc->taeg_rate,
                 'currency' => [
                     'code' => $dc->currency->code,
                     'symbol' => $dc->currency->symbol,
@@ -136,6 +141,8 @@ class DebtCreditController extends Controller
             'status' => $status,
             'description' => $validated['description'] ?? null,
             'interest_rate' => $validated['interest_rate'] ?? null,
+            'tan_rate' => $validated['tan_rate'] ?? null,
+            'taeg_rate' => $validated['taeg_rate'] ?? null,
             'interest_type' => $validated['interest_type'] ?? 'simple',
             'interest_calculation_date' => $validated['interest_calculation_date'] ?? now(),
             'start_date' => $validated['start_date'] ?? null,
@@ -157,7 +164,7 @@ class DebtCreditController extends Controller
             $q->with('account:id,name,currency_code', 'category:id,name,icon')
                 ->orderBy('date', 'desc')
                 ->limit(50);
-        }]);
+        }, 'adjustments.user:id,name']);
 
         $transactions = $debts_credit->transactions->map(fn ($t) => [
             'id' => $t->id,
@@ -177,6 +184,8 @@ class DebtCreditController extends Controller
                 'paid_amount' => $debts_credit->paid_amount,
                 'remaining_amount' => $debts_credit->getRemainingAmount(),
                 'interest_rate' => $debts_credit->interest_rate,
+                'tan_rate' => $debts_credit->tan_rate,
+                'taeg_rate' => $debts_credit->taeg_rate,
                 'interest_type' => $debts_credit->interest_type,
                 'interest_calculation_date' => $debts_credit->interest_calculation_date?->format('Y-m-d'),
                 'accrued_interest' => $debts_credit->calculateAccruedInterest(),
@@ -195,6 +204,14 @@ class DebtCreditController extends Controller
                 'created_by' => $debts_credit->user->name,
                 'created_at' => $debts_credit->created_at->format('d/m/Y H:i'),
                 'updated_at' => $debts_credit->updated_at->format('d/m/Y H:i'),
+                'adjustments' => $debts_credit->adjustments->map(fn ($adj) => [
+                    'id' => $adj->id,
+                    'amount' => (float) $adj->amount,
+                    'effective_date' => $adj->effective_date?->format('Y-m-d'),
+                    'reason' => $adj->reason,
+                    'notes' => $adj->notes,
+                    'user' => $adj->user?->name,
+                ])->values()->all(),
             ],
             'transactions' => $transactions,
             'types' => self::TYPES,
@@ -229,6 +246,8 @@ class DebtCreditController extends Controller
                 'status' => $debts_credit->status,
                 'description' => $debts_credit->description,
                 'interest_rate' => $debts_credit->interest_rate,
+                'tan_rate' => $debts_credit->tan_rate,
+                'taeg_rate' => $debts_credit->taeg_rate,
                 'interest_type' => $debts_credit->interest_type,
                 'interest_calculation_date' => $debts_credit->interest_calculation_date?->format('Y-m-d'),
                 'has_linked_transactions' => $debts_credit->transactions()->exists(),
@@ -281,6 +300,43 @@ class DebtCreditController extends Controller
         return redirect()
             ->route('debts-credits.index')
             ->with('success', self::TYPES[$debts_credit->type].' aggiornato con successo.');
+    }
+
+    public function addAdjustment(Request $request, DebtCredit $debts_credit): RedirectResponse
+    {
+        $this->authorizeDebtCredit($debts_credit);
+
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'effective_date' => ['required', 'date'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        DebtCreditAdjustment::create([
+            'debt_credit_id' => $debts_credit->id,
+            'user_id' => Auth::id(),
+            'amount' => $validated['amount'],
+            'effective_date' => $validated['effective_date'],
+            'reason' => $validated['reason'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        $totalPaid = Transaction::where('debt_credit_id', $debts_credit->id)->sum(DB::raw('ABS(amount)'));
+        $totalAdjusted = DebtCreditAdjustment::where('debt_credit_id', $debts_credit->id)->sum('amount');
+        $debts_credit->paid_amount = (float) $totalPaid + (float) $totalAdjusted;
+        $remaining = $debts_credit->getRemainingAmount();
+        if ($remaining <= 0.01) {
+            $debts_credit->status = 'closed';
+        } elseif ($debts_credit->due_date && now()->isAfter($debts_credit->due_date)) {
+            $debts_credit->status = 'overdue';
+        } else {
+            $debts_credit->status = 'open';
+        }
+        $debts_credit->save();
+
+        return redirect()->route('debts-credits.show', $debts_credit->id)
+            ->with('success', 'Riduzione non monetaria registrata con successo.');
     }
 
     /**

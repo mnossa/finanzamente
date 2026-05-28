@@ -34,6 +34,8 @@ class DebtCredit extends Model
         'status',
         'description',
         'interest_rate',
+        'tan_rate',
+        'taeg_rate',
         'interest_type',
         'interest_calculation_date',
     ];
@@ -43,6 +45,8 @@ class DebtCredit extends Model
         'initial_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'interest_rate' => 'decimal:2',
+        'tan_rate' => 'decimal:2',
+        'taeg_rate' => 'decimal:2',
         'due_date' => 'date',
         'start_date' => 'date',
         'interest_calculation_date' => 'date',
@@ -77,6 +81,11 @@ class DebtCredit extends Model
     public function recurringTransactions()
     {
         return $this->hasMany(RecurringTransaction::class, 'debt_credit_id');
+    }
+
+    public function adjustments()
+    {
+        return $this->hasMany(DebtCreditAdjustment::class, 'debt_credit_id');
     }
 
     /**

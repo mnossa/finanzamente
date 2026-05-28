@@ -159,6 +159,22 @@ class HandleInertiaRequests extends Middleware
             return route('dashboard');
         }
 
+        if (str_starts_with($notificationKey, 'duplicates_detect_')) {
+            return route('transactions.duplicates.index');
+        }
+
+        if (str_starts_with($notificationKey, 'monthly_spending_')) {
+            $parts = explode('_', $notificationKey);
+            $yearMonth = $parts[2] ?? null;
+            if ($yearMonth && preg_match('/^\d{4}-\d{2}$/', $yearMonth)) {
+                return route('transactions.index', [
+                    'type' => 'expense',
+                    'from' => $yearMonth.'-01',
+                    'to' => date('Y-m-t', strtotime($yearMonth.'-01')),
+                ]);
+            }
+        }
+
         return null;
     }
 }

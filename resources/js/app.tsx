@@ -13,6 +13,25 @@ declare global {
 if (typeof window !== 'undefined') {
     window.Transfers = window.Transfers || Transfers;
     window.trackEvent = trackEvent;
+
+    // Bridge base per notifiche PWA: il service worker può inviare
+    // postMessage con payload { type: 'FINANZAMENTE_NOTIFY', title, body }.
+    if ('serviceWorker' in navigator && 'Notification' in window) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            const payload = event.data as { type?: string; title?: string; body?: string; url?: string };
+            if (payload?.type !== 'FINANZAMENTE_NOTIFY') {
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                navigator.serviceWorker.ready
+                    .then((registration) => registration.showNotification(payload.title ?? 'Finanzamente', {
+                        body: payload.body ?? '',
+                        data: payload.url ? { url: payload.url } : undefined,
+                    }))
+                    .catch(() => undefined);
+            }
+        });
+    }
 }
 
 import { createInertiaApp } from '@inertiajs/react';

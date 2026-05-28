@@ -24,6 +24,8 @@ class UpdateDebtCreditRequest extends FormRequest
             'status' => ['required', 'in:open,closed,overdue'],
             'description' => ['nullable', 'string', 'max:255'],
             'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'tan_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'taeg_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'interest_type' => ['nullable', 'in:simple,compound'],
             'interest_calculation_date' => ['nullable', 'date'],
         ];
@@ -49,6 +51,12 @@ class UpdateDebtCreditRequest extends FormRequest
             'interest_rate.numeric' => 'Il tasso di interesse deve essere un numero.',
             'interest_rate.min' => 'Il tasso di interesse non può essere negativo.',
             'interest_rate.max' => 'Il tasso di interesse non può superare il 100%.',
+            'tan_rate.numeric' => 'Il TAN deve essere un numero.',
+            'tan_rate.min' => 'Il TAN non può essere negativo.',
+            'tan_rate.max' => 'Il TAN non può superare il 100%.',
+            'taeg_rate.numeric' => 'Il TAEG deve essere un numero.',
+            'taeg_rate.min' => 'Il TAEG non può essere negativo.',
+            'taeg_rate.max' => 'Il TAEG non può superare il 100%.',
             'interest_type.in' => 'Il tipo di interesse deve essere semplice o composto.',
             'interest_calculation_date.date' => 'La data di calcolo interessi non è valida.',
         ];
