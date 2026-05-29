@@ -32,6 +32,7 @@ class MobilePrimaryFabRoutesExistTest extends TestCase
             'refunds.create',
             'inter-household-transfers.create',
             'investments.create',
+            'investment-pacs.create',
             'investment-assets.create',
         ];
 

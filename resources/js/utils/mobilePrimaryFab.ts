@@ -29,6 +29,54 @@ const defaultFab = (): MobilePrimaryFab => ({
     analyticsSection: 'transactions',
 });
 
+/** Path sotto /investimenti/pac (index, crea, …). */
+const INVESTMENT_PAC_PATH = /\/investimenti\/pac(?:\/|$)/;
+
+/**
+ * Ziggy può associare /investimenti/pac a `investments.show` (parametro "pac") prima di
+ * `investment-pacs.index`: il FAB non deve mai cadere sul default transazioni.
+ */
+function isInvestmentPacSection(): boolean {
+    if (typeof route === 'function' && route().current('investment-pacs.*')) {
+        return true;
+    }
+
+    if (typeof window !== 'undefined') {
+        return INVESTMENT_PAC_PATH.test(window.location.pathname);
+    }
+
+    return false;
+}
+
+function isInvestmentPacCreatePage(): boolean {
+    if (typeof route === 'function' && route().current('investment-pacs.create')) {
+        return true;
+    }
+
+    if (typeof window !== 'undefined') {
+        return /\/investimenti\/pac\/crea\/?$/.test(window.location.pathname);
+    }
+
+    return false;
+}
+
+function investmentPacFab(): MobilePrimaryFab {
+    if (isInvestmentPacCreatePage()) {
+        return {
+            mode: 'submit',
+            ariaLabel: 'Crea PAC',
+            analyticsSection: 'investment_pacs_create_save',
+        };
+    }
+
+    return {
+        mode: 'link',
+        href: route('investment-pacs.create'),
+        ariaLabel: 'Nuovo PAC',
+        analyticsSection: 'investment_pacs',
+    };
+}
+
 /**
  * Pagine con più form principali: nessun FAB submit (resta il link di default dopo i `when`).
  */
@@ -49,6 +97,10 @@ function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
         };
     }
 
+    if (isInvestmentPacCreatePage()) {
+        return null;
+    }
+
     if (current.endsWith('.create') || current.endsWith('.edit')) {
         return {
             mode: 'submit',
@@ -66,6 +118,10 @@ function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
 export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
     if (typeof route !== 'function') {
         return defaultFab();
+    }
+
+    if (isInvestmentPacSection()) {
+        return investmentPacFab();
     }
 
     const current = route().current();

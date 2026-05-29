@@ -162,8 +162,10 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::delete('/transazioni/in-blocco', [TransactionController::class, 'bulkDestroy'])->name('transactions.bulk-destroy');
         Route::patch('/transazioni/in-blocco', [TransactionController::class, 'bulkUpdate'])->name('transactions.bulk-update');
         Route::get('/transazioni/duplicati', [DuplicateTransactionCandidateController::class, 'index'])->name('transactions.duplicates.index');
-        Route::post('/transazioni/duplicati/{candidate}/ignora', [DuplicateTransactionCandidateController::class, 'markIgnored'])->name('transactions.duplicates.ignore');
-        Route::post('/transazioni/duplicati/{candidate}/valido', [DuplicateTransactionCandidateController::class, 'markValid'])->name('transactions.duplicates.valid');
+        Route::post('/transazioni/duplicati/risolvi-ricorrenze', [DuplicateTransactionCandidateController::class, 'resolveAllRecurring'])->name('transactions.duplicates.resolve-all-recurring');
+        Route::post('/transazioni/duplicati/{candidate}/non-duplicato', [DuplicateTransactionCandidateController::class, 'dismiss'])->name('transactions.duplicates.dismiss');
+        Route::post('/transazioni/duplicati/{candidate}/mantieni-ricorrenza', [DuplicateTransactionCandidateController::class, 'keepRecurring'])->name('transactions.duplicates.keep-recurring');
+        Route::post('/transazioni/duplicati/{candidate}/elimina', [DuplicateTransactionCandidateController::class, 'remove'])->name('transactions.duplicates.remove');
         Route::get('/transazioni/{transaction}/modifica', [TransactionController::class, 'edit'])->name('transactions.edit');
         Route::patch('/transazioni/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
         Route::delete('/transazioni/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');

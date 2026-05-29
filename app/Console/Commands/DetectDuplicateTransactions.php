@@ -18,7 +18,7 @@ class DetectDuplicateTransactions extends Command
         $windowDays = max(1, (int) $this->option('days'));
 
         $transactions = Transaction::query()
-            ->select(['id', 'user_id', 'description', 'amount', 'date'])
+            ->select(['id', 'user_id', 'description', 'amount', 'date', 'recurring_transaction_id'])
             ->whereNotNull('description')
             ->orderBy('user_id')
             ->orderBy('date')
@@ -41,6 +41,16 @@ class DetectDuplicateTransactions extends Command
                     }
                     $distance = abs((int) $a->date->diffInDays($b->date));
                     if ($distance > $windowDays) {
+                        continue;
+                    }
+
+                    $primaryRecurringId = $a->recurring_transaction_id;
+                    $candidateRecurringId = $b->recurring_transaction_id;
+                    if (
+                        $primaryRecurringId !== null
+                        && $candidateRecurringId !== null
+                        && (int) $primaryRecurringId === (int) $candidateRecurringId
+                    ) {
                         continue;
                     }
 

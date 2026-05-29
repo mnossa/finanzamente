@@ -3,6 +3,8 @@ import PageHeader from '@/Components/PageHeader';
 import PageContent from '@/Components/PageContent';
 import CardBox from '@/Components/CardBox';
 import LinkButton from '@/Components/LinkButton';
+import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import PlusIcon from '@/Components/Icons/PlusIcon';
 import { Head } from '@inertiajs/react';
 import { formatCurrency } from '@/utils/format';
 
@@ -33,6 +35,16 @@ export default function InvestmentPacIndex({ pacs }: { pacs: Pac[] }) {
         >
             <Head title="PAC Investimenti" />
             <PageContent maxWidth="3xl">
+                    <IndexPageMobileToolbar>
+                        <LinkButton
+                            href={route('investment-pacs.create')}
+                            icon={<PlusIcon />}
+                            size="sm"
+                            className="w-full justify-center sm:w-auto"
+                        >
+                            Nuovo PAC
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
                 <CardBox className="p-4">
                     <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
                         Versamenti mensili automatici su ETF, fondi o altri strumenti. Configura importo, eventuale rivalutazione inflazione e date.

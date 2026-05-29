@@ -6,8 +6,11 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
+import FormActionsBar from '@/Components/FormActionsBar';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { Head, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
+import { FormEventHandler } from 'react';
 
 interface Account { id: number; name: string; currency_code: string }
 interface Asset { id: number; name: string; symbol: string; isin: string | null; currency_code: string }
@@ -26,11 +29,17 @@ export default function InvestmentPacCreate({ accounts, assets }: { accounts: Ac
         notes: '',
     });
 
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(route('investment-pacs.store'));
+    };
+
     return (
         <AuthenticatedLayout header={<PageHeader title="Nuovo PAC" backLink={route('investment-pacs.index')} />}>
             <Head title="Nuovo PAC" />
             <PageContent maxWidth="2xl">
-                <CardBox className="p-4 space-y-4">
+                <CardBox className="p-4 sm:p-5">
+                    <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                         Piano di accumulo con versamento mensile fisso. Il comando pianificato crea un investimento ogni mese.
                     </p>
@@ -105,13 +114,16 @@ export default function InvestmentPacCreate({ accounts, assets }: { accounts: Ac
                         <InputLabel value="Note (opz.)" />
                         <TextInput value={data.notes} onChange={(e) => setData('notes', e.target.value)} className="mt-1 block w-full" />
                     </div>
-                    <PrimaryButton
-                        disabled={processing}
-                        className={clsx(processing && 'opacity-60')}
-                        onClick={() => post(route('investment-pacs.store'))}
-                    >
-                        Crea PAC
-                    </PrimaryButton>
+                    <FormActionsBar>
+                        <PrimaryButton
+                            type="submit"
+                            disabled={processing}
+                            className={clsx(processing && 'opacity-60')}
+                        >
+                            Crea PAC
+                        </PrimaryButton>
+                    </FormActionsBar>
+                    </form>
                 </CardBox>
             </PageContent>
         </AuthenticatedLayout>
