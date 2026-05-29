@@ -58,6 +58,16 @@ class RecurrenceDetectionTest extends TestCase
         ]);
 
         $this->service = app(RecurrenceDetectionService::class);
+
+        // Giorno fisso a metà mese: evita overflow (es. 29 mag − 3 mesi → 1 mar) che rompe pattern mensili.
+        Carbon::setTestNow(Carbon::parse('2026-07-15 12:00:00'));
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     #[Test]
