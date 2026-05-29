@@ -115,13 +115,13 @@ function TransactionColumn({
             <p className="mt-1 truncate text-sm text-gray-600 dark:text-gray-300" title={side.description ?? undefined}>
                 {side.description ?? 'Senza descrizione'}
             </p>
-            {side.recurring_edit_url && side.recurring_label && (
+            {side.recurring_show_url && side.recurring_label && (
                 <div className="mt-2 space-y-0.5">
                     <Link
-                        href={side.recurring_edit_url}
+                        href={side.recurring_show_url}
                         className="inline-block text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
                     >
-                        Ricorrenza: {side.recurring_label}
+                        Da ricorrenza: {side.recurring_label}
                     </Link>
                     {side.recurring_is_ended && side.recurring_end_date && (
                         <p className="text-[10px] font-medium uppercase tracking-wide text-violet-700 dark:text-violet-300">

@@ -32,6 +32,7 @@ export interface TransactionPreviewSide {
     edit_url: string | null;
     entry_source: 'recurring' | 'manual' | 'unknown';
     recurring_label: string | null;
+    recurring_show_url: string | null;
     recurring_edit_url: string | null;
     recurring_frequency: string | null;
     recurring_is_ended?: boolean;
@@ -224,8 +225,12 @@ export default function TransactionQuickViewModal({ show, side, columnLabel, onC
                             Modifica movimento
                         </LinkButton>
                     )}
-                    {side.recurring_edit_url && (
-                        <LinkButton href={side.recurring_edit_url} variant="secondary" className="justify-center">
+                    {(side.recurring_show_url ?? side.recurring_edit_url) && (
+                        <LinkButton
+                            href={side.recurring_show_url ?? side.recurring_edit_url!}
+                            variant="secondary"
+                            className="justify-center"
+                        >
                             Apri ricorrenza
                         </LinkButton>
                     )}

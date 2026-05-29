@@ -10,6 +10,10 @@ use Illuminate\Support\Collection;
  */
 class DuplicateTransactionClusterService
 {
+    public function __construct(
+        private readonly DuplicateTransactionCandidateService $duplicateCandidateService,
+    ) {}
+
     /**
      * @param  Collection<int, Transaction>  $transactions
      * @return Collection<int, Collection<int, Transaction>>
@@ -115,14 +119,7 @@ class DuplicateTransactionClusterService
             return false;
         }
 
-        $primaryRecurringId = $a->recurring_transaction_id;
-        $candidateRecurringId = $b->recurring_transaction_id;
-
-        if (
-            $primaryRecurringId !== null
-            && $candidateRecurringId !== null
-            && (int) $primaryRecurringId === (int) $candidateRecurringId
-        ) {
+        if ($this->duplicateCandidateService->areScheduledRecurringOccurrences($a, $b)) {
             return false;
         }
 

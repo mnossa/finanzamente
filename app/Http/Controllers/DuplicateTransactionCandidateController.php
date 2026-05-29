@@ -195,6 +195,7 @@ class DuplicateTransactionCandidateController extends Controller
                 'edit_url' => null,
                 'entry_source' => 'unknown',
                 'recurring_label' => null,
+                'recurring_show_url' => null,
                 'recurring_edit_url' => null,
                 'recurring_frequency' => null,
                 'recurring_is_ended' => false,
@@ -210,13 +211,15 @@ class DuplicateTransactionCandidateController extends Controller
             ];
         }
 
-        $entrySource = $this->duplicateService->entrySourceForSide($side, $pair);
+        $entrySource = $this->duplicateService->entrySourceForSide($side, $pair, $transaction);
         $linkedRecurring = $transaction->recurringTransaction;
         $endedTemplate = $this->duplicateService->resolveEndedRecurringTemplateForTransaction($transaction);
-        $templateRecurring = $pair['recurring'] ?? $linkedRecurring ?? $endedTemplate;
+        $inferredTemplate = $this->duplicateService->resolveRecurringTemplateForTransaction($transaction);
+        $templateRecurring = $pair['recurring'] ?? $linkedRecurring ?? $inferredTemplate ?? $endedTemplate;
         $showRecurringLink = $entrySource === 'recurring'
             || $pair['type'] === DuplicateTransactionCandidateService::PAIR_RECURRING_VS_MANUAL
-            || $endedTemplate !== null;
+            || $endedTemplate !== null
+            || $inferredTemplate !== null;
         $recurringIsEnded = $templateRecurring?->isEnded() ?? false;
 
         return [
@@ -229,6 +232,9 @@ class DuplicateTransactionCandidateController extends Controller
             'edit_url' => route('transactions.edit', $transaction),
             'entry_source' => $entrySource,
             'recurring_label' => $showRecurringLink ? $templateRecurring?->description : null,
+            'recurring_show_url' => $showRecurringLink && $templateRecurring
+                ? route('recurring-transactions.show', $templateRecurring)
+                : null,
             'recurring_edit_url' => $showRecurringLink && $templateRecurring
                 ? route('recurring-transactions.edit', $templateRecurring)
                 : null,

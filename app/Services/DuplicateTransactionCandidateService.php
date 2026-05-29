@@ -28,6 +28,9 @@ class DuplicateTransactionCandidateService
 
     public const PAIR_ENDED_RECURRING_HISTORY = 'ended_recurring_history';
 
+    /** Rate della stessa ricorrenza in periodi distinti (es. mutuo mensile). */
+    public const PAIR_RECURRING_OCCURRENCES = 'recurring_occurrences';
+
     /**
      * @return array{
      *     type: string,
@@ -43,11 +46,22 @@ class DuplicateTransactionCandidateService
 
         if ($primaryFk !== null && $candidateFk !== null) {
             if ((int) $primaryFk === (int) $candidateFk) {
+                $recurring = $primary->recurringTransaction ?? RecurringTransaction::query()->find($primaryFk);
+
+                if ($recurring && $this->areDistinctRecurringPeriods($primary, $candidate, $recurring)) {
+                    return [
+                        'type' => self::PAIR_RECURRING_OCCURRENCES,
+                        'recurring_side' => null,
+                        'manual_side' => null,
+                        'recurring' => $recurring,
+                    ];
+                }
+
                 return [
                     'type' => self::PAIR_SAME_RECURRING,
                     'recurring_side' => null,
                     'manual_side' => null,
-                    'recurring' => RecurringTransaction::query()->find($primaryFk),
+                    'recurring' => $recurring,
                 ];
             }
 
@@ -88,6 +102,15 @@ class DuplicateTransactionCandidateService
             && $candidateRecurring !== null
             && (int) $primaryRecurring->id === (int) $candidateRecurring->id
         ) {
+            if ($this->areDistinctRecurringPeriods($primary, $candidate, $primaryRecurring)) {
+                return [
+                    'type' => self::PAIR_RECURRING_OCCURRENCES,
+                    'recurring_side' => null,
+                    'manual_side' => null,
+                    'recurring' => $primaryRecurring,
+                ];
+            }
+
             $recurringSide = $this->preferredRecurringSide($primary, $candidate, $primaryRecurring);
 
             return [
@@ -219,6 +242,21 @@ class DuplicateTransactionCandidateService
             return false;
         }
 
+        $recurring = $this->resolveCommonRecurringForCluster($cluster);
+        if ($recurring !== null) {
+            return $this->clusterHasDistinctRecurringPeriods($cluster, $recurring);
+        }
+
+        return $this->shouldIgnoreEndedRecurringTemplateCluster($cluster);
+    }
+
+    /**
+     * Stesso abbonamento rinnovato con più record ricorrenza terminati (periodi distinti).
+     *
+     * @param  Collection<int, Transaction>  $cluster
+     */
+    private function shouldIgnoreEndedRecurringTemplateCluster(Collection $cluster): bool
+    {
         $recurrings = $cluster
             ->map(fn (Transaction $t) => $t->recurringTransaction)
             ->filter();
@@ -231,12 +269,62 @@ class DuplicateTransactionCandidateService
             return false;
         }
 
-        $frequency = (string) ($recurrings->first()->frequency ?? 'monthly');
+        $template = $recurrings->first();
+
+        if (! $recurrings->every(fn (RecurringTransaction $r) => $this->matchesSameRecurringTemplate($template, $r))) {
+            return false;
+        }
+
+        return $this->clusterHasDistinctRecurringPeriods($cluster, $template);
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $cluster
+     */
+    private function clusterHasDistinctRecurringPeriods(Collection $cluster, RecurringTransaction $recurring): bool
+    {
+        $frequency = (string) ($recurring->frequency ?? 'monthly');
         $periodKeys = $cluster
             ->map(fn (Transaction $t) => $this->periodKeyForDate(Carbon::parse($t->date), $frequency))
             ->unique();
 
-        return $periodKeys->count() === $cluster->count();
+        if ($periodKeys->count() !== $cluster->count()) {
+            return false;
+        }
+
+        return $this->clusterHasMinimumOccurrenceSpacing($cluster, $frequency);
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $cluster
+     */
+    private function clusterHasMinimumOccurrenceSpacing(Collection $cluster, string $frequency): bool
+    {
+        $dates = $cluster
+            ->map(fn (Transaction $t) => Carbon::parse($t->date))
+            ->sort()
+            ->values();
+
+        $minDays = $this->minDaysBetweenOccurrences($frequency);
+
+        for ($i = 1; $i < $dates->count(); $i++) {
+            if (abs((int) $dates[$i]->diffInDays($dates[$i - 1])) < $minDays) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Due movimenti sono rate della stessa ricorrenza in periodi di fatturazione distinti.
+     */
+    public function areScheduledRecurringOccurrences(Transaction $a, Transaction $b): bool
+    {
+        $recurring = $this->resolveCommonRecurringForPair($a, $b);
+
+        return $recurring !== null
+            && $this->areDistinctRecurringPeriods($a, $b, $recurring);
     }
 
     public function shouldIgnoreCandidate(DuplicateTransactionCandidate $candidate): bool
@@ -264,7 +352,25 @@ class DuplicateTransactionCandidateService
             return false;
         }
 
-        return $this->classifyPair($primary, $candidateTx)['type'] === self::PAIR_ENDED_RECURRING_HISTORY;
+        $pairType = $this->classifyPair($primary, $candidateTx)['type'];
+
+        return in_array($pairType, [
+            self::PAIR_ENDED_RECURRING_HISTORY,
+            self::PAIR_RECURRING_OCCURRENCES,
+        ], true);
+    }
+
+    /**
+     * Ricorrenza collegata o riconoscibile dal movimento (attiva o terminata).
+     */
+    public function resolveRecurringTemplateForTransaction(Transaction $transaction): ?RecurringTransaction
+    {
+        if ($transaction->recurring_transaction_id !== null) {
+            return $transaction->recurringTransaction
+                ?? RecurringTransaction::query()->find($transaction->recurring_transaction_id);
+        }
+
+        return $this->resolveRecurringForTransaction($transaction);
     }
 
     /**
@@ -301,21 +407,98 @@ class DuplicateTransactionCandidateService
             });
     }
 
-    public function entrySourceForSide(string $side, array $pair): string
+    public function entrySourceForSide(string $side, array $pair, ?Transaction $transaction = null): string
     {
-        if ($pair['type'] !== self::PAIR_RECURRING_VS_MANUAL) {
-            return 'unknown';
-        }
-
-        if ($pair['recurring_side'] === $side) {
+        if (in_array($pair['type'], [self::PAIR_RECURRING_OCCURRENCES, self::PAIR_ENDED_RECURRING_HISTORY], true)) {
             return 'recurring';
         }
 
-        if ($pair['manual_side'] === $side) {
-            return 'manual';
+        if ($pair['type'] === self::PAIR_RECURRING_VS_MANUAL) {
+            if ($pair['recurring_side'] === $side) {
+                return 'recurring';
+            }
+
+            if ($pair['manual_side'] === $side) {
+                return 'manual';
+            }
+        }
+
+        if ($transaction?->recurring_transaction_id !== null) {
+            return 'recurring';
+        }
+
+        if ($this->resolveRecurringTemplateForTransaction($transaction) !== null) {
+            return 'recurring';
         }
 
         return 'unknown';
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $cluster
+     */
+    private function resolveCommonRecurringForCluster(Collection $cluster): ?RecurringTransaction
+    {
+        $recurringIds = [];
+
+        foreach ($cluster as $transaction) {
+            $recurringId = $transaction->recurring_transaction_id
+                ?? $this->resolveRecurringForTransaction($transaction)?->id;
+
+            if ($recurringId === null) {
+                return null;
+            }
+
+            $recurringIds[] = (int) $recurringId;
+        }
+
+        $unique = array_values(array_unique($recurringIds));
+
+        if (count($unique) !== 1) {
+            return null;
+        }
+
+        $first = $cluster->first();
+
+        return $first->recurringTransaction ?? RecurringTransaction::query()->find($unique[0]);
+    }
+
+    private function resolveCommonRecurringForPair(Transaction $a, Transaction $b): ?RecurringTransaction
+    {
+        $idA = $a->recurring_transaction_id ?? $this->resolveRecurringForTransaction($a)?->id;
+        $idB = $b->recurring_transaction_id ?? $this->resolveRecurringForTransaction($b)?->id;
+
+        if ($idA === null || $idB === null || (int) $idA !== (int) $idB) {
+            return null;
+        }
+
+        return $a->recurringTransaction ?? $b->recurringTransaction ?? RecurringTransaction::query()->find($idA);
+    }
+
+    private function areDistinctRecurringPeriods(
+        Transaction $primary,
+        Transaction $candidate,
+        RecurringTransaction $recurring,
+    ): bool {
+        $frequency = (string) ($recurring->frequency ?? 'monthly');
+        $primaryDate = Carbon::parse($primary->date);
+        $candidateDate = Carbon::parse($candidate->date);
+
+        if ($this->periodKeyForDate($primaryDate, $frequency) === $this->periodKeyForDate($candidateDate, $frequency)) {
+            return false;
+        }
+
+        return abs((int) $primaryDate->diffInDays($candidateDate)) >= $this->minDaysBetweenOccurrences($frequency);
+    }
+
+    private function minDaysBetweenOccurrences(string $frequency): int
+    {
+        return match ($frequency) {
+            'weekly' => 6,
+            'daily' => 1,
+            'yearly' => 335,
+            default => 28,
+        };
     }
 
     private function isEndedRecurringHistoryPair(Transaction $primary, Transaction $candidate): bool
@@ -335,12 +518,7 @@ class DuplicateTransactionCandidateService
             return false;
         }
 
-        $frequency = (string) ($recPrimary->frequency ?? 'monthly');
-        $primaryDate = Carbon::parse($primary->date);
-        $candidateDate = Carbon::parse($candidate->date);
-
-        return $this->periodKeyForDate($primaryDate, $frequency)
-            !== $this->periodKeyForDate($candidateDate, $frequency);
+        return $this->areDistinctRecurringPeriods($primary, $candidate, $recPrimary);
     }
 
     private function matchesSameRecurringTemplate(RecurringTransaction $a, RecurringTransaction $b): bool
@@ -367,7 +545,7 @@ class DuplicateTransactionCandidateService
         };
     }
 
-    private function resolveRecurringForTransaction(Transaction $transaction): ?RecurringTransaction
+    public function resolveRecurringForTransaction(Transaction $transaction): ?RecurringTransaction
     {
         $description = mb_strtolower(trim((string) $transaction->description));
         if ($description === '') {

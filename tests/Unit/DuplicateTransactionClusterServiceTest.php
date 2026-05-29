@@ -18,7 +18,7 @@ class DuplicateTransactionClusterServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new DuplicateTransactionClusterService;
+        $this->service = app(DuplicateTransactionClusterService::class);
     }
 
     #[Test]
