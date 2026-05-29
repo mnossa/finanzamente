@@ -6,6 +6,7 @@ use App\Models\Concerns\DispatchesModelEvents;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * RecurringTransaction
@@ -70,5 +71,19 @@ class RecurringTransaction extends Model
     public function isDebtPayment(): bool
     {
         return $this->debt_credit_id !== null;
+    }
+
+    /**
+     * Ricorrenza chiusa (data di fine impostata e già trascorsa).
+     */
+    public function isEnded(?Carbon $on = null): bool
+    {
+        if ($this->end_date === null) {
+            return false;
+        }
+
+        $on ??= Carbon::today();
+
+        return $this->end_date->lte($on);
     }
 }

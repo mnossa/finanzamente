@@ -24,18 +24,20 @@ class DuplicateTransactionCandidateController extends Controller
             'primaryTransaction.category:id,name,color,icon,type',
             'primaryTransaction.tags:id,name,color',
             'primaryTransaction.user:id,name',
-            'primaryTransaction.recurringTransaction:id,description,frequency',
+            'primaryTransaction.recurringTransaction:id,description,frequency,end_date',
             'candidateTransaction.account:id,name,currency_code',
             'candidateTransaction.category:id,name,color,icon,type',
             'candidateTransaction.tags:id,name,color',
             'candidateTransaction.user:id,name',
-            'candidateTransaction.recurringTransaction:id,description,frequency',
+            'candidateTransaction.recurringTransaction:id,description,frequency,end_date',
         ])
             ->where('user_id', Auth::id())
             ->where('status', DuplicateTransactionCandidateService::STATUS_PENDING)
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn (DuplicateTransactionCandidate $c) => $this->mapCandidate($c));
+            ->filter(fn (DuplicateTransactionCandidate $c) => ! $this->duplicateService->shouldIgnoreCandidate($c))
+            ->map(fn (DuplicateTransactionCandidate $c) => $this->mapCandidate($c))
+            ->values();
 
         $recurringDuplicateCount = $items->where('pair_type', DuplicateTransactionCandidateService::PAIR_RECURRING_VS_MANUAL)->count();
 
@@ -119,16 +121,61 @@ class DuplicateTransactionCandidateController extends Controller
             ];
 
         $recurringTemplate = $pair['recurring'] ?? null;
+        $clusterIds = $this->clusterTransactionIds($c);
+        $clusterSize = count($clusterIds);
+        $primaryId = (int) $c->primary_transaction_id;
+        $candidateId = (int) $c->candidate_transaction_id;
+
+        $additional = [];
+        $clusterSpreadDays = (int) $c->distance_days;
+
+        if ($clusterSize > 2) {
+            $clusterTransactions = Transaction::query()
+                ->with([
+                    'account:id,name,currency_code',
+                    'category:id,name,color,icon,type',
+                    'tags:id,name,color',
+                    'user:id,name',
+                    'recurringTransaction:id,description,frequency',
+                ])
+                ->whereIn('id', $clusterIds)
+                ->orderBy('date')
+                ->get();
+
+            $clusterSpreadDays = abs((int) $clusterTransactions->first()->date->diffInDays(
+                $clusterTransactions->last()->date
+            ));
+
+            $additional = $clusterTransactions
+                ->filter(fn (Transaction $t) => ! in_array((int) $t->id, [$primaryId, $candidateId], true))
+                ->map(fn (Transaction $t) => $this->mapTransactionSide($t, $pair, 'unknown'))
+                ->values()
+                ->all();
+        }
 
         return [
             'id' => $c->id,
             'distance_days' => $c->distance_days,
+            'cluster_size' => $clusterSize,
+            'cluster_spread_days' => $clusterSpreadDays,
             'pair_type' => $pair['type'],
             'recurring_side' => $pair['recurring_side'],
             'recurring_template_label' => $recurringTemplate?->description,
             'primary' => $this->mapTransactionSide($primary, $pair, 'primary'),
             'candidate' => $this->mapTransactionSide($candidateTx, $pair, 'candidate'),
+            'additional_transactions' => $additional,
         ];
+    }
+
+    /**
+     * @return int[]
+     */
+    private function clusterTransactionIds(DuplicateTransactionCandidate $candidate): array
+    {
+        $ids = $candidate->cluster_transaction_ids
+            ?? [$candidate->primary_transaction_id, $candidate->candidate_transaction_id];
+
+        return array_values(array_unique(array_map('intval', $ids)));
     }
 
     /**
@@ -139,6 +186,7 @@ class DuplicateTransactionCandidateController extends Controller
     {
         if ($transaction === null) {
             return [
+                'transaction_id' => null,
                 'date' => null,
                 'amount' => 0,
                 'description' => null,
@@ -149,6 +197,8 @@ class DuplicateTransactionCandidateController extends Controller
                 'recurring_label' => null,
                 'recurring_edit_url' => null,
                 'recurring_frequency' => null,
+                'recurring_is_ended' => false,
+                'recurring_end_date' => null,
                 'category' => null,
                 'tags' => [],
                 'user_name' => null,
@@ -162,10 +212,15 @@ class DuplicateTransactionCandidateController extends Controller
 
         $entrySource = $this->duplicateService->entrySourceForSide($side, $pair);
         $linkedRecurring = $transaction->recurringTransaction;
-        $templateRecurring = $pair['recurring'] ?? $linkedRecurring;
-        $showRecurringLink = $entrySource === 'recurring' || $pair['type'] === DuplicateTransactionCandidateService::PAIR_RECURRING_VS_MANUAL;
+        $endedTemplate = $this->duplicateService->resolveEndedRecurringTemplateForTransaction($transaction);
+        $templateRecurring = $pair['recurring'] ?? $linkedRecurring ?? $endedTemplate;
+        $showRecurringLink = $entrySource === 'recurring'
+            || $pair['type'] === DuplicateTransactionCandidateService::PAIR_RECURRING_VS_MANUAL
+            || $endedTemplate !== null;
+        $recurringIsEnded = $templateRecurring?->isEnded() ?? false;
 
         return [
+            'transaction_id' => $transaction->id,
             'date' => $transaction->date->format('Y-m-d'),
             'amount' => (float) $transaction->amount,
             'description' => $transaction->description,
@@ -178,6 +233,8 @@ class DuplicateTransactionCandidateController extends Controller
                 ? route('recurring-transactions.edit', $templateRecurring)
                 : null,
             'recurring_frequency' => $showRecurringLink ? $templateRecurring?->frequency : null,
+            'recurring_is_ended' => $recurringIsEnded,
+            'recurring_end_date' => $recurringIsEnded ? $templateRecurring?->end_date?->format('Y-m-d') : null,
             'category' => $transaction->category ? [
                 'name' => $transaction->category->name,
                 'color' => $transaction->category->color,

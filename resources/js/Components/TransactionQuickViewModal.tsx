@@ -23,6 +23,7 @@ export interface TransactionPreviewTag {
 }
 
 export interface TransactionPreviewSide {
+    transaction_id?: number | null;
     date: string | null;
     amount: number;
     description: string | null;
@@ -33,6 +34,8 @@ export interface TransactionPreviewSide {
     recurring_label: string | null;
     recurring_edit_url: string | null;
     recurring_frequency: string | null;
+    recurring_is_ended?: boolean;
+    recurring_end_date?: string | null;
     category: TransactionPreviewCategory | null;
     tags: TransactionPreviewTag[];
     user_name: string | null;
@@ -164,6 +167,11 @@ export default function TransactionQuickViewModal({ show, side, columnLabel, onC
                                     <span className="text-gray-500 dark:text-gray-400">
                                         {' '}
                                         ({RECURRING_FREQUENCY_LABELS[side.recurring_frequency] ?? side.recurring_frequency})
+                                    </span>
+                                )}
+                                {side.recurring_is_ended && side.recurring_end_date && (
+                                    <span className="mt-0.5 block text-xs font-normal text-gray-500 dark:text-gray-400">
+                                        Terminata il {side.recurring_end_date}
                                     </span>
                                 )}
                             </dd>

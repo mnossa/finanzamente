@@ -7,6 +7,8 @@ use App\Models\InterHouseholdTransfer;
 use App\Models\RecurringTransaction;
 use App\Models\Transaction;
 use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -23,6 +25,8 @@ class DuplicateTransactionCandidateService
     public const PAIR_SAME_RECURRING = 'same_recurring';
 
     public const PAIR_DIFFERENT_RECURRINGS = 'different_recurrings';
+
+    public const PAIR_ENDED_RECURRING_HISTORY = 'ended_recurring_history';
 
     /**
      * @return array{
@@ -44,6 +48,15 @@ class DuplicateTransactionCandidateService
                     'recurring_side' => null,
                     'manual_side' => null,
                     'recurring' => RecurringTransaction::query()->find($primaryFk),
+                ];
+            }
+
+            if ($this->isEndedRecurringHistoryPair($primary, $candidate)) {
+                return [
+                    'type' => self::PAIR_ENDED_RECURRING_HISTORY,
+                    'recurring_side' => null,
+                    'manual_side' => null,
+                    'recurring' => $primary->recurringTransaction,
                 ];
             }
 
@@ -195,6 +208,99 @@ class DuplicateTransactionCandidateService
         });
     }
 
+    /**
+     * Occorrenze collegate a ricorrenze già terminate, in periodi distinti: non sono duplicati.
+     *
+     * @param  Collection<int, Transaction>  $cluster
+     */
+    public function shouldIgnoreCluster(Collection $cluster): bool
+    {
+        if ($cluster->count() < 2) {
+            return false;
+        }
+
+        $recurrings = $cluster
+            ->map(fn (Transaction $t) => $t->recurringTransaction)
+            ->filter();
+
+        if ($recurrings->count() !== $cluster->count()) {
+            return false;
+        }
+
+        if (! $recurrings->every(fn (RecurringTransaction $r) => $r->isEnded())) {
+            return false;
+        }
+
+        $frequency = (string) ($recurrings->first()->frequency ?? 'monthly');
+        $periodKeys = $cluster
+            ->map(fn (Transaction $t) => $this->periodKeyForDate(Carbon::parse($t->date), $frequency))
+            ->unique();
+
+        return $periodKeys->count() === $cluster->count();
+    }
+
+    public function shouldIgnoreCandidate(DuplicateTransactionCandidate $candidate): bool
+    {
+        $ids = $candidate->cluster_transaction_ids
+            ?? [$candidate->primary_transaction_id, $candidate->candidate_transaction_id];
+
+        $transactions = Transaction::query()
+            ->with('recurringTransaction:id,description,frequency,end_date,amount,account_id')
+            ->whereIn('id', array_map('intval', $ids))
+            ->get();
+
+        if ($transactions->count() < 2) {
+            return false;
+        }
+
+        if ($this->shouldIgnoreCluster($transactions)) {
+            return true;
+        }
+
+        $primary = $candidate->primaryTransaction;
+        $candidateTx = $candidate->candidateTransaction;
+
+        if ($primary === null || $candidateTx === null) {
+            return false;
+        }
+
+        return $this->classifyPair($primary, $candidateTx)['type'] === self::PAIR_ENDED_RECURRING_HISTORY;
+    }
+
+    /**
+     * Ricorrenza terminata il cui periodo copriva la data del movimento (per etichetta UI).
+     */
+    public function resolveEndedRecurringTemplateForTransaction(Transaction $transaction): ?RecurringTransaction
+    {
+        if ($transaction->recurring_transaction_id !== null) {
+            $linked = $transaction->recurringTransaction;
+
+            return ($linked && $linked->isEnded()) ? $linked : null;
+        }
+
+        $description = mb_strtolower(trim((string) $transaction->description));
+        if ($description === '') {
+            return null;
+        }
+
+        $amount = round((float) $transaction->amount, 2);
+        $onDate = Carbon::parse($transaction->date);
+
+        return RecurringTransaction::query()
+            ->where('user_id', $transaction->user_id)
+            ->where('account_id', $transaction->account_id)
+            ->whereNotNull('end_date')
+            ->where('end_date', '<', Carbon::today())
+            ->where('end_date', '>=', $onDate)
+            ->where('start_date', '<=', $onDate)
+            ->orderByDesc('end_date')
+            ->get()
+            ->first(function (RecurringTransaction $recurring) use ($description, $amount): bool {
+                return mb_strtolower(trim((string) $recurring->description)) === $description
+                    && round((float) $recurring->amount, 2) === $amount;
+            });
+    }
+
     public function entrySourceForSide(string $side, array $pair): string
     {
         if ($pair['type'] !== self::PAIR_RECURRING_VS_MANUAL) {
@@ -210,6 +316,55 @@ class DuplicateTransactionCandidateService
         }
 
         return 'unknown';
+    }
+
+    private function isEndedRecurringHistoryPair(Transaction $primary, Transaction $candidate): bool
+    {
+        $recPrimary = $primary->recurringTransaction;
+        $recCandidate = $candidate->recurringTransaction;
+
+        if ($recPrimary === null || $recCandidate === null) {
+            return false;
+        }
+
+        if (! $recPrimary->isEnded() || ! $recCandidate->isEnded()) {
+            return false;
+        }
+
+        if (! $this->matchesSameRecurringTemplate($recPrimary, $recCandidate)) {
+            return false;
+        }
+
+        $frequency = (string) ($recPrimary->frequency ?? 'monthly');
+        $primaryDate = Carbon::parse($primary->date);
+        $candidateDate = Carbon::parse($candidate->date);
+
+        return $this->periodKeyForDate($primaryDate, $frequency)
+            !== $this->periodKeyForDate($candidateDate, $frequency);
+    }
+
+    private function matchesSameRecurringTemplate(RecurringTransaction $a, RecurringTransaction $b): bool
+    {
+        if ((int) $a->account_id !== (int) $b->account_id) {
+            return false;
+        }
+
+        if (round((float) $a->amount, 2) !== round((float) $b->amount, 2)) {
+            return false;
+        }
+
+        return mb_strtolower(trim((string) $a->description))
+            === mb_strtolower(trim((string) $b->description));
+    }
+
+    private function periodKeyForDate(Carbon $date, string $frequency): string
+    {
+        return match ($frequency) {
+            'weekly' => $date->format('o-W'),
+            'yearly' => $date->format('Y'),
+            'daily' => $date->format('Y-m-d'),
+            default => $date->format('Y-m'),
+        };
     }
 
     private function resolveRecurringForTransaction(Transaction $transaction): ?RecurringTransaction

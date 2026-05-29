@@ -27,11 +27,14 @@ type TransactionSide = TransactionPreviewSide;
 interface Item {
     id: number;
     distance_days: number;
+    cluster_size: number;
+    cluster_spread_days: number;
     pair_type: string;
     recurring_side: 'primary' | 'candidate' | null;
     recurring_template_label: string | null;
     primary: TransactionSide;
     candidate: TransactionSide;
+    additional_transactions: TransactionSide[];
 }
 
 interface Props {
@@ -113,12 +116,19 @@ function TransactionColumn({
                 {side.description ?? 'Senza descrizione'}
             </p>
             {side.recurring_edit_url && side.recurring_label && (
-                <Link
-                    href={side.recurring_edit_url}
-                    className="mt-2 inline-block text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
-                >
-                    Ricorrenza: {side.recurring_label}
-                </Link>
+                <div className="mt-2 space-y-0.5">
+                    <Link
+                        href={side.recurring_edit_url}
+                        className="inline-block text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+                    >
+                        Ricorrenza: {side.recurring_label}
+                    </Link>
+                    {side.recurring_is_ended && side.recurring_end_date && (
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-violet-700 dark:text-violet-300">
+                            Ricorrenza terminata · fine {formatDate(side.recurring_end_date)}
+                        </p>
+                    )}
+                </div>
             )}
             <button
                 type="button"
@@ -241,7 +251,10 @@ function DuplicateCandidateCard({ item }: { item: Item }) {
                                 : 'text-amber-800 dark:text-amber-200/90',
                         )}
                     >
-                        Stesso importo e descrizione simile · {distanceLabel(item.distance_days)}
+                        Stesso importo e descrizione simile ·{' '}
+                        {item.cluster_size > 2
+                            ? `${item.cluster_size} movimenti entro ${distanceLabel(item.cluster_spread_days)}`
+                            : distanceLabel(item.distance_days)}
                     </p>
                     {isRecurringPair && (
                         <p className="text-xs text-gray-700 dark:text-gray-300">
@@ -287,6 +300,47 @@ function DuplicateCandidateCard({ item }: { item: Item }) {
                     )}
                 </div>
 
+                {item.additional_transactions.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/40 p-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                            Altri movimenti nello stesso gruppo ({item.additional_transactions.length})
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                            {item.additional_transactions.map((extra) => (
+                                <li
+                                    key={extra.transaction_id ?? extra.date}
+                                    className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                                >
+                                    <span className="text-gray-700 dark:text-gray-200">
+                                        <span className="font-medium tabular-nums">
+                                            {formatCurrency(extra.amount, extra.currency_code)}
+                                        </span>
+                                        {extra.date ? (
+                                            <span className="text-gray-500 dark:text-gray-400">
+                                                {' '}
+                                                · {formatDate(extra.date)}
+                                            </span>
+                                        ) : null}
+                                        {extra.account_name ? (
+                                            <span className="text-gray-500 dark:text-gray-400">
+                                                {' '}
+                                                · {extra.account_name}
+                                            </span>
+                                        ) : null}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreview({ side: extra, label: 'Movimento aggiuntivo' })}
+                                        className="text-xs font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+                                    >
+                                        Dettaglio
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
                 <div
                     className={clsx(
                         'mt-4 space-y-2 border-t pt-4',
@@ -298,7 +352,9 @@ function DuplicateCandidateCard({ item }: { item: Item }) {
                     <p className="text-xs text-gray-600 dark:text-gray-400">
                         {isRecurringPair
                             ? 'Usa «Mantieni ricorrenza» per eliminare solo l’inserimento manuale e lasciare il movimento generato automaticamente.'
-                            : 'Se hai inserito lo stesso pagamento due volte, elimina il movimento in eccesso. Se sono spese distinte, scegli «Non duplicati».'}
+                            : item.cluster_size > 2
+                              ? 'Se sono pagamenti distinti (es. rate o acquisti separati), scegli «Non duplicati» una sola volta per tutto il gruppo. Altrimenti elimina i movimenti in eccesso.'
+                              : 'Se hai inserito lo stesso pagamento due volte, elimina il movimento in eccesso. Se sono spese distinte, scegli «Non duplicati».'}
                     </p>
                     <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                         {isRecurringPair && (
@@ -444,9 +500,11 @@ export default function Duplicates({ items, pendingCount, recurringDuplicateCoun
             <PageContent maxWidth="3xl">
                 <CardBox className="mb-4 space-y-3 p-4">
                     <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Il sistema segnala coppie con <strong>stessa descrizione</strong>, <strong>stesso importo</strong>{' '}
-                        e date vicine. Le righe con badge <strong>«Ricorrenza + manuale»</strong> hanno un movimento
-                        generato automaticamente e uno inserito a mano: di solito puoi tenere solo quello da ricorrenza.
+                        Il sistema raggruppa movimenti con <strong>stessa descrizione</strong>, <strong>stesso importo</strong>{' '}
+                        e date vicine in un’unica segnalazione (non una card per ogni coppia). Le righe{' '}
+                        <strong>«Ricorrenza + manuale»</strong> indicano un movimento automatico e uno inserito a mano. I
+                        movimenti collegati a <strong>ricorrenze terminate</strong> sono evidenziati; le occorrenze storiche
+                        in mesi diversi non vengono segnalate come duplicati.
                     </p>
                     {recurringDuplicateCount > 0 && (
                         <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">

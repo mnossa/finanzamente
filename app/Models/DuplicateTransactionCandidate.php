@@ -15,6 +15,11 @@ class DuplicateTransactionCandidate extends Model
         'candidate_transaction_id',
         'status',
         'distance_days',
+        'cluster_transaction_ids',
+    ];
+
+    protected $casts = [
+        'cluster_transaction_ids' => 'array',
     ];
 
     public function primaryTransaction()
