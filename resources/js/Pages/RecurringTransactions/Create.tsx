@@ -16,6 +16,7 @@ import { recurring } from '@/utils/analytics';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
+import RecurrenceScheduleFields from '@/Components/RecurrenceScheduleFields';
 
 interface Category {
     id: number;
@@ -114,6 +115,9 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
         category_id: '',
         amount: '',
         frequency: 'monthly',
+        day_of_month_mode: 'start_date',
+        day_of_month: '',
+        non_working_day_policy: 'postpone',
         start_date: today,
         end_date: '',
         description: '',
@@ -257,6 +261,19 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                                         <InputError message={errors.frequency} className="mt-2" />
                                     </div>
                                 </div>
+
+                                <RecurrenceScheduleFields
+                                    frequency={data.frequency}
+                                    dayOfMonthMode={data.day_of_month_mode as 'start_date' | 'fixed' | 'last_day'}
+                                    dayOfMonth={data.day_of_month}
+                                    nonWorkingDayPolicy={data.non_working_day_policy as 'postpone' | 'anticipate' | 'keep'}
+                                    errors={{
+                                        day_of_month_mode: errors.day_of_month_mode,
+                                        day_of_month: errors.day_of_month,
+                                        non_working_day_policy: errors.non_working_day_policy,
+                                    }}
+                                    onChange={(field, value) => setData(field, value)}
+                                />
 
                                 {/* Date */}
                                 <div className="grid gap-4 sm:grid-cols-2">

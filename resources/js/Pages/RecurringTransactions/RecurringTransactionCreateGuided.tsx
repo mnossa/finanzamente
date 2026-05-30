@@ -3,6 +3,7 @@ import GuidedFormStepActions from '@/Components/GuidedForm/GuidedFormStepActions
 import GuidedFormWizard from '@/Components/GuidedForm/GuidedFormWizard';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import RecurrenceScheduleFields, { formatRecurrenceScheduleRule } from '@/Components/RecurrenceScheduleFields';
 import TextInput from '@/Components/TextInput';
 import { recurring } from '@/utils/analytics';
 import { formatItalianDate, wizardSteps } from '@/utils/guidedCreate';
@@ -57,6 +58,9 @@ export default function RecurringTransactionCreateGuided({ accounts, categories,
         category_id: '',
         amount: '',
         frequency: 'monthly',
+        day_of_month_mode: 'start_date',
+        day_of_month: '',
+        non_working_day_policy: 'postpone',
         start_date: today,
         end_date: '',
         description: '',
@@ -202,29 +206,43 @@ export default function RecurringTransactionCreateGuided({ accounts, categories,
                 )}
 
                 {step === 3 && (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                            <InputLabel htmlFor="start_date" value="Data inizio" />
-                            <TextInput
-                                id="start_date"
-                                type="date"
-                                className="mt-1 block w-full"
-                                value={data.start_date}
-                                onChange={(e) => setData('start_date', e.target.value)}
-                            />
-                            <InputError message={errors.start_date} className="mt-2" />
+                    <div className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <InputLabel htmlFor="start_date" value="Data inizio" />
+                                <TextInput
+                                    id="start_date"
+                                    type="date"
+                                    className="mt-1 block w-full"
+                                    value={data.start_date}
+                                    onChange={(e) => setData('start_date', e.target.value)}
+                                />
+                                <InputError message={errors.start_date} className="mt-2" />
+                            </div>
+                            <div>
+                                <InputLabel htmlFor="end_date" value="Data fine (opzionale)" />
+                                <TextInput
+                                    id="end_date"
+                                    type="date"
+                                    className="mt-1 block w-full"
+                                    value={data.end_date}
+                                    onChange={(e) => setData('end_date', e.target.value)}
+                                />
+                                <InputError message={errors.end_date} className="mt-2" />
+                            </div>
                         </div>
-                        <div>
-                            <InputLabel htmlFor="end_date" value="Data fine (opzionale)" />
-                            <TextInput
-                                id="end_date"
-                                type="date"
-                                className="mt-1 block w-full"
-                                value={data.end_date}
-                                onChange={(e) => setData('end_date', e.target.value)}
-                            />
-                            <InputError message={errors.end_date} className="mt-2" />
-                        </div>
+                        <RecurrenceScheduleFields
+                            frequency={data.frequency}
+                            dayOfMonthMode={data.day_of_month_mode as 'start_date' | 'fixed' | 'last_day'}
+                            dayOfMonth={data.day_of_month}
+                            nonWorkingDayPolicy={data.non_working_day_policy as 'postpone' | 'anticipate' | 'keep'}
+                            errors={{
+                                day_of_month_mode: errors.day_of_month_mode,
+                                day_of_month: errors.day_of_month,
+                                non_working_day_policy: errors.non_working_day_policy,
+                            }}
+                            onChange={(field, value) => setData(field, value)}
+                        />
                     </div>
                 )}
 
@@ -292,6 +310,17 @@ export default function RecurringTransactionCreateGuided({ accounts, categories,
                         <div className="flex justify-between gap-4">
                             <dt className="text-gray-500">Frequenza</dt>
                             <dd>{frequencies[data.frequency] || data.frequency}</dd>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                            <dt className="text-gray-500">Regola calendario</dt>
+                            <dd className="text-right">
+                                {formatRecurrenceScheduleRule(
+                                    data.frequency,
+                                    data.day_of_month_mode as 'start_date' | 'fixed' | 'last_day',
+                                    data.day_of_month ? Number(data.day_of_month) : null,
+                                    data.non_working_day_policy as 'postpone' | 'anticipate' | 'keep',
+                                )}
+                            </dd>
                         </div>
                         <div className="flex justify-between gap-4">
                             <dt className="text-gray-500">Inizio</dt>

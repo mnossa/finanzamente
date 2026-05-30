@@ -116,4 +116,62 @@ class RecurringTransactionReconcileTest extends TestCase
 
         $this->assertSame('2026-05-18', $adjusted->toDateString());
     }
+
+    #[Test]
+    public function monthly_last_day_rule_generates_end_of_each_month(): void
+    {
+        $recurring = RecurringTransaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -10,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'day_of_month_mode' => RecurringTransaction::DAY_OF_MONTH_MODE_LAST_DAY,
+            'non_working_day_policy' => RecurringTransaction::NON_WORKING_DAY_POLICY_KEEP,
+            'start_date' => '2026-01-10',
+            'description' => 'Fine mese',
+        ]);
+
+        $generated = $this->service->generateTransactionsUntil($recurring, Carbon::parse('2026-04-30'));
+
+        $this->assertSame(4, $generated);
+        $this->assertSame(
+            ['2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30'],
+            Transaction::where('recurring_transaction_id', $recurring->id)
+                ->orderBy('date')
+                ->pluck('date')
+                ->map(fn ($date) => Carbon::parse($date)->toDateString())
+                ->all()
+        );
+    }
+
+    #[Test]
+    public function fixed_day_rule_can_anticipate_holidays(): void
+    {
+        $recurring = RecurringTransaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -10,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'day_of_month_mode' => RecurringTransaction::DAY_OF_MONTH_MODE_FIXED,
+            'day_of_month' => 25,
+            'non_working_day_policy' => RecurringTransaction::NON_WORKING_DAY_POLICY_ANTICIPATE,
+            'start_date' => '2026-12-01',
+            'description' => 'Festivo',
+        ]);
+
+        $generated = $this->service->generateTransactionsUntil($recurring, Carbon::parse('2026-12-25'));
+
+        $this->assertSame(1, $generated);
+        $this->assertSame(
+            '2026-12-24',
+            Transaction::where('recurring_transaction_id', $recurring->id)
+                ->firstOrFail()
+                ->date
+                ->toDateString()
+        );
+    }
 }

@@ -328,6 +328,35 @@ class DuplicateTransactionCandidateTest extends TestCase
             ->assertSessionHasErrors('transaction_to_remove');
     }
 
+    #[Test]
+    public function manual_detect_route_creates_duplicate_candidate_for_current_user(): void
+    {
+        [$primary, $candidate] = $this->createDuplicatePair();
+        $otherUser = User::factory()->create();
+        Transaction::factory()->create([
+            'user_id' => $otherUser->id,
+            'account_id' => $this->account->id,
+            'description' => $primary->description,
+            'amount' => $primary->amount,
+            'date' => $primary->date,
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('transactions.duplicates.detect'))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('duplicate_transaction_candidates', [
+            'user_id' => $this->user->id,
+            'primary_transaction_id' => min($primary->id, $candidate->id),
+            'candidate_transaction_id' => max($primary->id, $candidate->id),
+            'status' => DuplicateTransactionCandidateService::STATUS_PENDING,
+        ]);
+        $this->assertDatabaseMissing('duplicate_transaction_candidates', [
+            'user_id' => $otherUser->id,
+        ]);
+    }
+
     /**
      * @return array{0: Transaction, 1: Transaction}
      */

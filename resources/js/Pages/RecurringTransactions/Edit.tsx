@@ -11,6 +11,7 @@ import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
+import RecurrenceScheduleFields from '@/Components/RecurrenceScheduleFields';
 
 interface Category {
     id: number;
@@ -36,6 +37,9 @@ interface RecurringTransaction {
     category_id: number;
     amount: number;
     frequency: string;
+    day_of_month_mode: 'start_date' | 'fixed' | 'last_day';
+    day_of_month: number | null;
+    non_working_day_policy: 'postpone' | 'anticipate' | 'keep';
     start_date: string;
     end_date: string | null;
     description: string | null;
@@ -73,6 +77,9 @@ export default function Edit({
         category_id: String(recurringTransaction.category_id),
         amount: String(recurringTransaction.amount),
         frequency: recurringTransaction.frequency,
+        day_of_month_mode: recurringTransaction.day_of_month_mode || 'start_date',
+        day_of_month: recurringTransaction.day_of_month ? String(recurringTransaction.day_of_month) : '',
+        non_working_day_policy: recurringTransaction.non_working_day_policy || 'postpone',
         start_date: recurringTransaction.start_date,
         end_date: recurringTransaction.end_date || '',
         description: recurringTransaction.description || '',
@@ -207,6 +214,19 @@ export default function Edit({
                                     <InputError message={errors.frequency} className="mt-2" />
                                 </div>
                             </div>
+
+                            <RecurrenceScheduleFields
+                                frequency={data.frequency}
+                                dayOfMonthMode={data.day_of_month_mode as 'start_date' | 'fixed' | 'last_day'}
+                                dayOfMonth={data.day_of_month}
+                                nonWorkingDayPolicy={data.non_working_day_policy as 'postpone' | 'anticipate' | 'keep'}
+                                errors={{
+                                    day_of_month_mode: errors.day_of_month_mode,
+                                    day_of_month: errors.day_of_month,
+                                    non_working_day_policy: errors.non_working_day_policy,
+                                }}
+                                onChange={(field, value) => setData(field, value)}
+                            />
 
                             {/* Date */}
                             <div className="grid gap-4 sm:grid-cols-2">

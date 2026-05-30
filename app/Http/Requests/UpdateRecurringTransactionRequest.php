@@ -3,13 +3,29 @@
 namespace App\Http\Requests;
 
 use App\Models\Account;
+use App\Models\RecurringTransaction;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateRecurringTransactionRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'day_of_month_mode' => $this->input(
+                'day_of_month_mode',
+                RecurringTransaction::DAY_OF_MONTH_MODE_START_DATE,
+            ),
+            'non_working_day_policy' => $this->input(
+                'non_working_day_policy',
+                RecurringTransaction::NON_WORKING_DAY_POLICY_POSTPONE,
+            ),
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -43,6 +59,9 @@ class UpdateRecurringTransactionRequest extends FormRequest
             'category_id' => ['required', 'exists:categories,id'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
             'frequency' => ['required', Rule::in(['daily', 'weekly', 'monthly', 'yearly'])],
+            'day_of_month_mode' => ['required', Rule::in(RecurringTransaction::DAY_OF_MONTH_MODES)],
+            'day_of_month' => ['nullable', 'integer', 'min:1', 'max:31', 'required_if:day_of_month_mode,'.RecurringTransaction::DAY_OF_MONTH_MODE_FIXED],
+            'non_working_day_policy' => ['required', Rule::in(RecurringTransaction::NON_WORKING_DAY_POLICIES)],
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -56,6 +75,21 @@ class UpdateRecurringTransactionRequest extends FormRequest
             ],
             'effective_date' => ['nullable', 'date'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (
+                ! in_array($this->input('frequency'), ['monthly', 'yearly'], true)
+                && $this->input('day_of_month_mode') !== RecurringTransaction::DAY_OF_MONTH_MODE_START_DATE
+            ) {
+                $validator->errors()->add(
+                    'day_of_month_mode',
+                    'Il giorno del mese si può configurare solo per frequenze mensili o annuali.'
+                );
+            }
+        });
     }
 
     /**
@@ -76,6 +110,12 @@ class UpdateRecurringTransactionRequest extends FormRequest
             'amount.max' => "L'importo è troppo alto.",
             'frequency.required' => 'La frequenza è obbligatoria.',
             'frequency.in' => 'La frequenza selezionata non è valida.',
+            'day_of_month_mode.in' => 'La regola giorno selezionata non è valida.',
+            'day_of_month.required_if' => 'Indica il giorno fisso della ricorrenza.',
+            'day_of_month.integer' => 'Il giorno fisso deve essere un numero.',
+            'day_of_month.min' => 'Il giorno fisso deve essere almeno 1.',
+            'day_of_month.max' => 'Il giorno fisso non può superare 31.',
+            'non_working_day_policy.in' => 'La gestione dei festivi selezionata non è valida.',
             'start_date.required' => 'La data di inizio è obbligatoria.',
             'start_date.date' => 'La data di inizio non è valida.',
             'end_date.date' => 'La data di fine non è valida.',

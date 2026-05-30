@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import { formatRecurrenceScheduleRule } from '@/Components/RecurrenceScheduleFields';
 
 interface Category {
     id: number;
@@ -33,6 +34,9 @@ interface RecurringTransaction {
     amount: number;
     frequency: string;
     frequency_label: string;
+    day_of_month_mode: 'start_date' | 'fixed' | 'last_day';
+    day_of_month: number | null;
+    non_working_day_policy: 'postpone' | 'anticipate' | 'keep';
     start_date: string;
     end_date: string | null;
     description: string | null;
@@ -237,6 +241,17 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                                 <span className="text-gray-500 dark:text-gray-400">Data Fine</span>
                                 <span className="font-medium text-gray-900 dark:text-white">
                                     {rt.end_date ? formatDate(rt.end_date) : 'Nessuna (continua indefinitamente)'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between gap-4 border-b border-gray-100 pb-3 dark:border-gray-700">
+                                <span className="text-gray-500 dark:text-gray-400">Regola calendario</span>
+                                <span className="text-right font-medium text-gray-900 dark:text-white">
+                                    {formatRecurrenceScheduleRule(
+                                        rt.frequency,
+                                        rt.day_of_month_mode,
+                                        rt.day_of_month,
+                                        rt.non_working_day_policy,
+                                    )}
                                 </span>
                             </div>
                             <div className="flex justify-between border-b border-gray-100 pb-3 dark:border-gray-700">

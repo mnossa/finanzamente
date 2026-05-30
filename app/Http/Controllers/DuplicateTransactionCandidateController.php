@@ -6,6 +6,7 @@ use App\Http\Requests\ResolveDuplicateTransactionRequest;
 use App\Models\DuplicateTransactionCandidate;
 use App\Models\Transaction;
 use App\Services\DuplicateTransactionCandidateService;
+use App\Services\DuplicateTransactionDetectionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -15,6 +16,7 @@ class DuplicateTransactionCandidateController extends Controller
 {
     public function __construct(
         private readonly DuplicateTransactionCandidateService $duplicateService,
+        private readonly DuplicateTransactionDetectionService $detectionService,
     ) {}
 
     public function index(): Response
@@ -46,6 +48,21 @@ class DuplicateTransactionCandidateController extends Controller
             'pendingCount' => $items->count(),
             'recurringDuplicateCount' => $recurringDuplicateCount,
         ]);
+    }
+
+    public function detect(): RedirectResponse
+    {
+        $result = $this->detectionService->detectForUser((int) Auth::id());
+        $created = $result['created'];
+
+        if ($created === 0) {
+            return back()->with('info', 'Controllo completato: nessun nuovo duplicato trovato.');
+        }
+
+        return back()->with(
+            'success',
+            "Controllo completato: {$created} nuov".($created === 1 ? 'a segnalazione trovata.' : 'e segnalazioni trovate.'),
+        );
     }
 
     public function dismiss(DuplicateTransactionCandidate $candidate): RedirectResponse

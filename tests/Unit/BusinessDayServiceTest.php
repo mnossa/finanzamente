@@ -51,4 +51,22 @@ class BusinessDayServiceTest extends TestCase
         $this->assertTrue($this->service->isWorkingDay($adjusted));
         $this->assertGreaterThan($christmas->toDateString(), $adjusted->toDateString());
     }
+
+    #[Test]
+    public function adjusts_holiday_to_previous_working_day(): void
+    {
+        $christmas = Carbon::parse('2026-12-25');
+        $adjusted = $this->service->adjustToPreviousWorkingDay($christmas);
+
+        $this->assertSame('2026-12-24', $adjusted->toDateString());
+    }
+
+    #[Test]
+    public function keep_policy_does_not_move_non_working_day(): void
+    {
+        $christmas = Carbon::parse('2026-12-25');
+        $adjusted = $this->service->adjustOccurrenceDate($christmas, 'keep');
+
+        $this->assertSame('2026-12-25', $adjusted->toDateString());
+    }
 }
