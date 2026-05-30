@@ -200,8 +200,10 @@
 - [x] Estrarre rilevamento duplicati in service riusabile e aggiungere CTA web
 - [x] Aggiornare offline gate PWA con sfondo viola e copy leggibile
 - [x] Aggiungere test Feature/Unit mirati
-- [ ] Verificare con `make test`, `make pint-check`, `make playwright`
+- [x] Verificare con `make test`, `make pint-check`, `make playwright`
 
 ## Review
 
-- In corso.
+- `make test`: 771 passed (3 deprecated, 2 risky).
+- `make pint-check`: PASS (502 files).
+- `make playwright`: 202 passed, 8 skipped.
