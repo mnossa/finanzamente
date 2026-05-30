@@ -67,6 +67,9 @@ class RecurringTransactionController extends Controller
                     'amount' => (float) $rt->amount,
                     'frequency' => $rt->frequency,
                     'frequency_label' => self::FREQUENCIES[$rt->frequency] ?? $rt->frequency,
+                    'day_of_month_mode' => $rt->day_of_month_mode,
+                    'day_of_month' => $rt->day_of_month,
+                    'non_working_day_policy' => $rt->non_working_day_policy,
                     'start_date' => $rt->start_date->format('Y-m-d'),
                     'end_date' => $rt->end_date?->format('Y-m-d'),
                     'description' => $rt->description,
@@ -187,6 +190,11 @@ class RecurringTransactionController extends Controller
             'amount' => $amount,
             'currency_code' => $account->currency_code,
             'frequency' => $validated['frequency'],
+            'day_of_month_mode' => $validated['day_of_month_mode'],
+            'day_of_month' => $validated['day_of_month_mode'] === RecurringTransaction::DAY_OF_MONTH_MODE_FIXED
+                ? $validated['day_of_month']
+                : null,
+            'non_working_day_policy' => $validated['non_working_day_policy'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'] ?? null,
             'description' => $validated['description'] ?? null,
@@ -230,6 +238,9 @@ class RecurringTransactionController extends Controller
                 'amount' => (float) $recurringTransaction->amount,
                 'frequency' => $recurringTransaction->frequency,
                 'frequency_label' => self::FREQUENCIES[$recurringTransaction->frequency] ?? $recurringTransaction->frequency,
+                'day_of_month_mode' => $recurringTransaction->day_of_month_mode,
+                'day_of_month' => $recurringTransaction->day_of_month,
+                'non_working_day_policy' => $recurringTransaction->non_working_day_policy,
                 'start_date' => $recurringTransaction->start_date->format('Y-m-d'),
                 'end_date' => $recurringTransaction->end_date?->format('Y-m-d'),
                 'description' => $recurringTransaction->description,
@@ -298,6 +309,9 @@ class RecurringTransactionController extends Controller
                 'category_id' => $recurringTransaction->category_id,
                 'amount' => abs((float) $recurringTransaction->amount),
                 'frequency' => $recurringTransaction->frequency,
+                'day_of_month_mode' => $recurringTransaction->day_of_month_mode,
+                'day_of_month' => $recurringTransaction->day_of_month,
+                'non_working_day_policy' => $recurringTransaction->non_working_day_policy,
                 'start_date' => $recurringTransaction->start_date->format('Y-m-d'),
                 'end_date' => $recurringTransaction->end_date?->format('Y-m-d'),
                 'description' => $recurringTransaction->description,
@@ -324,7 +338,10 @@ class RecurringTransactionController extends Controller
 
         $scheduleChanged = $recurringTransaction->start_date->toDateString() !== $validated['start_date']
             || ($recurringTransaction->end_date?->toDateString() ?? null) !== ($validated['end_date'] ?? null)
-            || $recurringTransaction->frequency !== $validated['frequency'];
+            || $recurringTransaction->frequency !== $validated['frequency']
+            || $recurringTransaction->day_of_month_mode !== $validated['day_of_month_mode']
+            || (int) ($recurringTransaction->day_of_month ?? 0) !== (int) ($validated['day_of_month'] ?? 0)
+            || $recurringTransaction->non_working_day_policy !== $validated['non_working_day_policy'];
 
         $linkedCount = $this->recurringService->countLinkedTransactions($recurringTransaction);
 
@@ -351,6 +368,11 @@ class RecurringTransactionController extends Controller
                     'amount' => $amount,
                     'currency_code' => $account->currency_code ?? 'EUR',
                     'frequency' => $validated['frequency'],
+                    'day_of_month_mode' => $validated['day_of_month_mode'],
+                    'day_of_month' => $validated['day_of_month_mode'] === RecurringTransaction::DAY_OF_MONTH_MODE_FIXED
+                        ? (int) $validated['day_of_month']
+                        : null,
+                    'non_working_day_policy' => $validated['non_working_day_policy'],
                     'description' => $validated['description'] ?? null,
                     'debt_credit_id' => $validated['debt_credit_id'] ?? null,
                 ], $effectiveDate);
@@ -375,6 +397,11 @@ class RecurringTransactionController extends Controller
             'category_id' => $validated['category_id'],
             'amount' => $amount,
             'frequency' => $validated['frequency'],
+            'day_of_month_mode' => $validated['day_of_month_mode'],
+            'day_of_month' => $validated['day_of_month_mode'] === RecurringTransaction::DAY_OF_MONTH_MODE_FIXED
+                ? $validated['day_of_month']
+                : null,
+            'non_working_day_policy' => $validated['non_working_day_policy'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'] ?? null,
             'description' => $validated['description'] ?? null,

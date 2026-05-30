@@ -187,3 +187,21 @@
 - ~~Endpoint AJAX "anteprima rate" nel form Transactions~~ → **CHIUSO** in questo round: route `transactions.fx-preview` + hook `useFxPreview` con debounce + integrazione Create/Edit.
 - ~~`E2ESeeder` con secondo account in valuta diversa~~ → **CHIUSO** in questo round: aggiunto "Revolut GBP E2E" nella household principale.
 - **APERTO**: dashboard cross-conto multi-valuta che sommi `amount_base` invece di `amount`. Decisione esplicita dell'utente del 2026-05-08 di rinviare: oggi non rompe nulla perché tutte le transazioni di un conto restano nella valuta del conto e `Account::balance` resta in valuta nativa, quindi i saldi sono allineati agli estratti bancari. Diventa rilevante solo quando l'utente avrà conti in valute diverse + widget di dashboard che aggregano cross-conto.
+
+---
+
+# Ricorrenze, offline PWA e duplicati — 2026-05-30
+
+## Piano
+
+- [x] Aggiungere configurazione ricorrenze per giorno fisso/ultimo giorno e policy festivi
+- [x] Aggiornare generazione, prossima scadenza, riconciliazione e fork ricorrenze
+- [x] Esporre i nuovi campi nei form e nei dettagli ricorrenze
+- [x] Estrarre rilevamento duplicati in service riusabile e aggiungere CTA web
+- [x] Aggiornare offline gate PWA con sfondo viola e copy leggibile
+- [x] Aggiungere test Feature/Unit mirati
+- [ ] Verificare con `make test`, `make pint-check`, `make playwright`
+
+## Review
+
+- In corso.

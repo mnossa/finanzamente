@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\RecurringTransaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 
@@ -22,6 +23,29 @@ class BusinessDayService
         }
 
         return $adjusted;
+    }
+
+    /**
+     * Anticipa la data al primo giorno lavorativo utile (inclusiva).
+     */
+    public function adjustToPreviousWorkingDay(Carbon $date): Carbon
+    {
+        $adjusted = $date->copy();
+
+        while (! $this->isWorkingDay($adjusted)) {
+            $adjusted->subDay();
+        }
+
+        return $adjusted;
+    }
+
+    public function adjustOccurrenceDate(Carbon $date, string $policy): Carbon
+    {
+        return match ($policy) {
+            RecurringTransaction::NON_WORKING_DAY_POLICY_KEEP => $date->copy(),
+            RecurringTransaction::NON_WORKING_DAY_POLICY_ANTICIPATE => $this->adjustToPreviousWorkingDay($date),
+            default => $this->adjustToNextWorkingDay($date),
+        };
     }
 
     public function isWorkingDay(Carbon $date): bool

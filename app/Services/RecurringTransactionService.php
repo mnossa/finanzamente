@@ -21,11 +21,13 @@ class RecurringTransactionService
     ) {}
 
     /**
-     * Applica posticipo a primo giorno lavorativo (weekend e festività IT).
+     * Applica la policy su weekend/festività IT alla data teorica.
      */
-    public function resolveOccurrenceDate(Carbon $theoreticalDate): Carbon
-    {
-        return $this->businessDayService->adjustToNextWorkingDay($theoreticalDate);
+    public function resolveOccurrenceDate(
+        Carbon $theoreticalDate,
+        string $policy = RecurringTransaction::NON_WORKING_DAY_POLICY_POSTPONE,
+    ): Carbon {
+        return $this->businessDayService->adjustOccurrenceDate($theoreticalDate, $policy);
     }
 
     /**
@@ -51,11 +53,7 @@ class RecurringTransactionService
             : $targetDate;
 
         // Calcola tutte le occorrenze teoriche dalla start_date fino all'endLimit
-        $occurrences = $this->calculateOccurrences(
-            $recurringTransaction->start_date,
-            $endLimit,
-            $recurringTransaction->frequency
-        );
+        $occurrences = $this->calculateOccurrences($recurringTransaction, $endLimit);
 
         DB::beginTransaction();
         try {
@@ -117,11 +115,7 @@ class RecurringTransactionService
             ? $recurringTransaction->end_date
             : $targetDate;
 
-        $occurrences = $this->calculateOccurrences(
-            $recurringTransaction->start_date,
-            $endLimit,
-            $recurringTransaction->frequency
-        );
+        $occurrences = $this->calculateOccurrences($recurringTransaction, $endLimit);
 
         DB::beginTransaction();
         try {
@@ -221,43 +215,69 @@ class RecurringTransactionService
     /**
      * Calcola tutte le occorrenze di una ricorrenza tra due date.
      *
-     * @param  Carbon  $startDate  Data di inizio
-     * @param  Carbon  $endDate  Data di fine
-     * @param  string  $frequency  Frequenza (daily, weekly, monthly, yearly)
-     * @return array Array di oggetti Carbon con tutte le occorrenze
+     * @return array<int, Carbon>
      */
-    private function calculateOccurrences(Carbon $startDate, Carbon $endDate, string $frequency): array
+    private function calculateOccurrences(RecurringTransaction $recurringTransaction, Carbon $endDate): array
     {
         $occurrences = [];
         $seenDates = [];
+        $startDate = $recurringTransaction->start_date->copy()->startOfDay();
         $currentDate = $startDate->copy();
 
         while ($currentDate->lte($endDate)) {
-            $resolved = $this->resolveOccurrenceDate($currentDate->copy());
-            $dateKey = $resolved->toDateString();
+            $theoretical = $this->applyDayOfMonthMode($currentDate, $recurringTransaction);
 
-            if (! isset($seenDates[$dateKey])) {
-                $occurrences[] = $resolved;
-                $seenDates[$dateKey] = true;
+            if ($theoretical->gte($startDate) && $theoretical->lte($endDate)) {
+                $resolved = $this->resolveOccurrenceDate(
+                    $theoretical,
+                    $recurringTransaction->non_working_day_policy
+                        ?? RecurringTransaction::NON_WORKING_DAY_POLICY_POSTPONE,
+                );
+                $dateKey = $resolved->toDateString();
+
+                if (! isset($seenDates[$dateKey])) {
+                    $occurrences[] = $resolved;
+                    $seenDates[$dateKey] = true;
+                }
             }
 
-            switch ($frequency) {
-                case 'daily':
-                    $currentDate->addDay();
-                    break;
-                case 'weekly':
-                    $currentDate->addWeek();
-                    break;
-                case 'monthly':
-                    $currentDate->addMonth();
-                    break;
-                case 'yearly':
-                    $currentDate->addYear();
-                    break;
-            }
+            $currentDate = $this->advanceTheoreticalDate($currentDate, $recurringTransaction->frequency);
         }
 
         return $occurrences;
+    }
+
+    private function applyDayOfMonthMode(Carbon $baseDate, RecurringTransaction $recurringTransaction): Carbon
+    {
+        $mode = $recurringTransaction->day_of_month_mode
+            ?? RecurringTransaction::DAY_OF_MONTH_MODE_START_DATE;
+
+        if (
+            ! in_array($recurringTransaction->frequency, ['monthly', 'yearly'], true)
+            || $mode === RecurringTransaction::DAY_OF_MONTH_MODE_START_DATE
+        ) {
+            return $baseDate->copy();
+        }
+
+        $date = $baseDate->copy();
+
+        if ($mode === RecurringTransaction::DAY_OF_MONTH_MODE_LAST_DAY) {
+            return $date->endOfMonth()->startOfDay();
+        }
+
+        $day = $recurringTransaction->day_of_month ?: $recurringTransaction->start_date->day;
+
+        return $date->day(min($day, $date->daysInMonth));
+    }
+
+    private function advanceTheoreticalDate(Carbon $date, string $frequency): Carbon
+    {
+        return match ($frequency) {
+            'daily' => $date->copy()->addDay(),
+            'weekly' => $date->copy()->addWeek(),
+            'yearly' => $date->copy()->addYearNoOverflow(),
+            default => $date->copy()->addMonthNoOverflow(),
+        };
     }
 
     /**
@@ -285,11 +305,7 @@ class RecurringTransactionService
             $futureLimit = $rt->end_date;
         }
 
-        $occurrences = $this->calculateOccurrences(
-            $rt->start_date,
-            $futureLimit,
-            $rt->frequency
-        );
+        $occurrences = $this->calculateOccurrences($rt, $futureLimit);
 
         // Trova la prima occorrenza dopo searchFrom
         foreach ($occurrences as $occurrence) {
@@ -504,11 +520,7 @@ class RecurringTransactionService
             return new RecurringReconcileResult;
         }
 
-        $expectedOccurrences = $this->calculateOccurrences(
-            $recurringTransaction->start_date,
-            $endLimit,
-            $recurringTransaction->frequency
-        );
+        $expectedOccurrences = $this->calculateOccurrences($recurringTransaction, $endLimit);
         $frequency = $recurringTransaction->frequency;
 
         $linked = Transaction::query()
@@ -637,24 +649,32 @@ class RecurringTransactionService
             return $next;
         }
 
+        $policy = $recurringTransaction->non_working_day_policy
+            ?? RecurringTransaction::NON_WORKING_DAY_POLICY_POSTPONE;
+
         if ($recurringTransaction->last_generated_date) {
-            return $this->resolveOccurrenceDate($recurringTransaction->last_generated_date->copy()->addDay());
+            return $this->resolveOccurrenceDate($recurringTransaction->last_generated_date->copy()->addDay(), $policy);
         }
 
-        return $this->resolveOccurrenceDate($recurringTransaction->start_date->copy());
+        return $this->resolveOccurrenceDate($recurringTransaction->start_date->copy(), $policy);
     }
 
     /**
      * Chiude la ricorrenza corrente e ne crea una nuova dal cambio importo in avanti.
      *
-     * @param  array{account_id: int, category_id: int, amount: float, frequency: string, description: ?string, debt_credit_id: ?int, currency_code: string}  $attributes
+     * @param  array{account_id: int, category_id: int, amount: float, frequency: string, description: ?string, debt_credit_id: ?int, currency_code: string, day_of_month_mode?: string, day_of_month?: int|null, non_working_day_policy?: string}  $attributes
      */
     public function forkOnAmountChange(
         RecurringTransaction $old,
         array $attributes,
         Carbon $effectiveDate,
     ): RecurringTransaction {
-        $effectiveDate = $this->resolveOccurrenceDate($effectiveDate);
+        $effectiveDate = $this->resolveOccurrenceDate(
+            $effectiveDate,
+            $attributes['non_working_day_policy']
+                ?? $old->non_working_day_policy
+                ?? RecurringTransaction::NON_WORKING_DAY_POLICY_POSTPONE,
+        );
 
         if ($old->last_generated_date && $effectiveDate->lte($old->last_generated_date)) {
             throw new \InvalidArgumentException(
@@ -681,6 +701,13 @@ class RecurringTransactionService
                 'amount' => $attributes['amount'],
                 'currency_code' => $attributes['currency_code'],
                 'frequency' => $attributes['frequency'],
+                'day_of_month_mode' => $attributes['day_of_month_mode']
+                    ?? $old->day_of_month_mode
+                    ?? RecurringTransaction::DAY_OF_MONTH_MODE_START_DATE,
+                'day_of_month' => $attributes['day_of_month'] ?? $old->day_of_month,
+                'non_working_day_policy' => $attributes['non_working_day_policy']
+                    ?? $old->non_working_day_policy
+                    ?? RecurringTransaction::NON_WORKING_DAY_POLICY_POSTPONE,
                 'start_date' => $effectiveDate,
                 'end_date' => null,
                 'description' => $attributes['description'] ?? null,

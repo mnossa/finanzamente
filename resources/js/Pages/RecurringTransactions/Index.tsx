@@ -15,6 +15,7 @@ import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import { formatRecurrenceScheduleRule } from '@/Components/RecurrenceScheduleFields';
 
 interface Category {
     id: number;
@@ -39,6 +40,9 @@ interface RecurringTransaction {
     amount: number;
     frequency: string;
     frequency_label: string;
+    day_of_month_mode: 'start_date' | 'fixed' | 'last_day';
+    day_of_month: number | null;
+    non_working_day_policy: 'postpone' | 'anticipate' | 'keep';
     start_date: string;
     end_date: string | null;
     description: string | null;
@@ -124,6 +128,14 @@ function RecurringTransactionRow({ rt, onDeleteClick }: { rt: RecurringTransacti
                 </div>
                 <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                     {rt.account.name} · {rt.next_due_date ? `Prossima: ${formatDate(rt.next_due_date)}` : `Dal ${formatDate(rt.start_date)}`}
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {formatRecurrenceScheduleRule(
+                        rt.frequency,
+                        rt.day_of_month_mode,
+                        rt.day_of_month,
+                        rt.non_working_day_policy,
+                    )}
                 </p>
             </Link>
             <div className="ml-2 flex shrink-0 items-center gap-1 sm:gap-2">

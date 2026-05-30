@@ -470,6 +470,7 @@ function DuplicateCandidateCard({ item }: { item: Item }) {
 export default function Duplicates({ items, pendingCount, recurringDuplicateCount }: Props) {
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [bulkConfirm, setBulkConfirm] = useState(false);
+    const [detectProcessing, setDetectProcessing] = useState(false);
 
     const resolveAllRecurring = () => {
         setBulkProcessing(true);
@@ -479,6 +480,14 @@ export default function Duplicates({ items, pendingCount, recurringDuplicateCoun
                 setBulkProcessing(false);
                 setBulkConfirm(false);
             },
+        });
+    };
+
+    const detectDuplicates = () => {
+        setDetectProcessing(true);
+        router.post(route('transactions.duplicates.detect'), {}, {
+            preserveScroll: true,
+            onFinish: () => setDetectProcessing(false),
         });
     };
 
@@ -499,13 +508,26 @@ export default function Duplicates({ items, pendingCount, recurringDuplicateCoun
             <Head title="Possibili duplicati" />
             <PageContent maxWidth="3xl">
                 <CardBox className="mb-4 space-y-3 p-4">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Il sistema raggruppa movimenti con <strong>stessa descrizione</strong>, <strong>stesso importo</strong>{' '}
-                        e date vicine in un’unica segnalazione (non una card per ogni coppia). Le righe{' '}
-                        <strong>«Ricorrenza + manuale»</strong> indicano un movimento automatico e uno inserito a mano. I
-                        movimenti collegati a <strong>ricorrenze terminate</strong> sono evidenziati; le occorrenze storiche
-                        in mesi diversi non vengono segnalate come duplicati.
-                    </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                            Il sistema raggruppa movimenti con <strong>stessa descrizione</strong>, <strong>stesso importo</strong>{' '}
+                            e date vicine in un’unica segnalazione (non una card per ogni coppia). Le righe{' '}
+                            <strong>«Ricorrenza + manuale»</strong> indicano un movimento automatico e uno inserito a mano. I
+                            movimenti collegati a <strong>ricorrenze terminate</strong> sono evidenziati; le occorrenze storiche
+                            in mesi diversi non vengono segnalate come duplicati.
+                        </p>
+                        <button
+                            type="button"
+                            disabled={detectProcessing}
+                            onClick={detectDuplicates}
+                            className={clsx(
+                                actionButtonBase,
+                                'bg-violet-600 text-white hover:bg-violet-700',
+                            )}
+                        >
+                            {detectProcessing ? 'Controllo in corso...' : 'Ricontrolla duplicati'}
+                        </button>
+                    </div>
                     {recurringDuplicateCount > 0 && (
                         <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-sm text-emerald-800 dark:text-emerald-200">
@@ -531,14 +553,27 @@ export default function Duplicates({ items, pendingCount, recurringDuplicateCoun
                     <CardBox className="p-6 text-center">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">Nessun duplicato in revisione</p>
                         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Quando il controllo automatico troverà nuove coppie sospette, le vedrai qui.
+                            Quando il controllo automatico o manuale troverà nuove coppie sospette, le vedrai qui.
                         </p>
-                        <Link
-                            href={route('transactions.index')}
-                            className="mt-4 inline-block text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
-                        >
-                            Torna alle transazioni
-                        </Link>
+                        <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            <button
+                                type="button"
+                                disabled={detectProcessing}
+                                onClick={detectDuplicates}
+                                className={clsx(
+                                    actionButtonBase,
+                                    'bg-violet-600 text-white hover:bg-violet-700',
+                                )}
+                            >
+                                {detectProcessing ? 'Controllo in corso...' : 'Ricontrolla duplicati'}
+                            </button>
+                            <Link
+                                href={route('transactions.index')}
+                                className="text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                            >
+                                Torna alle transazioni
+                            </Link>
+                        </div>
                     </CardBox>
                 ) : (
                     <div className="space-y-4">
