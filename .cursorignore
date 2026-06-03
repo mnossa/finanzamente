@@ -4,7 +4,24 @@ vendor/
 .next/
 dist/
 build/
+storage/
+.vscode/
 
 # File di log e database locali
 *.log
 .storage/
+*.cache
+*.csv
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+*.p12
+*.pfx
+*.p12
+*.pfx
+
+# File .md
+docs/confronto-agenti-ai.md

@@ -8,6 +8,7 @@ use App\Models\DuplicateTransactionCandidate;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\DuplicateTransactionCandidateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
@@ -141,5 +142,60 @@ class DetectDuplicateTransactionsTest extends TestCase
 
         $this->assertSame(1, DuplicateTransactionCandidate::where('user_id', $user->id)->where('status', 'pending')->count());
         $this->assertCount(3, DuplicateTransactionCandidate::first()->cluster_transaction_ids);
+    }
+
+    #[Test]
+    public function detect_command_skips_existing_ignored_pair_without_failing(): void
+    {
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $account = Account::factory()->create([
+            'household_id' => $household->id,
+            'owner_user_id' => $user->id,
+            'active' => true,
+        ]);
+        $category = Category::factory()->create(['household_id' => $household->id]);
+
+        $txA = Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'description' => 'Mutuo',
+            'amount' => -274.14,
+            'currency_code' => 'EUR',
+            'date' => '2025-11-30',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]);
+        $txB = Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'description' => 'Mutuo',
+            'amount' => -274.14,
+            'currency_code' => 'EUR',
+            'date' => '2025-12-03',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]);
+
+        DuplicateTransactionCandidate::create([
+            'user_id' => $user->id,
+            'primary_transaction_id' => min($txA->id, $txB->id),
+            'candidate_transaction_id' => max($txA->id, $txB->id),
+            'status' => DuplicateTransactionCandidateService::STATUS_DISMISSED,
+            'distance_days' => 3,
+            'cluster_transaction_ids' => [$txA->id, $txB->id],
+        ]);
+
+        $this->artisan('transactions:detect-duplicates', ['--days' => 3])
+            ->assertSuccessful();
+
+        $this->assertSame(1, DuplicateTransactionCandidate::where('user_id', $user->id)->count());
+        $this->assertSame(0, DuplicateTransactionCandidate::where('user_id', $user->id)->where('status', 'pending')->count());
     }
 }

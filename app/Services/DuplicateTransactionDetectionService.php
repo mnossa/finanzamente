@@ -91,15 +91,19 @@ class DuplicateTransactionDetectionService
 
                 $this->removePendingOverlappingCluster($userId, $clusterIds);
 
-                DuplicateTransactionCandidate::create([
-                    'user_id' => $userId,
+                $candidate = DuplicateTransactionCandidate::firstOrCreate([
                     'primary_transaction_id' => min($txA->id, $txB->id),
                     'candidate_transaction_id' => max($txA->id, $txB->id),
+                ], [
+                    'user_id' => $userId,
                     'status' => DuplicateTransactionCandidateService::STATUS_PENDING,
                     'distance_days' => min(255, $distance),
                     'cluster_transaction_ids' => $clusterIds,
                 ]);
-                $userCreated++;
+
+                if ($candidate->wasRecentlyCreated) {
+                    $userCreated++;
+                }
             }
         }
 
