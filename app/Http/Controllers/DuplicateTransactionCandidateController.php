@@ -37,7 +37,15 @@ class DuplicateTransactionCandidateController extends Controller
             ->where('status', DuplicateTransactionCandidateService::STATUS_PENDING)
             ->orderByDesc('created_at')
             ->get()
-            ->filter(fn (DuplicateTransactionCandidate $c) => ! $this->duplicateService->shouldIgnoreCandidate($c))
+            ->filter(function (DuplicateTransactionCandidate $candidate): bool {
+                if ($this->shouldPruneFromIndex($candidate)) {
+                    $candidate->delete();
+
+                    return false;
+                }
+
+                return true;
+            })
             ->map(fn (DuplicateTransactionCandidate $c) => $this->mapCandidate($c))
             ->values();
 
@@ -159,9 +167,11 @@ class DuplicateTransactionCandidateController extends Controller
                 ->orderBy('date')
                 ->get();
 
-            $clusterSpreadDays = abs((int) $clusterTransactions->first()->date->diffInDays(
-                $clusterTransactions->last()->date
-            ));
+            if ($clusterTransactions->count() >= 2) {
+                $clusterSpreadDays = abs((int) $clusterTransactions->first()->date->diffInDays(
+                    $clusterTransactions->last()->date
+                ));
+            }
 
             $additional = $clusterTransactions
                 ->filter(fn (Transaction $t) => ! in_array((int) $t->id, [$primaryId, $candidateId], true))
@@ -182,6 +192,15 @@ class DuplicateTransactionCandidateController extends Controller
             'candidate' => $this->mapTransactionSide($candidateTx, $pair, 'candidate'),
             'additional_transactions' => $additional,
         ];
+    }
+
+    private function shouldPruneFromIndex(DuplicateTransactionCandidate $candidate): bool
+    {
+        if ($candidate->primaryTransaction === null || $candidate->candidateTransaction === null) {
+            return true;
+        }
+
+        return $this->duplicateService->shouldIgnoreCandidate($candidate);
     }
 
     /**

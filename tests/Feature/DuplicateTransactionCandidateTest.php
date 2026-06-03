@@ -357,6 +357,57 @@ class DuplicateTransactionCandidateTest extends TestCase
         ]);
     }
 
+    #[Test]
+    public function index_prunes_orphaned_pending_candidate_when_transactions_are_deleted(): void
+    {
+        [$primary, $candidate] = $this->createDuplicatePair();
+
+        $duplicate = DuplicateTransactionCandidate::create([
+            'user_id' => $this->user->id,
+            'primary_transaction_id' => $primary->id,
+            'candidate_transaction_id' => $candidate->id,
+            'status' => DuplicateTransactionCandidateService::STATUS_PENDING,
+            'distance_days' => 1,
+            'cluster_transaction_ids' => [$primary->id, $candidate->id],
+        ]);
+
+        $primary->delete();
+        $candidate->delete();
+
+        $this->actingAs($this->user)
+            ->get(route('transactions.duplicates.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('items', 0)
+                ->where('pendingCount', 0)
+            );
+
+        $this->assertDatabaseMissing('duplicate_transaction_candidates', ['id' => $duplicate->id]);
+    }
+
+    #[Test]
+    public function index_does_not_crash_when_cluster_transaction_ids_are_stale(): void
+    {
+        [$primary, $candidate] = $this->createDuplicatePair();
+
+        DuplicateTransactionCandidate::create([
+            'user_id' => $this->user->id,
+            'primary_transaction_id' => $primary->id,
+            'candidate_transaction_id' => $candidate->id,
+            'status' => DuplicateTransactionCandidateService::STATUS_PENDING,
+            'distance_days' => 1,
+            'cluster_transaction_ids' => [999001, 999002, 999003],
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('transactions.duplicates.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has('items', 1)
+                ->where('pendingCount', 1)
+            );
+    }
+
     /**
      * @return array{0: Transaction, 1: Transaction}
      */
