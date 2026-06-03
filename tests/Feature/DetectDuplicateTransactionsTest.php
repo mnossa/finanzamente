@@ -198,4 +198,61 @@ class DetectDuplicateTransactionsTest extends TestCase
         $this->assertSame(1, DuplicateTransactionCandidate::where('user_id', $user->id)->count());
         $this->assertSame(0, DuplicateTransactionCandidate::where('user_id', $user->id)->where('status', 'pending')->count());
     }
+
+    #[Test]
+    public function detect_command_removes_pending_candidate_when_transactions_were_deleted(): void
+    {
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $account = Account::factory()->create([
+            'household_id' => $household->id,
+            'owner_user_id' => $user->id,
+            'active' => true,
+        ]);
+        $category = Category::factory()->create(['household_id' => $household->id]);
+
+        $txA = Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'description' => 'Pagamento duplicato',
+            'amount' => -40.00,
+            'currency_code' => 'EUR',
+            'date' => '2026-05-10',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]);
+        $txB = Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'description' => 'Pagamento duplicato',
+            'amount' => -40.00,
+            'currency_code' => 'EUR',
+            'date' => '2026-05-12',
+            'recurring' => false,
+            'recurring_transaction_id' => null,
+            'transfer_id' => null,
+            'refund_id' => null,
+        ]);
+
+        $candidate = DuplicateTransactionCandidate::create([
+            'user_id' => $user->id,
+            'primary_transaction_id' => min($txA->id, $txB->id),
+            'candidate_transaction_id' => max($txA->id, $txB->id),
+            'status' => DuplicateTransactionCandidateService::STATUS_PENDING,
+            'distance_days' => 2,
+            'cluster_transaction_ids' => [$txA->id, $txB->id],
+        ]);
+
+        $txA->delete();
+        $txB->delete();
+
+        $this->artisan('transactions:detect-duplicates', ['--days' => 3])
+            ->assertSuccessful();
+
+        $this->assertDatabaseMissing('duplicate_transaction_candidates', ['id' => $candidate->id]);
+    }
 }

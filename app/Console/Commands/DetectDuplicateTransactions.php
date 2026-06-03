@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\AppNotification;
+use App\Models\DuplicateTransactionCandidate;
 use App\Models\Transaction;
+use App\Services\DuplicateTransactionCandidateService;
 use App\Services\DuplicateTransactionDetectionService;
 use Illuminate\Console\Command;
 
@@ -23,10 +25,18 @@ class DetectDuplicateTransactions extends Command
     {
         $windowDays = max(1, (int) $this->option('days'));
 
-        $userIds = Transaction::query()
+        $transactionUserIds = Transaction::query()
             ->whereNotNull('description')
             ->distinct()
             ->pluck('user_id');
+        $candidateUserIds = DuplicateTransactionCandidate::query()
+            ->where('status', DuplicateTransactionCandidateService::STATUS_PENDING)
+            ->distinct()
+            ->pluck('user_id');
+        $userIds = $transactionUserIds
+            ->merge($candidateUserIds)
+            ->unique()
+            ->values();
 
         $created = 0;
         $pruned = 0;
@@ -51,7 +61,7 @@ class DetectDuplicateTransactions extends Command
 
         $this->info("Candidati duplicati elaborati: {$created}");
         if ($pruned > 0) {
-            $this->info("Segnalazioni rimosse (occorrenze di ricorrenze terminate): {$pruned}");
+            $this->info("Segnalazioni rimosse (stale o non più valide): {$pruned}");
         }
 
         return self::SUCCESS;

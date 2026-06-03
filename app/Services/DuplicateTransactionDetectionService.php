@@ -20,8 +20,9 @@ class DuplicateTransactionDetectionService
     {
         $windowDays = max(1, $windowDays);
 
+        $pruned = $this->pruneOrphanedPendingCandidates($userId);
         $this->consolidatePendingCandidates($userId);
-        $pruned = $this->pruneHistoricalEndedRecurringCandidates($userId);
+        $pruned += $this->pruneHistoricalEndedRecurringCandidates($userId);
 
         $transactions = Transaction::query()
             ->select(['id', 'user_id', 'account_id', 'description', 'amount', 'date', 'recurring_transaction_id'])
@@ -35,6 +36,30 @@ class DuplicateTransactionDetectionService
             'created' => $this->detectClustersForUser($userId, $transactions, $windowDays),
             'pruned' => $pruned,
         ];
+    }
+
+    private function pruneOrphanedPendingCandidates(int $userId): int
+    {
+        $removed = 0;
+
+        DuplicateTransactionCandidate::query()
+            ->where('user_id', $userId)
+            ->where('status', DuplicateTransactionCandidateService::STATUS_PENDING)
+            ->orderBy('id')
+            ->each(function (DuplicateTransactionCandidate $candidate) use (&$removed): void {
+                $activeCount = Transaction::query()
+                    ->whereIn('id', $this->transactionIdsForCandidate($candidate))
+                    ->count();
+
+                if ($activeCount >= 2) {
+                    return;
+                }
+
+                $candidate->delete();
+                $removed++;
+            });
+
+        return $removed;
     }
 
     private function pruneHistoricalEndedRecurringCandidates(int $userId): int
