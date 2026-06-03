@@ -764,7 +764,7 @@ class DashboardController extends Controller
     private function getExpenseDistributionData(User $user, int $householdId): array
     {
         $startDate = Carbon::now()->startOfMonth();
-        $endDate = Carbon::now()->endOfDay();
+        $endDate = Carbon::now()->endOfMonth();
 
         // Recupera soglie personalizzate da profile_settings (default 50/30/20)
         $settings = $user->profile_settings ?? [];

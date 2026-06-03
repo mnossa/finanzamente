@@ -7,7 +7,7 @@ use App\Models\RecurringTransaction;
 use App\Models\Transaction;
 use App\Support\RecurrenceDateTolerance;
 use App\Support\RecurringOccurrenceLabel;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
