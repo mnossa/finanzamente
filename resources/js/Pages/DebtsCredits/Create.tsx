@@ -46,7 +46,7 @@ export default function Create({ currencies, types }: CreateProps) {
                 }
             >
                 <Head title="Nuovo Debito/Credito" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <DebtCreditCreateGuided currencies={currencies} />
                 </PageContent>
             </AuthenticatedLayout>
@@ -82,7 +82,7 @@ export default function Create({ currencies, types }: CreateProps) {
         >
             <Head title="Nuovo Debito/Credito" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Debiti/Crediti" icon={<span className="text-sm leading-none">🤝</span>} />

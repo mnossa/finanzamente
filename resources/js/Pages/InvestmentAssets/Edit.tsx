@@ -69,7 +69,7 @@ export default function Edit({ asset, currencies, types, typeIcons }: EditProps)
         >
             <Head title={`Modifica ${asset.name}`} />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit}>
                         <CardBox className="overflow-hidden shadow-sm">
                             <div className="p-6">

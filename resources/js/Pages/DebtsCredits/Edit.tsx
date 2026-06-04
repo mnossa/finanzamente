@@ -89,7 +89,7 @@ export default function Edit({ debtCredit, currencies, types, statuses }: EditPr
         >
             <Head title={`Modifica ${types[debtCredit.type]}`} />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Debiti/Crediti" icon={<span className="text-sm leading-none">✏️</span>} />

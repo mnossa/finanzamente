@@ -65,7 +65,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                 }
             >
                 <Head title="Nuova Transazione Ricorrente" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <CardBox>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">
@@ -152,7 +152,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
         >
             <Head title="Nuova Transazione Ricorrente" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <CardBox>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">

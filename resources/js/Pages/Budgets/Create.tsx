@@ -47,7 +47,7 @@ export default function Create({ categories, currencies }: CreateProps) {
                 }
             >
                 <Head title="Nuovo Budget" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <BudgetCreateGuided categories={categories} currencies={currencies} />
                 </PageContent>
             </AuthenticatedLayout>
@@ -117,7 +117,7 @@ export default function Create({ categories, currencies }: CreateProps) {
         >
             <Head title="Nuovo Budget" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Budget" icon={<span className="text-sm leading-none">📊</span>} />

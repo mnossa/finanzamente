@@ -42,7 +42,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                 }
             >
                 <Head title="Nuovo Obiettivo" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <FinancialGoalCreateGuided currencies={currencies} suggestedIcons={suggestedIcons} />
                 </PageContent>
             </AuthenticatedLayout>
@@ -97,7 +97,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
         >
             <Head title="Nuovo Obiettivo" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Obiettivi" icon={<span className="text-sm leading-none">🎯</span>} />

@@ -62,7 +62,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                 }
             >
                 <Head title="Nuovo Investimento" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <InvestmentCreateGuided accounts={accounts} assets={assets} assetTypes={assetTypes} />
                 </PageContent>
             </AuthenticatedLayout>
@@ -174,7 +174,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
         >
             <Head title="Nuovo Investimento" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Investimenti" icon={<span className="text-sm leading-none">📈</span>} />

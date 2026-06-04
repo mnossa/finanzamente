@@ -120,7 +120,7 @@ export default function Edit({ investment, accounts, assets, assetTypes }: EditP
         >
             <Head title="Modifica Investimento" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit}>
                         <CardBox className="overflow-hidden shadow-sm">
                             <div className="p-6">

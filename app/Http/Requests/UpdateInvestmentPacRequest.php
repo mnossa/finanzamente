@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreInvestmentPacRequest extends FormRequest
+class UpdateInvestmentPacRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -40,6 +40,7 @@ class StoreInvestmentPacRequest extends FormRequest
             'start_date' => ['required', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'status' => ['required', 'in:active,paused'],
         ];
     }
 

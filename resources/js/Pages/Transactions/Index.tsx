@@ -19,6 +19,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import axios from 'axios';
 import { filtersAnalytics, tx } from '@/utils/analytics';
+import { formatCurrency } from '@/utils/format';
 
 interface Category {
     id: number;
@@ -525,6 +526,8 @@ export default function Index({
     summary,
     currencies,
 }: IndexProps) {
+    const summaryCurrency = filters.currency_code || 'EUR';
+
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
@@ -1087,15 +1090,15 @@ export default function Index({
                             </div>
                             <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-900/20">
                                 <p className="text-xs text-emerald-600 dark:text-emerald-400">Entrate</p>
-                                <p className="font-semibold text-emerald-700 dark:text-emerald-300">+{summary.income.toFixed(2)}</p>
+                                <p className="font-semibold text-emerald-700 dark:text-emerald-300">{formatCurrency(summary.income, summaryCurrency)}</p>
                             </div>
                             <div className="rounded-lg bg-red-50 p-2 dark:bg-red-900/20">
                                 <p className="text-xs text-red-600 dark:text-red-400">Uscite</p>
-                                <p className="font-semibold text-red-700 dark:text-red-300">-{summary.expenses.toFixed(2)}</p>
+                                <p className="font-semibold text-red-700 dark:text-red-300">{formatCurrency(summary.expenses, summaryCurrency)}</p>
                             </div>
                             <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
                                 <p className="text-xs text-blue-600 dark:text-blue-400">Saldo</p>
-                                <p className="font-semibold text-blue-700 dark:text-blue-300">{summary.net >= 0 ? '+' : ''}{summary.net.toFixed(2)}</p>
+                                <p className="font-semibold text-blue-700 dark:text-blue-300">{formatCurrency(summary.net, summaryCurrency)}</p>
                             </div>
                         </div>
                         {transactions.data.length > 0 ? (

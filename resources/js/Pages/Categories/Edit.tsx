@@ -67,7 +67,7 @@ export default function Edit({ category, categoryTypes }: EditProps) {
         >
             <Head title="Modifica Categoria" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <CardBox>
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Nome */}

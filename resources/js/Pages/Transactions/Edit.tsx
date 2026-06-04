@@ -212,7 +212,7 @@ export default function Edit({
         >
             <Head title="Modifica Transazione" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         {/* Titolo pagina visibile solo su desktop */}
                         <header className="hidden sm:block space-y-1">

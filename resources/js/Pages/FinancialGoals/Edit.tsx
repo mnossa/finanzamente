@@ -91,7 +91,7 @@ export default function Edit({ goal, currencies, suggestedIcons, statuses }: Edi
         >
             <Head title={`Modifica ${goal.name}`} />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Obiettivi" icon={<span className="text-sm leading-none">✏️</span>} />

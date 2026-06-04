@@ -82,7 +82,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
                     />
                 }
             >
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <TransactionCreateGuided
                         accounts={accounts}
                         categories={categories}
@@ -229,7 +229,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
         >
             <Head title="Nuova Transazione" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         {/* Titolo pagina visibile solo su desktop */}
                         <header className="hidden sm:block space-y-1">

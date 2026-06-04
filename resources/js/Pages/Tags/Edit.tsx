@@ -63,7 +63,7 @@ export default function Edit({ tag }: EditProps) {
         >
             <Head title="Modifica Tag" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <CardBox className="overflow-hidden shadow-sm">
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="p-6">
                             <div className="space-y-6">

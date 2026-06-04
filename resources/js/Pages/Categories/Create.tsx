@@ -46,7 +46,7 @@ export default function Create({ categoryTypes }: CreateProps) {
                 }
             >
                 <Head title="Nuova Categoria" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <CategoryCreateGuided categoryTypes={categoryTypes} />
                 </PageContent>
             </AuthenticatedLayout>
@@ -82,7 +82,7 @@ export default function Create({ categoryTypes }: CreateProps) {
         >
             <Head title="Nuova Categoria" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <CardBox>
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Nome */}

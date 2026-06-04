@@ -114,7 +114,7 @@ export default function Edit({
         >
             <Head title="Modifica Transazione Ricorrente" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Conto */}

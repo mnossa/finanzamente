@@ -20,6 +20,7 @@ export default function InvestmentPacCreate({ accounts, assets }: { accounts: Ac
         account_id: '',
         investment_asset_id: '',
         amount: '',
+        fees: '',
         adjust_for_inflation: false,
         inflation_rate_annual: '2',
         currency_code: 'EUR',
@@ -37,7 +38,7 @@ export default function InvestmentPacCreate({ accounts, assets }: { accounts: Ac
     return (
         <AuthenticatedLayout header={<PageHeader title="Nuovo PAC" backLink={route('investment-pacs.index')} />}>
             <Head title="Nuovo PAC" />
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                 <CardBox className="p-4 sm:p-5">
                     <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -51,11 +52,16 @@ export default function InvestmentPacCreate({ accounts, assets }: { accounts: Ac
                         </select>
                         <InputError message={errors.investment_asset_id} className="mt-1" />
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-3">
                         <div>
                             <InputLabel value="Importo mensile" />
                             <TextInput type="number" min="0.01" step="0.01" value={data.amount} onChange={(e) => setData('amount', e.target.value)} className="mt-1 block w-full" />
                             <InputError message={errors.amount} className="mt-1" />
+                        </div>
+                        <div>
+                            <InputLabel value="Commissioni per acquisto (opz.)" />
+                            <TextInput type="number" min="0" step="0.01" value={data.fees} onChange={(e) => setData('fees', e.target.value)} className="mt-1 block w-full" placeholder="0.00" />
+                            <InputError message={errors.fees} className="mt-1" />
                         </div>
                         <div>
                             <InputLabel value="Valuta" />

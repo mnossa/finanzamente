@@ -89,7 +89,7 @@ export default function Edit({ refund }: EditProps) {
         >
             <Head title="Modifica Rimborso" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">✏️</span>} />

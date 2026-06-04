@@ -123,7 +123,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
         >
             <Head title={`${debtCredit.type_label} - ${debtCredit.counterparty}`} />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     {canModify && (
                         <IndexPageMobileToolbar>
                             <LinkButton href={route('debts-credits.edit', debtCredit.id)} icon={<PencilIcon />}>

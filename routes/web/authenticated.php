@@ -284,6 +284,11 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
             Route::get('/investimenti/pac', [InvestmentPacController::class, 'index'])->name('investment-pacs.index');
             Route::get('/investimenti/pac/crea', [InvestmentPacController::class, 'create'])->name('investment-pacs.create');
             Route::post('/investimenti/pac', [InvestmentPacController::class, 'store'])->name('investment-pacs.store');
+            Route::get('/investimenti/pac/{investmentPac}/modifica', [InvestmentPacController::class, 'edit'])->name('investment-pacs.edit');
+            Route::put('/investimenti/pac/{investmentPac}', [InvestmentPacController::class, 'update'])->name('investment-pacs.update');
+            Route::post('/investimenti/pac/{investmentPac}/attiva-disattiva', [InvestmentPacController::class, 'toggleStatus'])->name('investment-pacs.toggle-status');
+            Route::post('/investimenti/pac/{investmentPac}/esegui-ora', [InvestmentPacController::class, 'runNow'])->name('investment-pacs.run-now');
+            Route::delete('/investimenti/pac/{investmentPac}', [InvestmentPacController::class, 'destroy'])->name('investment-pacs.destroy');
             Route::get('/investimenti/{investment}/modifica', [InvestmentController::class, 'edit'])->name('investments.edit');
             Route::put('/investimenti/{investment}', [InvestmentController::class, 'update'])->name('investments.update');
             Route::post('/investimenti/{investment}/vendi', [InvestmentController::class, 'sell'])->name('investments.sell');
@@ -349,6 +354,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::get('/asset-investimento', [InvestmentAssetController::class, 'index'])->name('investment-assets.index');
 
         Route::get('/investimenti', [InvestmentController::class, 'index'])->name('investments.index');
+        Route::get('/investimenti/pac/{investmentPac}', [InvestmentPacController::class, 'show'])->name('investment-pacs.show');
         Route::get('/investimenti/{investment}', [InvestmentController::class, 'show'])->name('investments.show');
 
         Route::get('/allocazione-asset', [AssetAllocationController::class, 'index'])->name('asset-allocation.index');

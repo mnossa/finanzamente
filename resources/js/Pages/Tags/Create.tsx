@@ -48,7 +48,7 @@ export default function Create() {
                 }
             >
                 <Head title="Nuovo Tag" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <TagCreateGuided />
                 </PageContent>
             </AuthenticatedLayout>
@@ -76,7 +76,7 @@ export default function Create() {
         >
             <Head title="Nuovo Tag" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <CardBox className="overflow-hidden shadow-sm">
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="p-6">
                             <div className="space-y-6">

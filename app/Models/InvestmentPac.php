@@ -15,6 +15,7 @@ class InvestmentPac extends Model
         'account_id',
         'investment_asset_id',
         'amount',
+        'fees',
         'adjust_for_inflation',
         'inflation_rate_annual',
         'last_inflation_adjusted_at',
@@ -29,6 +30,7 @@ class InvestmentPac extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'fees' => 'decimal:2',
         'adjust_for_inflation' => 'boolean',
         'inflation_rate_annual' => 'decimal:2',
         'last_inflation_adjusted_at' => 'date',
@@ -45,5 +47,10 @@ class InvestmentPac extends Model
     public function account()
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function investments()
+    {
+        return $this->hasMany(Investment::class);
     }
 }

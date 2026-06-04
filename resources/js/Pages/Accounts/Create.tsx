@@ -47,7 +47,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                 header={<PageHeader title="Nuovo conto" backLink={route('accounts.index')} />}
             >
                 <Head title="Nuovo Conto" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     <AccountCreateGuided accountTypes={accountTypes} defaultCurrency={defaultCurrency} />
                 </PageContent>
             </AuthenticatedLayout>
@@ -87,7 +87,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
         >
             <Head title="Nuovo Conto" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     {/* Banner limite piano Base */}
                     {maxAccounts !== null && (
                         <div className={clsx(

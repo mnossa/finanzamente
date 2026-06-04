@@ -983,7 +983,7 @@ function MobileBottomNav({
                     aria-label="Transazioni"
                 >
                     <Icons.ArrowLeftRight />
-                    <span className="text-[10px] font-medium leading-none">Movimenti</span>
+                    <span className="text-[10px] font-medium leading-none">Transazioni</span>
                 </Link>
 
                 {/* FAB — nascosto dove non c'è un'azione primaria sensata (es. simulazioni) */}

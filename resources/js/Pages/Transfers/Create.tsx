@@ -50,7 +50,7 @@ export default function Create({ accounts }: CreateProps) {
                 }
             >
                 <Head title="Nuovo Trasferimento" />
-                <PageContent maxWidth="2xl">
+                <PageContent maxWidth="3xl">
                     {accounts.length < 2 ? (
                         <SectionCard className="space-y-4">
                             <div className="py-8 text-center">
@@ -134,7 +134,7 @@ export default function Create({ accounts }: CreateProps) {
         >
             <Head title="Nuovo Trasferimento" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Trasferimenti" icon={<span className="text-sm leading-none">➕</span>} />

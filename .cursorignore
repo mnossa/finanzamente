@@ -6,6 +6,9 @@ dist/
 build/
 storage/
 .vscode/
+public/images/
+public/pwa/
+public/storage/
 
 # File di log e database locali
 *.log

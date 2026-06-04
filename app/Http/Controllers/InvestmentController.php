@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateInvestmentRequest;
 use App\Models\Account;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
+use App\Services\AssetPriceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,6 +15,8 @@ use Inertia\Response;
 
 class InvestmentController extends Controller
 {
+    public function __construct(private readonly AssetPriceService $assetPriceService) {}
+
     /**
      * Mostra l'elenco degli investimenti della household attiva.
      */
@@ -22,7 +25,14 @@ class InvestmentController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $investments = Investment::with(['user:id,name', 'account:id,name', 'asset.currency:code,symbol'])
+        $rawInvestments = Investment::with([
+            'user:id,name',
+            'account:id,name',
+            'asset:id,name,symbol,type,currency_code',
+            'asset.currency:code,symbol',
+            'investmentPac:id,investment_asset_id,status',
+            'investmentPac.asset:id,name,symbol',
+        ])
             ->where('household_id', $householdId)
             ->where(function ($query) use ($user) {
                 $query->where('is_private', false)
@@ -30,47 +40,84 @@ class InvestmentController extends Controller
             })
             ->orderByRaw('sell_date IS NULL DESC') // Prima gli aperti
             ->orderBy('buy_date', 'desc')
-            ->get()
-            ->map(function ($investment) {
-                return [
-                    'id' => $investment->id,
-                    'asset' => [
-                        'id' => $investment->asset->id,
-                        'name' => $investment->asset->name,
-                        'symbol' => $investment->asset->symbol,
-                        'type' => $investment->asset->type,
-                        'type_label' => $investment->asset->type_label,
-                        'type_icon' => $investment->asset->type_icon,
-                        'currency' => [
-                            'code' => $investment->asset->currency->code ?? $investment->asset->currency_code,
-                            'symbol' => $investment->asset->currency->symbol ?? '€',
-                        ],
+            ->get();
+
+        // Recupera prezzi correnti per tutti gli asset aperti (con cache 15 min)
+        $openAssetSymbols = $rawInvestments
+            ->filter(fn ($inv) => $inv->sell_date === null && $inv->asset->symbol)
+            ->pluck('asset.symbol')
+            ->unique()
+            ->values();
+
+        $currentPrices = [];
+        foreach ($openAssetSymbols as $symbol) {
+            $result = $this->assetPriceService->getCurrentPrice($symbol);
+            if (! $result['error'] && isset($result['price'])) {
+                $currentPrices[$symbol] = (float) $result['price'];
+            }
+        }
+
+        $investments = $rawInvestments->map(function ($investment) use ($currentPrices) {
+            $isOpen = $investment->sell_date === null;
+            $symbol = $investment->asset->symbol;
+            $currentPrice = ($isOpen && $symbol && isset($currentPrices[$symbol]))
+                ? $currentPrices[$symbol]
+                : null;
+            $unrealizedProfit = $currentPrice !== null
+                ? ($currentPrice - (float) $investment->buy_price) * (float) $investment->quantity
+                : null;
+            $currentValue = $currentPrice !== null
+                ? $currentPrice * (float) $investment->quantity
+                : null;
+
+            return [
+                'id' => $investment->id,
+                'asset' => [
+                    'id' => $investment->asset->id,
+                    'name' => $investment->asset->name,
+                    'symbol' => $investment->asset->symbol,
+                    'type' => $investment->asset->type,
+                    'type_label' => $investment->asset->type_label,
+                    'type_icon' => $investment->asset->type_icon,
+                    'currency' => [
+                        'code' => $investment->asset->currency->code ?? $investment->asset->currency_code,
+                        'symbol' => $investment->asset->currency->symbol ?? '€',
                     ],
-                    'account' => $investment->account ? [
-                        'id' => $investment->account->id,
-                        'name' => $investment->account->name,
-                    ] : null,
-                    'quantity' => (float) $investment->quantity,
-                    'buy_price' => (float) $investment->buy_price,
-                    'buy_date' => $investment->buy_date->format('Y-m-d'),
-                    'sell_price' => $investment->sell_price ? (float) $investment->sell_price : null,
-                    'sell_date' => $investment->sell_date?->format('Y-m-d'),
-                    'fees' => $investment->fees ? (float) $investment->fees : null,
-                    'total_buy_value' => $investment->total_buy_value,
-                    'total_sell_value' => $investment->total_sell_value,
-                    'net_profit' => $investment->net_profit,
-                    'profit_percentage' => $investment->profit_percentage !== null
-                        ? round($investment->profit_percentage, 2)
-                        : null,
-                    'is_sold' => $investment->isSold(),
-                    'is_private' => $investment->is_private,
-                    'notes' => $investment->notes,
-                    'user' => [
-                        'id' => $investment->user->id,
-                        'name' => $investment->user->name,
-                    ],
-                ];
-            });
+                ],
+                'account' => $investment->account ? [
+                    'id' => $investment->account->id,
+                    'name' => $investment->account->name,
+                ] : null,
+                'quantity' => (float) $investment->quantity,
+                'buy_price' => (float) $investment->buy_price,
+                'buy_date' => $investment->buy_date->format('Y-m-d'),
+                'sell_price' => $investment->sell_price ? (float) $investment->sell_price : null,
+                'sell_date' => $investment->sell_date?->format('Y-m-d'),
+                'fees' => $investment->fees ? (float) $investment->fees : null,
+                'total_buy_value' => $investment->total_buy_value,
+                'total_sell_value' => $investment->total_sell_value,
+                'net_profit' => $investment->net_profit,
+                'profit_percentage' => $investment->profit_percentage !== null
+                    ? round($investment->profit_percentage, 2)
+                    : null,
+                'current_price' => $currentPrice,
+                'current_value' => $currentValue,
+                'unrealized_profit' => $unrealizedProfit,
+                'is_sold' => $investment->isSold(),
+                'is_private' => $investment->is_private,
+                'notes' => $investment->notes,
+                'investment_pac' => $investment->investmentPac ? [
+                    'id' => $investment->investmentPac->id,
+                    'status' => $investment->investmentPac->status,
+                    'asset_name' => $investment->investmentPac->asset?->name,
+                    'asset_symbol' => $investment->investmentPac->asset?->symbol,
+                ] : null,
+                'user' => [
+                    'id' => $investment->user->id,
+                    'name' => $investment->user->name,
+                ],
+            ];
+        });
 
         // Separa investimenti aperti e chiusi
         $openInvestments = $investments->where('is_sold', false);
@@ -84,6 +131,8 @@ class InvestmentController extends Controller
             'total_invested' => $openInvestments->sum('total_buy_value'),
             'total_realized_profit' => $closedInvestments->sum('net_profit'),
             'total_fees' => $investments->sum('fees'),
+            'total_unrealized_profit' => $openInvestments->whereNotNull('unrealized_profit')->sum('unrealized_profit'),
+            'has_price_data' => count($currentPrices) > 0,
         ];
 
         return Inertia::render('Investments/Index', [

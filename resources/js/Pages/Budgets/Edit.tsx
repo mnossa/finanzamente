@@ -66,7 +66,7 @@ export default function Edit({ budget, categories, currencies }: EditProps) {
         >
             <Head title="Modifica Budget" />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
                         <header className="hidden sm:block space-y-2">
                             <SectionBadge label="Budget" icon={<span className="text-sm leading-none">✏️</span>} />

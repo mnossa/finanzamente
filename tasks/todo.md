@@ -207,3 +207,27 @@
 - `make test`: 771 passed (3 deprecated, 2 risky).
 - `make pint-check`: PASS (502 files).
 - `make playwright`: 202 passed, 8 skipped.
+
+---
+
+# PAC operativo (CRUD + movimenti + vendita) — 2026-06-04
+
+## Piano
+
+- [x] Collegare i movimenti investimento al PAC (`investments.investment_pac_id`)
+- [x] Estrarre logica esecuzione PAC in service riusabile (scheduler + run manuale)
+- [x] Estendere backend PAC con show/edit/update/destroy/toggle-status/run-now
+- [x] Correggere validazione `account_id` opzionale (`'' -> null`) e scope household
+- [x] Aggiungere pagina dettaglio PAC con elenco movimenti generati e KPI plus/minusvalenza
+- [x] Aggiungere azioni UI PAC (visualizza/modifica/attiva-disattiva/elimina/esegui ora)
+- [x] Aggiungere test Feature per flussi PAC principali
+- [x] Verificare con `make test`, `make pint-check`, `make playwright`
+
+## Review
+
+- [x] `make test`: 781 passed (2972 assertions), 3 deprecated, 2 risky.
+- [x] `make pint-check`: PASS (505 files).
+- [x] `make playwright`: 202 passed, 8 skipped.
+- [x] PAC ora gestisce flusso operativo completo: CRUD, run manuale, storico movimenti e vendita da dettaglio PAC.
+- [x] Backfill PAC automatico in creazione/aggiornamento: genera acquisti mensili da `start_date` fino a data utile (oggi o `end_date`).
+- [x] Verifica widget dashboard: `assetAllocationData.total_value` aggiornato con i movimenti PAC backfillati (test feature dedicato).

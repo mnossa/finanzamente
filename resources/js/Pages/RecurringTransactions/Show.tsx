@@ -148,7 +148,7 @@ export default function Show({ recurringTransaction: rt, frequencies }: ShowProp
                 onCancel={() => setGenerateDialogOpen(false)}
             />
 
-            <PageContent maxWidth="2xl">
+            <PageContent maxWidth="3xl">
                     {/* Card principale */}
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">
