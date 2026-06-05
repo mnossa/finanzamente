@@ -69,13 +69,17 @@ test.describe('Investimenti', () => {
     test('crea investimento base (happy path)', async ({ page }) => {
         await ensureAssetInCreateSelect(page);
 
-        await selectOptionByText(page, '#asset_id', /Asset E2E|E2ESEED/i);
+        await selectOptionByText(page, '#asset_id', /E2E/i);
+        await expect(page.locator('#asset_id')).not.toHaveValue('');
 
         await page.locator('input[name="quantity"]').fill('2');
         await page.locator('input[name="buy_price"]').fill('150');
-        await primaryFormSubmitLocator(page).click();
 
-        await expect(page).toHaveURL(/\/investimenti/, { timeout: 15_000 });
+        const submit = primaryFormSubmitLocator(page);
+        await expect(submit).toBeEnabled();
+        await submit.click();
+
+        await expect(page).toHaveURL(/\/investimenti\/?(\?.*)?$/, { timeout: 15_000 });
         await expect(page.getByRole('heading', { name: /posizioni aperte/i })).toBeVisible();
     });
 

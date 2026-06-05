@@ -12,16 +12,29 @@ type MonthlySpendingPrefs = {
     enabled: boolean;
     channels: Array<'in_app' | 'email'>;
 };
+type InvestmentPacReminderPrefs = {
+    enabled: boolean;
+    channels: Array<'in_app' | 'email'>;
+};
 
 export default function NotificationPreferencesForm() {
     const { auth } = usePage<PageProps>().props;
     const prefs = (auth.user?.preferences as Record<string, unknown> | undefined)?.notifications as
-        | { recurring_reminder?: RecurringReminderPrefs; monthly_spending?: MonthlySpendingPrefs }
+        | {
+              recurring_reminder?: RecurringReminderPrefs;
+              monthly_spending?: MonthlySpendingPrefs;
+              investment_pac_reminder?: InvestmentPacReminderPrefs;
+          }
         | undefined;
 
     const initial: RecurringReminderPrefs = {
         enabled: prefs?.recurring_reminder?.enabled ?? true,
         channels: prefs?.recurring_reminder?.channels ?? ['in_app', 'email'],
+    };
+
+    const initialPac: InvestmentPacReminderPrefs = {
+        enabled: prefs?.investment_pac_reminder?.enabled ?? true,
+        channels: prefs?.investment_pac_reminder?.channels ?? ['in_app', 'email'],
     };
 
     const [enabled, setEnabled] = useState(initial.enabled);
@@ -30,6 +43,9 @@ export default function NotificationPreferencesForm() {
     const [monthlyEnabled, setMonthlyEnabled] = useState(prefs?.monthly_spending?.enabled ?? true);
     const [monthlyInApp, setMonthlyInApp] = useState((prefs?.monthly_spending?.channels ?? ['in_app']).includes('in_app'));
     const [monthlyEmail, setMonthlyEmail] = useState((prefs?.monthly_spending?.channels ?? ['in_app']).includes('email'));
+    const [pacEnabled, setPacEnabled] = useState(initialPac.enabled);
+    const [pacInApp, setPacInApp] = useState(initialPac.channels.includes('in_app'));
+    const [pacEmail, setPacEmail] = useState(initialPac.channels.includes('email'));
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -39,6 +55,15 @@ export default function NotificationPreferencesForm() {
         const channels: Array<'in_app' | 'email'> = [];
         if (inApp) channels.push('in_app');
         if (email) channels.push('email');
+
+        const monthlyChannels: Array<'in_app' | 'email'> = [
+            ...(monthlyInApp ? ['in_app' as const] : []),
+            ...(monthlyEmail ? ['email' as const] : []),
+        ];
+        const pacChannels: Array<'in_app' | 'email'> = [
+            ...(pacInApp ? ['in_app' as const] : []),
+            ...(pacEmail ? ['email' as const] : []),
+        ];
 
         axios
             .patch(
@@ -50,15 +75,11 @@ export default function NotificationPreferencesForm() {
                     },
                     monthly_spending: {
                         enabled: monthlyEnabled,
-                        channels: [
-                            ...(monthlyInApp ? ['in_app'] : []),
-                            ...(monthlyEmail ? ['email'] : []),
-                        ].length > 0
-                            ? [
-                                ...(monthlyInApp ? ['in_app'] : []),
-                                ...(monthlyEmail ? ['email'] : []),
-                            ]
-                            : ['in_app'],
+                        channels: monthlyChannels.length > 0 ? monthlyChannels : ['in_app'],
+                    },
+                    investment_pac_reminder: {
+                        enabled: pacEnabled,
+                        channels: pacChannels.length > 0 ? pacChannels : ['in_app'],
                     },
                 },
                 {
@@ -141,6 +162,39 @@ export default function NotificationPreferencesForm() {
                             type="checkbox"
                             checked={monthlyEmail}
                             onChange={(e) => setMonthlyEmail(e.target.checked)}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        Email
+                    </label>
+                </div>
+            )}
+
+            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                    type="checkbox"
+                    checked={pacEnabled}
+                    onChange={(e) => setPacEnabled(e.target.checked)}
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                Attiva promemoria PAC investimenti
+            </label>
+
+            {pacEnabled && (
+                <div className="mt-3 space-y-2 pl-6">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={pacInApp}
+                            onChange={(e) => setPacInApp(e.target.checked)}
+                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        Notifica in app
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={pacEmail}
+                            onChange={(e) => setPacEmail(e.target.checked)}
                             className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                         />
                         Email

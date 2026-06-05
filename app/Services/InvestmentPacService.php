@@ -8,8 +8,15 @@ use Illuminate\Support\Carbon;
 
 class InvestmentPacService
 {
+    public function __construct(
+        private readonly InvestmentMetricsService $investmentMetricsService,
+        private readonly InvestmentTransactionSyncService $investmentTransactionSyncService,
+    ) {}
+
     public function realignPacMovements(InvestmentPac $pac, ?Carbon $today = null): int
     {
+        $pac->loadMissing('asset:id,symbol');
+
         $movements = Investment::where('investment_pac_id', $pac->id)
             ->orderBy('buy_date')
             ->orderBy('id')
@@ -22,13 +29,25 @@ class InvestmentPacService
         $expectedDates = $this->buildExpectedExecutionDates($pac, $today);
         $updatedCount = 0;
         $expectedCount = count($expectedDates);
+        $amount = (float) $pac->amount;
 
         foreach ($movements as $index => $movement) {
+            $buyDate = $index < $expectedCount
+                ? $expectedDates[$index]->toDateString()
+                : $movement->buy_date?->format('Y-m-d');
+
+            $lot = $this->investmentMetricsService->resolvePurchaseLot(
+                $amount,
+                $pac->asset?->symbol,
+                $buyDate ?? Carbon::today()->toDateString(),
+            );
+
             $payload = [
                 'account_id' => $pac->account_id,
                 'asset_id' => $pac->investment_asset_id,
-                'buy_price' => (float) $pac->amount,
-                'quantity' => 1,
+                'buy_price' => $lot['buy_price'],
+                'nav_at_buy' => $lot['nav_at_buy'],
+                'quantity' => $lot['quantity'],
                 'fees' => $pac->fees !== null ? (float) $pac->fees : null,
                 'notes' => trim('PAC automatico'.($pac->notes ? ' - '.$pac->notes : '')),
             ];
@@ -36,14 +55,14 @@ class InvestmentPacService
             if ($index < $expectedCount) {
                 $payload['buy_date'] = $expectedDates[$index]->toDateString();
                 $movement->update($payload);
+                $this->investmentTransactionSyncService->syncInvestment($movement->fresh());
                 $updatedCount++;
 
                 continue;
             }
 
-            // Se il PAC ora prevede meno esecuzioni, elimina gli extra ancora aperti.
-            // I movimenti già venduti restano per preservare lo storico realizzato.
             if ($movement->isOpen()) {
+                $this->investmentTransactionSyncService->deleteForInvestment($movement);
                 $movement->delete();
                 $updatedCount++;
 
@@ -51,6 +70,7 @@ class InvestmentPacService
             }
 
             $movement->update($payload);
+            $this->investmentTransactionSyncService->syncInvestment($movement->fresh());
             $updatedCount++;
         }
 
@@ -126,6 +146,13 @@ class InvestmentPacService
         }
 
         $this->applyInflationIfDue($pac, $date);
+        $pac->loadMissing('asset:id,symbol');
+
+        $lot = $this->investmentMetricsService->resolvePurchaseLot(
+            (float) $pac->amount,
+            $pac->asset?->symbol,
+            $date->toDateString(),
+        );
 
         $investment = Investment::create([
             'user_id' => $pac->user_id,
@@ -133,17 +160,57 @@ class InvestmentPacService
             'account_id' => $pac->account_id,
             'asset_id' => $pac->investment_asset_id,
             'investment_pac_id' => $pac->id,
-            'quantity' => 1,
-            'buy_price' => (float) $pac->amount,
+            'quantity' => $lot['quantity'],
+            'buy_price' => $lot['buy_price'],
+            'nav_at_buy' => $lot['nav_at_buy'],
             'buy_date' => $date->toDateString(),
             'fees' => $pac->fees !== null ? (float) $pac->fees : null,
             'notes' => trim('PAC automatico'.($pac->notes ? ' - '.$pac->notes : '')),
             'is_private' => false,
         ]);
 
+        $this->investmentTransactionSyncService->syncPurchase($investment);
+
         $pac->update(['last_executed_at' => $date->toDateString()]);
 
         return $investment;
+    }
+
+    public function calculateNextExecutionDate(InvestmentPac $pac, ?Carbon $today = null): ?Carbon
+    {
+        if ($pac->status !== 'active' || $pac->start_date === null) {
+            return null;
+        }
+
+        $todayDate = ($today ?? Carbon::today())->copy()->startOfDay();
+        $startDate = Carbon::parse($pac->start_date)->startOfDay();
+
+        if ($startDate->gt($todayDate)) {
+            return $startDate;
+        }
+
+        if ($pac->end_date !== null && Carbon::parse($pac->end_date)->isBefore($todayDate)) {
+            return null;
+        }
+
+        $preferredDay = (int) $startDate->day;
+        $candidate = $startDate->copy();
+
+        while ($candidate->lte($todayDate)) {
+            if (! $this->hasExecutionInMonth($pac, $candidate)) {
+                if ($this->isExecutionAllowedByDateRange($pac, $candidate)) {
+                    return $candidate;
+                }
+            }
+
+            $candidate = $this->nextMonthlyExecutionDate($candidate, $preferredDay);
+        }
+
+        if ($pac->end_date !== null && $candidate->gt(Carbon::parse($pac->end_date))) {
+            return null;
+        }
+
+        return $candidate;
     }
 
     private function isExecutionAllowedByDateRange(InvestmentPac $pac, Carbon $date): bool

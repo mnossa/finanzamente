@@ -51,6 +51,7 @@ class Transaction extends Model
         'description',
         'recurring',
         'recurring_transaction_id',
+        'investment_id',
         'is_private',
         'transfer_id',
         'inter_household_transfer_id',
@@ -105,6 +106,11 @@ class Transaction extends Model
     public function recurringTransaction()
     {
         return $this->belongsTo(RecurringTransaction::class, 'recurring_transaction_id');
+    }
+
+    public function investment()
+    {
+        return $this->belongsTo(Investment::class);
     }
 
     public function transfer()

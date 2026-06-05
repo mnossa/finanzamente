@@ -18,12 +18,13 @@ class Investment extends Model
     use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id', 'household_id', 'account_id', 'asset_id', 'investment_pac_id', 'quantity', 'buy_price', 'buy_date', 'sell_price', 'sell_date', 'fees', 'notes', 'is_private',
+        'user_id', 'household_id', 'account_id', 'asset_id', 'investment_pac_id', 'quantity', 'buy_price', 'nav_at_buy', 'buy_date', 'sell_price', 'sell_date', 'fees', 'notes', 'is_private',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:8',
         'buy_price' => 'decimal:8',
+        'nav_at_buy' => 'decimal:8',
         'sell_price' => 'decimal:8',
         'fees' => 'decimal:2',
         'buy_date' => 'date',
@@ -54,6 +55,11 @@ class Investment extends Model
     public function investmentPac()
     {
         return $this->belongsTo(InvestmentPac::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
     }
 
     /**

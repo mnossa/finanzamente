@@ -174,6 +174,11 @@ interface AssetAllocationData {
 interface DashboardProps {
     accounts: Account[];
     totalBalance: number;
+    balanceBreakdown: {
+        total: number;
+        liquid: number;
+        invested: number;
+    };
     recentTransactions: Transaction[];
     monthlyStats: MonthlyStats;
     lastMonthStats: MonthlyStats;
@@ -367,6 +372,7 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
 export default function Dashboard({
     accounts,
     totalBalance,
+    balanceBreakdown,
     recentTransactions,
     monthlyStats,
     lastMonthStats,
@@ -448,13 +454,20 @@ export default function Dashboard({
         switch (widgetId) {
             case 'total_balance':
                 return (
-                    <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-4 text-white shadow-lg sm:p-5">
-                        <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
-                        <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>{formatCurrency(totalBalance)}</p>
-                        <p className="mt-1 text-sm text-slate-400">
-                            {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'}
-                        </p>
-                    </div>
+                    <Link href={route('patrimonio.index')} className="block">
+                        <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-4 text-white shadow-lg transition-shadow hover:shadow-xl sm:p-5">
+                            <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
+                            <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>
+                                {formatCurrency(balanceBreakdown?.total ?? totalBalance)}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-400">
+                                Liquidità {formatCurrency(balanceBreakdown?.liquid ?? 0)} · Investimenti {formatCurrency(balanceBreakdown?.invested ?? 0)}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                                {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio
+                            </p>
+                        </div>
+                    </Link>
                 );
 
             case 'monthly_stats':

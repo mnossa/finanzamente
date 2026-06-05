@@ -68,6 +68,8 @@ interface Transaction {
         description: string | null;
         frequency: string;
     } | null;
+    investment_id: number | null;
+    is_investment: boolean;
 }
 
 interface PaginatedData<T> {

@@ -329,6 +329,20 @@ function PacGroupCard({ group }: { group: PacGroup }) {
                                             : 'Posizione aperta'}
                                         {movement.fees ? ` · Commissioni ${formatCurrency(movement.fees, movement.asset.currency.code)}` : ''}
                                     </p>
+                                    {!movement.is_sold && (
+                                        <p className={clsx(
+                                            'mt-1 text-xs font-medium',
+                                            movement.unrealized_profit === null
+                                                ? 'text-gray-400 dark:text-gray-500'
+                                                : movement.unrealized_profit >= 0
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-red-600 dark:text-red-400',
+                                        )}>
+                                            {movement.unrealized_profit !== null
+                                                ? `Non realizzato: ${movement.unrealized_profit >= 0 ? '+' : ''}${formatCurrency(movement.unrealized_profit, movement.asset.currency.code)}`
+                                                : 'Prezzi n/d'}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Link

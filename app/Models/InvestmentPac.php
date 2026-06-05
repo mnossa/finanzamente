@@ -49,6 +49,11 @@ class InvestmentPac extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function household()
+    {
+        return $this->belongsTo(Household::class);
+    }
+
     public function investments()
     {
         return $this->hasMany(Investment::class);

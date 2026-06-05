@@ -40,6 +40,8 @@ export interface TransactionListRowTransaction {
     account: TransactionListRowAccount;
     tags: TransactionListRowTag[];
     recurring_transaction_id: number | null;
+    investment_id: number | null;
+    is_investment?: boolean;
 }
 
 export type TransactionListIndexQuery = Record<string, string | number>;
@@ -64,6 +66,7 @@ export default function TransactionListRow({
     const isRefund = transaction.refund_id !== null;
     const hasRefunds = transaction.has_refunds;
     const isRecurring = transaction.recurring_transaction_id !== null;
+    const isInvestment = transaction.investment_id !== null;
 
     const title = transaction.description || transaction.category?.name || 'Transazione';
 
@@ -72,6 +75,7 @@ export default function TransactionListRow({
             className={clsx(
                 'group border-b border-gray-100 py-2.5 transition-colors last:border-0 -mx-4 px-3 sm:flex sm:flex-row sm:items-center sm:py-3 sm:px-4',
                 isRecurring && 'border-l-4 border-violet-500 pl-2 dark:border-violet-400',
+                isInvestment && !isRecurring && 'border-l-4 border-indigo-500 pl-2 dark:border-indigo-400',
                 isSelected
                     ? 'bg-emerald-50 dark:bg-emerald-900/20'
                     : 'hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50',
@@ -125,6 +129,15 @@ export default function TransactionListRow({
                                         📋
                                     </span>
                                 )}
+                                {isInvestment && (
+                                    <Link
+                                        href={route('investments.show', transaction.investment_id!)}
+                                        className="ml-1.5 inline-flex shrink-0 items-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        📈 Investimento
+                                    </Link>
+                                )}
                             </p>
                             <p
                                 className={clsx(
@@ -140,6 +153,8 @@ export default function TransactionListRow({
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:truncate">
                             {transaction.account.name} · {formatDate(transaction.date)}
                             {isTransfer && <span className="ml-1 text-amber-500">· Trasferimento</span>}
+                            {isRecurring && <span className="ml-1 text-violet-500">· Ricorrente</span>}
+                            {isInvestment && <span className="ml-1 text-indigo-500">· Investimento</span>}
                             {isRefund && <span className="ml-1 text-blue-500">· Rimborso</span>}
                             {hasRefunds && (
                                 <span

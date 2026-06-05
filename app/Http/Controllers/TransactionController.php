@@ -275,6 +275,8 @@ class TransactionController extends Controller
                 $query->where('amount', '>', 0);
             } elseif ($request->type === 'expense') {
                 $query->where('amount', '<', 0);
+            } elseif ($request->type === 'investment') {
+                $query->whereNotNull('investment_id');
             }
         }
         if ($request->filled('from')) {
@@ -365,6 +367,8 @@ class TransactionController extends Controller
                         'description' => $transaction->recurringTransaction->description,
                         'frequency' => $transaction->recurringTransaction->frequency,
                     ] : null,
+                    'investment_id' => $transaction->investment_id,
+                    'is_investment' => $transaction->investment_id !== null,
                 ];
             });
 

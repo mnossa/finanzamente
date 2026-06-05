@@ -26,6 +26,7 @@ use App\Http\Controllers\InvestmentPacController;
 use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\PatrimonioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
 use App\Http\Controllers\RecurrenceDetectionController;
@@ -70,6 +71,7 @@ Route::middleware(['auth', 'verified', 'pre-launch'])->group(function () {
 // Rotte che richiedono autenticazione E household attiva
 Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/patrimonio', [PatrimonioController::class, 'index'])->name('patrimonio.index');
 
     Route::post('/simulazioni/scenari', [SimulationScenarioController::class, 'store'])->name('simulation-scenarios.store');
     Route::put('/simulazioni/scenari/{saved_simulation_scenario}', [SimulationScenarioController::class, 'update'])->name('simulation-scenarios.update');

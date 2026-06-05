@@ -8,6 +8,8 @@ use App\Models\Account;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Services\AssetPriceService;
+use App\Services\InvestmentMetricsService;
+use App\Services\InvestmentTransactionSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -15,7 +17,11 @@ use Inertia\Response;
 
 class InvestmentController extends Controller
 {
-    public function __construct(private readonly AssetPriceService $assetPriceService) {}
+    public function __construct(
+        private readonly AssetPriceService $assetPriceService,
+        private readonly InvestmentMetricsService $investmentMetricsService,
+        private readonly InvestmentTransactionSyncService $investmentTransactionSyncService,
+    ) {}
 
     /**
      * Mostra l'elenco degli investimenti della household attiva.
@@ -43,32 +49,14 @@ class InvestmentController extends Controller
             ->get();
 
         // Recupera prezzi correnti per tutti gli asset aperti (con cache 15 min)
-        $openAssetSymbols = $rawInvestments
-            ->filter(fn ($inv) => $inv->sell_date === null && $inv->asset->symbol)
-            ->pluck('asset.symbol')
-            ->unique()
-            ->values();
-
-        $currentPrices = [];
-        foreach ($openAssetSymbols as $symbol) {
-            $result = $this->assetPriceService->getCurrentPrice($symbol);
-            if (! $result['error'] && isset($result['price'])) {
-                $currentPrices[$symbol] = (float) $result['price'];
-            }
-        }
+        $currentPrices = $this->investmentMetricsService->fetchCurrentPricesForInvestments($rawInvestments);
 
         $investments = $rawInvestments->map(function ($investment) use ($currentPrices) {
-            $isOpen = $investment->sell_date === null;
             $symbol = $investment->asset->symbol;
-            $currentPrice = ($isOpen && $symbol && isset($currentPrices[$symbol]))
+            $currentPrice = ($investment->isOpen() && $symbol && isset($currentPrices[$symbol]))
                 ? $currentPrices[$symbol]
                 : null;
-            $unrealizedProfit = $currentPrice !== null
-                ? ($currentPrice - (float) $investment->buy_price) * (float) $investment->quantity
-                : null;
-            $currentValue = $currentPrice !== null
-                ? $currentPrice * (float) $investment->quantity
-                : null;
+            $metrics = $this->investmentMetricsService->unrealizedMetrics($investment, $currentPrice);
 
             return [
                 'id' => $investment->id,
@@ -100,9 +88,9 @@ class InvestmentController extends Controller
                 'profit_percentage' => $investment->profit_percentage !== null
                     ? round($investment->profit_percentage, 2)
                     : null,
-                'current_price' => $currentPrice,
-                'current_value' => $currentValue,
-                'unrealized_profit' => $unrealizedProfit,
+                'current_price' => $metrics['current_price'],
+                'current_value' => $metrics['current_value'],
+                'unrealized_profit' => $metrics['unrealized_profit'],
                 'is_sold' => $investment->isSold(),
                 'is_private' => $investment->is_private,
                 'notes' => $investment->notes,
@@ -131,7 +119,10 @@ class InvestmentController extends Controller
             'total_invested' => $openInvestments->sum('total_buy_value'),
             'total_realized_profit' => $closedInvestments->sum('net_profit'),
             'total_fees' => $investments->sum('fees'),
-            'total_unrealized_profit' => $openInvestments->whereNotNull('unrealized_profit')->sum('unrealized_profit'),
+            'total_unrealized_profit' => $this->investmentMetricsService->sumUnrealizedProfit(
+                $rawInvestments->filter(fn ($inv) => $inv->isOpen()),
+                $currentPrices,
+            ),
             'has_price_data' => count($currentPrices) > 0,
         ];
 
@@ -198,18 +189,21 @@ class InvestmentController extends Controller
             }
         }
 
-        Investment::create([
+        $investment = Investment::create([
             'user_id' => $user->id,
             'household_id' => $user->active_household_id,
             'account_id' => $validated['account_id'] ?? null,
             'asset_id' => $validated['asset_id'],
             'quantity' => $validated['quantity'],
             'buy_price' => $validated['buy_price'],
+            'nav_at_buy' => $validated['buy_price'],
             'buy_date' => $validated['buy_date'],
             'fees' => $validated['fees'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
         ]);
+
+        $this->investmentTransactionSyncService->syncPurchase($investment);
 
         return redirect()
             ->route('investments.index')
@@ -344,6 +338,7 @@ class InvestmentController extends Controller
             'asset_id' => $validated['asset_id'],
             'quantity' => $validated['quantity'],
             'buy_price' => $validated['buy_price'],
+            'nav_at_buy' => $validated['buy_price'],
             'buy_date' => $validated['buy_date'],
             'sell_price' => $validated['sell_price'] ?? null,
             'sell_date' => $validated['sell_date'] ?? null,
@@ -351,6 +346,8 @@ class InvestmentController extends Controller
             'notes' => $validated['notes'] ?? null,
             'is_private' => $validated['is_private'] ?? false,
         ]);
+
+        $this->investmentTransactionSyncService->syncInvestment($investment->fresh());
 
         return redirect()
             ->route('investments.show', $investment)
@@ -379,6 +376,8 @@ class InvestmentController extends Controller
             'fees' => $totalFees > 0 ? $totalFees : null,
         ]);
 
+        $this->investmentTransactionSyncService->syncInvestment($investment->fresh());
+
         $profit = $investment->fresh()->net_profit;
         $message = $profit >= 0
             ? 'Vendita registrata! Profitto netto: '.number_format($profit, 2, ',', '.').' €'
@@ -396,6 +395,7 @@ class InvestmentController extends Controller
     {
         $this->authorizeInvestment($investment);
 
+        $this->investmentTransactionSyncService->deleteForInvestment($investment);
         $investment->delete();
 
         return redirect()

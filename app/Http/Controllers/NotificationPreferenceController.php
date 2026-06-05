@@ -19,6 +19,9 @@ class NotificationPreferenceController extends Controller
             'monthly_spending.enabled' => ['required', 'boolean'],
             'monthly_spending.channels' => ['required', 'array'],
             'monthly_spending.channels.*' => ['in:in_app,email,push'],
+            'investment_pac_reminder.enabled' => ['required', 'boolean'],
+            'investment_pac_reminder.channels' => ['required', 'array'],
+            'investment_pac_reminder.channels.*' => ['in:in_app,email,push'],
         ]);
 
         $user = $request->user();
@@ -31,12 +34,17 @@ class NotificationPreferenceController extends Controller
             'enabled' => $validated['monthly_spending']['enabled'],
             'channels' => array_values(array_unique($validated['monthly_spending']['channels'])),
         ];
+        $preferences['notifications']['investment_pac_reminder'] = [
+            'enabled' => $validated['investment_pac_reminder']['enabled'],
+            'channels' => array_values(array_unique($validated['investment_pac_reminder']['channels'])),
+        ];
         $user->preferences = $preferences;
         $user->save();
 
         return response()->json([
             'recurring_reminder' => $preferences['notifications']['recurring_reminder'],
             'monthly_spending' => $preferences['notifications']['monthly_spending'],
+            'investment_pac_reminder' => $preferences['notifications']['investment_pac_reminder'],
         ]);
     }
 }

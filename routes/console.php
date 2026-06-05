@@ -71,6 +71,7 @@ Schedule::command('insights:cohort-analyze')->dailyAt('04:15');
 Schedule::command('notifications:monthly-spending')->dailyAt('23:40');
 
 Schedule::command('investment-pacs:run')->dailyAt('00:20');
+Schedule::command('investment-pacs:remind')->dailyAt('08:15');
 
 /**
  * Sblocca import rimasti in pending/processing dopo crash worker o timeout (banner «import in corso»).

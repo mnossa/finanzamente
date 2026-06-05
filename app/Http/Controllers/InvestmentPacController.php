@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\InvestmentAsset;
 use App\Models\InvestmentPac;
 use App\Services\AssetPriceService;
+use App\Services\InvestmentMetricsService;
 use App\Services\InvestmentPacService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,7 @@ class InvestmentPacController extends Controller
     public function __construct(
         private readonly InvestmentPacService $investmentPacService,
         private readonly AssetPriceService $assetPriceService,
+        private readonly InvestmentMetricsService $investmentMetricsService,
     ) {}
 
     public function index(): Response
@@ -72,7 +74,6 @@ class InvestmentPacController extends Controller
                 ->orderByDesc('id'),
         ]);
 
-        // Recupera prezzo corrente per l'asset del PAC
         $assetSymbol = $investmentPac->asset->symbol;
         $currentPrice = null;
         if ($assetSymbol) {
@@ -86,13 +87,7 @@ class InvestmentPacController extends Controller
         $closedInvestments = $investmentPac->investments->filter(fn ($investment) => $investment->isSold());
 
         $investments = $investmentPac->investments->map(function ($investment) use ($currentPrice) {
-            $isOpen = ! $investment->isSold();
-            $unrealizedProfit = ($isOpen && $currentPrice !== null)
-                ? ($currentPrice - (float) $investment->buy_price) * (float) $investment->quantity
-                : null;
-            $currentValue = ($isOpen && $currentPrice !== null)
-                ? $currentPrice * (float) $investment->quantity
-                : null;
+            $metrics = $this->investmentMetricsService->unrealizedMetrics($investment, $currentPrice);
 
             return [
                 'id' => $investment->id,
@@ -106,16 +101,14 @@ class InvestmentPacController extends Controller
                 'net_profit' => $investment->net_profit !== null ? (float) $investment->net_profit : null,
                 'is_sold' => $investment->isSold(),
                 'fees' => $investment->fees !== null ? (float) $investment->fees : null,
-                'current_price' => $currentPrice,
-                'current_value' => $currentValue,
-                'unrealized_profit' => $unrealizedProfit,
+                'current_price' => $metrics['current_price'],
+                'current_value' => $metrics['current_value'],
+                'unrealized_profit' => $metrics['unrealized_profit'],
             ];
         })->values();
 
         $unrealizedTotal = $currentPrice !== null
-            ? (float) $openInvestments->sum(
-                fn ($investment) => ($currentPrice - (float) $investment->buy_price) * (float) $investment->quantity
-            )
+            ? $this->investmentMetricsService->sumUnrealizedProfit($openInvestments, [$assetSymbol => $currentPrice])
             : null;
 
         $stats = [
