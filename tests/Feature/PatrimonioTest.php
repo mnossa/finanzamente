@@ -128,9 +128,47 @@ class PatrimonioTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('balanceBreakdown.liquid', 2000)
+                ->where('balanceBreakdown.total', 2000)
                 ->where('balanceBreakdown.invested', 300)
-                ->where('balanceBreakdown.total', 2300)
+            );
+    }
+
+    #[Test]
+    public function dashboard_balance_total_is_not_inflated_by_unsynced_investments(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'type' => 'bank',
+            'initial_balance' => 10000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        $asset = InvestmentAsset::create([
+            'type' => 'etf',
+            'symbol' => 'SWDA',
+            'name' => 'iShares Core MSCI World',
+            'currency_code' => 'EUR',
+        ]);
+
+        Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => null,
+            'asset_id' => $asset->id,
+            'quantity' => 1,
+            'buy_price' => 10000,
+            'buy_date' => now()->toDateString(),
+            'is_private' => false,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('balanceBreakdown.total', 10000)
+                ->where('balanceBreakdown.invested', 10000)
             );
     }
 }

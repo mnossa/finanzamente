@@ -239,4 +239,31 @@ class InvestmentTransactionSyncTest extends TestCase
                 ->where('transactions.data.0.is_investment', true)
             );
     }
+
+    #[Test]
+    public function expense_distribution_includes_investment_movements_without_linked_transaction(): void
+    {
+        Carbon::setTestNow('2026-06-10');
+
+        Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => null,
+            'asset_id' => $this->asset->id,
+            'quantity' => 1,
+            'buy_price' => 500,
+            'fees' => 5,
+            'buy_date' => now()->startOfMonth()->addDays(5)->toDateString(),
+            'is_private' => false,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('expenseDistributionData.investments.amount', 505)
+            );
+
+        Carbon::setTestNow();
+    }
 }

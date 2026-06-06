@@ -176,7 +176,6 @@ interface DashboardProps {
     totalBalance: number;
     balanceBreakdown: {
         total: number;
-        liquid: number;
         invested: number;
     };
     recentTransactions: Transaction[];
@@ -461,7 +460,7 @@ export default function Dashboard({
                                 {formatCurrency(balanceBreakdown?.total ?? totalBalance)}
                             </p>
                             <p className="mt-1 text-sm text-slate-400">
-                                Liquidità {formatCurrency(balanceBreakdown?.liquid ?? 0)} · Investimenti {formatCurrency(balanceBreakdown?.invested ?? 0)}
+                                Di cui investimenti {formatCurrency(balanceBreakdown?.invested ?? 0)}
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
                                 {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio

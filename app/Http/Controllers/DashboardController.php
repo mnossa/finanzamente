@@ -7,6 +7,7 @@ use App\Models\Budget;
 use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
 use App\Models\FinancialGoal;
+use App\Models\Investment;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AssetClassificationService;
@@ -62,13 +63,12 @@ class DashboardController extends Controller
             ];
         });
 
-        // Saldo totale (somma di tutti i conti in EUR)
+        // Saldo totale = somma saldi conti (ledger transazioni). Gli investimenti sono un "di cui", non un addendo.
         $totalBalance = $accountsWithBalance->sum('current_balance');
 
         $portfolioSnapshot = app(PortfolioSnapshotService::class)->build($user);
         $balanceBreakdown = [
-            'total' => $portfolioSnapshot['totalValue'],
-            'liquid' => $portfolioSnapshot['liquidValue'],
+            'total' => round((float) $totalBalance, 2),
             'invested' => $portfolioSnapshot['investedValue'],
         ];
 
@@ -752,8 +752,40 @@ class DashboardController extends Controller
                 'icon' => $category?->icon ?? '📁',
                 'color' => $category?->color ?? '#94a3b8',
                 'amount' => round($amount, 2),
-                'percentage' => $totalExpenses > 0 ? round(($amount / $totalExpenses) * 100, 1) : 0,
+                'percentage' => 0,
             ];
+        }
+
+        // Acquisti da sezione Investimenti senza transazione collegata (es. PAC senza conto)
+        $investmentPurchases = Investment::query()
+            ->with('asset:id,name')
+            ->where('household_id', $householdId)
+            ->whereBetween('buy_date', [$startDate, $endDate])
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->whereDoesntHave('transactions')
+            ->get();
+
+        foreach ($investmentPurchases as $investment) {
+            $amount = (float) $investment->total_buy_value + (float) ($investment->fees ?? 0);
+            $totalExpenses += $amount;
+            $buckets['investments']['amount'] += $amount;
+            $buckets['investments']['categories'][] = [
+                'id' => null,
+                'name' => $investment->asset?->name ?? 'Investimento',
+                'icon' => '📈',
+                'color' => '#6366f1',
+                'amount' => round($amount, 2),
+                'percentage' => 0,
+            ];
+        }
+
+        foreach ($buckets as $bucketKey => $bucket) {
+            foreach ($buckets[$bucketKey]['categories'] as $index => $categoryRow) {
+                $catAmount = (float) $categoryRow['amount'];
+                $buckets[$bucketKey]['categories'][$index]['percentage'] = $totalExpenses > 0
+                    ? round(($catAmount / $totalExpenses) * 100, 1)
+                    : 0;
+            }
         }
 
         // Costruisce il risultato finale con percentuali e flag di superamento soglia
