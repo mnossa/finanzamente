@@ -19,9 +19,9 @@ class AssetAllocationController extends Controller
         return Inertia::render('AssetAllocation/Index', [
             'positions' => $data['positions'],
             'allocation' => $data['allocation'],
-            'totalValue' => $data['totalValue'],
-            'riskIndex' => $data['riskIndex'],
-            'riskLabel' => $data['riskLabel'],
+            'totalValue' => $data['allocationTotalValue'],
+            'riskIndex' => $data['allocationRiskIndex'],
+            'riskLabel' => $data['allocationRiskLabel'],
             'classColors' => $data['classColors'],
             'classLabels' => $data['classLabels'],
         ]);
@@ -32,9 +32,9 @@ class AssetAllocationController extends Controller
         $data = $this->portfolioSnapshotService->build(Auth::user());
 
         return response()->json([
-            'total_value' => $data['totalValue'],
-            'risk_index' => $data['riskIndex'],
-            'risk_label' => $data['riskLabel'],
+            'total_value' => $data['allocationTotalValue'],
+            'risk_index' => $data['allocationRiskIndex'],
+            'risk_label' => $data['allocationRiskLabel'],
             'allocation' => $data['allocation'],
         ]);
     }

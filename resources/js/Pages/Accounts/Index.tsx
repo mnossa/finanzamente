@@ -167,10 +167,10 @@ export default function Index({
                         </CardBox>
                     ) : (
                         <>
-                            {/* Saldo Totale */}
+                            {/* Saldo conti */}
                             <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                                 <h3 className="text-sm font-medium text-slate-300">
-                                    Patrimonio Totale
+                                    Saldo conti
                                 </h3>
                                 <p className={clsx('mt-2 text-4xl font-bold', moneyTabular)}>
                                     {formatCurrency(totalBalance)}

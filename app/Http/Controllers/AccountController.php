@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateAccountRequest;
 use App\Models\Account;
 use App\Models\Currency;
 use App\Models\User;
+use App\Services\AccountBalanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,8 @@ use Inertia\Response;
 
 class AccountController extends Controller
 {
+    public function __construct(private readonly AccountBalanceService $accountBalanceService) {}
+
     /**
      * Mostra l'elenco dei conti della household attiva.
      */
@@ -23,36 +26,38 @@ class AccountController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $accounts = Account::where('household_id', $householdId)
+        $accountModels = Account::where('household_id', $householdId)
             ->where(function ($query) use ($user) {
                 $query->where('is_private', false)
                     ->orWhere('owner_user_id', $user->id);
             })
             ->with('owner:id,name')
             ->orderBy('name')
-            ->get()
-            ->map(function ($account) {
-                return [
-                    'id' => $account->id,
-                    'name' => $account->name,
-                    'type' => $account->type,
-                    'type_label' => Account::TYPES[$account->type] ?? $account->type,
-                    'initial_balance' => (float) $account->initial_balance,
-                    'current_balance' => (float) $account->current_balance,
-                    'currency_code' => $account->currency_code,
-                    'active' => $account->active,
-                    'is_private' => $account->is_private,
-                    'owner' => $account->owner ? [
-                        'id' => $account->owner->id,
-                        'name' => $account->owner->name,
-                    ] : null,
-                    'created_at' => $account->created_at->format('Y-m-d'),
-                ];
-            });
+            ->get();
 
-        $totalBalance = $accounts
-            ->where('active', true)
-            ->sum('current_balance');
+        $accounts = $accountModels->map(function ($account) use ($user) {
+            return [
+                'id' => $account->id,
+                'name' => $account->name,
+                'type' => $account->type,
+                'type_label' => Account::TYPES[$account->type] ?? $account->type,
+                'initial_balance' => (float) $account->initial_balance,
+                'current_balance' => $this->accountBalanceService->computeBalance($account, $user),
+                'currency_code' => $account->currency_code,
+                'active' => $account->active,
+                'is_private' => $account->is_private,
+                'owner' => $account->owner ? [
+                    'id' => $account->owner->id,
+                    'name' => $account->owner->name,
+                ] : null,
+                'created_at' => $account->created_at->format('Y-m-d'),
+            ];
+        });
+
+        $totalBalance = $this->accountBalanceService->computeHouseholdTotal(
+            $user,
+            $accountModels->where('active', true),
+        );
 
         return Inertia::render('Accounts/Index', [
             'accounts' => $accounts,

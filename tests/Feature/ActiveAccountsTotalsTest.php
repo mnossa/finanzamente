@@ -123,10 +123,10 @@ class ActiveAccountsTotalsTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Dashboard')
-            ->where('monthlyStats.income', 300)
-            ->where('monthlyStats.expenses', 100)
-            ->where('monthlyStats.net', 200)
-            ->where('monthlyStats.transaction_count', 2)
+            ->where('periodStats.income', 300)
+            ->where('periodStats.expenses', 100)
+            ->where('periodStats.net', 200)
+            ->where('periodStats.transaction_count', 2)
         );
     }
 }

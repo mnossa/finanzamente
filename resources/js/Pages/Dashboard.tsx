@@ -17,6 +17,7 @@ import CashFlowChart, { CashFlowDataPoint } from '@/Components/Charts/CashFlowCh
 import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthChart';
 import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
 import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components/ExpenseDistributionWidget';
+import InvestmentSyncBanner from '@/Components/InvestmentSyncBanner';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
@@ -152,18 +153,6 @@ interface FinancialGoal {
     percentage: number;
 }
 
-interface FinancialGoal {
-    id: number;
-    name: string;
-    icon: string | null;
-    color: string | null;
-    target_amount: number;
-    current_amount: number;
-    currency_code: string;
-    target_date: string | null;
-    percentage: number;
-}
-
 interface AssetAllocationData {
     total_value: number;
     risk_index: number;
@@ -177,10 +166,11 @@ interface DashboardProps {
     balanceBreakdown: {
         total: number;
         invested: number;
+        invested_unlinked?: number;
     };
     recentTransactions: Transaction[];
-    monthlyStats: MonthlyStats;
-    lastMonthStats: MonthlyStats;
+    periodStats: MonthlyStats;
+    previousPeriodStats: MonthlyStats;
     periodLabel: string;
     previousPeriodLabel: string;
     activeBudgets: ActiveBudget[];
@@ -192,10 +182,12 @@ interface DashboardProps {
     dashboardLayout: DashboardLayoutConfig;
     assetAllocationData: AssetAllocationData;
     netWorthData: NetWorthDataPoint[];
+    netWorthCashData: NetWorthDataPoint[];
     cashFlowData: CashFlowDataPoint[];
     expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
     expenseDistributionData: ExpenseDistributionData;
+    investmentSyncPendingCount: number;
 }
 
 function getAccountTypeLabel(type: string): string {
@@ -373,8 +365,8 @@ export default function Dashboard({
     totalBalance,
     balanceBreakdown,
     recentTransactions,
-    monthlyStats,
-    lastMonthStats,
+    periodStats,
+    previousPeriodStats,
     periodLabel,
     previousPeriodLabel,
     activeBudgets,
@@ -386,12 +378,15 @@ export default function Dashboard({
     dashboardLayout,
     assetAllocationData,
     netWorthData,
+    netWorthCashData,
     cashFlowData,
     expenseCategories,
     financialGoals,
     expenseDistributionData,
+    investmentSyncPendingCount,
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [netWorthMode, setNetWorthMode] = useState<'portfolio' | 'cash'>('portfolio');
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
     const hasVat = auth.user.user_type === 'partita_iva';
@@ -412,14 +407,14 @@ export default function Dashboard({
     } = useDashboardLayout(dashboardLayout);
 
     const incomeTrend =
-        lastMonthStats.income > 0
-            ? ((monthlyStats.income - lastMonthStats.income) / lastMonthStats.income) * 100
-            : monthlyStats.income > 0 ? 100 : 0;
+        previousPeriodStats.income > 0
+            ? ((periodStats.income - previousPeriodStats.income) / previousPeriodStats.income) * 100
+            : periodStats.income > 0 ? 100 : 0;
 
     const expensesTrend =
-        lastMonthStats.expenses > 0
-            ? ((monthlyStats.expenses - lastMonthStats.expenses) / lastMonthStats.expenses) * 100
-            : monthlyStats.expenses > 0 ? 100 : 0;
+        previousPeriodStats.expenses > 0
+            ? ((periodStats.expenses - previousPeriodStats.expenses) / previousPeriodStats.expenses) * 100
+            : periodStats.expenses > 0 ? 100 : 0;
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
@@ -455,12 +450,18 @@ export default function Dashboard({
                 return (
                     <Link href={route('patrimonio.index')} className="block">
                         <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-4 text-white shadow-lg transition-shadow hover:shadow-xl sm:p-5">
-                            <h3 className="text-sm font-medium text-slate-300">Saldo Totale</h3>
+                            <h3 className="text-sm font-medium text-slate-300">Saldo conti</h3>
                             <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>
                                 {formatCurrency(balanceBreakdown?.total ?? totalBalance)}
                             </p>
+                            <p className="mt-1 text-xs text-slate-500">Somma saldi conti attivi (ledger transazioni)</p>
                             <p className="mt-1 text-sm text-slate-400">
                                 Di cui investimenti {formatCurrency(balanceBreakdown?.invested ?? 0)}
+                                {(balanceBreakdown?.invested_unlinked ?? 0) > 0 && (
+                                    <span className="text-amber-300/90">
+                                        {' '}({formatCurrency(balanceBreakdown!.invested_unlinked!)} non collegati al conto)
+                                    </span>
+                                )}
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
                                 {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio
@@ -474,14 +475,14 @@ export default function Dashboard({
                     <div className={moneyKpiGrid2}>
                         <StatCard
                             title="Entrate"
-                            value={formatCurrency(monthlyStats.income)}
+                            value={formatCurrency(periodStats.income)}
                             subtitle={periodLabel}
                             trend={incomeTrend >= 0 ? 'up' : 'down'}
                             trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${previousPeriodLabel.toLowerCase()}`}
                         />
                         <StatCard
                             title="Uscite"
-                            value={formatCurrency(monthlyStats.expenses)}
+                            value={formatCurrency(periodStats.expenses)}
                             subtitle={periodLabel}
                             trend={expensesTrend <= 0 ? 'up' : 'down'}
                             trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${previousPeriodLabel.toLowerCase()}`}
@@ -715,13 +716,48 @@ export default function Dashboard({
                 return (
                     <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
                         <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">📈 Patrimonio nel Tempo</h3>
-                            <Link href={route('analytics.net-worth')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                Dettaglio →
-                            </Link>
+                            <div>
+                                <h3 className="font-semibold text-gray-900 dark:text-white">📈 Patrimonio nel tempo</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Conti + investimenti collegati (costo di carico)</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setNetWorthMode('portfolio')}
+                                    className={clsx(
+                                        'rounded-md px-2 py-1 text-xs font-medium',
+                                        netWorthMode === 'portfolio'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
+                                    )}
+                                >
+                                    Patrimonio
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setNetWorthMode('cash')}
+                                    className={clsx(
+                                        'rounded-md px-2 py-1 text-xs font-medium',
+                                        netWorthMode === 'cash'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
+                                    )}
+                                >
+                                    Solo liquidità
+                                </button>
+                                <Link href={route('analytics.net-worth')} className="text-sm text-emerald-500 hover:text-emerald-600">
+                                    Dettaglio →
+                                </Link>
+                            </div>
                         </div>
                         <div className={widgetBodyClass}>
-                            <NetWorthChart data={netWorthData} />
+                            <NetWorthChart
+                                data={netWorthMode === 'cash' ? netWorthCashData : netWorthData}
+                                title={netWorthMode === 'cash' ? 'Liquidità nel tempo' : 'Patrimonio nel tempo'}
+                                subtitle={netWorthMode === 'cash'
+                                    ? 'Solo saldo conti (transazioni)'
+                                    : 'Liquidità + posizioni investimento collegate al ledger'}
+                            />
                         </div>
                     </div>
                 );
@@ -886,6 +922,7 @@ export default function Dashboard({
             )}
 
             <PageContent maxWidth="7xl">
+                    <InvestmentSyncBanner count={investmentSyncPendingCount} className="mb-4" />
                     {/* Barra personalizzazione dashboard — solo in editing */}
                     {isEditing && (
                         <div

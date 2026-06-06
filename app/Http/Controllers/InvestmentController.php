@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Services\AssetPriceService;
+use App\Services\InvestmentLedgerService;
 use App\Services\InvestmentMetricsService;
 use App\Services\InvestmentTransactionSyncService;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,7 @@ class InvestmentController extends Controller
         private readonly AssetPriceService $assetPriceService,
         private readonly InvestmentMetricsService $investmentMetricsService,
         private readonly InvestmentTransactionSyncService $investmentTransactionSyncService,
+        private readonly InvestmentLedgerService $investmentLedgerService,
     ) {}
 
     /**
@@ -133,6 +135,8 @@ class InvestmentController extends Controller
             'stats' => $stats,
             'assetTypes' => InvestmentAsset::TYPES,
             'assetTypeIcons' => InvestmentAsset::TYPE_ICONS,
+            'investmentSyncPendingCount' => $this->investmentLedgerService->countPendingSync($user),
+            'valuationNote' => 'I valori di mercato si basano sui prezzi correnti. Patrimonio e allocazione usano il costo di carico (inclusive commissioni).',
         ]);
     }
 

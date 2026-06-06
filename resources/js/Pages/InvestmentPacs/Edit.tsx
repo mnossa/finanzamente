@@ -151,6 +151,11 @@ export default function InvestmentPacEdit({ accounts, assets, pac }: { accounts:
                                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                             <InputError message={errors.account_id} className="mt-1" />
+                            {!data.account_id && (
+                                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-100">
+                                    Senza conto collegato il PAC non genera transazioni né scala il saldo conti. Compare in Investimenti, 50/30/20 e patrimonio (sezione non collegata).
+                                </p>
+                            )}
                         </div>
                         <div>
                             <InputLabel value="Note (opz.)" />

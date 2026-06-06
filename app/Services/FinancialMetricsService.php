@@ -25,6 +25,8 @@ use Carbon\Carbon;
  */
 class FinancialMetricsService
 {
+    public function __construct(private readonly InvestmentLedgerService $investmentLedgerService) {}
+
     /**
      * Calcola tutti i dati necessari al widget/pagina Lifestyle Score.
      *
@@ -100,6 +102,10 @@ class FinancialMetricsService
                 ->whereBetween('date', [$startDate, $endDate])
                 ->sum('amount')
         );
+
+        $unsyncedInvestments = $this->investmentLedgerService->unsyncedPurchasesInPeriod($user, $startDate, $endDate);
+        $totalExpenses += $unsyncedInvestments['amount'];
+        $excludedExpenses += $unsyncedInvestments['amount'];
 
         $effectiveExpenses = max(0.0, $totalExpenses - $excludedExpenses);
 

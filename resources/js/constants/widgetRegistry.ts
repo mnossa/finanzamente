@@ -12,8 +12,8 @@ const ALL_SIZES: WidgetDefinition['allowedSizes'] = ['sm', 'md', 'lg', 'xl'];
 export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
         id: 'total_balance',
-        title: 'Saldo Totale',
-        description: 'Visualizza il saldo complessivo di tutti i conti.',
+        title: 'Saldo conti',
+        description: 'Somma saldi conti attivi (ledger transazioni), con di cui investimenti.',
         defaultSize: 'xl',
         defaultVisible: true,
         allowedSizes: ALL_SIZES,
@@ -107,7 +107,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
         id: 'net_worth',
         title: 'Patrimonio nel Tempo',
-        description: 'Andamento del patrimonio netto negli ultimi 12 mesi.',
+        description: 'Andamento patrimonio (liquidità + investimenti collegati) o solo liquidità.',
         defaultSize: 'md',
         defaultVisible: true,
         allowedSizes: ALL_SIZES,

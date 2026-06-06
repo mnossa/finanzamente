@@ -4,21 +4,29 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\Investment;
-use App\Models\Transaction;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class PortfolioSnapshotService
 {
+    public function __construct(
+        private readonly AccountBalanceService $accountBalanceService,
+        private readonly InvestmentLedgerService $investmentLedgerService,
+    ) {}
+
     /**
      * @return array{
      *     positions: array<int, array<string, mixed>>,
      *     allocation: array<int, array<string, mixed>>,
      *     totalValue: float,
+     *     allocationTotalValue: float,
      *     liquidValue: float,
      *     investedValue: float,
+     *     investedLinkedValue: float,
+     *     investedUnlinkedValue: float,
      *     riskIndex: float,
      *     riskLabel: string,
+     *     allocationRiskIndex: float,
+     *     allocationRiskLabel: string,
      *     accounts: array<int, array<string, mixed>>,
      *     classColors: array<string, string>,
      *     classLabels: array<string, string>
@@ -28,7 +36,21 @@ class PortfolioSnapshotService
     {
         $householdId = $user->active_household_id;
 
-        $investments = Investment::with(['asset.currency:code,symbol', 'account:id,name'])
+        $accounts = Account::where('household_id', $householdId)
+            ->where('active', true)
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)->orWhere('owner_user_id', $user->id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        /** @var array<int, float> $accountBalances */
+        $accountBalances = [];
+        foreach ($accounts as $account) {
+            $accountBalances[$account->id] = $this->accountBalanceService->computeBalance($account, $user);
+        }
+
+        $investments = Investment::with(['asset.currency:code,symbol', 'account:id,name', 'transactions:id,investment_id'])
             ->where('household_id', $householdId)
             ->whereNull('sell_date')
             ->where(function ($q) use ($user) {
@@ -38,13 +60,27 @@ class PortfolioSnapshotService
 
         $positions = [];
         $investedValue = 0.0;
+        $investedLinkedValue = 0.0;
+        $investedUnlinkedValue = 0.0;
+        $allocationInvestedValue = 0.0;
 
         foreach ($investments as $inv) {
             $assetType = $inv->asset->type ?? 'other';
             $assetClass = AssetClassificationService::ASSET_TYPE_CLASS[$assetType] ?? 'other';
             $risk = AssetClassificationService::ASSET_TYPE_RISK[$assetType] ?? 3;
-            $value = $inv->total_buy_value;
+            $value = $this->investmentLedgerService->totalCost($inv);
+            $isLinked = $this->investmentLedgerService->isLinkedToLedger($inv);
+            $includeInAllocation = $this->includesInAllocation($inv, $isLinked, $accountBalances);
+
             $investedValue += $value;
+            if ($isLinked) {
+                $investedLinkedValue += $value;
+            } else {
+                $investedUnlinkedValue += $value;
+            }
+            if ($includeInAllocation) {
+                $allocationInvestedValue += $value;
+            }
 
             $positions[] = [
                 'id' => $inv->id,
@@ -57,6 +93,8 @@ class PortfolioSnapshotService
                 'asset_class_label' => AssetClassificationService::CLASS_LABELS[$assetClass] ?? $assetClass,
                 'risk' => $risk,
                 'value' => $value,
+                'is_linked_to_ledger' => $isLinked,
+                'include_in_allocation' => $includeInAllocation,
                 'quantity' => (float) $inv->quantity,
                 'buy_price' => (float) $inv->buy_price,
                 'buy_date' => $inv->buy_date->format('Y-m-d'),
@@ -69,68 +107,52 @@ class PortfolioSnapshotService
             ];
         }
 
-        $accounts = Account::where('household_id', $householdId)
-            ->where('active', true)
-            ->whereNotIn('type', ['broker'])
-            ->where(function ($q) use ($user) {
-                $q->where('is_private', false)->orWhere('owner_user_id', $user->id);
-            })
-            ->orderBy('name')
-            ->get();
-
         $accountRows = [];
         $liquidValue = 0.0;
 
-        if ($accounts->isNotEmpty()) {
-            $transactionSums = Transaction::whereIn('account_id', $accounts->pluck('id'))
-                ->where(function ($q) use ($user) {
-                    $q->where('is_private', false)->orWhere('user_id', $user->id);
-                })
-                ->groupBy('account_id')
-                ->pluck(DB::raw('SUM(amount)'), 'account_id');
-
-            foreach ($accounts as $account) {
-                $balance = (float) $account->initial_balance + (float) ($transactionSums[$account->id] ?? 0);
-                if ($balance <= 0) {
-                    continue;
-                }
-
-                $liquidValue += $balance;
-                $accountType = $account->type ?? 'other';
-                $assetClass = AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity';
-                $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
-
-                $accountRows[] = [
-                    'id' => $account->id,
-                    'name' => $account->name,
-                    'type' => $accountType,
-                    'type_label' => Account::TYPES[$accountType] ?? $accountType,
-                    'balance' => round($balance, 2),
-                    'currency_code' => $account->currency_code,
-                ];
-
-                $positions[] = [
-                    'id' => 'account_'.$account->id,
-                    'type' => 'account',
-                    'name' => $account->name,
-                    'symbol' => null,
-                    'asset_type' => $accountType,
-                    'asset_type_label' => Account::TYPES[$accountType] ?? $accountType,
-                    'asset_class' => $assetClass,
-                    'asset_class_label' => AssetClassificationService::CLASS_LABELS[$assetClass] ?? $assetClass,
-                    'risk' => $risk,
-                    'value' => $balance,
-                    'quantity' => null,
-                    'buy_price' => null,
-                    'buy_date' => null,
-                    'account' => ['id' => $account->id, 'name' => $account->name],
-                    'currency' => ['code' => $account->currency_code, 'symbol' => '€'],
-                    'notes' => null,
-                ];
+        foreach ($accounts as $account) {
+            $balance = $accountBalances[$account->id];
+            if ($balance <= 0) {
+                continue;
             }
+
+            $liquidValue += $balance;
+            $accountType = $account->type ?? 'other';
+            $assetClass = AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity';
+            $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
+
+            $accountRows[] = [
+                'id' => $account->id,
+                'name' => $account->name,
+                'type' => $accountType,
+                'type_label' => Account::TYPES[$accountType] ?? $accountType,
+                'balance' => round($balance, 2),
+                'currency_code' => $account->currency_code,
+            ];
+
+            $positions[] = [
+                'id' => 'account_'.$account->id,
+                'type' => 'account',
+                'name' => $account->name,
+                'symbol' => null,
+                'asset_type' => $accountType,
+                'asset_type_label' => Account::TYPES[$accountType] ?? $accountType,
+                'asset_class' => $assetClass,
+                'asset_class_label' => AssetClassificationService::CLASS_LABELS[$assetClass] ?? $assetClass,
+                'risk' => $risk,
+                'value' => $balance,
+                'include_in_allocation' => true,
+                'quantity' => null,
+                'buy_price' => null,
+                'buy_date' => null,
+                'account' => ['id' => $account->id, 'name' => $account->name],
+                'currency' => ['code' => $account->currency_code, 'symbol' => '€'],
+                'notes' => null,
+            ];
         }
 
-        $totalValue = $liquidValue + $investedValue;
+        $totalValue = $liquidValue + $investedLinkedValue;
+        $allocationTotalValue = $liquidValue + $allocationInvestedValue;
 
         foreach ($accountRows as &$accountRow) {
             $accountRow['portfolio_percentage'] = $totalValue > 0
@@ -141,6 +163,10 @@ class PortfolioSnapshotService
 
         $classMap = [];
         foreach ($positions as $pos) {
+            if (($pos['type'] ?? '') === 'investment' && ! ($pos['include_in_allocation'] ?? false)) {
+                continue;
+            }
+
             $cls = $pos['asset_class'];
             if (! isset($classMap[$cls])) {
                 $classMap[$cls] = [
@@ -162,24 +188,24 @@ class PortfolioSnapshotService
                 'label' => $data['label'],
                 'color' => $data['color'],
                 'value' => round($data['value'], 2),
-                'percentage' => $totalValue > 0 ? round(($data['value'] / $totalValue) * 100, 1) : 0,
+                'percentage' => $allocationTotalValue > 0 ? round(($data['value'] / $allocationTotalValue) * 100, 1) : 0,
                 'risk' => $data['value'] > 0 ? round($data['risk_weight'] / $data['value'], 1) : 0,
             ];
         }
 
         usort($allocation, fn ($a, $b) => $b['value'] <=> $a['value']);
 
-        $riskNumerator = 0.0;
-        foreach ($positions as $pos) {
-            $riskNumerator += $pos['value'] * $pos['risk'];
-        }
-        $riskIndex = $totalValue > 0
-            ? min(7, max(1, round($riskNumerator / $totalValue, 1)))
-            : 1;
+        $allocationRisk = $this->computeRiskIndex($positions, fn (array $pos) => ($pos['include_in_allocation'] ?? $pos['type'] === 'account'));
+        $patrimonioRisk = $this->computeRiskIndex($positions, fn (array $pos) => $pos['type'] === 'account' || ($pos['is_linked_to_ledger'] ?? false));
 
         foreach ($positions as &$pos) {
-            $pos['portfolio_percentage'] = $totalValue > 0
-                ? round(($pos['value'] / $totalValue) * 100, 2)
+            if (($pos['type'] ?? '') === 'investment' && ! ($pos['include_in_allocation'] ?? false)) {
+                $pos['portfolio_percentage'] = 0;
+
+                continue;
+            }
+            $pos['portfolio_percentage'] = $allocationTotalValue > 0
+                ? round(($pos['value'] / $allocationTotalValue) * 100, 2)
                 : 0;
         }
         unset($pos);
@@ -188,13 +214,61 @@ class PortfolioSnapshotService
             'positions' => array_values($positions),
             'allocation' => $allocation,
             'totalValue' => round($totalValue, 2),
+            'allocationTotalValue' => round($allocationTotalValue, 2),
             'liquidValue' => round($liquidValue, 2),
             'investedValue' => round($investedValue, 2),
-            'riskIndex' => (float) $riskIndex,
-            'riskLabel' => AssetClassificationService::getRiskLabel($riskIndex),
+            'investedLinkedValue' => round($investedLinkedValue, 2),
+            'investedUnlinkedValue' => round($investedUnlinkedValue, 2),
+            'riskIndex' => (float) $patrimonioRisk['index'],
+            'riskLabel' => $patrimonioRisk['label'],
+            'allocationRiskIndex' => (float) $allocationRisk['index'],
+            'allocationRiskLabel' => $allocationRisk['label'],
             'accounts' => array_values($accountRows),
             'classColors' => AssetClassificationService::CLASS_COLORS,
             'classLabels' => AssetClassificationService::CLASS_LABELS,
+        ];
+    }
+
+    /**
+     * @param  array<int, float>  $accountBalances
+     */
+    private function includesInAllocation(Investment $investment, bool $isLinked, array $accountBalances): bool
+    {
+        if ($isLinked) {
+            return true;
+        }
+
+        if ($investment->account_id === null) {
+            return true;
+        }
+
+        return ($accountBalances[$investment->account_id] ?? 0.0) <= 0;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $positions
+     * @return array{index: float, label: string}
+     */
+    private function computeRiskIndex(array $positions, callable $include): array
+    {
+        $riskNumerator = 0.0;
+        $riskDenominator = 0.0;
+
+        foreach ($positions as $pos) {
+            if (! $include($pos)) {
+                continue;
+            }
+            $riskNumerator += $pos['value'] * $pos['risk'];
+            $riskDenominator += $pos['value'];
+        }
+
+        $index = $riskDenominator > 0
+            ? min(7, max(1, round($riskNumerator / $riskDenominator, 1)))
+            : 1;
+
+        return [
+            'index' => (float) $index,
+            'label' => AssetClassificationService::getRiskLabel($index),
         ];
     }
 }

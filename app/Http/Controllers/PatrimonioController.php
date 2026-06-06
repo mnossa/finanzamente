@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\InvestmentLedgerService;
 use App\Services\PortfolioSnapshotService;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -9,16 +10,22 @@ use Inertia\Response;
 
 class PatrimonioController extends Controller
 {
-    public function __construct(private readonly PortfolioSnapshotService $portfolioSnapshotService) {}
+    public function __construct(
+        private readonly PortfolioSnapshotService $portfolioSnapshotService,
+        private readonly InvestmentLedgerService $investmentLedgerService,
+    ) {}
 
     public function index(): Response
     {
-        $snapshot = $this->portfolioSnapshotService->build(Auth::user());
+        $user = Auth::user();
+        $snapshot = $this->portfolioSnapshotService->build($user);
 
         return Inertia::render('Patrimonio/Index', [
             'totalValue' => $snapshot['totalValue'],
             'liquidValue' => $snapshot['liquidValue'],
             'investedValue' => $snapshot['investedValue'],
+            'investedLinkedValue' => $snapshot['investedLinkedValue'],
+            'investedUnlinkedValue' => $snapshot['investedUnlinkedValue'],
             'riskIndex' => $snapshot['riskIndex'],
             'riskLabel' => $snapshot['riskLabel'],
             'allocation' => $snapshot['allocation'],
@@ -29,6 +36,7 @@ class PatrimonioController extends Controller
                 ->all(),
             'classColors' => $snapshot['classColors'],
             'classLabels' => $snapshot['classLabels'],
+            'investmentSyncPendingCount' => $this->investmentLedgerService->countPendingSync($user),
         ]);
     }
 }

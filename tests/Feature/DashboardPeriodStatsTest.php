@@ -60,9 +60,9 @@ class DashboardPeriodStatsTest extends TestCase
             ->component('Dashboard')
             ->where('periodLabel', 'Ultimi 30 giorni')
             ->where('previousPeriodLabel', '30 giorni precedenti')
-            ->where('monthlyStats.income', 500)
-            ->where('monthlyStats.expenses', 200)
-            ->where('monthlyStats.transaction_count', 2)
+            ->where('periodStats.income', 500)
+            ->where('periodStats.expenses', 200)
+            ->where('periodStats.transaction_count', 2)
         );
     }
 }

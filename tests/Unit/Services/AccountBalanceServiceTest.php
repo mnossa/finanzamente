@@ -1,0 +1,141 @@
+<?php
+
+namespace Tests\Unit\Services;
+
+use App\Models\Account;
+use App\Models\Household;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Services\AccountBalanceService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class AccountBalanceServiceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private AccountBalanceService $service;
+
+    private User $user;
+
+    private Household $household;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->service = app(AccountBalanceService::class);
+        $this->user = User::factory()->create(['email_verified_at' => now()]);
+        $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
+        $this->household->users()->attach($this->user->id, [
+            'role' => 'owner',
+            'permissions' => json_encode(['manage' => true]),
+        ]);
+        $this->user->update(['active_household_id' => $this->household->id]);
+    }
+
+    #[Test]
+    public function compute_balance_is_initial_plus_transaction_sum(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 1000,
+            'currency_code' => 'EUR',
+        ]);
+
+        Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'amount' => -150,
+            'date' => now()->toDateString(),
+            'currency_code' => 'EUR',
+        ]);
+
+        Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'amount' => 50,
+            'date' => now()->toDateString(),
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->assertSame(900.0, $this->service->computeBalance($account, $this->user));
+    }
+
+    #[Test]
+    public function compute_balance_includes_transactions_without_category(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 5000,
+            'currency_code' => 'EUR',
+        ]);
+
+        Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'amount' => -250,
+            'date' => now()->toDateString(),
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->assertSame(4750.0, $this->service->computeBalance($account, $this->user));
+    }
+
+    #[Test]
+    public function sync_stored_balance_persists_computed_value(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 2000,
+            'current_balance' => 9999,
+            'currency_code' => 'EUR',
+        ]);
+
+        Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'amount' => -100,
+            'date' => now()->toDateString(),
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->service->syncStoredBalance($account, $this->user);
+
+        $this->assertSame(1900.0, (float) $account->fresh()->current_balance);
+    }
+
+    #[Test]
+    public function compute_household_total_sums_active_accounts(): void
+    {
+        Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 3000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 2000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 1000,
+            'active' => false,
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->assertSame(5000.0, $this->service->computeHouseholdTotal($this->user));
+    }
+}

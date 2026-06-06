@@ -32,12 +32,14 @@ function NetWorthTooltip({ payload, active, label }: { payload?: Array<{ value?:
 
 export interface NetWorthDataPoint {
     month: string;
-    'Patrimonio Netto': number;
+    Patrimonio: number;
 }
 
 interface NetWorthChartProps {
     data: NetWorthDataPoint[];
     className?: string;
+    title?: string;
+    subtitle?: string;
 }
 
 /** Formatter compatto per i tick dell'asse Y */
@@ -49,11 +51,16 @@ const yAxisFormatter = (value: number): string => {
     return `€${value.toFixed(0)}`;
 };
 
-export default function NetWorthChart({ data, className }: NetWorthChartProps) {
+export default function NetWorthChart({
+    data,
+    className,
+    title = 'Andamento nel tempo',
+    subtitle,
+}: NetWorthChartProps) {
     const isDark = useChartDarkMode();
 
-    const lastValue = data.length ? data[data.length - 1]['Patrimonio Netto'] : null;
-    const firstValue = data.length ? data[0]['Patrimonio Netto'] : null;
+    const lastValue = data.length ? data[data.length - 1].Patrimonio : null;
+    const firstValue = data.length ? data[0].Patrimonio : null;
     const growth =
         firstValue !== null && lastValue !== null && firstValue !== 0
             ? (((lastValue - firstValue) / Math.abs(firstValue)) * 100).toFixed(1)
@@ -62,9 +69,7 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
     if (!data.length) {
         return (
             <div className={clsx('w-full', className)}>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Andamento nel tempo
-                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun dato disponibile per il periodo selezionato
                 </div>
@@ -76,9 +81,10 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
         <div className={clsx('w-full', className)}>
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Andamento nel tempo
-                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+                    {subtitle && (
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">{subtitle}</p>
+                    )}
                 </div>
                 {lastValue !== null && (
                     <div className="text-right">
@@ -124,7 +130,7 @@ export default function NetWorthChart({ data, className }: NetWorthChartProps) {
                         <Tooltip content={<NetWorthTooltip />} />
                         <Area
                             type="monotone"
-                            dataKey="Patrimonio Netto"
+                            dataKey="Patrimonio"
                             stroke="#60a5fa"
                             strokeWidth={3}
                             fill="url(#netWorthGradient)"

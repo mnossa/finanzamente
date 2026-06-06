@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\DispatchesModelEvents;
+use App\Services\AccountBalanceService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -77,8 +78,7 @@ class Account extends Model
      */
     public function recalculateBalance(): void
     {
-        $transactionsSum = $this->transactions()->sum('amount');
-        $this->current_balance = $this->initial_balance + $transactionsSum;
+        $this->current_balance = app(AccountBalanceService::class)->computeBalance($this);
         $this->save();
     }
 }

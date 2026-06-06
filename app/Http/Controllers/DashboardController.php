@@ -7,13 +7,15 @@ use App\Models\Budget;
 use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
 use App\Models\FinancialGoal;
-use App\Models\Investment;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\AccountBalanceService;
 use App\Services\AssetClassificationService;
 use App\Services\BudgetNotificationService;
 use App\Services\FinancialMetricsService;
+use App\Services\InvestmentLedgerService;
 use App\Services\ModuleAccessService;
+use App\Services\NetWorthSeriesService;
 use App\Services\PortfolioSnapshotService;
 use App\Services\RevenueNotificationService;
 use App\Services\TransactionTrendNotificationService;
@@ -25,6 +27,14 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly AccountBalanceService $accountBalanceService,
+        private readonly PortfolioSnapshotService $portfolioSnapshotService,
+        private readonly InvestmentLedgerService $investmentLedgerService,
+        private readonly NetWorthSeriesService $netWorthSeriesService,
+        private readonly FinancialMetricsService $financialMetricsService,
+    ) {}
+
     /**
      * Mostra la dashboard principale con riepilogo finanziario.
      */
@@ -33,7 +43,6 @@ class DashboardController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        // Recupera i conti della household (escludendo quelli privati di altri utenti)
         $accounts = Account::where('household_id', $householdId)
             ->where('active', true)
             ->where(function ($query) use ($user) {
@@ -43,33 +52,15 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Calcola saldo totale per ogni conto (saldo iniziale + somma transazioni)
-        $accountsWithBalance = $accounts->map(function ($account) use ($user) {
-            $transactionsSum = Transaction::where('account_id', $account->id)
-                ->where(function ($query) use ($user) {
-                    $query->where('is_private', false)
-                        ->orWhere('user_id', $user->id);
-                })
-                ->sum('amount');
+        $accountsWithBalance = $this->accountBalanceService->mapAccountsWithBalance($accounts, $user);
 
-            return [
-                'id' => $account->id,
-                'name' => $account->name,
-                'type' => $account->type,
-                'currency_code' => $account->currency_code,
-                'initial_balance' => (float) $account->initial_balance,
-                'current_balance' => (float) $account->initial_balance + (float) $transactionsSum,
-                'is_private' => $account->is_private,
-            ];
-        });
+        $totalBalance = $this->accountBalanceService->computeHouseholdTotal($user, $accounts);
 
-        // Saldo totale = somma saldi conti (ledger transazioni). Gli investimenti sono un "di cui", non un addendo.
-        $totalBalance = $accountsWithBalance->sum('current_balance');
-
-        $portfolioSnapshot = app(PortfolioSnapshotService::class)->build($user);
+        $portfolioSnapshot = $this->portfolioSnapshotService->build($user);
         $balanceBreakdown = [
             'total' => round((float) $totalBalance, 2),
             'invested' => $portfolioSnapshot['investedValue'],
+            'invested_unlinked' => $portfolioSnapshot['investedUnlinkedValue'],
         ];
 
         // Transazioni recenti (ultime 10)
@@ -115,19 +106,19 @@ class DashboardController extends Controller
         $endOfPeriod = Carbon::now()->endOfDay();
         $startOfPeriod = Carbon::now()->subDays(29)->startOfDay();
 
-        $monthlyStats = $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod);
+        $periodStats = $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod);
 
         $endOfPrevious = Carbon::now()->subDays(30)->endOfDay();
         $startOfPrevious = Carbon::now()->subDays(59)->startOfDay();
 
-        $lastMonthStats = $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious);
+        $previousPeriodStats = $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious);
 
         // Controlla e crea notifiche per budget e trend di spesa/entrate
         (new BudgetNotificationService)->checkAndNotify($user, $householdId);
         (new TransactionTrendNotificationService)->checkAndNotify(
             $user,
-            $monthlyStats,
-            $lastMonthStats,
+            $periodStats,
+            $previousPeriodStats,
             $periodLabel,
             $previousPeriodLabel
         );
@@ -207,8 +198,8 @@ class DashboardController extends Controller
             'totalBalance' => $totalBalance,
             'balanceBreakdown' => $balanceBreakdown,
             'recentTransactions' => $recentTransactions,
-            'monthlyStats' => $monthlyStats,
-            'lastMonthStats' => $lastMonthStats,
+            'periodStats' => $periodStats,
+            'previousPeriodStats' => $previousPeriodStats,
             'periodLabel' => $periodLabel,
             'previousPeriodLabel' => $previousPeriodLabel,
             'activeBudgets' => $activeBudgets,
@@ -219,11 +210,13 @@ class DashboardController extends Controller
             'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
             'dashboardLayout' => $this->getDashboardLayout($user),
             'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
-            'netWorthData' => $this->getNetWorthData($householdId, $user->id),
+            'netWorthData' => $this->netWorthSeriesService->buildForChart($householdId, $user->id, 'portfolio'),
+            'netWorthCashData' => $this->netWorthSeriesService->buildForChart($householdId, $user->id, 'cash'),
             'cashFlowData' => $this->getCashFlowData($householdId, $user->id),
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
             'financialGoals' => $this->getFinancialGoalsData($householdId),
             'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
+            'investmentSyncPendingCount' => $this->investmentLedgerService->countPendingSync($user),
         ]);
     }
 
@@ -343,7 +336,8 @@ class DashboardController extends Controller
                 $query->where('is_private', false)
                     ->orWhere('user_id', $userId);
             })
-            ->whereBetween('date', [$startDate, $endDate]);
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereNull('transfer_id');
 
         // Entrate (importi positivi)
         $income = (clone $query)->where('amount', '>', 0)->sum('amount');
@@ -437,7 +431,7 @@ class DashboardController extends Controller
             ];
         }
 
-        $service = new FinancialMetricsService;
+        $service = $this->financialMetricsService;
 
         // Score sull'intero storico
         $firstTx = Transaction::whereHas(
@@ -539,72 +533,14 @@ class DashboardController extends Controller
      */
     private function getAssetAllocationWidgetData(User $user): array
     {
-        $snapshot = app(PortfolioSnapshotService::class)->build($user);
+        $snapshot = $this->portfolioSnapshotService->build($user);
 
         return [
-            'total_value' => $snapshot['totalValue'],
-            'risk_index' => $snapshot['riskIndex'],
-            'risk_label' => $snapshot['riskLabel'],
+            'total_value' => $snapshot['allocationTotalValue'],
+            'risk_index' => $snapshot['allocationRiskIndex'],
+            'risk_label' => $snapshot['allocationRiskLabel'],
             'allocation' => $snapshot['allocation'],
         ];
-    }
-
-    /**
-     * Andamento mensile del patrimonio netto negli ultimi 12 mesi.
-     * Usato dal widget "Patrimonio nel Tempo" della dashboard.
-     */
-    private function getNetWorthData(int $householdId, int $userId): array
-    {
-        $startDate = Carbon::now()->subYear()->startOfMonth();
-        $endDate = Carbon::now()->endOfDay();
-
-        $accounts = Account::where('household_id', $householdId)
-            ->where('active', true)
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $userId))
-            ->get();
-
-        if ($accounts->isEmpty()) {
-            return [];
-        }
-
-        $initialBalance = $accounts->sum(fn ($a) => (float) $a->initial_balance);
-
-        $balanceBeforePeriod = (float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
-            ->where('date', '<', $startDate)
-            ->sum('amount');
-
-        $runningBalance = $initialBalance + $balanceBeforePeriod;
-
-        $isSqlite = DB::getDriverName() === 'sqlite';
-        $yearExpr = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
-        $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
-
-        $monthlyTransactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
-            ->whereBetween('date', [$startDate, $endDate])
-            ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(amount) as net")
-            ->groupByRaw("{$yearExpr}, {$monthExpr}")
-            ->orderByRaw("{$yearExpr}, {$monthExpr}")
-            ->get()
-            ->keyBy(fn ($r) => "{$r->year}-{$r->month}");
-
-        $result = [];
-        $current = $startDate->copy()->startOfMonth();
-
-        while ($current->lte($endDate)) {
-            $key = $current->year.'-'.$current->month;
-            if (isset($monthlyTransactions[$key])) {
-                $runningBalance += (float) $monthlyTransactions[$key]->net;
-            }
-            $result[] = [
-                'month' => $current->translatedFormat('M Y'),
-                'Patrimonio Netto' => round($runningBalance, 2),
-            ];
-            $current->addMonth();
-        }
-
-        return $result;
     }
 
     /**
@@ -623,6 +559,7 @@ class DashboardController extends Controller
         $transactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->whereBetween('date', [$startDate, $endDate])
+            ->whereNull('transfer_id')
             ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income, SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expenses")
             ->groupByRaw("{$yearExpr}, {$monthExpr}")
             ->orderByRaw("{$yearExpr}, {$monthExpr}")
@@ -723,6 +660,7 @@ class DashboardController extends Controller
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->whereBetween('date', [$startDate, $endDate])
             ->where('amount', '<', 0)
+            ->whereNull('transfer_id')
             ->whereNotNull('category_id')
             ->selectRaw('category_id, SUM(ABS(amount)) as total')
             ->groupBy('category_id')
@@ -757,26 +695,20 @@ class DashboardController extends Controller
         }
 
         // Acquisti da sezione Investimenti senza transazione collegata (es. PAC senza conto)
-        $investmentPurchases = Investment::query()
-            ->with('asset:id,name')
-            ->where('household_id', $householdId)
-            ->whereBetween('buy_date', [$startDate, $endDate])
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
-            ->whereDoesntHave('transactions')
-            ->get();
-
-        foreach ($investmentPurchases as $investment) {
-            $amount = (float) $investment->total_buy_value + (float) ($investment->fees ?? 0);
-            $totalExpenses += $amount;
-            $buckets['investments']['amount'] += $amount;
-            $buckets['investments']['categories'][] = [
-                'id' => null,
-                'name' => $investment->asset?->name ?? 'Investimento',
-                'icon' => '📈',
-                'color' => '#6366f1',
-                'amount' => round($amount, 2),
-                'percentage' => 0,
-            ];
+        $unsynced = app(InvestmentLedgerService::class)->unsyncedPurchasesInPeriod($user, $startDate, $endDate);
+        if ($unsynced['amount'] > 0) {
+            $totalExpenses += $unsynced['amount'];
+            $buckets['investments']['amount'] += $unsynced['amount'];
+            foreach ($unsynced['items'] as $item) {
+                $buckets['investments']['categories'][] = [
+                    'id' => null,
+                    'name' => $item['name'].' (movimento investimenti)',
+                    'icon' => '📈',
+                    'color' => '#6366f1',
+                    'amount' => $item['amount'],
+                    'percentage' => 0,
+                ];
+            }
         }
 
         foreach ($buckets as $bucketKey => $bucket) {

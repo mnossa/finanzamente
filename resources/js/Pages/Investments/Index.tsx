@@ -12,6 +12,7 @@ import clsx from 'clsx';
 import { moneyCardGrid3, moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
+import InvestmentSyncBanner from '@/Components/InvestmentSyncBanner';
 import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
 import TradingViewEconomicCalendar from '@/Components/TradingViewEconomicCalendar';
 import { useMemo, useState } from 'react';
@@ -96,6 +97,8 @@ interface IndexProps {
     stats: Stats;
     assetTypes: AssetTypes;
     assetTypeIcons: AssetTypeIcons;
+    investmentSyncPendingCount: number;
+    valuationNote: string;
 }
 
 // function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -385,6 +388,8 @@ export default function Index({
     stats,
     assetTypes,
     assetTypeIcons,
+    investmentSyncPendingCount,
+    valuationNote,
 }: IndexProps) {
     const pacGroups = useMemo<PacGroup[]>(() => {
         const grouped = new Map<number, PacGroup>();
@@ -445,12 +450,15 @@ export default function Index({
             <Head title="Investimenti" />
 
             <PageContent maxWidth="7xl">
+                    <InvestmentSyncBanner count={investmentSyncPendingCount} className="mb-4" />
+
                     <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Portafoglio investimenti" icon={<span className="text-sm leading-none">📊</span>} />
                             <p className="text-sm text-gray-600 dark:text-gray-300">
                                 Monitora posizioni aperte e chiuse con metriche di rendimento e costi.
                             </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{valuationNote}</p>
                         </div>
                     </SectionCard>
 

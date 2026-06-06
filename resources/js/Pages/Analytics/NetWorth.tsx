@@ -35,7 +35,11 @@ export default function NetWorth({ netWorthData, summary }: Props) {
                     </p>
                 )}
                 <div className="overflow-hidden rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 sm:p-6">
-                    <NetWorthChart data={netWorthData} />
+                    <NetWorthChart
+                        data={netWorthData}
+                        title="Patrimonio nel tempo"
+                        subtitle="Liquidità + investimenti collegati al ledger (costo di carico)"
+                    />
                 </div>
             </PageContent>
         </AuthenticatedLayout>
