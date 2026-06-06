@@ -8,10 +8,8 @@ use App\Http\Requests\StoreImportInvestmentsRequest;
 use App\Http\Requests\StoreInvestmentImportLayoutRequest;
 use App\Models\Account;
 use App\Models\BankImportLayout;
-use App\Models\Category;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
-use App\Models\Transaction;
 use App\Services\GoogleDriveService;
 use App\Services\InvestmentImportService;
 use Illuminate\Http\JsonResponse;
@@ -209,29 +207,14 @@ class InvestmentImportController extends Controller
             }
         }
 
-        // Cerca o crea la categoria "Investimento" per le transazioni cash
-        $investmentCategory = null;
-        if ($createCashTransaction && $account !== null) {
-            $investmentCategory = Category::firstOrCreate(
-                [
-                    'household_id' => $user->active_household_id,
-                    'name' => 'Investimento',
-                    'type' => 'expense',
-                ],
-                ['color' => '#6366f1', 'icon' => '📈']
-            );
-        }
-
         $imported = 0;
 
-        DB::transaction(function () use ($user, $validated, $account, $createCashTransaction, $investmentCategory, &$imported) {
-            $balanceDelta = 0.0;
-
+        DB::transaction(function () use ($user, $validated, $account, $createCashTransaction, &$imported) {
             foreach ($validated['rows'] as $row) {
-                $investment = Investment::create([
+                Investment::create([
                     'user_id' => $user->id,
                     'household_id' => $user->active_household_id,
-                    'account_id' => $account?->id,
+                    'account_id' => ($createCashTransaction && $account !== null) ? $account->id : null,
                     'asset_id' => $row['asset_id'],
                     'quantity' => $row['quantity'],
                     'buy_price' => $row['buy_price'],
@@ -241,32 +224,7 @@ class InvestmentImportController extends Controller
                     'is_private' => $row['is_private'] ?? false,
                 ]);
 
-                // Genera transazione cash se richiesto e conto disponibile
-                if ($createCashTransaction && $account !== null) {
-                    $totalCost = (float) $investment->quantity * (float) $investment->buy_price
-                        + (float) ($investment->fees ?? 0);
-                    $description = "Acquisto investimento - {$investment->asset->name}";
-
-                    Transaction::create([
-                        'user_id' => $user->id,
-                        'account_id' => $account->id,
-                        'category_id' => $investmentCategory?->id,
-                        'amount' => -$totalCost,
-                        'currency_code' => $account->currency_code,
-                        'date' => $investment->buy_date,
-                        'description' => mb_substr($description, 0, 1000),
-                        'is_private' => $investment->is_private,
-                    ]);
-
-                    $balanceDelta -= $totalCost;
-                }
-
                 $imported++;
-            }
-
-            if ($createCashTransaction && $account !== null && $balanceDelta !== 0.0) {
-                $account->current_balance += $balanceDelta;
-                $account->save();
             }
         });
 

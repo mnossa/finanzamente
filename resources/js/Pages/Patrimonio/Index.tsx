@@ -2,7 +2,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
-import InvestmentSyncBanner from '@/Components/InvestmentSyncBanner';
 import { MiniAllocationBar } from '@/Pages/AssetAllocation/Index';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -43,14 +42,11 @@ interface Props {
     totalValue: number;
     liquidValue: number;
     investedValue: number;
-    investedLinkedValue: number;
-    investedUnlinkedValue: number;
     riskIndex: number;
     riskLabel: string;
     allocation: AllocationEntry[];
     accounts: AccountRow[];
     positions: Position[];
-    investmentSyncPendingCount: number;
 }
 
 function KpiHint({ children }: { children: ReactNode }) {
@@ -63,47 +59,37 @@ export default function PatrimonioIndex({
     totalValue,
     liquidValue,
     investedValue,
-    investedLinkedValue,
-    investedUnlinkedValue,
     riskIndex,
     riskLabel,
     allocation,
     accounts,
     positions,
-    investmentSyncPendingCount,
 }: Props) {
     return (
         <AuthenticatedLayout header={<PageHeader title="Patrimonio" backLink={route('dashboard')} />}>
             <Head title="Patrimonio" />
             <PageContent maxWidth="7xl">
-                <InvestmentSyncBanner count={investmentSyncPendingCount} className="mb-4" />
-
                 <div className={moneyKpiGrid4}>
                     <CardBox className="p-4">
                         <p className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</p>
                         <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                             {formatCurrency(totalValue)}
                         </p>
-                        <KpiHint>Liquidità + investimenti collegati al ledger (costo di carico).</KpiHint>
+                        <KpiHint>Liquidità sui conti + investimenti registrati (costo di carico).</KpiHint>
                     </CardBox>
                     <CardBox className="p-4">
                         <p className="text-sm text-gray-500 dark:text-gray-400">Liquidità</p>
                         <p className={clsx('mt-1 text-2xl font-bold text-cyan-600 dark:text-cyan-400', moneyTabular)}>
                             {formatCurrency(liquidValue)}
                         </p>
-                        <KpiHint>Somma saldi conti attivi (transazioni).</KpiHint>
+                        <KpiHint>Somma saldi dei conti attivi.</KpiHint>
                     </CardBox>
                     <CardBox className="p-4">
                         <p className="text-sm text-gray-500 dark:text-gray-400">Investimenti</p>
                         <p className={clsx('mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
                             {formatCurrency(investedValue)}
                         </p>
-                        <KpiHint>
-                            Costo di carico (incl. commissioni).
-                            {investedUnlinkedValue > 0 && (
-                                <> Di cui {formatCurrency(investedUnlinkedValue)} non collegati al ledger.</>
-                            )}
-                        </KpiHint>
+                        <KpiHint>Costo di carico delle posizioni aperte, commissioni incluse.</KpiHint>
                     </CardBox>
                     <CardBox className="p-4">
                         <p className="text-sm text-gray-500 dark:text-gray-400">Rischio portafoglio</p>
@@ -113,18 +99,6 @@ export default function PatrimonioIndex({
                         <p className="text-xs text-gray-500 dark:text-gray-400">{riskLabel}</p>
                     </CardBox>
                 </div>
-
-                {investedUnlinkedValue > 0 && (
-                    <CardBox className="mt-4 border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                            Investimenti non collegati: {formatCurrency(investedUnlinkedValue)}
-                        </p>
-                        <p className="mt-1 text-xs text-amber-800 dark:text-amber-200/90">
-                            Non inclusi nel patrimonio totale finché non generano una transazione sul conto.
-                            Collegati al ledger: {formatCurrency(investedLinkedValue)}.
-                        </p>
-                    </CardBox>
-                )}
 
                 <CardBox className="p-4 sm:p-5">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-white">Allocazione per classe</h2>

@@ -144,8 +144,8 @@ class AssetAllocationTest extends TestCase
             ->actingAs($this->user)
             ->get(route('asset-allocation.index'));
 
-        $response->assertInertia(fn ($page) => $page->where('totalValue', 0)
-            ->where('positions', [])
+        $response->assertInertia(fn ($page) => $page->where('totalValue', 100)
+            ->has('positions', 1)
         );
     }
 

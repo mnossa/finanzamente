@@ -85,10 +85,10 @@ class PatrimonioTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Patrimonio/Index')
-                ->where('liquidValue', 800)
+                ->where('liquidValue', 300)
                 ->where('investedValue', 500)
-                ->where('investedLinkedValue', 0)
-                ->where('investedUnlinkedValue', 500)
+                ->where('investedLinkedValue', 500)
+                ->where('investedUnlinkedValue', 0)
                 ->where('totalValue', 800)
                 ->has('accounts', 1)
                 ->has('positions', 1)
@@ -130,7 +130,7 @@ class PatrimonioTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('balanceBreakdown.total', 2000)
+                ->where('balanceBreakdown.total', 1700)
                 ->where('balanceBreakdown.invested', 300)
             );
     }

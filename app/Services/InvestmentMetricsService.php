@@ -9,6 +9,11 @@ class InvestmentMetricsService
 {
     public function __construct(private readonly AssetPriceService $assetPriceService) {}
 
+    public function totalCost(Investment $investment): float
+    {
+        return (float) $investment->total_buy_value + (float) ($investment->fees ?? 0);
+    }
+
     /**
      * @return array{current_price: float|null, current_value: float|null, unrealized_profit: float|null}
      */
@@ -24,12 +29,12 @@ class InvestmentMetricsService
 
         $quantity = (float) $investment->quantity;
         $currentValue = $currentPrice * $quantity;
-        $totalBuyValue = (float) $investment->total_buy_value;
+        $totalCost = $this->totalCost($investment);
 
         return [
             'current_price' => $currentPrice,
-            'current_value' => $currentValue,
-            'unrealized_profit' => $currentValue - $totalBuyValue,
+            'current_value' => round($currentValue, 2),
+            'unrealized_profit' => round($currentValue - $totalCost, 2),
         ];
     }
 

@@ -49,9 +49,13 @@ interface Investment {
     fees: number | null;
     total_buy_value: number;
     total_sell_value: number | null;
+    total_cost: number;
     gross_profit: number | null;
     net_profit: number | null;
     profit_percentage: number | null;
+    current_price: number | null;
+    current_value: number | null;
+    unrealized_profit: number | null;
     is_sold: boolean;
     is_private: boolean;
     notes: string | null;
@@ -304,9 +308,15 @@ export default function Show({ investment }: ShowProps) {
                                 </div>
                                 <div className={clsx(moneyKpiGrid2, 'text-sm')}>
                                     <div>
-                                        <p className="text-gray-500 dark:text-gray-400">Prezzo Unitario</p>
+                                        <p className="text-gray-500 dark:text-gray-400">Prezzo unitario</p>
                                         <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
                                             {formatCurrency(investment.buy_price, currencyCode)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500 dark:text-gray-400">Quantità</p>
+                                        <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
+                                            {formatNumber(investment.quantity)}
                                         </p>
                                     </div>
                                     <div>
@@ -315,6 +325,14 @@ export default function Show({ investment }: ShowProps) {
                                             {formatDate(investment.buy_date)}
                                         </p>
                                     </div>
+                                    {investment.fees !== null && investment.fees > 0 && (
+                                        <div>
+                                            <p className="text-gray-500 dark:text-gray-400">Commissioni</p>
+                                            <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
+                                                {formatCurrency(investment.fees, currencyCode)}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardBox>
@@ -351,15 +369,54 @@ export default function Show({ investment }: ShowProps) {
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-4 text-center">
-                                        <div className="mb-2 text-4xl">📈</div>
-                                        <p className="text-gray-500 dark:text-gray-400">
-                                            Posizione ancora aperta
-                                        </p>
-                                        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
-                                            Registra una vendita per chiudere
-                                        </p>
-                                    </div>
+                                    <>
+                                        {investment.current_value !== null && investment.unrealized_profit !== null ? (
+                                            <>
+                                                <div className="mb-4">
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">Valore attuale</p>
+                                                    <p className={clsx('text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
+                                                        {formatCurrency(investment.current_value, currencyCode)}
+                                                    </p>
+                                                    {investment.current_price !== null && (
+                                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                            Prezzo di mercato {formatCurrency(investment.current_price, currencyCode)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className={clsx(moneyKpiGrid2, 'text-sm')}>
+                                                    <div>
+                                                        <p className="text-gray-500 dark:text-gray-400">Profitto non realizzato</p>
+                                                        <p className={clsx(
+                                                            'font-semibold',
+                                                            moneyTabular,
+                                                            investment.unrealized_profit >= 0
+                                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                                : 'text-red-600 dark:text-red-400',
+                                                        )}>
+                                                            {investment.unrealized_profit >= 0 ? '+' : ''}
+                                                            {formatCurrency(investment.unrealized_profit, currencyCode)}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-500 dark:text-gray-400">Costo totale</p>
+                                                        <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
+                                                            {formatCurrency(investment.total_cost, currencyCode)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-4 text-center">
+                                                <div className="mb-2 text-4xl">📈</div>
+                                                <p className="text-gray-500 dark:text-gray-400">
+                                                    Posizione ancora aperta
+                                                </p>
+                                                <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
+                                                    Prezzo di mercato non disponibile al momento
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </CardBox>

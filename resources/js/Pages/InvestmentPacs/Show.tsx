@@ -54,6 +54,7 @@ interface ShowProps {
         open_count: number;
         closed_count: number;
         invested_total: number;
+        average_buy_price: number | null;
         realized_total: number;
         unrealized_total: number | null;
         current_price: number | null;
@@ -192,7 +193,7 @@ export default function InvestmentPacShow({ pac, investments, stats }: ShowProps
                     </div>
                 </CardBox>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
                     <CardBox className="p-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Acquisti generati</p>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">{stats.executions_count}</p>
@@ -208,6 +209,17 @@ export default function InvestmentPacShow({ pac, investments, stats }: ShowProps
                     <CardBox className="p-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Totale investito</p>
                         <p className="text-lg font-semibold text-gray-900 dark:text-white">{formatCurrency(stats.invested_total, pac.currency_code)}</p>
+                    </CardBox>
+                    <CardBox className="p-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Prezzo medio acquisto</p>
+                        {stats.average_buy_price !== null ? (
+                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {formatCurrency(stats.average_buy_price, pac.asset.currency_code)}
+                            </p>
+                        ) : (
+                            <p className="text-lg font-semibold text-gray-400 dark:text-gray-500">—</p>
+                        )}
+                        <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Posizioni aperte</p>
                     </CardBox>
                     <CardBox className="p-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Profitto non realizzato</p>
@@ -257,7 +269,9 @@ export default function InvestmentPacShow({ pac, investments, stats }: ShowProps
                                             Acquisto del {formatDate(investment.buy_date)}
                                         </p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {formatCurrency(investment.total_buy_value, pac.currency_code)} · quantità {investment.quantity}
+                                            Prezzo unitario {formatCurrency(investment.buy_price, pac.asset.currency_code)}
+                                            {' · '}Quantità {investment.quantity}
+                                            {' · '}Costo {formatCurrency(investment.total_buy_value + (investment.fees ?? 0), pac.currency_code)}
                                             {investment.is_sold && investment.sell_date ? ` · venduto il ${formatDate(investment.sell_date)}` : ' · aperto'}
                                         </p>
                                         {investment.is_sold && investment.net_profit !== null && (

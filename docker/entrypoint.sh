@@ -17,7 +17,8 @@ if [ "${SKIP_INIT}" != "true" ]; then
         php artisan storage:link --force
     fi
 
-    # Esegue le migrazioni (safe: le migrazioni già eseguite vengono saltate)
+    # Esegue le migrazioni (safe: le migrazioni già eseguite vengono saltate).
+    # Backfill dati one-shot → migration dedicata, NON comandi artisan qui sotto.
     echo "    → migrate"
     php artisan migrate --force --no-interaction
 

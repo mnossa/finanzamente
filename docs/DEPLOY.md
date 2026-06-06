@@ -20,6 +20,7 @@ ad ogni **push sul branch `staging`**.
 
 Il file `.github/workflows/deploy.yml` definisce il deploy **produzione** (es. server Docker su Hetzner):
 dopo `php artisan up` esegue anche **`php artisan view:clear`** per svuotare la cache delle viste Blade compilate.
+I backfill dati one-shot (es. allineamento movimenti PAC / transazioni investimenti) vanno in **migration Laravel** e partono solo al primo `migrate` su quell’ambiente — **non** in `entrypoint.sh` a ogni deploy.
 Dettagli operativi: [HETZNER_SETUP.md](HETZNER_SETUP.md).
 
 

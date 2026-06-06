@@ -13,5 +13,6 @@ alwaysApply: false
 - **A11y & perf**: WCAG 2.1; avoid unnecessary re-renders.
 - **Tests**: Add/maintain tests for main components when behavior changes.
 - **UI copy**: Italian labels, messages, placeholders.
+- **No ops jargon in UI**: mai banner, tooltip o CTA con comandi da terminale (`artisan`, shell). Manutenzione dati (sync, realign, migrate extra) → `docker/entrypoint.sh` al deploy o observer/servizi in background, invisibile all’utente.
 
 After TS/JS changes: `make test` (if PHP tests cover), `make pint-check` (if PHP touched), `make playwright` per `agent-workflow`.

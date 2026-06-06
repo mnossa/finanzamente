@@ -122,9 +122,10 @@ File: `tests/Feature/FinancialConsistencyTest.php`
    - Opzione B: obbligare `account_id` su PAC (soft warning → hard per Pro)
    - Opzione C: “virtual outflow” in snapshot solo per display breakdown, non in total
 
-2. **Backfill obbligatorio post-migrazione**
-   - Onboarding: CTA “Sincronizza movimenti investimenti” → `investment-pacs:sync-transactions`
-   - Job settimanale reminder se investimenti con `account_id` senza tx
+2. **Sync investimenti ↔ transazioni (solo backend, invisibile all’utente)**
+   - Automatico: `InvestmentObserver` alla creazione/modifica con conto
+   - Backfill storico **one-shot**: migration `2026_06_05_120000_backfill_investment_pac_ledger_links` (realign + sync), **non** entrypoint a ogni deploy
+   - **Mai** banner, tooltip o istruzioni CLI in UI per utenti finali
 
 3. **Lifestyle + 50/30/20 allineati (M3)**
    - Estendere `FinancialMetricsService`: `excluded_expenses` include anche acquisti `Investment` del periodo senza tx (stessa logica expense distribution)
@@ -203,7 +204,7 @@ Fase 4 (transfer filter)  →  Fase 5 (grafico patrimonio reale)
 - [x] Fase 2: Fix `UpdateAccountBalance` raw SUM(amount)
 - [x] Fase 3: Patrimonio no double-count unsynced (`totalValue = liquid + linked`)
 - [x] Fase 3: Lifestyle excluded include unsynced investment purchases
-- [x] Fase 3: CTA sync investimenti (banner dashboard/investimenti/patrimonio)
+- [x] Fase 3: CTA sync investimenti (dashboard/investimenti/patrimonio) — **rimosso**: sync automatico, no UI tecnica
 - [x] Fase 4: Exclude `transfer_id` da period stats, expense dist, cashflow
 - [x] Fase 4: `periodStats` rename + UI label 30 gg
 - [x] Fase 5: `NetWorthSeriesService` cash + portfolio modes

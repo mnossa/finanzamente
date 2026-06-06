@@ -30,7 +30,6 @@ class DashboardController extends Controller
     public function __construct(
         private readonly AccountBalanceService $accountBalanceService,
         private readonly PortfolioSnapshotService $portfolioSnapshotService,
-        private readonly InvestmentLedgerService $investmentLedgerService,
         private readonly NetWorthSeriesService $netWorthSeriesService,
         private readonly FinancialMetricsService $financialMetricsService,
     ) {}
@@ -60,7 +59,6 @@ class DashboardController extends Controller
         $balanceBreakdown = [
             'total' => round((float) $totalBalance, 2),
             'invested' => $portfolioSnapshot['investedValue'],
-            'invested_unlinked' => $portfolioSnapshot['investedUnlinkedValue'],
         ];
 
         // Transazioni recenti (ultime 10)
@@ -216,7 +214,6 @@ class DashboardController extends Controller
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
             'financialGoals' => $this->getFinancialGoalsData($householdId),
             'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
-            'investmentSyncPendingCount' => $this->investmentLedgerService->countPendingSync($user),
         ]);
     }
 

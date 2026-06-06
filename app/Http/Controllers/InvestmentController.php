@@ -8,7 +8,6 @@ use App\Models\Account;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Services\AssetPriceService;
-use App\Services\InvestmentLedgerService;
 use App\Services\InvestmentMetricsService;
 use App\Services\InvestmentTransactionSyncService;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +21,6 @@ class InvestmentController extends Controller
         private readonly AssetPriceService $assetPriceService,
         private readonly InvestmentMetricsService $investmentMetricsService,
         private readonly InvestmentTransactionSyncService $investmentTransactionSyncService,
-        private readonly InvestmentLedgerService $investmentLedgerService,
     ) {}
 
     /**
@@ -135,7 +133,6 @@ class InvestmentController extends Controller
             'stats' => $stats,
             'assetTypes' => InvestmentAsset::TYPES,
             'assetTypeIcons' => InvestmentAsset::TYPE_ICONS,
-            'investmentSyncPendingCount' => $this->investmentLedgerService->countPendingSync($user),
             'valuationNote' => 'I valori di mercato si basano sui prezzi correnti. Patrimonio e allocazione usano il costo di carico (inclusive commissioni).',
         ]);
     }
@@ -223,6 +220,16 @@ class InvestmentController extends Controller
 
         $investment->load(['user:id,name', 'account:id,name', 'asset.currency:code,symbol']);
 
+        $currentPrice = null;
+        $symbol = $investment->asset?->symbol;
+        if ($symbol && $investment->isOpen()) {
+            $priceResult = $this->assetPriceService->getCurrentPrice($symbol);
+            if (! $priceResult['error'] && isset($priceResult['price'])) {
+                $currentPrice = (float) $priceResult['price'];
+            }
+        }
+        $unrealized = $this->investmentMetricsService->unrealizedMetrics($investment, $currentPrice);
+
         return Inertia::render('Investments/Show', [
             'investment' => [
                 'id' => $investment->id,
@@ -255,6 +262,10 @@ class InvestmentController extends Controller
                 'profit_percentage' => $investment->profit_percentage !== null
                     ? round($investment->profit_percentage, 2)
                     : null,
+                'current_price' => $unrealized['current_price'],
+                'current_value' => $unrealized['current_value'],
+                'unrealized_profit' => $unrealized['unrealized_profit'],
+                'total_cost' => $this->investmentMetricsService->totalCost($investment),
                 'is_sold' => $investment->isSold(),
                 'is_private' => $investment->is_private,
                 'notes' => $investment->notes,

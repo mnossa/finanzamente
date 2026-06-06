@@ -17,7 +17,6 @@ import CashFlowChart, { CashFlowDataPoint } from '@/Components/Charts/CashFlowCh
 import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthChart';
 import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
 import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components/ExpenseDistributionWidget';
-import InvestmentSyncBanner from '@/Components/InvestmentSyncBanner';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
@@ -166,7 +165,6 @@ interface DashboardProps {
     balanceBreakdown: {
         total: number;
         invested: number;
-        invested_unlinked?: number;
     };
     recentTransactions: Transaction[];
     periodStats: MonthlyStats;
@@ -187,7 +185,6 @@ interface DashboardProps {
     expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
     expenseDistributionData: ExpenseDistributionData;
-    investmentSyncPendingCount: number;
 }
 
 function getAccountTypeLabel(type: string): string {
@@ -383,7 +380,6 @@ export default function Dashboard({
     expenseCategories,
     financialGoals,
     expenseDistributionData,
-    investmentSyncPendingCount,
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [netWorthMode, setNetWorthMode] = useState<'portfolio' | 'cash'>('portfolio');
@@ -454,14 +450,9 @@ export default function Dashboard({
                             <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>
                                 {formatCurrency(balanceBreakdown?.total ?? totalBalance)}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">Somma saldi conti attivi (ledger transazioni)</p>
+                            <p className="mt-1 text-xs text-slate-500">Somma saldi conti attivi</p>
                             <p className="mt-1 text-sm text-slate-400">
                                 Di cui investimenti {formatCurrency(balanceBreakdown?.invested ?? 0)}
-                                {(balanceBreakdown?.invested_unlinked ?? 0) > 0 && (
-                                    <span className="text-amber-300/90">
-                                        {' '}({formatCurrency(balanceBreakdown!.invested_unlinked!)} non collegati al conto)
-                                    </span>
-                                )}
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
                                 {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio
@@ -755,8 +746,8 @@ export default function Dashboard({
                                 data={netWorthMode === 'cash' ? netWorthCashData : netWorthData}
                                 title={netWorthMode === 'cash' ? 'Liquidità nel tempo' : 'Patrimonio nel tempo'}
                                 subtitle={netWorthMode === 'cash'
-                                    ? 'Solo saldo conti (transazioni)'
-                                    : 'Liquidità + posizioni investimento collegate al ledger'}
+                                    ? 'Solo saldo conti'
+                                    : 'Liquidità + investimenti (costo di carico)'}
                             />
                         </div>
                     </div>
@@ -922,7 +913,6 @@ export default function Dashboard({
             )}
 
             <PageContent maxWidth="7xl">
-                    <InvestmentSyncBanner count={investmentSyncPendingCount} className="mb-4" />
                     {/* Barra personalizzazione dashboard — solo in editing */}
                     {isEditing && (
                         <div

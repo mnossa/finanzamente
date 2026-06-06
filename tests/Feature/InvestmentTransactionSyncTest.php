@@ -191,7 +191,7 @@ class InvestmentTransactionSyncTest extends TestCase
     #[Test]
     public function sync_transactions_command_backfills_missing_links(): void
     {
-        $investment = Investment::create([
+        $investment = Investment::withoutEvents(fn () => Investment::create([
             'user_id' => $this->user->id,
             'household_id' => $this->household->id,
             'account_id' => $this->account->id,
@@ -200,7 +200,7 @@ class InvestmentTransactionSyncTest extends TestCase
             'buy_price' => 250,
             'buy_date' => '2026-02-01',
             'is_private' => false,
-        ]);
+        ]));
 
         $this->assertDatabaseMissing('transactions', [
             'investment_id' => $investment->id,

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\InvestmentLedgerService;
 use App\Services\PortfolioSnapshotService;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -12,7 +11,6 @@ class PatrimonioController extends Controller
 {
     public function __construct(
         private readonly PortfolioSnapshotService $portfolioSnapshotService,
-        private readonly InvestmentLedgerService $investmentLedgerService,
     ) {}
 
     public function index(): Response
@@ -36,7 +34,6 @@ class PatrimonioController extends Controller
                 ->all(),
             'classColors' => $snapshot['classColors'],
             'classLabels' => $snapshot['classLabels'],
-            'investmentSyncPendingCount' => $this->investmentLedgerService->countPendingSync($user),
         ]);
     }
 }

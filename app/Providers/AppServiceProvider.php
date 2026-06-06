@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Models\BankImportLayout;
 use App\Models\Household;
+use App\Models\Investment;
 use App\Observers\HouseholdObserver;
+use App\Observers\InvestmentObserver;
 use App\Policies\BankImportLayoutPolicy;
 use Artesaos\SEOTools\Facades\JsonLdMulti;
 use Carbon\Carbon;
@@ -87,6 +89,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Registra observer per la creazione automatica delle categorie
         Household::observe(HouseholdObserver::class);
+        Investment::observe(InvestmentObserver::class);
 
         Gate::policy(BankImportLayout::class, BankImportLayoutPolicy::class);
     }

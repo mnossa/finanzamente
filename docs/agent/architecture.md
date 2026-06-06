@@ -20,6 +20,15 @@ Reporting, notifications, external integrations, multi-household, multi-currency
 | Analytics | Privacy-friendly usage metrics |
 | DevOps | Deploy, rollback, env docs → `docs/DEPLOY.md` |
 
+## UX product (finanza)
+- Operazioni tecniche (sync ledger, realign PAC, migrate dati) **mai** esposte in UI con comandi shell.
+- Testi utente in italiano plain: evitare “ledger”, “collegati/non collegati”, “sync”.
+
+## Deploy / backfill
+- **Ogni deploy** (entrypoint): solo operazioni idempotenti (`migrate`, `optimize`, `sitemap:generate`, …).
+- **One-shot** dopo cambio logica dati: **migration** Laravel (eseguita una volta per ambiente al primo `migrate`), non artisan ripetuto in `entrypoint.sh`.
+- Nuovi investimenti con conto: `InvestmentObserver` (nessun job deploy necessario).
+
 ## Code quality checklist
 - ESLint/Prettier (JS), Pint (PHP)
 - DRY/KISS, centralized errors

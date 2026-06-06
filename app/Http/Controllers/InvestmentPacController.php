@@ -111,11 +111,19 @@ class InvestmentPacController extends Controller
             ? $this->investmentMetricsService->sumUnrealizedProfit($openInvestments, [$assetSymbol => $currentPrice])
             : null;
 
+        $openQuantity = (float) $openInvestments->sum(fn ($investment) => (float) $investment->quantity);
+        $openTotalCost = (float) $openInvestments->sum(
+            fn ($investment) => $this->investmentMetricsService->totalCost($investment)
+        );
+
         $stats = [
             'executions_count' => $investmentPac->investments->count(),
             'open_count' => $openInvestments->count(),
             'closed_count' => $closedInvestments->count(),
-            'invested_total' => (float) $investmentPac->investments->sum(fn ($investment) => $investment->total_buy_value),
+            'invested_total' => (float) $investmentPac->investments->sum(
+                fn ($investment) => $this->investmentMetricsService->totalCost($investment)
+            ),
+            'average_buy_price' => $openQuantity > 0 ? round($openTotalCost / $openQuantity, 8) : null,
             'realized_total' => (float) $closedInvestments->sum(fn ($investment) => $investment->net_profit ?? 0),
             'unrealized_total' => $unrealizedTotal,
             'current_price' => $currentPrice,

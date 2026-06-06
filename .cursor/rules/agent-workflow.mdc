@@ -35,3 +35,8 @@ Minimal diff, root cause, no drive-by changes. Non-trivial: prefer elegant solut
 
 ## PR
 Relevant changes via PR. Merge: tests green, no duplication, acceptable perf, docs/security OK.
+
+## Deploy / backfill dati
+- **Entrypoint** (`docker/entrypoint.sh`): solo step idempotenti (migrate, optimize, sitemap, …).
+- **One-shot** dopo cambio logica: **migration** Laravel (una volta per ambiente), mai artisan di backfill ripetuto a ogni deploy.
+- Dettaglio: `docs/agent/architecture.md` · `docs/DEPLOY.md`.

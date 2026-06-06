@@ -12,7 +12,6 @@ import clsx from 'clsx';
 import { moneyCardGrid3, moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
-import InvestmentSyncBanner from '@/Components/InvestmentSyncBanner';
 import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
 import TradingViewEconomicCalendar from '@/Components/TradingViewEconomicCalendar';
 import { useMemo, useState } from 'react';
@@ -97,7 +96,6 @@ interface IndexProps {
     stats: Stats;
     assetTypes: AssetTypes;
     assetTypeIcons: AssetTypeIcons;
-    investmentSyncPendingCount: number;
     valuationNote: string;
 }
 
@@ -228,8 +226,18 @@ interface PacGroup {
 function PacGroupCard({ group }: { group: PacGroup }) {
     const [expanded, setExpanded] = useState(false);
     const currencyCode = group.movements[0]?.asset.currency.code ?? 'EUR';
-    const totalInvested = group.movements.reduce((sum, movement) => sum + movement.total_buy_value, 0);
+    const totalInvested = group.movements.reduce(
+        (sum, movement) => sum + movement.total_buy_value + (movement.fees ?? 0),
+        0,
+    );
     const totalFees = group.movements.reduce((sum, movement) => sum + (movement.fees ?? 0), 0);
+    const openMovements = group.movements.filter((movement) => !movement.is_sold);
+    const openQuantity = openMovements.reduce((sum, movement) => sum + movement.quantity, 0);
+    const openTotalCost = openMovements.reduce(
+        (sum, movement) => sum + movement.total_buy_value + (movement.fees ?? 0),
+        0,
+    );
+    const averageBuyPrice = openQuantity > 0 ? openTotalCost / openQuantity : null;
     const realizedProfit = group.movements
         .filter((movement) => movement.is_sold)
         .reduce((sum, movement) => sum + (movement.net_profit ?? 0), 0);
@@ -269,7 +277,7 @@ function PacGroupCard({ group }: { group: PacGroup }) {
                 <span className="text-sm text-gray-500 dark:text-gray-400">{expanded ? 'Nascondi dettagli' : 'Mostra dettagli'}</span>
             </button>
 
-            <div className={clsx(moneyKpiGrid2, 'mt-4 sm:grid-cols-4')}>
+            <div className={clsx(moneyKpiGrid2, 'mt-4 sm:grid-cols-5')}>
                 <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Totale investito</p>
                     <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
@@ -278,6 +286,17 @@ function PacGroupCard({ group }: { group: PacGroup }) {
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                         Comm. {formatCurrency(totalFees, currencyCode)}
                     </p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Prezzo medio acquisto</p>
+                    {averageBuyPrice !== null ? (
+                        <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
+                            {formatCurrency(averageBuyPrice, currencyCode)}
+                        </p>
+                    ) : (
+                        <p className={clsx('font-semibold text-gray-400 dark:text-gray-500', moneyTabular)}>—</p>
+                    )}
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Posizioni aperte</p>
                 </div>
                 <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Profitto non realizzato</p>
@@ -327,10 +346,12 @@ function PacGroupCard({ group }: { group: PacGroup }) {
                                         Acquisto {formatDate(movement.buy_date)} · {formatCurrency(movement.total_buy_value, movement.asset.currency.code)}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Prezzo unitario {formatCurrency(movement.buy_price, movement.asset.currency.code)}
+                                        {' · '}Quantità {formatNumber(movement.quantity, 4)}
                                         {movement.is_sold && movement.sell_date
-                                            ? `Venduto ${formatDate(movement.sell_date)} · ${formatCurrency(movement.total_sell_value ?? 0, movement.asset.currency.code)}`
-                                            : 'Posizione aperta'}
-                                        {movement.fees ? ` · Commissioni ${formatCurrency(movement.fees, movement.asset.currency.code)}` : ''}
+                                            ? ` · Venduto ${formatDate(movement.sell_date)}`
+                                            : ' · Aperto'}
+                                        {movement.fees ? ` · Comm. ${formatCurrency(movement.fees, movement.asset.currency.code)}` : ''}
                                     </p>
                                     {!movement.is_sold && (
                                         <p className={clsx(
@@ -388,7 +409,6 @@ export default function Index({
     stats,
     assetTypes,
     assetTypeIcons,
-    investmentSyncPendingCount,
     valuationNote,
 }: IndexProps) {
     const pacGroups = useMemo<PacGroup[]>(() => {
@@ -450,8 +470,6 @@ export default function Index({
             <Head title="Investimenti" />
 
             <PageContent maxWidth="7xl">
-                    <InvestmentSyncBanner count={investmentSyncPendingCount} className="mb-4" />
-
                     <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Portafoglio investimenti" icon={<span className="text-sm leading-none">📊</span>} />

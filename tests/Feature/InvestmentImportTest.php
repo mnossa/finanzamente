@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\BankImportLayout;
 use App\Models\Household;
+use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Models\User;
+use App\Services\AccountBalanceService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -257,7 +259,7 @@ class InvestmentImportTest extends TestCase
     #[Test]
     public function import_with_cash_transaction_creates_transaction(): void
     {
-        $initialBalance = $this->account->current_balance;
+        $balanceBefore = app(AccountBalanceService::class)->computeBalance($this->account, $this->user);
 
         $response = $this->actingAs($this->user)->postJson('/investimenti/importa', [
             'account_id' => $this->account->id,
@@ -278,12 +280,12 @@ class InvestmentImportTest extends TestCase
         $this->assertDatabaseCount('transactions', 1);
         $this->assertDatabaseHas('transactions', [
             'account_id' => $this->account->id,
-            'amount' => -1005.00, // 10 * 100 + 5 fees
+            'amount' => -1005.00,
+            'investment_id' => Investment::query()->value('id'),
         ]);
 
-        // Verifica che il saldo sia stato aggiornato
-        $this->account->refresh();
-        $this->assertEquals($initialBalance - 1005.00, $this->account->current_balance);
+        $computedBalance = app(AccountBalanceService::class)->computeBalance($this->account->fresh(), $this->user);
+        $this->assertEqualsWithDelta($balanceBefore - 1005.00, $computedBalance, 0.01);
     }
 
     #[Test]
