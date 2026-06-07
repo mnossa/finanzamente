@@ -5,9 +5,16 @@ import CardBox from '@/Components/CardBox';
 import { MiniAllocationBar } from '@/Pages/AssetAllocation/Index';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+
+interface AllocationInstrument {
+    name: string;
+    symbol: string | null;
+    value: number;
+    detail: string | null;
+}
 
 interface AllocationEntry {
     asset_class: string;
@@ -15,6 +22,7 @@ interface AllocationEntry {
     color: string;
     value: number;
     percentage: number;
+    instruments?: AllocationInstrument[];
 }
 
 interface AccountRow {
@@ -27,7 +35,14 @@ interface AccountRow {
     portfolio_percentage: number;
 }
 
-interface Position {
+interface PositionCurrency {
+    code: string;
+    symbol: string;
+}
+
+interface StandalonePositionGroup {
+    kind: 'standalone';
+    key: string;
     id: number;
     name: string;
     symbol: string | null;
@@ -35,8 +50,36 @@ interface Position {
     buy_date: string | null;
     portfolio_percentage: number;
     account: { id: number; name: string } | null;
-    currency: { code: string; symbol: string };
+    currency: PositionCurrency;
 }
+
+interface PacMovement {
+    id: number;
+    value: number;
+    portfolio_percentage: number;
+    buy_date: string | null;
+    account: { id: number; name: string } | null;
+    currency: PositionCurrency;
+}
+
+interface PacPositionGroup {
+    kind: 'pac';
+    key: string;
+    pac_id: number;
+    name: string;
+    symbol: string | null;
+    value: number;
+    portfolio_percentage: number;
+    movement_count: number;
+    buy_date_from: string | null;
+    buy_date_to: string | null;
+    account: { id: number; name: string } | null;
+    currency: PositionCurrency;
+    pac_status: 'active' | 'paused';
+    movements: PacMovement[];
+}
+
+type PositionGroup = StandalonePositionGroup | PacPositionGroup;
 
 interface Props {
     totalValue: number;
@@ -46,12 +89,108 @@ interface Props {
     riskLabel: string;
     allocation: AllocationEntry[];
     accounts: AccountRow[];
-    positions: Position[];
+    positionGroups: PositionGroup[];
+    positionMovementCount: number;
 }
 
 function KpiHint({ children }: { children: ReactNode }) {
     return (
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{children}</p>
+    );
+}
+
+function PositionValueCell({
+    value,
+    percentage,
+    currencyCode,
+}: {
+    value: number;
+    percentage: number;
+    currencyCode: string;
+}) {
+    return (
+        <div className="text-right">
+            <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
+                {formatCurrency(value, currencyCode)}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{percentage.toFixed(1)}%</p>
+        </div>
+    );
+}
+
+function PacPositionRow({ group }: { group: PacPositionGroup }) {
+    const [expanded, setExpanded] = useState(false);
+
+    return (
+        <div className="border-b border-gray-100 last:border-0 dark:border-gray-700">
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                            href={route('investment-pacs.show', group.pac_id)}
+                            className="font-medium text-gray-900 hover:text-emerald-600 dark:text-white dark:hover:text-emerald-400"
+                        >
+                            {group.name}
+                            {group.symbol ? ` (${group.symbol})` : ''}
+                        </Link>
+                        <span className={clsx(
+                            'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                            group.pac_status === 'active'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+                        )}>
+                            PAC
+                        </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {group.movement_count} movimenti
+                        {group.account ? ` · ${group.account.name}` : ''}
+                        {group.buy_date_from && group.buy_date_to
+                            ? ` · ${formatDate(group.buy_date_from)} – ${formatDate(group.buy_date_to)}`
+                            : ''}
+                    </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                    <PositionValueCell
+                        value={group.value}
+                        percentage={group.portfolio_percentage}
+                        currencyCode={group.currency.code}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setExpanded((value) => !value)}
+                        className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        aria-expanded={expanded}
+                    >
+                        {expanded ? 'Nascondi' : 'Dettaglio'}
+                    </button>
+                </div>
+            </div>
+            {expanded && (
+                <div className="max-h-48 overflow-y-auto border-t border-gray-100 bg-gray-50/70 dark:border-gray-700 dark:bg-gray-800/40">
+                    {group.movements.map((movement) => (
+                        <div key={movement.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
+                            <div className="min-w-0">
+                                <Link
+                                    href={route('investments.show', movement.id)}
+                                    className="text-gray-800 hover:text-emerald-600 dark:text-gray-200 dark:hover:text-emerald-400"
+                                >
+                                    Acquisto {movement.buy_date ? formatDate(movement.buy_date) : '—'}
+                                </Link>
+                                {movement.account && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{movement.account.name}</p>
+                                )}
+                            </div>
+                            <PositionValueCell
+                                value={movement.value}
+                                percentage={movement.portfolio_percentage}
+                                currencyCode={movement.currency.code}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -63,7 +202,8 @@ export default function PatrimonioIndex({
     riskLabel,
     allocation,
     accounts,
-    positions,
+    positionGroups,
+    positionMovementCount,
 }: Props) {
     return (
         <AuthenticatedLayout header={<PageHeader title="Patrimonio" backLink={route('dashboard')} />}>
@@ -102,20 +242,51 @@ export default function PatrimonioIndex({
 
                 <CardBox className="p-4 sm:p-5">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-white">Allocazione per classe</h2>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                        Gli ETF non sono tutti azionari: la classe deriva da nome e simbolo (es. obbligazionario, commodity).
+                        Puoi correggerla in Asset → Modifica.
+                    </p>
                     <div className="mt-3">
                         <MiniAllocationBar allocation={allocation} />
                     </div>
-                    <div className={clsx(moneyKpiGrid2, 'mt-4 sm:grid-cols-3')}>
+                    <div className="mt-4 space-y-3">
                         {allocation.map((entry) => (
                             <div key={entry.asset_class} className="rounded-lg border border-gray-100 p-3 dark:border-gray-700">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{entry.label}</span>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{entry.label}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={clsx('text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
+                                            {formatCurrency(entry.value)}
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{entry.percentage.toFixed(1)}%</p>
+                                    </div>
                                 </div>
-                                <p className={clsx('mt-1 text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
-                                    {formatCurrency(entry.value)}
-                                </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{entry.percentage.toFixed(1)}%</p>
+                                {entry.instruments && entry.instruments.length > 0 && (
+                                    <ul className="mt-2 space-y-1 border-t border-gray-100 pt-2 dark:border-gray-700">
+                                        {entry.instruments.map((instrument) => (
+                                            <li
+                                                key={`${entry.asset_class}-${instrument.name}-${instrument.symbol ?? 'na'}`}
+                                                className="flex items-start justify-between gap-2 text-xs"
+                                            >
+                                                <span className="min-w-0 text-gray-600 dark:text-gray-300">
+                                                    <span className="font-medium text-gray-800 dark:text-gray-200">
+                                                        {instrument.name}
+                                                        {instrument.symbol ? ` (${instrument.symbol})` : ''}
+                                                    </span>
+                                                    {instrument.detail && (
+                                                        <span className="block text-gray-500 dark:text-gray-400">{instrument.detail}</span>
+                                                    )}
+                                                </span>
+                                                <span className={clsx('shrink-0 font-medium text-gray-900 dark:text-white', moneyTabular)}>
+                                                    {formatCurrency(instrument.value)}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -154,31 +325,41 @@ export default function PatrimonioIndex({
 
                 <CardBox className="overflow-hidden">
                     <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-                        <h2 className="font-medium text-gray-900 dark:text-white">Posizioni investimento ({positions.length})</h2>
+                        <h2 className="font-medium text-gray-900 dark:text-white">
+                            Posizioni investimento ({positionGroups.length})
+                        </h2>
+                        {positionMovementCount > positionGroups.length && (
+                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                {positionMovementCount} movimenti · PAC raggruppati per piano
+                            </p>
+                        )}
                     </div>
-                    {positions.length === 0 ? (
+                    {positionGroups.length === 0 ? (
                         <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">Nessuna posizione aperta.</p>
                     ) : (
-                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {positions.map((position) => (
-                                <div key={position.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                                    <div className="min-w-0">
-                                        <Link href={route('investments.show', position.id)} className="font-medium text-gray-900 hover:text-emerald-600 dark:text-white dark:hover:text-emerald-400">
-                                            {position.name}
-                                            {position.symbol ? ` (${position.symbol})` : ''}
-                                        </Link>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            {position.account ? position.account.name : 'Senza conto'}
-                                            {position.buy_date ? ` · ${formatDate(position.buy_date)}` : ''}
-                                        </p>
+                        <div>
+                            {positionGroups.map((group) => (
+                                group.kind === 'pac' ? (
+                                    <PacPositionRow key={group.key} group={group} />
+                                ) : (
+                                    <div key={group.key} className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 last:border-0 dark:border-gray-700">
+                                        <div className="min-w-0">
+                                            <Link href={route('investments.show', group.id)} className="font-medium text-gray-900 hover:text-emerald-600 dark:text-white dark:hover:text-emerald-400">
+                                                {group.name}
+                                                {group.symbol ? ` (${group.symbol})` : ''}
+                                            </Link>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {group.account ? group.account.name : 'Senza conto'}
+                                                {group.buy_date ? ` · ${formatDate(group.buy_date)}` : ''}
+                                            </p>
+                                        </div>
+                                        <PositionValueCell
+                                            value={group.value}
+                                            percentage={group.portfolio_percentage}
+                                            currencyCode={group.currency.code}
+                                        />
                                     </div>
-                                    <div className="text-right">
-                                        <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
-                                            {formatCurrency(position.value, position.currency.code)}
-                                        </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{position.portfolio_percentage.toFixed(1)}%</p>
-                                    </div>
-                                </div>
+                                )
                             ))}
                         </div>
                     )}

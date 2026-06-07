@@ -13,7 +13,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
         id: 'total_balance',
         title: 'Saldo conti',
-        description: 'Somma saldi conti attivi (ledger transazioni), con di cui investimenti.',
+        description: 'Somma saldi conti attivi (liquidità). Investimenti aperti mostrati a parte (costo di carico).',
         defaultSize: 'xl',
         defaultVisible: true,
         allowedSizes: ALL_SIZES,

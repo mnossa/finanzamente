@@ -6,6 +6,7 @@ use App\Http\Requests\StoreInvestmentAssetRequest;
 use App\Http\Requests\UpdateInvestmentAssetRequest;
 use App\Models\Currency;
 use App\Models\InvestmentAsset;
+use App\Services\AssetClassificationService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -73,6 +74,7 @@ class InvestmentAssetController extends Controller
             'currencies' => $currencies,
             'types' => InvestmentAsset::TYPES,
             'typeIcons' => InvestmentAsset::TYPE_ICONS,
+            'allocationClasses' => AssetClassificationService::CLASS_LABELS,
         ]);
     }
 
@@ -85,6 +87,9 @@ class InvestmentAssetController extends Controller
 
         InvestmentAsset::create([
             'type' => $validated['type'],
+            'allocation_asset_class' => filled($validated['allocation_asset_class'] ?? null)
+                ? $validated['allocation_asset_class']
+                : null,
             'symbol' => $validated['symbol'] ?? null,
             'isin' => $validated['isin'] ?? null,
             'exchange' => $validated['exchange'] ?? null,
@@ -109,6 +114,9 @@ class InvestmentAssetController extends Controller
             'asset' => [
                 'id' => $investmentAsset->id,
                 'type' => $investmentAsset->type,
+                'allocation_asset_class' => $investmentAsset->allocation_asset_class
+                    ?? AssetClassificationService::resolveInvestmentAssetClass($investmentAsset),
+                'allocation_asset_class_override' => $investmentAsset->allocation_asset_class,
                 'symbol' => $investmentAsset->symbol,
                 'isin' => $investmentAsset->isin,
                 'exchange' => $investmentAsset->exchange,
@@ -119,6 +127,7 @@ class InvestmentAssetController extends Controller
             'currencies' => $currencies,
             'types' => InvestmentAsset::TYPES,
             'typeIcons' => InvestmentAsset::TYPE_ICONS,
+            'allocationClasses' => AssetClassificationService::CLASS_LABELS,
         ]);
     }
 
@@ -131,6 +140,9 @@ class InvestmentAssetController extends Controller
 
         $investmentAsset->update([
             'type' => $validated['type'],
+            'allocation_asset_class' => filled($validated['allocation_asset_class'] ?? null)
+                ? $validated['allocation_asset_class']
+                : null,
             'symbol' => $validated['symbol'] ?? null,
             'isin' => $validated['isin'] ?? null,
             'exchange' => $validated['exchange'] ?? null,

@@ -113,6 +113,11 @@ class Transaction extends Model
         return $this->belongsTo(Investment::class);
     }
 
+    public function isInvestmentLedger(): bool
+    {
+        return $this->investment_id !== null;
+    }
+
     public function transfer()
     {
         return $this->belongsTo(Transfer::class);

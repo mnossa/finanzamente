@@ -450,9 +450,13 @@ export default function Dashboard({
                             <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>
                                 {formatCurrency(balanceBreakdown?.total ?? totalBalance)}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">Somma saldi conti attivi</p>
-                            <p className="mt-1 text-sm text-slate-400">
-                                Di cui investimenti {formatCurrency(balanceBreakdown?.invested ?? 0)}
+                            <p className="mt-1 text-xs text-slate-500">Somma saldi conti attivi (liquidità)</p>
+                            <p className="mt-2 text-sm text-slate-400">
+                                Investimenti aperti{' '}
+                                <span className={moneyTabular}>{formatCurrency(balanceBreakdown?.invested ?? 0)}</span>
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                                Costo di carico · non incluso nel saldo conti
                             </p>
                             <p className="mt-1 text-xs text-slate-500">
                                 {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio

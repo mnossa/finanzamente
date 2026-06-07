@@ -36,6 +36,7 @@ export interface TransactionListRowTransaction {
     refund_id: number | null;
     has_refunds: boolean;
     is_fully_refunded: boolean;
+    attachments_count?: number;
     category: TransactionListRowCategory | null;
     account: TransactionListRowAccount;
     tags: TransactionListRowTag[];
@@ -48,10 +49,33 @@ export type TransactionListIndexQuery = Record<string, string | number>;
 
 interface TransactionListRowProps {
     transaction: TransactionListRowTransaction;
-    onDeleteClick: (id: number, description: string) => void;
+    onDeleteClick: (target: { id: number; description: string; isInvestment: boolean }) => void;
     isSelected: boolean;
     onToggleSelect: (id: number) => void;
     indexQuery: TransactionListIndexQuery;
+}
+
+function RowIndicator({
+    label,
+    children,
+    className,
+}: {
+    label: string;
+    children: React.ReactNode;
+    className?: string;
+}) {
+    return (
+        <span
+            title={label}
+            aria-label={label}
+            className={clsx(
+                'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs',
+                className,
+            )}
+        >
+            {children}
+        </span>
+    );
 }
 
 export default function TransactionListRow({
@@ -67,131 +91,128 @@ export default function TransactionListRow({
     const hasRefunds = transaction.has_refunds;
     const isRecurring = transaction.recurring_transaction_id !== null;
     const isInvestment = transaction.investment_id !== null;
+    const hasAttachments = (transaction.attachments_count ?? 0) > 0;
+    const hasTags = transaction.tags.length > 0;
 
     const title = transaction.description || transaction.category?.name || 'Transazione';
+
+    const indicators = [
+        isRecurring ? (
+            <RowIndicator key="recurring" label="Generata da ricorrenza" className="bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                🔁
+            </RowIndicator>
+        ) : null,
+        isInvestment ? (
+            <RowIndicator key="investment" label="Collegata a un investimento" className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                📈
+            </RowIndicator>
+        ) : null,
+        isTransfer ? (
+            <RowIndicator key="transfer" label="Trasferimento tra conti" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                🔄
+            </RowIndicator>
+        ) : null,
+        isRefund ? (
+            <RowIndicator key="refund" label="Rimborso" className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                💸
+            </RowIndicator>
+        ) : null,
+        hasRefunds ? (
+            <RowIndicator
+                key="refunded"
+                label={transaction.is_fully_refunded ? 'Rimborsato per intero' : 'Rimborso parziale'}
+                className={clsx(
+                    transaction.is_fully_refunded
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                )}
+            >
+                {transaction.is_fully_refunded ? '✓' : '◐'}
+            </RowIndicator>
+        ) : null,
+        transaction.is_private ? (
+            <RowIndicator key="private" label="Transazione privata" className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                🔒
+            </RowIndicator>
+        ) : null,
+        transaction.is_tax_deductible ? (
+            <RowIndicator key="tax" label="Detraibile fiscalmente" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                📋
+            </RowIndicator>
+        ) : null,
+        hasAttachments ? (
+            <RowIndicator key="attachments" label="Allegati presenti" className="bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                📎
+            </RowIndicator>
+        ) : null,
+        hasTags ? (
+            <RowIndicator key="tags" label={`${transaction.tags.length} etichett${transaction.tags.length === 1 ? 'a' : 'e'}`} className="bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                🏷️
+            </RowIndicator>
+        ) : null,
+    ].filter(Boolean);
 
     return (
         <div
             className={clsx(
-                'group border-b border-gray-100 py-2.5 transition-colors last:border-0 -mx-4 px-3 sm:flex sm:flex-row sm:items-center sm:py-3 sm:px-4',
-                isRecurring && 'border-l-4 border-violet-500 pl-2 dark:border-violet-400',
-                isInvestment && !isRecurring && 'border-l-4 border-indigo-500 pl-2 dark:border-indigo-400',
+                'group grid min-h-[4.25rem] grid-cols-[auto_auto_1fr_auto] items-center gap-x-2 border-b border-gray-100 py-2 transition-colors last:border-0 -mx-4 px-3 sm:grid-cols-[auto_auto_1fr_auto_auto] sm:gap-x-3 sm:px-4',
+                isRecurring && 'border-l-4 border-l-violet-500 pl-2 dark:border-l-violet-400',
+                isInvestment && !isRecurring && 'border-l-4 border-l-indigo-500 pl-2 dark:border-l-indigo-400',
                 isSelected
                     ? 'bg-emerald-50 dark:bg-emerald-900/20'
                     : 'hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50',
             )}
             {...(isRecurring ? { title: 'Generata da ricorrenza' } : {})}
         >
-            <div className="flex min-w-0 flex-1 flex-col gap-1 sm:contents">
-                <div className="flex min-w-0 items-start gap-2">
-                    <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => onToggleSelect(transaction.id)}
-                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 sm:mt-0 sm:mr-2"
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`Seleziona ${title}`}
-                    />
+            <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => onToggleSelect(transaction.id)}
+                className="h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800"
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Seleziona ${title}`}
+            />
 
-                    <div
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base sm:mr-3 sm:h-9 sm:w-9"
-                        style={{
-                            backgroundColor: isTransfer
-                                ? '#f59e0b20'
-                                : isRefund
-                                  ? '#3b82f620'
-                                  : transaction.category?.color
-                                    ? `${transaction.category.color}20`
-                                    : isIncome
-                                      ? '#22c55e20'
-                                      : '#ef444420',
-                        }}
-                        aria-hidden
-                    >
-                        {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
-                    </div>
-
-                    <Link
-                        href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
-                        className="min-h-[44px] min-w-0 flex-1 sm:min-h-0"
-                        aria-label={isRecurring ? `${title}, generata da ricorrenza` : title}
-                    >
-                        <div className="flex items-start justify-between gap-2 sm:block">
-                            <p className="line-clamp-2 text-[15px] font-medium leading-snug text-gray-900 dark:text-white sm:truncate sm:text-sm">
-                                {title}
-                                {transaction.is_private && (
-                                    <span className="ml-1.5 inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                        🔒
-                                    </span>
-                                )}
-                                {transaction.is_tax_deductible && (
-                                    <span className="ml-1.5 inline-flex shrink-0 items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                        📋
-                                    </span>
-                                )}
-                                {isInvestment && (
-                                    <Link
-                                        href={route('investments.show', transaction.investment_id!)}
-                                        className="ml-1.5 inline-flex shrink-0 items-center rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        📈 Investimento
-                                    </Link>
-                                )}
-                            </p>
-                            <p
-                                className={clsx(
-                                    'shrink-0 text-sm font-semibold tabular-nums sm:hidden',
-                                    isIncome ? 'text-green-500' : 'text-red-500',
-                                )}
-                            >
-                                {isIncome ? '+' : ''}
-                                {formatCurrency(transaction.amount, transaction.account.currency_code)}
-                            </p>
-                        </div>
-
-                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 sm:truncate">
-                            {transaction.account.name} · {formatDate(transaction.date)}
-                            {isTransfer && <span className="ml-1 text-amber-500">· Trasferimento</span>}
-                            {isRecurring && <span className="ml-1 text-violet-500">· Ricorrente</span>}
-                            {isInvestment && <span className="ml-1 text-indigo-500">· Investimento</span>}
-                            {isRefund && <span className="ml-1 text-blue-500">· Rimborso</span>}
-                            {hasRefunds && (
-                                <span
-                                    className={clsx(
-                                        'ml-1',
-                                        transaction.is_fully_refunded ? 'text-green-500' : 'text-amber-500',
-                                    )}
-                                >
-                                    · {transaction.is_fully_refunded ? '✓ Rimborsato' : '◐ Parz. rimborsato'}
-                                </span>
-                            )}
-                        </p>
-
-                        {transaction.tags && transaction.tags.length > 0 && (
-                            <div className="mt-1 flex gap-1 overflow-hidden sm:flex-wrap sm:overflow-visible">
-                                {transaction.tags.map((tag) => (
-                                    <span
-                                        key={tag.id}
-                                        className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium sm:shrink"
-                                        style={{
-                                            backgroundColor: tag.color ? `${tag.color}20` : '#e5e7eb',
-                                            color: tag.color || '#374151',
-                                        }}
-                                    >
-                                        {tag.name}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-                    </Link>
-                </div>
+            <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base sm:h-10 sm:w-10"
+                style={{
+                    backgroundColor: isTransfer
+                        ? '#f59e0b20'
+                        : isRefund
+                          ? '#3b82f620'
+                          : transaction.category?.color
+                            ? `${transaction.category.color}20`
+                            : isIncome
+                              ? '#22c55e20'
+                              : '#ef444420',
+                }}
+                aria-hidden
+            >
+                {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
             </div>
 
-            <div className="ml-10 flex shrink-0 items-center justify-end gap-1 sm:ml-2 sm:gap-2">
+            <Link
+                href={route('transactions.show', { transaction: transaction.id, ...indexQuery })}
+                className="min-w-0"
+                aria-label={isRecurring ? `${title}, generata da ricorrenza` : title}
+            >
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{title}</p>
+                <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {formatDate(transaction.date)} · {transaction.account.name}
+                </p>
+                {indicators.length > 0 && (
+                    <div className="mt-1 flex items-center gap-1 sm:hidden">{indicators}</div>
+                )}
+            </Link>
+
+            <div className="hidden min-h-6 min-w-0 items-center gap-1 sm:flex">
+                {indicators}
+            </div>
+
+            <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
                 <p
                     className={clsx(
-                        'hidden text-base font-semibold tabular-nums sm:block',
+                        'text-sm font-semibold tabular-nums sm:text-base',
                         isIncome ? 'text-green-500' : 'text-red-500',
                     )}
                 >
@@ -213,16 +234,30 @@ export default function TransactionListRow({
                     >
                         <PencilIcon size={16} />
                     </Link>
-                    <button
-                        type="button"
-                        onClick={() =>
-                            onDeleteClick(transaction.id, title)
-                        }
-                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                        title="Elimina"
-                    >
-                        <TrashIcon size={16} />
-                    </button>
+                    {isInvestment ? (
+                        <Link
+                            href={route('investments.show', transaction.investment_id!)}
+                            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                            title="Gestisci dall'investimento collegato"
+                        >
+                            <span className="text-sm" aria-hidden>📈</span>
+                        </Link>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() =>
+                                onDeleteClick({
+                                    id: transaction.id,
+                                    description: title,
+                                    isInvestment,
+                                })
+                            }
+                            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                            title="Elimina"
+                        >
+                            <TrashIcon size={16} />
+                        </button>
+                    )}
                 </div>
                 <span className="text-gray-300 dark:text-gray-600 sm:hidden" aria-hidden>
                     <svg

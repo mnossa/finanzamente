@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Household;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
+use App\Models\InvestmentPac;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -91,8 +92,108 @@ class PatrimonioTest extends TestCase
                 ->where('investedUnlinkedValue', 0)
                 ->where('totalValue', 800)
                 ->has('accounts', 1)
-                ->has('positions', 1)
+                ->has('positionGroups', 1)
+                ->where('positionMovementCount', 1)
                 ->has('allocation')
+            );
+    }
+
+    #[Test]
+    public function patrimonio_groups_pac_movements_for_display(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'type' => 'broker',
+            'initial_balance' => 5000,
+            'currency_code' => 'EUR',
+        ]);
+
+        $asset = InvestmentAsset::create([
+            'type' => 'etf',
+            'symbol' => 'CSSPX.MI',
+            'name' => 'iShares Core S&P 500',
+            'currency_code' => 'EUR',
+        ]);
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'investment_asset_id' => $asset->id,
+            'amount' => 60,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => now()->subMonths(2)->toDateString(),
+            'status' => 'active',
+        ]);
+
+        foreach ([now()->subMonths(2), now()->subMonth()] as $buyDate) {
+            Investment::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'account_id' => $account->id,
+                'asset_id' => $asset->id,
+                'investment_pac_id' => $pac->id,
+                'quantity' => 1,
+                'buy_price' => 60,
+                'buy_date' => $buyDate->toDateString(),
+                'is_private' => false,
+            ]);
+        }
+
+        $this->actingAs($this->user)
+            ->get(route('patrimonio.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Patrimonio/Index')
+                ->where('positionMovementCount', 2)
+                ->has('positionGroups', 1)
+                ->where('positionGroups.0.kind', 'pac')
+                ->where('positionGroups.0.movement_count', 2)
+                ->where('positionGroups.0.value', 120)
+            );
+    }
+
+    #[Test]
+    public function patrimonio_allocation_lists_instruments_per_class(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'type' => 'bank',
+            'initial_balance' => 1000,
+            'currency_code' => 'EUR',
+        ]);
+
+        $asset = InvestmentAsset::create([
+            'type' => 'etf',
+            'symbol' => 'CSSPX.MI',
+            'name' => 'iShares Core S&P 500 UCITS ETF',
+            'currency_code' => 'EUR',
+        ]);
+
+        Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $account->id,
+            'asset_id' => $asset->id,
+            'quantity' => 1,
+            'buy_price' => 500,
+            'buy_date' => now()->toDateString(),
+            'is_private' => false,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('patrimonio.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('allocation', 2)
+                ->where('allocation', fn ($allocation) => collect($allocation)
+                    ->contains(fn ($entry) => $entry['asset_class'] === 'equities'
+                        && count($entry['instruments'] ?? []) === 1
+                        && ($entry['instruments'][0]['symbol'] ?? null) === 'CSSPX.MI')
+                )
             );
     }
 

@@ -133,7 +133,7 @@ class InvestmentController extends Controller
             'stats' => $stats,
             'assetTypes' => InvestmentAsset::TYPES,
             'assetTypeIcons' => InvestmentAsset::TYPE_ICONS,
-            'valuationNote' => 'I valori di mercato si basano sui prezzi correnti. Patrimonio e allocazione usano il costo di carico (inclusive commissioni).',
+            'valuationNote' => $this->valuationNoteMessage(),
         ]);
     }
 
@@ -275,6 +275,7 @@ class InvestmentController extends Controller
                     'name' => $investment->user->name,
                 ],
             ],
+            'valuationNote' => $this->valuationNoteMessage(),
         ]);
     }
 
@@ -416,6 +417,11 @@ class InvestmentController extends Controller
         return redirect()
             ->route('investments.index')
             ->with('success', 'Investimento eliminato con successo.');
+    }
+
+    private function valuationNoteMessage(): string
+    {
+        return 'Profitti non realizzati su prezzi di mercato (Yahoo Finance / Alpha Vantage, aggiornati ogni 15 minuti alla consultazione). Possono differire dal broker per NAV, orari e commissioni. Patrimonio e saldo conti usano il costo di carico (inclusive commissioni).';
     }
 
     /**

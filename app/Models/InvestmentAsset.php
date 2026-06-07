@@ -44,7 +44,14 @@ class InvestmentAsset extends Model
     ];
 
     protected $fillable = [
-        'type', 'symbol', 'isin', 'exchange', 'name', 'currency_code', 'extra_data',
+        'type',
+        'allocation_asset_class',
+        'symbol',
+        'isin',
+        'exchange',
+        'name',
+        'currency_code',
+        'extra_data',
     ];
 
     protected $casts = [

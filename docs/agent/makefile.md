@@ -24,6 +24,15 @@ Always use `make` (never raw `docker compose` / host `npm`) for correct UID/GID.
 | `make migrate` | Run migrations |
 | `make fresh` | migrate:fresh |
 | `make seed` | Seeders |
+| `make db-pull-prod` | Dump MySQL da produzione → `storage/backups/` (`.env.db-pull`) |
+| `make db-import-local` | Import ultimo dump da `storage/backups/` nel DB locale |
+| `make db-import-local FILE=...` | Import dump specifico |
+| `make db-anonymize` | Anonimizza PII nel DB locale (dopo import prod) |
+
+Comandi artisan **solo local/development/testing** (bloccati su production/staging se eseguiti a mano):
+- `transactions:delete-for-account` — usa `make` / `docker compose` **senza** `docker-compose.prod.yml`
+- `db:anonymize` — vedi `make db-anonymize`
+- `transaction-imports:mark-stale` — manuale solo in local; in prod solo via scheduler (`--scheduled`)
 
 ## Testing
 | Command | Action |

@@ -11,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed e2e-wait-healthy playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate fresh seed mysql-root db-pull-prod db-import-local db-anonymize test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed e2e-wait-healthy playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -182,6 +182,19 @@ fix-perms:
 
 mysql-root:
 	docker compose exec db mysql -uroot -proot
+
+# Scarica dump MySQL da produzione → storage/backups/ (richiede .env.db-pull da .env.db-pull.example)
+db-pull-prod:
+	bash ./scripts/db-pull-prod.sh
+
+# Importa dump locale nel container db.
+# Senza FILE usa il prod-*.sql.gz* più recente in storage/backups/
+db-import-local:
+	@bash ./scripts/db-import-local.sh $(if $(FILE),"$(FILE)",)
+
+# Anonimizza dati personali nel DB locale (solo non-production)
+db-anonymize:
+	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:anonymize --force
 
 # Reset password root MySQL (procedura guidata)
 reset-mysql-root-password-step:

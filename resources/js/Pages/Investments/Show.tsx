@@ -65,6 +65,7 @@ interface Investment {
 
 interface ShowProps {
     investment: Investment;
+    valuationNote: string;
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -220,7 +221,7 @@ function SellModal({
     );
 }
 
-export default function Show({ investment }: ShowProps) {
+export default function Show({ investment, valuationNote }: ShowProps) {
     const [showSellModal, setShowSellModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -404,6 +405,9 @@ export default function Show({ investment }: ShowProps) {
                                                         </p>
                                                     </div>
                                                 </div>
+                                                <p className="mt-3 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                                                    {valuationNote}
+                                                </p>
                                             </>
                                         ) : (
                                             <div className="flex flex-col items-center justify-center py-4 text-center">

@@ -25,6 +25,7 @@ class UpdateInvestmentAssetRequest extends FormRequest
     {
         return [
             'type' => ['required', Rule::in(['crypto', 'etf', 'stock', 'index', 'commodity', 'insurance', 'other'])],
+            'allocation_asset_class' => ['nullable', Rule::in(['equities', 'bonds', 'commodities', 'crypto', 'other'])],
             'symbol' => ['nullable', 'string', 'max:20'],
             'isin' => ['nullable', 'string', 'max:12', 'regex:/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/'],
             'exchange' => ['nullable', 'string', 'max:50'],

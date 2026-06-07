@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\InvestmentAsset;
+
 /**
  * AssetClassificationService
  *
@@ -11,6 +13,14 @@ namespace App\Services;
  */
 class AssetClassificationService
 {
+    public const ALLOCATION_CLASSES = [
+        'equities',
+        'bonds',
+        'commodities',
+        'crypto',
+        'other',
+    ];
+
     /** Rischio KIID (1-7) per tipo di asset InvestmentAsset */
     public const ASSET_TYPE_RISK = [
         'etf' => 4,
@@ -70,6 +80,64 @@ class AssetClassificationService
         'liquidity' => '#06b6d4', // cyan
         'other' => '#94a3b8', // slate
     ];
+
+    /**
+     * Classe allocazione effettiva per un asset investimento (override manuale o inferenza).
+     */
+    public static function resolveInvestmentAssetClass(InvestmentAsset $asset): string
+    {
+        if (
+            $asset->allocation_asset_class !== null
+            && in_array($asset->allocation_asset_class, self::ALLOCATION_CLASSES, true)
+        ) {
+            return $asset->allocation_asset_class;
+        }
+
+        if ($asset->type === 'etf') {
+            return self::inferEtfAllocationClass($asset->name, $asset->symbol);
+        }
+
+        return self::ASSET_TYPE_CLASS[$asset->type] ?? 'other';
+    }
+
+    /**
+     * Suggerimento automatico per il form asset (da tipo + nome/simbolo).
+     */
+    public static function suggestAllocationClass(string $type, ?string $name = null, ?string $symbol = null): string
+    {
+        if ($type === 'etf') {
+            return self::inferEtfAllocationClass($name, $symbol);
+        }
+
+        return self::ASSET_TYPE_CLASS[$type] ?? 'other';
+    }
+
+    private static function inferEtfAllocationClass(?string $name, ?string $symbol): string
+    {
+        $haystack = strtolower(trim(($name ?? '').' '.($symbol ?? '')));
+
+        if ($haystack === '') {
+            return 'equities';
+        }
+
+        if (preg_match('/\b(bond|obblig|aggregate|treasury|govt|gilt|eurogov|fixed.?income|titoli.?stato)\b/i', $haystack)) {
+            return 'bonds';
+        }
+
+        if (preg_match('/\b(gold|silver|commodit|materia.?prima|oil|petrolio|wti|brent|platinum|copper)\b/i', $haystack)) {
+            return 'commodities';
+        }
+
+        if (preg_match('/\b(bitcoin|ethereum|crypto|btc|eth)\b/i', $haystack)) {
+            return 'crypto';
+        }
+
+        if (preg_match('/\b(balanced|bilanciato|multi.?asset|all.?weather|target.?date|lifecycle)\b/i', $haystack)) {
+            return 'other';
+        }
+
+        return 'equities';
+    }
 
     /**
      * Converte un indice di rischio numerico in etichetta testuale (stile KIID).

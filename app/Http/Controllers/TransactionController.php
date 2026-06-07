@@ -804,6 +804,8 @@ class TransactionController extends Controller
                     'frequency' => $transaction->recurringTransaction->frequency,
                 ] : null,
                 'refund_info' => $refundInfo,
+                'investment_id' => $transaction->investment_id,
+                'is_investment' => $transaction->isInvestmentLedger(),
                 'attachments' => $transaction->attachments->map(fn ($attachment) => [
                     'id' => $attachment->id,
                     'filename' => $attachment->filename,
@@ -1197,6 +1199,17 @@ class TransactionController extends Controller
             abort(403, 'Non hai accesso ad alcune transazioni selezionate.');
         }
 
+        $investmentLinkedCount = $transactions->filter(fn (Transaction $tx) => $tx->isInvestmentLedger())->count();
+        if ($investmentLinkedCount > 0) {
+            $returnQuery = $this->returnIndexQueryAfterMutation($request);
+
+            return redirect()
+                ->route('transactions.index', $returnQuery)
+                ->with('error', $investmentLinkedCount === 1
+                    ? 'La transazione selezionata è collegata a un investimento e non può essere eliminata. Rimuovi la posizione dalla sezione Investimenti.'
+                    : "{$investmentLinkedCount} transazioni selezionate sono collegate a investimenti e non possono essere eliminate. Rimuovi le posizioni dalla sezione Investimenti.");
+        }
+
         $deletedCount = 0;
         $processedTransferIds = [];
 
@@ -1234,6 +1247,14 @@ class TransactionController extends Controller
     public function destroy(Request $request, Transaction $transaction): RedirectResponse
     {
         $this->authorizeTransaction($transaction);
+
+        if ($transaction->isInvestmentLedger()) {
+            $returnQuery = $this->returnIndexQueryAfterMutation($request);
+
+            return redirect()
+                ->route('transactions.index', $returnQuery)
+                ->with('error', 'Questa transazione è collegata a un investimento e non può essere eliminata. Per rimuoverla, elimina la posizione dalla sezione Investimenti.');
+        }
 
         // Verifica se è parte di un trasferimento inter-household
         $interHouseholdTransfer = InterHouseholdTransfer::where(function ($q) use ($transaction) {

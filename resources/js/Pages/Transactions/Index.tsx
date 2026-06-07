@@ -531,7 +531,11 @@ export default function Index({
     const summaryCurrency = filters.currency_code || 'EUR';
 
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-    const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; description: string } | null>(null);
+    const [deleteTarget, setDeleteTarget] = React.useState<{
+        id: number;
+        description: string;
+        isInvestment: boolean;
+    } | null>(null);
     const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
     const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
@@ -632,8 +636,11 @@ export default function Index({
         });
     };
 
-    const openDeleteDialog = (id: number, description: string) => {
-        setDeleteTarget({ id, description });
+    const openDeleteDialog = (target: { id: number; description: string; isInvestment: boolean }) => {
+        if (target.isInvestment) {
+            return;
+        }
+        setDeleteTarget(target);
         setDeleteDialogOpen(true);
     };
 
@@ -654,7 +661,14 @@ export default function Index({
         setDeleteTarget(null);
     };
 
+    const selectedInvestmentCount = transactions.data.filter(
+        (transaction) => selectedIds.has(transaction.id) && transaction.is_investment,
+    ).length;
+
     const handleBulkDelete = () => {
+        if (selectedInvestmentCount > 0) {
+            return;
+        }
         setBulkDeleteDialogOpen(true);
     };
 
@@ -1136,7 +1150,13 @@ export default function Index({
                                             <button
                                                 type="button"
                                                 onClick={handleBulkDelete}
-                                                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:py-1.5"
+                                                disabled={selectedInvestmentCount > 0}
+                                                title={
+                                                    selectedInvestmentCount > 0
+                                                        ? 'Deseleziona le transazioni collegate a investimenti prima di eliminare'
+                                                        : undefined
+                                                }
+                                                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-1.5"
                                             >
                                                 <TrashIcon size={15} />
                                                 Elimina selezionate

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresLocalEnvironment;
 use App\Models\Account;
 use App\Models\InterHouseholdTransfer;
 use App\Models\Transaction;
@@ -10,15 +11,21 @@ use Illuminate\Console\Command;
 
 class DeleteTransactionsForAccount extends Command
 {
+    use RequiresLocalEnvironment;
+
     protected $signature = 'transactions:delete-for-account
         {account_id : ID del conto (tabella accounts)}
         {--dry-run : Mostra solo quante transazioni verrebbero eliminate}
         {--force : Obbligatorio per eseguire la cancellazione (oltre a non usare --dry-run)}';
 
-    protected $description = 'Elimina tutte le transazioni associate a un conto (saldi aggiornati; trasferimenti interni gestiti).';
+    protected $description = '[Solo local/development] Elimina tutte le transazioni associate a un conto.';
 
     public function handle(): int
     {
+        if (! $this->blockUnlessLocalEnvironment()) {
+            return self::FAILURE;
+        }
+
         $accountId = (int) $this->argument('account_id');
         $dryRun = (bool) $this->option('dry-run');
         $force = (bool) $this->option('force');

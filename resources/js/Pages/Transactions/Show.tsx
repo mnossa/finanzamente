@@ -75,6 +75,8 @@ interface Transaction {
         frequency: string;
     } | null;
     refund_info: RefundInfo | null;
+    investment_id: number | null;
+    is_investment: boolean;
 }
 
 interface ShowProps {
@@ -465,6 +467,21 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
                         </CardBox>
                     )}
 
+                    {transaction.is_investment && (
+                        <CardBox className="mb-4 border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/30">
+                            <p className="text-sm text-indigo-900 dark:text-indigo-200">
+                                Transazione collegata a un investimento: non può essere eliminata da qui.
+                                {' '}
+                                <Link
+                                    href={route('investments.show', transaction.investment_id!)}
+                                    className="font-medium underline hover:text-indigo-700 dark:hover:text-indigo-100"
+                                >
+                                    Gestisci la posizione in Investimenti
+                                </Link>
+                            </p>
+                        </CardBox>
+                    )}
+
                     {/* Azioni */}
                     <div className="flex flex-wrap justify-center gap-3">
                         <LinkButton
@@ -474,12 +491,14 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
                         >
                             Modifica
                         </LinkButton>
-                        <button
-                            onClick={() => setDeleteDialogOpen(true)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
-                        >
-                            <TrashIcon size={18} /> Elimina
-                        </button>
+                        {!transaction.is_investment && (
+                            <button
+                                onClick={() => setDeleteDialogOpen(true)}
+                                className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-6 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                            >
+                                <TrashIcon size={18} /> Elimina
+                            </button>
+                        )}
                     </div>
             </PageContent>
         </AuthenticatedLayout>

@@ -65,4 +65,38 @@ class MarkStaleTransactionImportsCommandTest extends TestCase
 
         $this->assertSame('pending', $freshPending->status);
     }
+
+    #[Test]
+    public function command_is_blocked_in_production_without_scheduled_flag(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->artisan('transaction-imports:mark-stale')->assertFailed();
+    }
+
+    #[Test]
+    public function command_runs_in_production_when_scheduled_flag_is_set(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+
+        $this->travel(-5)->hours();
+        $stalePending = TransactionImport::create([
+            'user_id' => $user->id,
+            'household_id' => $household->id,
+            'status' => 'pending',
+            'rows_total' => 1,
+            'started_at' => null,
+        ]);
+        $this->travelBack();
+
+        $this->artisan('transaction-imports:mark-stale', [
+            '--scheduled' => true,
+            '--pending-hours' => '2',
+        ])->assertSuccessful();
+
+        $this->assertSame('failed', $stalePending->fresh()->status);
+    }
 }

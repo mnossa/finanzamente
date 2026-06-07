@@ -20,6 +20,8 @@ interface Currency {
 interface InvestmentAsset {
     id: number;
     type: string;
+    allocation_asset_class: string;
+    allocation_asset_class_override: string | null;
     symbol: string | null;
     isin: string | null;
     exchange: string | null;
@@ -41,11 +43,13 @@ interface EditProps {
     currencies: Currency[];
     types: Types;
     typeIcons: TypeIcons;
+    allocationClasses: Record<string, string>;
 }
 
-export default function Edit({ asset, currencies, types, typeIcons }: EditProps) {
+export default function Edit({ asset, currencies, types, typeIcons, allocationClasses }: EditProps) {
     const { data, setData, put, processing, errors } = useForm({
         type: asset.type,
+        allocation_asset_class: asset.allocation_asset_class_override || '',
         symbol: asset.symbol || '',
         isin: asset.isin || '',
         exchange: asset.exchange || '',
@@ -97,6 +101,28 @@ export default function Edit({ asset, currencies, types, typeIcons }: EditProps)
                                         ))}
                                     </div>
                                     <InputError message={errors.type} className="mt-2" />
+                                </div>
+
+                                <div className="mb-6">
+                                    <InputLabel htmlFor="allocation_asset_class" value="Classe allocazione patrimonio" />
+                                    <select
+                                        id="allocation_asset_class"
+                                        className="mt-2 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        value={data.allocation_asset_class}
+                                        onChange={(e) => setData('allocation_asset_class', e.target.value)}
+                                    >
+                                        <option value="">Automatica (da tipo e nome asset)</option>
+                                        {Object.entries(allocationClasses)
+                                            .filter(([key]) => key !== 'liquidity')
+                                            .map(([key, label]) => (
+                                                <option key={key} value={key}>{label}</option>
+                                            ))}
+                                    </select>
+                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                        Attuale: <strong>{allocationClasses[asset.allocation_asset_class] ?? asset.allocation_asset_class}</strong>
+                                        {!asset.allocation_asset_class_override && ' (suggerita automaticamente)'}
+                                    </p>
+                                    <InputError message={errors.allocation_asset_class} className="mt-2" />
                                 </div>
 
                                 {/* Nome */}

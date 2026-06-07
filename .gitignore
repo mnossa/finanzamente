@@ -2,6 +2,7 @@
 .DS_Store
 .env
 .env.backup
+.env.db-pull
 .env.local
 .env.production
 !.env.docker
@@ -25,6 +26,7 @@ python-services/.pyright-deps/
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/backups/
 /vendor
 Homestead.json
 Homestead.yaml

@@ -126,90 +126,80 @@ function ProfitBadge({ profit, percentage }: { profit: number | null; percentage
 }
 
 function InvestmentCard({ investment }: { investment: Investment }) {
+    const profitLabel = investment.is_sold
+        ? 'Realizzato'
+        : investment.unrealized_profit !== null
+          ? 'Non realizzato'
+          : null;
+    const profitValue = investment.is_sold
+        ? investment.net_profit
+        : investment.unrealized_profit;
+
     return (
-        <CardBox className="overflow-hidden p-4 shadow-sm transition-shadow hover:shadow-md">
+        <CardBox className="overflow-hidden p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
             <Link
                 href={route('investments.show', investment.id)}
-                className="block"
+                className="flex min-h-[5.5rem] flex-col justify-between"
             >
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl dark:bg-gray-700">
-                            {investment.asset.type_icon}
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xl dark:bg-gray-700">
+                        {investment.asset.type_icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                            <h3 className="truncate font-semibold text-gray-900 dark:text-white">
                                 {investment.asset.name}
                                 {investment.asset.symbol && (
-                                    <span className="ml-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">
                                         ({investment.asset.symbol})
                                     </span>
                                 )}
                             </h3>
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                <span>{formatNumber(investment.quantity)} unità</span>
-                                {investment.is_private && <span>🔒</span>}
-                            </div>
+                            {investment.is_sold && (
+                                <ProfitBadge profit={investment.net_profit} percentage={investment.profit_percentage} />
+                            )}
                         </div>
+                        <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                            {formatNumber(investment.quantity)} unità · {formatDate(investment.buy_date)}
+                            {investment.is_private && ' · 🔒'}
+                        </p>
                     </div>
-                    {investment.is_sold && (
-                        <ProfitBadge profit={investment.net_profit} percentage={investment.profit_percentage} />
-                    )}
                 </div>
 
-                <div className={clsx(moneyKpiGrid2, 'mt-4')}>
-                    <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Acquisto</p>
-                        <p className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
+                <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 dark:border-gray-700">
+                    <div className="min-w-0">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Investito</p>
+                        <p className={clsx('truncate text-sm font-medium text-gray-900 dark:text-white', moneyTabular)}>
                             {formatCurrency(investment.total_buy_value, investment.asset.currency.code)}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDate(investment.buy_date)}
-                        </p>
                     </div>
-                    {investment.is_sold ? (
-                        <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Vendita</p>
+                    <div className="min-w-0 text-right">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {investment.is_sold ? 'Vendita' : profitLabel ?? 'Stato'}
+                        </p>
+                        {investment.is_sold ? (
                             <p className={clsx(
-                                'font-medium',
+                                'truncate text-sm font-medium',
                                 moneyTabular,
                                 investment.net_profit !== null && investment.net_profit >= 0
                                     ? 'text-green-600'
-                                    : 'text-red-600'
+                                    : 'text-red-600',
                             )}>
                                 {formatCurrency(investment.total_sell_value!, investment.asset.currency.code)}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {formatDate(investment.sell_date!)}
+                        ) : profitValue !== null ? (
+                            <p className={clsx(
+                                'truncate text-sm font-medium',
+                                moneyTabular,
+                                profitValue >= 0 ? 'text-emerald-600' : 'text-red-600',
+                            )}>
+                                {profitValue >= 0 ? '+' : ''}
+                                {formatCurrency(profitValue, investment.asset.currency.code)}
                             </p>
-                        </div>
-                    ) : (
-                        <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {investment.unrealized_profit !== null ? 'Profitto non realizzato' : 'Stato'}
-                            </p>
-                            {investment.unrealized_profit !== null ? (
-                                <p className={clsx(
-                                    'font-medium',
-                                    moneyTabular,
-                                    investment.unrealized_profit >= 0 ? 'text-emerald-600' : 'text-red-600'
-                                )}>
-                                    {investment.unrealized_profit >= 0 ? '+' : ''}
-                                    {formatCurrency(investment.unrealized_profit, investment.asset.currency.code)}
-                                </p>
-                            ) : (
-                                <p className={clsx('font-medium text-blue-600', moneyTabular)}>
-                                    🟢 Aperto
-                                </p>
-                            )}
-                            <p className={clsx('text-xs text-gray-500 dark:text-gray-400', moneyTabular)}>
-                                @ {formatCurrency(investment.buy_price, investment.asset.currency.code)}/u
-                                {investment.current_price !== null && (
-                                    <> → {formatCurrency(investment.current_price, investment.asset.currency.code)}/u</>
-                                )}
-                            </p>
-                        </div>
-                    )}
+                        ) : (
+                            <p className="text-sm font-medium text-blue-600">Prezzi n/d</p>
+                        )}
+                    </div>
                 </div>
             </Link>
         </CardBox>
@@ -277,7 +267,7 @@ function PacGroupCard({ group }: { group: PacGroup }) {
                 <span className="text-sm text-gray-500 dark:text-gray-400">{expanded ? 'Nascondi dettagli' : 'Mostra dettagli'}</span>
             </button>
 
-            <div className={clsx(moneyKpiGrid2, 'mt-4 sm:grid-cols-5')}>
+            <div className={clsx(moneyKpiGrid2, 'mt-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5')}>
                 <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Totale investito</p>
                     <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
@@ -470,13 +460,13 @@ export default function Index({
             <Head title="Investimenti" />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
+                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
                         <div className="space-y-2">
                             <SectionBadge label="Portafoglio investimenti" icon={<span className="text-sm leading-none">📊</span>} />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                            <p className="hidden text-sm text-gray-600 dark:text-gray-300 sm:block">
                                 Monitora posizioni aperte e chiuse con metriche di rendimento e costi.
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{valuationNote}</p>
+                            <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{valuationNote}</p>
                         </div>
                     </SectionCard>
 

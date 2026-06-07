@@ -87,4 +87,22 @@ class DeleteTransactionsForAccountCommandTest extends TestCase
         $this->assertEqualsWithDelta(50.0, (float) $account->current_balance, 0.001);
         $this->assertEqualsWithDelta(50.0, (float) $account->initial_balance, 0.001);
     }
+
+    #[Test]
+    public function command_is_blocked_in_production(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $account = Account::factory()->create([
+            'household_id' => $household->id,
+            'owner_user_id' => $user->id,
+        ]);
+
+        $this->artisan('transactions:delete-for-account', [
+            'account_id' => (string) $account->id,
+            '--dry-run' => true,
+        ])->assertFailed();
+    }
 }

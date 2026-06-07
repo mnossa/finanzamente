@@ -50,7 +50,13 @@ class PortfolioSnapshotService
             $accountBalances[$account->id] = $this->accountBalanceService->computeBalance($account, $user);
         }
 
-        $investments = Investment::with(['asset.currency:code,symbol', 'account:id,name', 'transactions:id,investment_id'])
+        $investments = Investment::with([
+            'asset.currency:code,symbol',
+            'account:id,name',
+            'transactions:id,investment_id',
+            'investmentPac:id,status,investment_asset_id',
+            'investmentPac.asset:id,name,symbol',
+        ])
             ->where('household_id', $householdId)
             ->whereNull('sell_date')
             ->where(function ($q) use ($user) {
@@ -66,7 +72,7 @@ class PortfolioSnapshotService
 
         foreach ($investments as $inv) {
             $assetType = $inv->asset->type ?? 'other';
-            $assetClass = AssetClassificationService::ASSET_TYPE_CLASS[$assetType] ?? 'other';
+            $assetClass = AssetClassificationService::resolveInvestmentAssetClass($inv->asset);
             $risk = AssetClassificationService::ASSET_TYPE_RISK[$assetType] ?? 3;
             $value = $this->investmentLedgerService->totalCost($inv);
             $isLinked = $this->investmentLedgerService->isLinkedToLedger($inv);
@@ -104,6 +110,11 @@ class PortfolioSnapshotService
                     'symbol' => $inv->asset->currency->symbol ?? '€',
                 ],
                 'notes' => $inv->notes,
+                'investment_pac_id' => $inv->investment_pac_id,
+                'investment_pac' => $inv->investmentPac ? [
+                    'id' => $inv->investmentPac->id,
+                    'status' => $inv->investmentPac->status,
+                ] : null,
             ];
         }
 
@@ -227,6 +238,81 @@ class PortfolioSnapshotService
             'classColors' => AssetClassificationService::CLASS_COLORS,
             'classLabels' => AssetClassificationService::CLASS_LABELS,
         ];
+    }
+
+    /**
+     * Raggruppa posizioni investimento per la UI patrimonio: PAC aggregati, singole a parte.
+     *
+     * @param  array<int, array<string, mixed>>  $investmentPositions
+     * @return array<int, array<string, mixed>>
+     */
+    public function groupInvestmentPositionsForDisplay(array $investmentPositions): array
+    {
+        $standalone = [];
+        $pacBuckets = [];
+
+        foreach ($investmentPositions as $position) {
+            $pacId = $position['investment_pac_id'] ?? null;
+            if ($pacId !== null) {
+                $pacBuckets[$pacId][] = $position;
+
+                continue;
+            }
+            $standalone[] = [
+                'kind' => 'standalone',
+                'key' => 'investment_'.$position['id'],
+                'id' => $position['id'],
+                'name' => $position['name'],
+                'symbol' => $position['symbol'],
+                'value' => $position['value'],
+                'portfolio_percentage' => $position['portfolio_percentage'],
+                'buy_date' => $position['buy_date'],
+                'account' => $position['account'],
+                'currency' => $position['currency'],
+                'asset_class' => $position['asset_class'],
+                'asset_class_label' => $position['asset_class_label'],
+            ];
+        }
+
+        $groups = $standalone;
+
+        foreach ($pacBuckets as $pacId => $movements) {
+            usort($movements, fn (array $a, array $b) => strcmp((string) $a['buy_date'], (string) $b['buy_date']));
+            $totalValue = array_sum(array_column($movements, 'value'));
+            $totalPercentage = array_sum(array_column($movements, 'portfolio_percentage'));
+            $first = $movements[0];
+            $last = $movements[array_key_last($movements)];
+
+            $groups[] = [
+                'kind' => 'pac',
+                'key' => 'pac_'.$pacId,
+                'pac_id' => $pacId,
+                'name' => $first['name'],
+                'symbol' => $first['symbol'],
+                'value' => round($totalValue, 2),
+                'portfolio_percentage' => round($totalPercentage, 2),
+                'movement_count' => count($movements),
+                'buy_date_from' => $first['buy_date'],
+                'buy_date_to' => $last['buy_date'],
+                'account' => $first['account'],
+                'currency' => $first['currency'],
+                'asset_class' => $first['asset_class'],
+                'asset_class_label' => $first['asset_class_label'],
+                'pac_status' => $first['investment_pac']['status'] ?? 'active',
+                'movements' => array_map(fn (array $movement) => [
+                    'id' => $movement['id'],
+                    'value' => $movement['value'],
+                    'portfolio_percentage' => $movement['portfolio_percentage'],
+                    'buy_date' => $movement['buy_date'],
+                    'account' => $movement['account'],
+                    'currency' => $movement['currency'],
+                ], $movements),
+            ];
+        }
+
+        usort($groups, fn (array $a, array $b) => $b['value'] <=> $a['value']);
+
+        return array_values($groups);
     }
 
     /**

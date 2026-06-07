@@ -76,5 +76,5 @@ Schedule::command('investment-pacs:remind')->dailyAt('08:15');
 /**
  * Sblocca import rimasti in pending/processing dopo crash worker o timeout (banner «import in corso»).
  */
-Schedule::command('transaction-imports:mark-stale')->hourly();
+Schedule::command('transaction-imports:mark-stale --scheduled')->hourly();
 Schedule::command('transactions:detect-duplicates')->dailyAt('01:30');
