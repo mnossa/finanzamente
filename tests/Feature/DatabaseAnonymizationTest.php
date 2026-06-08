@@ -7,7 +7,9 @@ use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\DatabaseAnonymizationService;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -52,12 +54,36 @@ class DatabaseAnonymizationTest extends TestCase
         $account->refresh();
         $transaction->refresh();
 
-        $this->assertSame('user'.$user->id.'@anon.finanzamente.local', $user->email);
+        $this->assertSame(DatabaseAnonymizationService::OWNER_DEV_EMAIL, $user->email);
         $this->assertSame('Utente '.$user->id, $user->name);
+        $this->assertTrue(Hash::check(DatabaseAnonymizationService::DEFAULT_PASSWORD, $user->password));
         $this->assertNull($user->fiscal_code);
         $this->assertSame('Household '.$household->id, $household->name);
         $this->assertStringContainsString((string) $account->id, $account->name);
         $this->assertSame('Movimento #'.$transaction->id, $transaction->description);
+    }
+
+    #[Test]
+    public function anonymize_owner_email_maps_to_dev_login_and_can_authenticate(): void
+    {
+        config(['prelaunch.owner_email' => 'owner@example.com']);
+
+        $owner = User::factory()->create(['email' => 'owner@example.com']);
+        User::factory()->create(['email' => 'member@example.com']);
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+        $this->artisan('db:anonymize --force')->assertSuccessful();
+
+        $owner->refresh();
+        $this->assertSame(DatabaseAnonymizationService::OWNER_DEV_EMAIL, $owner->email);
+
+        $response = $this->post('/accedi', [
+            'email' => DatabaseAnonymizationService::OWNER_DEV_EMAIL,
+            'password' => DatabaseAnonymizationService::DEFAULT_PASSWORD,
+        ]);
+
+        $this->assertAuthenticatedAs($owner);
+        $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     #[Test]

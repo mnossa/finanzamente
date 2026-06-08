@@ -390,6 +390,64 @@ class FinancialConsistencyTest extends TestCase
     }
 
     #[Test]
+    public function patrimonio_liquid_aligns_with_dashboard_when_account_is_negative(): void
+    {
+        Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'type' => 'cash',
+            'name' => 'Contanti negativi',
+            'initial_balance' => -1000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'quantity' => 1,
+            'buy_price' => 500,
+            'buy_date' => now()->toDateString(),
+            'is_private' => false,
+        ]);
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+
+        $snapshot = app(PortfolioSnapshotService::class)->build($this->user);
+
+        $this->assertSame(3500.0, $snapshot['liquidValue']);
+        $this->assertSame(4000.0, $snapshot['totalValue']);
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('totalBalance', 3500)
+                ->where('balanceBreakdown.total', 3500)
+                ->where('balanceBreakdown.patrimonioTotal', 4000)
+            );
+
+        $this->actingAs($this->user)
+            ->get(route('patrimonio.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('liquidValue', 3500)
+                ->where('totalValue', 4000)
+                ->has('accounts', 2)
+            );
+
+        $series = app(DashboardAnalyticsService::class)->getNetWorthSeries(
+            $this->household->id,
+            $this->user->id,
+            Carbon::now()->subMonths(2)->startOfMonth(),
+        );
+
+        $lastPoint = end($series);
+        $this->assertSame(4000.0, $lastPoint['Patrimonio']);
+    }
+
+    #[Test]
     public function dashboard_total_recomputes_from_raw_transaction_sum(): void
     {
         Transaction::create([

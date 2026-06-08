@@ -56,10 +56,13 @@ class AdvancedRateLimitWithDelay
 
         if ($attempts >= $maxAttempts) {
             $wait = $resetAt - $now;
+            $message = 'Troppi tentativi. Riprova tra '.ceil($wait).' secondi.';
 
-            return response()->json([
-                'message' => 'Troppi tentativi. Riprova tra '.ceil($wait).' secondi.',
-            ], 429);
+            if ($request->expectsJson() && ! $request->header('X-Inertia')) {
+                return response()->json(['message' => $message], 429);
+            }
+
+            return redirect()->back()->withErrors(['email' => $message]);
         }
 
         // Aggiorna tentativi e applica delay progressivo

@@ -8,12 +8,13 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Support\LocalEnvironmentGuard;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 class DatabaseAnonymizationService
 {
     public const DEFAULT_PASSWORD = 'password';
+
+    public const OWNER_DEV_EMAIL = 'dev@finanzamente.local';
 
     /**
      * @return array<string, int>
@@ -49,15 +50,15 @@ class DatabaseAnonymizationService
 
     private function anonymizeUsers(): int
     {
-        $password = Hash::make(self::DEFAULT_PASSWORD);
+        $ownerEmail = strtolower(trim((string) config('prelaunch.owner_email', '')));
         $count = 0;
 
-        User::withTrashed()->orderBy('id')->each(function (User $user) use ($password, &$count) {
+        User::withTrashed()->orderBy('id')->each(function (User $user) use ($ownerEmail, &$count) {
             $user->forceFill([
                 'name' => 'Utente '.$user->id,
-                'email' => 'user'.$user->id.'@anon.finanzamente.local',
+                'email' => $this->resolveAnonymizedEmail($user, $ownerEmail),
                 'email_verified_at' => now(),
-                'password' => $password,
+                'password' => self::DEFAULT_PASSWORD,
                 'remember_token' => null,
                 'telegram_chat_id' => null,
                 'fiscal_code' => null,
@@ -67,6 +68,19 @@ class DatabaseAnonymizationService
         });
 
         return $count;
+    }
+
+    private function resolveAnonymizedEmail(User $user, string $ownerEmail): string
+    {
+        if ($user->id === 1) {
+            return self::OWNER_DEV_EMAIL;
+        }
+
+        if ($ownerEmail !== '' && strtolower($user->email) === $ownerEmail) {
+            return self::OWNER_DEV_EMAIL;
+        }
+
+        return 'user'.$user->id.'@anon.finanzamente.local';
     }
 
     private function anonymizeHouseholds(): int

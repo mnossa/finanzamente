@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\PortfolioSnapshotService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -59,17 +60,21 @@ class PatrimonioController extends Controller
         foreach ($positionGroups as $group) {
             $class = $group['asset_class'] ?? 'other';
             $byClass[$class][] = [
+                'key' => $group['key'] ?? $group['name'],
                 'name' => $group['name'],
                 'symbol' => $group['symbol'],
                 'value' => $group['value'],
                 'detail' => ($group['kind'] ?? '') === 'pac'
                     ? ($group['movement_count'] ?? 0).' movimenti PAC'
-                    : null,
+                    : (isset($group['buy_date'])
+                        ? 'Acquisto del '.Carbon::parse($group['buy_date'])->format('d/m/Y')
+                        : 'Acquisto singolo'),
             ];
         }
 
         foreach ($accounts as $account) {
             $byClass['liquidity'][] = [
+                'key' => 'account_'.$account['id'],
                 'name' => $account['name'],
                 'symbol' => null,
                 'value' => $account['balance'],

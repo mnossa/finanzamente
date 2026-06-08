@@ -119,15 +119,11 @@ class PortfolioSnapshotService
         }
 
         $accountRows = [];
-        $liquidValue = 0.0;
+        $liquidValue = $this->accountBalanceService->computeHouseholdTotal($user, $accounts);
+        $allocationLiquidValue = 0.0;
 
         foreach ($accounts as $account) {
             $balance = $accountBalances[$account->id];
-            if ($balance <= 0) {
-                continue;
-            }
-
-            $liquidValue += $balance;
             $accountType = $account->type ?? 'other';
             $assetClass = AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity';
             $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
@@ -140,6 +136,12 @@ class PortfolioSnapshotService
                 'balance' => round($balance, 2),
                 'currency_code' => $account->currency_code,
             ];
+
+            if ($balance <= 0) {
+                continue;
+            }
+
+            $allocationLiquidValue += $balance;
 
             $positions[] = [
                 'id' => 'account_'.$account->id,
@@ -163,7 +165,7 @@ class PortfolioSnapshotService
         }
 
         $totalValue = $liquidValue + $investedLinkedValue;
-        $allocationTotalValue = $liquidValue + $allocationInvestedValue;
+        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue;
 
         foreach ($accountRows as &$accountRow) {
             $accountRow['portfolio_percentage'] = $totalValue > 0
@@ -206,11 +208,16 @@ class PortfolioSnapshotService
 
         usort($allocation, fn ($a, $b) => $b['value'] <=> $a['value']);
 
-        $allocationRisk = $this->computeRiskIndex($positions, fn (array $pos) => ($pos['include_in_allocation'] ?? $pos['type'] === 'account'));
+        $allocationRisk = $this->computeRiskIndex($positions, fn (array $pos) => ($pos['include_in_allocation'] ?? false) || (($pos['type'] ?? '') === 'account' && ($pos['value'] ?? 0) > 0));
         $patrimonioRisk = $this->computeRiskIndex($positions, fn (array $pos) => $pos['type'] === 'account' || ($pos['is_linked_to_ledger'] ?? false));
 
         foreach ($positions as &$pos) {
             if (($pos['type'] ?? '') === 'investment' && ! ($pos['include_in_allocation'] ?? false)) {
+                $pos['portfolio_percentage'] = 0;
+
+                continue;
+            }
+            if (($pos['type'] ?? '') === 'account' && ($pos['value'] ?? 0) <= 0) {
                 $pos['portfolio_percentage'] = 0;
 
                 continue;

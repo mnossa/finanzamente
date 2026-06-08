@@ -47,16 +47,31 @@ if [[ "${CONFIRM}" != "y" && "${CONFIRM}" != "Y" ]]; then
     exit 0
 fi
 
+mysql_local() {
+    docker exec -i "${LOCAL_DB_CONTAINER}" mysql -u"${LOCAL_DB_USER}" --password="${LOCAL_DB_PASSWORD}" "$@"
+}
+
+# Dump prod include GTID_PURGED: su re-import locale collide con GTID_EXECUTED già presenti.
+strip_gtid_from_dump() {
+    sed -E '/^SET @@GLOBAL\.GTID_PURGED/d; /^SET @@SESSION\.SQL_LOG_BIN[[:space:]]*=/d'
+}
+
+echo "[+] Ricreo il database '${LOCAL_DB_NAME}'..."
+mysql_local -e "DROP DATABASE IF EXISTS \`${LOCAL_DB_NAME}\`; CREATE DATABASE \`${LOCAL_DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
 echo "[+] Import in corso..."
 if [[ "${DUMP_FILE}" == *.enc ]]; then
     : "${BACKUP_ENCRYPTION_KEY:?BACKUP_ENCRYPTION_KEY richiesto per dump cifrati}"
     openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:"${BACKUP_ENCRYPTION_KEY}" -in "${DUMP_FILE}" \
         | gunzip \
-        | docker exec -i "${LOCAL_DB_CONTAINER}" mysql -u"${LOCAL_DB_USER}" --password="${LOCAL_DB_PASSWORD}" "${LOCAL_DB_NAME}"
+        | strip_gtid_from_dump \
+        | mysql_local "${LOCAL_DB_NAME}"
 else
     gunzip -c "${DUMP_FILE}" \
-        | docker exec -i "${LOCAL_DB_CONTAINER}" mysql -u"${LOCAL_DB_USER}" --password="${LOCAL_DB_PASSWORD}" "${LOCAL_DB_NAME}"
+        | strip_gtid_from_dump \
+        | mysql_local "${LOCAL_DB_NAME}"
 fi
 
 echo "[+] Import completato in ${LOCAL_DB_NAME}."
-echo "[i] Anonimizza i dati personali con: make db-anonymize"
+echo "[i] Poi anonimizza con: make db-anonymize"
+echo "[i] Login dopo anonimizzazione: dev@finanzamente.local / password (porta 8080)"

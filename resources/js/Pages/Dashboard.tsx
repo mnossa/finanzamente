@@ -166,6 +166,8 @@ interface DashboardProps {
     balanceBreakdown: {
         total: number;
         invested: number;
+        investedLinked: number;
+        patrimonioTotal: number;
     };
     recentTransactions: Transaction[];
     periodStats: MonthlyStats;
@@ -457,6 +459,18 @@ export default function Dashboard({
                             <p className="mt-0.5 text-xs text-slate-500">
                                 Costo di carico · non incluso nel saldo conti
                             </p>
+                            <p className="mt-2 border-t border-slate-700/60 pt-2 text-sm text-slate-300">
+                                Patrimonio netto{' '}
+                                <span className={moneyTabular}>
+                                    {formatCurrency(
+                                        balanceBreakdown?.patrimonioTotal
+                                            ?? (balanceBreakdown?.total ?? totalBalance) + (balanceBreakdown?.investedLinked ?? 0),
+                                    )}
+                                </span>
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                                Saldo conti + investimenti collegati al ledger (costo di carico)
+                            </p>
                             <p className="mt-1 text-xs text-slate-500">
                                 {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio
                             </p>
@@ -654,13 +668,13 @@ export default function Dashboard({
                 return isModuleEnabled('investments') ? (
                     <DashboardWidgetShell
                         title="Asset allocation"
-                        subtitle="Ripartizione del patrimonio investito"
+                        subtitle="Conti + investimenti inclusi nel calcolo allocazione"
                         detailHref={route('asset-allocation.index')}
                     >
                         {total_value > 0 ? (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Base allocazione</span>
                                     <span className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                         {formatCurrency(total_value)}
                                     </span>
@@ -716,8 +730,8 @@ export default function Dashboard({
 
             case 'net_worth': {
                 const netWorthSubtitle = netWorthMode === 'cash'
-                    ? 'Solo saldo conti'
-                    : 'Conti + investimenti (costo di carico)';
+                    ? 'Saldo conti (tutti i conti attivi)'
+                    : 'Saldo conti + investimenti collegati al ledger (costo di carico)';
                 const netWorthModeOptions = [
                     { value: 'portfolio' as const, label: 'Patrimonio' },
                     { value: 'cash' as const, label: 'Solo liquidità' },

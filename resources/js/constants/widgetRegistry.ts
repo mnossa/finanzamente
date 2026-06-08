@@ -13,7 +13,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
         id: 'total_balance',
         title: 'Saldo conti',
-        description: 'Somma saldi conti attivi (liquidità). Investimenti aperti mostrati a parte (costo di carico).',
+        description: 'Saldo conti, investimenti aperti e patrimonio netto (costo di carico).',
         defaultSize: 'xl',
         defaultVisible: true,
         allowedSizes: ALL_SIZES,

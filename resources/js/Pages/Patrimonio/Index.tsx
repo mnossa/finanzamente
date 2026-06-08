@@ -13,6 +13,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface AllocationInstrument {
+    key?: string;
     name: string;
     symbol: string | null;
     value: number;
@@ -215,19 +216,19 @@ export default function PatrimonioIndex({
                 <IndexIntroSection
                     label="Patrimonio"
                     icon={<span className="text-sm leading-none">💰</span>}
-                    description="Liquidità sui conti e investimenti registrati, con allocazione per classe e rischio portafoglio."
+                    description="Saldo conti, investimenti collegati al ledger e allocazione per classe di rischio."
                 />
                 <IndexKpiStrip>
                     <IndexKpiCell
-                        label="Patrimonio totale"
+                        label="Patrimonio netto"
                         value={formatCurrency(totalValue)}
-                        detail={<KpiHint>Liquidità sui conti + investimenti registrati (costo di carico).</KpiHint>}
+                        detail={<KpiHint>Saldo conti + investimenti collegati al ledger (costo di carico).</KpiHint>}
                     />
                     <IndexKpiCell
-                        label="Liquidità"
+                        label="Saldo conti"
                         value={formatCurrency(liquidValue)}
                         valueClassName="text-cyan-600 dark:text-cyan-400"
-                        detail={<KpiHint>Somma saldi dei conti attivi.</KpiHint>}
+                        detail={<KpiHint>Somma saldi di tutti i conti attivi (negativi inclusi).</KpiHint>}
                     />
                     <IndexKpiCell
                         label="Investimenti"
@@ -270,7 +271,7 @@ export default function PatrimonioIndex({
                                     <ul className="mt-2 space-y-1 border-t border-gray-100 pt-2 dark:border-gray-700">
                                         {entry.instruments.map((instrument) => (
                                             <li
-                                                key={`${entry.asset_class}-${instrument.name}-${instrument.symbol ?? 'na'}`}
+                                                key={instrument.key ?? `${entry.asset_class}-${instrument.name}-${instrument.value}`}
                                                 className="flex items-start justify-between gap-2 text-xs"
                                             >
                                                 <span className="min-w-0 text-gray-600 dark:text-gray-300">
@@ -304,7 +305,7 @@ export default function PatrimonioIndex({
                         <h2 className="font-medium text-gray-900 dark:text-white">Conti ({accounts.length})</h2>
                     </div>
                     {accounts.length === 0 ? (
-                        <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">Nessun conto con saldo positivo.</p>
+                        <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">Nessun conto attivo.</p>
                     ) : (
                         <div className="divide-y divide-gray-100 dark:divide-gray-700">
                             {accounts.map((account) => (

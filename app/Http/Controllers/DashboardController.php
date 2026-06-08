@@ -59,6 +59,8 @@ class DashboardController extends Controller
         $balanceBreakdown = [
             'total' => round((float) $totalBalance, 2),
             'invested' => $portfolioSnapshot['investedValue'],
+            'investedLinked' => $portfolioSnapshot['investedLinkedValue'],
+            'patrimonioTotal' => $portfolioSnapshot['totalValue'],
         ];
 
         // Transazioni recenti (ultime 10)

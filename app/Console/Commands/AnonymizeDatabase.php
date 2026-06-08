@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use App\Services\DatabaseAnonymizationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 class AnonymizeDatabase extends Command
@@ -35,13 +37,40 @@ class AnonymizeDatabase extends Command
 
         $counts = $this->anonymizationService->run();
 
+        $this->call('cache:clear');
+
         $this->info('Anonimizzazione completata.');
         foreach ($counts as $table => $count) {
             $this->line(sprintf('  - %s: %d', $table, $count));
         }
         $this->newLine();
-        $this->warn('Password di accesso per tutti gli utenti: '.DatabaseAnonymizationService::DEFAULT_PASSWORD);
+        $this->info('Accesso locale su http://localhost:8080/accedi');
+        $this->line('  (non usare la porta 8081: è il DB E2E separato)');
+        User::withTrashed()->orderBy('id')->each(
+            fn (User $user) => $this->line('  - '.$user->email)
+        );
+        $this->warn('Password per tutti gli utenti: '.DatabaseAnonymizationService::DEFAULT_PASSWORD);
 
-        return self::SUCCESS;
+        $primaryUser = User::withTrashed()->orderBy('id')->first();
+        $loginVerified = $primaryUser !== null
+            && Auth::attempt([
+                'email' => $primaryUser->email,
+                'password' => DatabaseAnonymizationService::DEFAULT_PASSWORD,
+            ]);
+        Auth::logout();
+
+        if ($loginVerified) {
+            $this->info('Verifica login: OK');
+        } else {
+            $this->error('Verifica login: FALLITA — non usare credenziali di produzione, riesegui make db-anonymize dopo l\'ultimo import.');
+        }
+
+        if (config('prelaunch.enabled', false)) {
+            $this->warn(
+                'PRE_LAUNCH_MODE=true: imposta PRE_LAUNCH_OWNER_EMAIL='.DatabaseAnonymizationService::OWNER_DEV_EMAIL.' nel .env e riavvia i container.'
+            );
+        }
+
+        return $loginVerified ? self::SUCCESS : self::FAILURE;
     }
 }

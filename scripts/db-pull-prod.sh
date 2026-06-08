@@ -83,12 +83,14 @@ if [[ -n "\${DB_ROOT_PASSWORD:-}" ]]; then
   docker compose -f ${PROD_COMPOSE_FILE} exec -T ${PROD_DB_SERVICE} \\
     mysqldump -uroot --password="\${DB_ROOT_PASSWORD}" \\
       --single-transaction --skip-lock-tables --no-tablespaces \\
+      --set-gtid-purged=OFF \\
       --routines --triggers "\${DB_DATABASE}"
 else
   echo "[i] Dump con utente app (DB_USERNAME) — senza --single-transaction" >&2
   docker compose -f ${PROD_COMPOSE_FILE} exec -T ${PROD_DB_SERVICE} \\
     mysqldump -u"\${DB_USERNAME}" --password="\${DB_PASSWORD}" \\
       --skip-lock-tables --no-tablespaces \\
+      --set-gtid-purged=OFF \\
       --routines --triggers "\${DB_DATABASE}"
 fi
 EOF

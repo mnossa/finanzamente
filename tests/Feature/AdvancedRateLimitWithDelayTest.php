@@ -38,7 +38,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
                 'my_name' => '',
                 'my_time' => $now,
             ];
-            $this->post($route, $payload, ['REMOTE_ADDR' => '127.0.0.1']);
+            $this->postJson($route, $payload, ['REMOTE_ADDR' => '127.0.0.1']);
         }
         $payload = [
             'name' => 'Test User',
@@ -50,7 +50,7 @@ class AdvancedRateLimitWithDelayTest extends TestCase
             'my_name' => '',
             'my_time' => $now,
         ];
-        $response = $this->post($route, $payload, ['REMOTE_ADDR' => '127.0.0.1']);
+        $response = $this->postJson($route, $payload, ['REMOTE_ADDR' => '127.0.0.1']);
         $response->assertStatus(429);
         $response->assertJsonStructure(['message']);
     }

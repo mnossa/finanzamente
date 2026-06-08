@@ -327,12 +327,12 @@ export default function AssetAllocationIndex({
                         {/* Totale + Rischio */}
                         <div className={moneyKpiGrid2}>
                             <CardBox className="p-5 shadow-sm">
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Patrimonio Totale</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Base allocazione</p>
                                 <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                     {formatCurrency(totalValue)}
                                 </p>
                                 <p className="mt-2 text-xs text-gray-400">
-                                    {positions.length} posizioni aperte
+                                    Conti + investimenti inclusi nel calcolo · {positions.length} posizioni
                                 </p>
                                 <MiniAllocationBar allocation={allocation} className="mt-3" />
                             </CardBox>

@@ -233,6 +233,7 @@ class PatrimonioTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('balanceBreakdown.total', 1700)
                 ->where('balanceBreakdown.invested', 300)
+                ->where('balanceBreakdown.patrimonioTotal', 2000)
             );
     }
 
