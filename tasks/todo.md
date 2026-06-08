@@ -231,3 +231,93 @@
 - [x] PAC ora gestisce flusso operativo completo: CRUD, run manuale, storico movimenti e vendita da dettaglio PAC.
 - [x] Backfill PAC automatico in creazione/aggiornamento: genera acquisti mensili da `start_date` fino a data utile (oggi o `end_date`).
 - [x] Verifica widget dashboard: `assetAllocationData.total_value` aggiornato con i movimenti PAC backfillati (test feature dedicato).
+
+---
+
+# Index page UX — componenti comuni (2026-06-08)
+
+## Diagnosi (Trasferimenti)
+
+- Righe lista: layout desktop su mobile (avatar 36px + `py-3`), non griglia compatta come Transazioni.
+- `TransferRow` / `RefundRow` / `RecurringTransactionRow`: ~90% markup duplicato, spacing diverso da `TransactionListRow`.
+- `InterHouseholdTransfers/TransferRow`: non usa token `mobileListRowInsetClass`, padding `py-4` + avatar 48px.
+- Shell pagina: ogni indice compone manualmente SectionCard + Toolbar + CardBox + EmptyState + Pagination.
+- `EmptyState`: `py-16` fisso — ok vuoto, ma dentro card lista crea molto spazio morto su pochi item.
+- Dashboard vs indice: `DashboardWidgetShell` e `IndexListCard` (manuale) con token simili ma non condivisi strutturalmente.
+
+## Architettura target
+
+```
+IndexPageLayout (opzionale wrapper)
+├── IndexIntroSection        — SectionCard desktop-only
+├── IndexPageMobileToolbar   — già esiste
+├── IndexFiltersPanel        — details collapsible
+├── IndexKpiStrip            — pannello 2×2 o griglia CardBox
+└── IndexListCard            — card lista unificata
+    ├── IndexListHeader      — titolo sezione + count
+    ├── IndexKpiPanel        — slot opzionale (Transazioni)
+    ├── IndexListToolbar     — selezione multipla / azioni bulk
+    ├── IndexListRow         — riga base (mobile grid + desktop flex)
+    ├── IndexEmptyList       — EmptyState compatto in-card
+    └── Pagination
+```
+
+Token spacing: restano in `IndexPageListToolbars.tsx` (o `indexPageSpacing.ts`); i componenti li consumano, non classi raw nelle pagine.
+
+## Fasi implementazione
+
+### Fase 0 — Token + shell base
+- [x] `IndexListCard` — CardBox `p-0`, slot header/kpi/toolbar/body/footer
+- [x] `IndexListRow` — avatar, title, subtitle, amount, trailing, chevron mobile, `mobileListRowInsetClass`
+- [x] `IndexEmptyList` — variant compatta (`py-8 sm:py-12`) per dentro card
+- [x] Allineare classi header/body con `DashboardWidgetShell` → estrarre `ContentPanelShell` condiviso
+
+### Fase 1 — Pilota Trasferimenti
+- [x] Estrarre `TransferListRow` da `IndexListRow`
+- [x] Refactor `Transfers/Index.tsx` su `IndexListCard`
+- [x] Mobile: griglia 2 righe (titolo+importo / meta+chevron) come Transazioni
+- [x] E2E smoke trasferimenti (`e2e/transfers/transfers.spec.ts`)
+
+### Fase 2 — Liste semplici duplicate
+- [x] Rimborsi (`RefundListRow`)
+- [x] Ricorrenti (`RecurringListRow` + `IndexListHeader` Attive/Terminate)
+- [x] Trasferimenti tra HH (allineare spacing + `InterHouseholdTransferListRow`, `IndexFiltersPanel`)
+
+### Fase 3 — Liste complesse
+- [x] Transazioni: `IndexListCard` shell; mantenere `TransactionListRow` (checkbox, indicatori PAC)
+- [x] Inbox: `IndexInfoBanner` + card item (pattern diverso, stesso inset)
+- [x] PAC: `PacListCard` → allineare padding a token o variant `IndexListCard mode="cards"`
+
+### Fase 4 — Indici a griglia/card
+- [x] `IndexIntroSection` — Accounts, DebtsCredits, Budgets, Tags, Categories, FinancialGoals, Investments, Patrimonio
+- [x] `IndexKpiStrip` + `IndexKpiCell` — Investimenti, Patrimonio, DebtsCredits, FixedExpenses, FinancialGoals, Ricorrenti
+- [x] `IndexCardGrid` — Debiti/Crediti, Conti, Obiettivi, Budget
+
+### Fase 5 — Dashboard unificata
+- [x] `ContentPanelShell` usato da Dashboard + Index (`IndexListCard`, `IndexFiltersPanel`)
+- [x] Token condivisi `contentPanel*Class` per header/body/lista/empty
+- [x] Quick actions, KPI, liste recenti: inset/padding allineati via `DashboardWidgetShell`
+
+## Altri widget raggruppabili
+
+| Widget | Duplicazioni attuali | Priorità |
+|--------|---------------------|----------|
+| `IndexIntroSection` | Transfers, Refunds, Recurring, Transactions, Accounts, DebtsCredits, Budgets, Tags, Categories… | Alta |
+| `IndexFiltersPanel` | Transactions, InterHH (+ future) | Alta |
+| `IndexListRow` | Transfer, Refund, Recurring, parziale InterHH | Alta |
+| `IndexListCard` | Tutte le liste in CardBox `p-0` | Alta |
+| `IndexKpiPanel` / `IndexKpiStrip` | Transactions, Investments, Recurring, Patrimonio, FixedExpenses | Media |
+| `IndexInfoBanner` | Inbox pending, Refunds info, layout warning Transazioni | Media |
+| `IndexSectionHeader` | Recurring Attive/Terminate, InterHH | Media |
+| `IndexPrimaryMobileCta` | Toolbar 1-CTA (Trasferimenti, PAC, Analisi…) | Bassa |
+| `IndexRowActions` | Eye/Pencil/Trash desktop ripetuti | Bassa |
+| `ContentPanelShell` | DashboardWidgetShell vs CardBox lista | Media |
+| `IndexPaginatedList` | composizione lista+empty+pagination | Bassa |
+
+## Criteri done per pagina migrata
+
+- Nessuna classe spacing raw (`p-4`, `-mx-4`) — solo token/componenti
+- Mobile row height coerente (~52–56px min)
+- Toolbar, filtri, card lista allineati a `indexPageInsetX`
+- Playwright smoke se pagina navigabile
+

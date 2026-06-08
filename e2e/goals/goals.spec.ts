@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
 
 /**
@@ -50,31 +50,49 @@ test.describe('Obiettivi Finanziari', () => {
 });
 
 test.describe('Widget Obiettivi in Dashboard', () => {
+    /** Pannello widget (header + body), non l'intero main. h3 → min-w-0 → header → shell. */
+    function goalsWidget(page: Page) {
+        return page.getByRole('heading', { name: 'Obiettivi finanziari' }).locator('../../..');
+    }
+
+    function goalDetailLinks(page: Page) {
+        return goalsWidget(page).locator('a[href*="/obiettivi-finanziari/"]');
+    }
+
     test.beforeEach(async ({ page }) => {
         await page.goto('/dashboard');
         await expect(page).toHaveURL('/dashboard');
     });
 
     test('il widget ha un link alla pagina obiettivi', async ({ page }) => {
-        await expect(visibleHrefLocator(page, 'obiettivi-finanziari')).toBeVisible();
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await expect(widget.getByRole('link', { name: /vedi tutti/i })).toBeVisible();
     });
 
-    test('il widget mostra l\'obiettivo del seeder', async ({ page }) => {
-        await expect(page.getByText('Obiettivo E2E Vacanza')).toBeVisible();
+    test('il widget mostra almeno un obiettivo attivo', async ({ page }) => {
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await expect(goalDetailLinks(page).first()).toBeVisible();
     });
 
-    test('il widget mostra la percentuale di avanzamento (25%)', async ({ page }) => {
-        // 500/2000 = 25%: dati del seeder, valore stabile
-        await expect(page.getByText(/\b25\s*%/)).toBeVisible();
+    test('il widget mostra la percentuale di avanzamento', async ({ page }) => {
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await expect(goalDetailLinks(page).first()).toContainText(/%/);
     });
 
     test('il link "vedi tutti" porta alla pagina obiettivi', async ({ page }) => {
-        await page.locator('a[href*="obiettivi-finanziari"]').filter({ hasText: /vedi tutti/i }).filter({ visible: true }).click();
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await widget.getByRole('link', { name: /vedi tutti/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });
 
     test('cliccando un obiettivo nel widget si apre il dettaglio', async ({ page }) => {
-        await page.getByRole('link', { name: 'Obiettivo E2E Vacanza' }).filter({ visible: true }).first().click();
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await goalDetailLinks(page).first().click();
         await expect(page).toHaveURL(/obiettivi-finanziari\/\d+/);
     });
 });

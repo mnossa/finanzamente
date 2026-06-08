@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Account;
 use App\Models\RecurringTransaction;
+use App\Services\PacRecurrenceConflictService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,29 @@ class StoreRecurringTransactionRequest extends FormRequest
                 $validator->errors()->add(
                     'day_of_month_mode',
                     'Il giorno del mese si può configurare solo per frequenze mensili o annuali.'
+                );
+            }
+
+            $user = Auth::user();
+            $householdId = $user?->active_household_id;
+            $accountId = $this->integer('account_id');
+            $amount = $this->input('amount');
+            $frequency = $this->input('frequency');
+            if (
+                $householdId
+                && $accountId > 0
+                && is_numeric($amount)
+                && is_string($frequency)
+                && app(PacRecurrenceConflictService::class)->hasConflict(
+                    $householdId,
+                    $accountId,
+                    (float) $amount,
+                    $frequency,
+                )
+            ) {
+                $validator->errors()->add(
+                    'amount',
+                    'Esiste già un PAC attivo su questo conto con importo simile. Le ricorrenze genererebbero transazioni duplicate: gestisci il piano dalla sezione PAC.'
                 );
             }
         });

@@ -176,4 +176,24 @@ test.describe('Transazioni', () => {
         await importLink.click();
         await expect(page).toHaveURL(/\/transazioni\/importa/);
     });
+
+    test('su mobile evidenzia le transazioni generate da PAC', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/transazioni');
+
+        await expect(page.getByLabel('Generata da PAC', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+    });
+
+    test('su desktop distingue transazioni PAC e ricorrenti', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.goto('/transazioni');
+
+        const desktopRows = page.locator('div.hidden.sm\\:grid');
+
+        await expect(
+            desktopRows.getByRole('link', { name: /Abbonamento E2E ricorrente, generata da ricorrenza/i }),
+        ).toBeVisible({ timeout: 15_000 });
+        await expect(desktopRows.getByLabel('Generata da ricorrenza', { exact: true })).toBeVisible();
+        await expect(desktopRows.getByLabel('Generata da PAC', { exact: true })).toBeVisible();
+    });
 });

@@ -12,7 +12,8 @@ import {
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
-import { moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyTabular } from '@/utils/moneyGridClasses';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import { formatCurrency } from '@/utils/format';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
@@ -200,10 +201,11 @@ export default function Dashboard({
             header={
                 <PageHeader
                     title={`Contributi Spese Fisse`}
+                    mobileTitle="Spese fisse"
+                    hideSubtitleOnMobile
                     actions={refreshToolbarButton}
                     subtitle={`${household.name} • Bilanciamento Debiti`}
                 />
-
             }
         >
             <Head title={`Contributi Spese Fisse - ${household.name}`} />
@@ -213,9 +215,9 @@ export default function Dashboard({
                     <IndexPageMobileToolbar>{refreshToolbarButton}</IndexPageMobileToolbar>
 
                     {/* Stats Cards */}
-                    <div className={moneyKpiGrid4}>
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-800">
-                            <div className="p-6">
+                    <IndexKpiStrip>
+                        <div className="overflow-hidden bg-white shadow-sm dark:bg-gray-800 sm:rounded-lg">
+                            <div className="p-4 sm:p-6">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
                                         <BanknotesIcon className="h-8 w-8 text-green-600" />
@@ -233,7 +235,7 @@ export default function Dashboard({
                         </div>
 
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-800">
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
                                         <ChartBarIcon className="h-8 w-8 text-blue-600" />
@@ -251,7 +253,7 @@ export default function Dashboard({
                         </div>
 
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-800">
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
                                         <UserGroupIcon className="h-8 w-8 text-purple-600" />
@@ -269,7 +271,7 @@ export default function Dashboard({
                         </div>
 
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-800">
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <div className="flex items-center">
                                     <div className="flex-shrink-0">
                                         <CheckCircleIcon className="h-8 w-8 text-emerald-600" />
@@ -285,7 +287,7 @@ export default function Dashboard({
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </IndexKpiStrip>
 
                     {/* Suggeritore di Turni Status */}
                     {household.is_owner && (
@@ -295,7 +297,7 @@ export default function Dashboard({
                                 ? "border-green-400"
                                 : "border-orange-400"
                         )}>
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center">
                                         <ClockIcon className={clsx(
@@ -384,7 +386,7 @@ export default function Dashboard({
                     {/* Dettagli Contributi per Categoria */}
                     {Object.keys(dashboardData.contributions).length > 0 && (
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-800">
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">
                                     Dettaglio Contributi per Categoria
                                 </h3>

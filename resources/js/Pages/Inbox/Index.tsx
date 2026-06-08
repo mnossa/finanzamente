@@ -1,8 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import { mobileFilterBodyClass, mobileFilterSummaryClass } from '@/Components/IndexPageListToolbars';
 import CardBox from '@/Components/CardBox';
-import EmptyState from '@/Components/EmptyState';
+import IndexEmptyList from '@/Components/Index/IndexEmptyList';
+import IndexInfoBanner from '@/Components/Index/IndexInfoBanner';
+import IndexListCard from '@/Components/Index/IndexListCard';
 import { Head, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -525,7 +528,7 @@ function InboxRow({ item, accounts, categories, forceEdit }: InboxRowProps) {
             )}
 
             <div className={clsx(
-                'p-4 rounded-xl border transition-colors',
+                'rounded-xl border p-3 transition-colors sm:p-4',
                 isPending
                     ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-900/10'
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
@@ -700,6 +703,7 @@ export default function InboxIndex({
             header={
                 <PageHeader
                     title="Inbox"
+                    hideSubtitleOnMobile
                     subtitle={
                         pendingCount > 0
                             ? `${pendingCount} voce${pendingCount !== 1 ? 'i' : ''} da verificare`
@@ -714,74 +718,77 @@ export default function InboxIndex({
 
                 {/* Banner se ci sono voci da verificare, con azioni bulk */}
                 {pendingCount > 0 && (
-                    <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 space-y-3">
-                        <div className="flex items-center gap-3">
-                            <span className="text-amber-500 text-xl">⚠</span>
-                            <p className="text-sm text-amber-800 dark:text-amber-200 flex-1">
-                                Hai <strong>{pendingCount}</strong> voce{pendingCount !== 1 ? 'i' : ''} in attesa di verifica.
-                                Revisionale prima che vengano conteggiate nei report.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                onClick={confirmAll}
-                                disabled={confirmingAll}
-                                className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                            >
-                                {confirmingAll ? 'Conferma...' : '✓ Conferma tutte'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={rejectAll}
-                                disabled={rejectingAll}
-                                className="px-4 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
-                            >
-                                {rejectingAll ? 'Scarto...' : '✕ Scarta tutte'}
-                            </button>
-                        </div>
-                    </div>
+                    <IndexInfoBanner
+                        icon="⚠"
+                        title={`${pendingCount} in attesa`}
+                        description="Revisiona le voci prima di consultare i report."
+                        variant="warning"
+                        hideOnMobile={false}
+                        actions={
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={confirmAll}
+                                    disabled={confirmingAll}
+                                    className="min-w-0 flex-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:flex-none sm:px-4"
+                                >
+                                    {confirmingAll ? 'Conferma...' : '✓ Conferma tutte'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={rejectAll}
+                                    disabled={rejectingAll}
+                                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700 sm:flex-none sm:px-4"
+                                >
+                                    {rejectingAll ? 'Scarto...' : '✕ Scarta tutte'}
+                                </button>
+                            </>
+                        }
+                    />
                 )}
 
                 {items.data.length === 0 ? (
-                    <CardBox>
-                        <EmptyState
-                            icon="📥"
-                            title="Inbox vuota"
-                            description={
-                                telegramLinked
-                                    ? 'Invia una spesa al bot Telegram: comparirà qui in attesa di conferma.'
-                                    : 'Le spese inviate via Telegram appariranno qui in attesa di conferma.'
-                            }
-                            showCreateButton={false}
-                        >
-                            {telegramLinked ? (
-                                <div className="mt-4 space-y-3 text-left text-sm text-gray-600 dark:text-gray-300">
-                                    {telegramBotUsername && (
-                                        <p>
-                                            Bot collegato: <strong>@{telegramBotUsername}</strong>
+                    <IndexListCard
+                        isEmpty
+                        empty={
+                            <IndexEmptyList
+                                icon="📥"
+                                title="Inbox vuota"
+                                description={
+                                    telegramLinked
+                                        ? 'Invia una spesa al bot Telegram: comparirà qui in attesa di conferma.'
+                                        : 'Le spese inviate via Telegram appariranno qui in attesa di conferma.'
+                                }
+                                showCreateButton={false}
+                            >
+                                {telegramLinked ? (
+                                    <div className="mt-4 space-y-3 text-left text-sm text-gray-600 dark:text-gray-300">
+                                        {telegramBotUsername && (
+                                            <p>
+                                                Bot collegato: <strong>@{telegramBotUsername}</strong>
+                                            </p>
+                                        )}
+                                        <p className="font-medium text-gray-800 dark:text-gray-100">Esempi di messaggio:</p>
+                                        <ul className="list-disc space-y-1 pl-5">
+                                            <li><code className="text-xs">15.50 Supermercato</code></li>
+                                            <li><code className="text-xs">15 Pizza @Corrente #Alimentari</code></li>
+                                            <li><code className="text-xs">+1500 Stipendio</code></li>
+                                        </ul>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Comandi utili: /lista, /saldo, /ultime
                                         </p>
-                                    )}
-                                    <p className="font-medium text-gray-800 dark:text-gray-100">Esempi di messaggio:</p>
-                                    <ul className="list-disc space-y-1 pl-5">
-                                        <li><code className="text-xs">15.50 Supermercato</code></li>
-                                        <li><code className="text-xs">15 Pizza @Corrente #Alimentari</code></li>
-                                        <li><code className="text-xs">+1500 Stipendio</code></li>
-                                    </ul>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Comandi utili: /lista, /saldo, /ultime
-                                    </p>
-                                </div>
-                            ) : (
-                                <a
-                                    href={route('telegram.link.show')}
-                                    className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors"
-                                >
-                                    Collega Telegram →
-                                </a>
-                            )}
-                        </EmptyState>
-                    </CardBox>
+                                    </div>
+                                ) : (
+                                    <a
+                                        href={route('telegram.link.show')}
+                                        className="mt-4 inline-flex items-center px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 transition-colors"
+                                    >
+                                        Collega Telegram →
+                                    </a>
+                                )}
+                            </IndexEmptyList>
+                        }
+                    />
                 ) : (
                     <div className="space-y-3">
                         {items.data.map(item => (
@@ -803,15 +810,18 @@ export default function InboxIndex({
                 )}
 
                 {archiveCount > 0 && (
-                    <CardBox className="mt-4">
+                    <CardBox className="mt-4 overflow-hidden p-0">
                         <details className="group">
-                            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                            <summary className={clsx('flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium text-slate-700 dark:text-slate-200', mobileFilterSummaryClass)}>
                                 <span>Archivio ({archiveCount})</span>
-                                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                <span className="hidden text-xs font-normal text-slate-500 dark:text-slate-400 sm:inline">
                                     Ultime voci confermate o scartate
                                 </span>
+                                <svg className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </summary>
-                            <div className="mt-3 space-y-2 border-t border-slate-100 pt-3 dark:border-slate-700">
+                            <div className={clsx('space-y-2 border-t border-slate-100 dark:border-slate-700', mobileFilterBodyClass)}>
                                 {recentArchive.map((item) => (
                                     <ArchiveRow key={item.id} item={item} />
                                 ))}

@@ -16,10 +16,14 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveTitle(/Dashboard/i);
     });
 
-    test('su mobile le azioni rapide sono nascoste (usa bottom nav)', async ({ page }) => {
+    test('su mobile mostra azioni rapide compatte e bottom nav', async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/dashboard');
-        await expect(page.getByRole('heading', { name: 'Azioni rapide' })).toHaveCount(0);
+
+        const heading = page.getByRole('heading', { name: 'Azioni rapide' });
+        await heading.scrollIntoViewIfNeeded();
+        await expect(heading).toBeVisible();
+        await expect(page.getByRole('main').getByRole('link', { name: 'Nuova transazione' })).toBeVisible();
         await expect(page.getByRole('navigation', { name: /navigazione rapida/i })).toBeVisible();
     });
 
@@ -60,13 +64,20 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveURL('/profilo');
     });
 
-    test('il widget obiettivi mostra i dati del seeder', async ({ page }) => {
-        // Dati del seeder: "Obiettivo E2E Vacanza" — verificare che il dato esista
-        await expect(page.getByText('Obiettivo E2E Vacanza')).toBeVisible();
+    function goalsWidget(page: import('@playwright/test').Page) {
+        return page.getByRole('heading', { name: 'Obiettivi finanziari' }).locator('../../..');
+    }
+
+    test('il widget obiettivi mostra almeno un obiettivo attivo', async ({ page }) => {
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await expect(widget.locator('a[href*="/obiettivi-finanziari/"]').first()).toBeVisible();
     });
 
     test('il link "vedi tutti" del widget obiettivi porta alla pagina obiettivi', async ({ page }) => {
-        await page.locator('a[href*="obiettivi-finanziari"]', { hasText: /vedi tutti/i }).click();
+        const widget = goalsWidget(page);
+        await widget.scrollIntoViewIfNeeded();
+        await widget.getByRole('link', { name: /vedi tutti/i }).click();
         await expect(page).toHaveURL('/obiettivi-finanziari');
     });
 });

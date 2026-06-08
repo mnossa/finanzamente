@@ -4,11 +4,12 @@ import {
     Treemap,
     Tooltip,
 } from 'recharts';
-import { categoryPalette, formatEuro, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
+import { categoryPalette, formatEuro, getChartTooltipStyle, useChartDarkMode, useCompactChart } from './chartConfig';
 import { Link } from '@inertiajs/react';
 import clsx from 'clsx';
 
-const CHART_HEIGHT = 256;
+const CHART_HEIGHT_DESKTOP = 256;
+const CHART_HEIGHT_MOBILE = 200;
 
 export interface ExpenseCategory {
     name: string;
@@ -23,6 +24,8 @@ interface ExpenseTreemapProps {
     data: ExpenseCategory[];
     className?: string;
     month?: string;
+    /** Dashboard widget: niente sottotitolo duplicato. */
+    embedded?: boolean;
 }
 
 interface TooltipPayload {
@@ -94,8 +97,10 @@ function TreemapTooltip({ active, payload }: { active?: boolean; payload?: Toolt
     );
 }
 
-export default function ExpenseTreemap({ data, className, month }: ExpenseTreemapProps) {
+export default function ExpenseTreemap({ data, className, month, embedded = false }: ExpenseTreemapProps) {
     const [selected, setSelected] = useState<ExpenseCategory | null>(null);
+    const isCompact = useCompactChart();
+    const chartHeight = isCompact ? CHART_HEIGHT_MOBILE : CHART_HEIGHT_DESKTOP;
 
     const chartData = useMemo(
         () =>
@@ -118,12 +123,44 @@ export default function ExpenseTreemap({ data, className, month }: ExpenseTreema
         return params;
     };
 
+    const categoryList = (
+        <div className={clsx('space-y-1', embedded && isCompact ? '' : 'mt-4')}>
+            {data.slice(0, isCompact ? 6 : 5).map((d, i) => (
+                <div
+                    key={d.name}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    onClick={() => setSelected(d)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && setSelected(d)}
+                    aria-label={`Seleziona categoria ${d.name}`}
+                >
+                    <span
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: d.color ?? categoryPalette[i % categoryPalette.length] }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">
+                        {d.icon ?? '📁'} {d.name}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                        {formatEuro(d.value)}
+                    </span>
+                    <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-400">
+                        {d.percentage.toFixed(1)}%
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+
     if (!data.length) {
         return (
             <div className={clsx('w-full', className)}>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Distribuzione spese del periodo
-                </p>
+                {!embedded && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Distribuzione spese del periodo
+                    </p>
+                )}
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessuna spesa registrata nel periodo selezionato
                 </div>
@@ -133,30 +170,38 @@ export default function ExpenseTreemap({ data, className, month }: ExpenseTreema
 
     return (
         <div className={clsx('w-full', className)}>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-                Distribuzione spese del periodo · clicca su una categoria per i dettagli
-            </p>
+            {!embedded && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Distribuzione spese del periodo · clicca su una categoria per i dettagli
+                </p>
+            )}
 
-            <div className="mt-3 sm:mt-4">
-                <ResponsiveContainer width="99%" height={CHART_HEIGHT}>
-                    <Treemap
-                        data={chartData}
-                        dataKey="value"
-                        aspectRatio={4 / 3}
-                        stroke="#fff"
-                        content={
-                            <CustomTreemapContent />
-                        }
-                        onClick={(node) => {
-                            if (node && 'category_id' in node) {
-                                setSelected(node as unknown as ExpenseCategory);
+            {isCompact ? (
+                categoryList
+            ) : (
+                <div className="mt-3 sm:mt-4">
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                        <Treemap
+                            data={chartData}
+                            dataKey="value"
+                            aspectRatio={4 / 3}
+                            stroke="#fff"
+                            content={
+                                <CustomTreemapContent />
                             }
-                        }}
-                    >
-                        <Tooltip content={<TreemapTooltip />} wrapperStyle={{ zIndex: 1000, outline: 'none' }} />
-                    </Treemap>
-                </ResponsiveContainer>
-            </div>
+                            onClick={(node) => {
+                                if (node && 'category_id' in node) {
+                                    setSelected(node as unknown as ExpenseCategory);
+                                }
+                            }}
+                        >
+                            <Tooltip content={<TreemapTooltip />} wrapperStyle={{ zIndex: 1000, outline: 'none' }} />
+                        </Treemap>
+                    </ResponsiveContainer>
+                </div>
+            )}
+
+            {!isCompact ? categoryList : null}
 
             {selected && (
                 <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
@@ -188,27 +233,6 @@ export default function ExpenseTreemap({ data, className, month }: ExpenseTreema
                 </div>
             )}
 
-            <div className="mt-4 space-y-2">
-                {data.slice(0, 5).map((d, i) => (
-                    <div
-                        key={d.name}
-                        className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        onClick={() => setSelected(d)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && setSelected(d)}
-                        aria-label={`Seleziona categoria ${d.name}`}
-                    >
-                        <span
-                            className="h-3 w-3 flex-shrink-0 rounded-full"
-                            style={{ backgroundColor: d.color ?? categoryPalette[i % categoryPalette.length] }}
-                        />
-                        <span className="flex-1 truncate text-sm text-gray-700 dark:text-gray-300">{d.icon ?? '📁'} {d.name}</span>
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatEuro(d.value)}</span>
-                        <span className="w-10 text-right text-xs text-gray-400">{d.percentage.toFixed(1)}%</span>
-                    </div>
-                ))}
-            </div>
         </div>
     );
 }

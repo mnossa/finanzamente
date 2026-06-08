@@ -32,7 +32,7 @@ export default function QuickActionCard({
             )}
         >
             <span className={clsx('text-2xl', !compact && 'mb-2')}>{icon}</span>
-            {!compact && <span className="text-center text-sm font-medium">{label}</span>}
+            {!compact && <span className="mt-1.5 text-center text-xs font-medium leading-tight sm:text-sm">{label}</span>}
         </Link>
     );
 }

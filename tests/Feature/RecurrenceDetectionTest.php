@@ -7,10 +7,14 @@ use App\Models\Account;
 use App\Models\AppNotification;
 use App\Models\Category;
 use App\Models\Household;
+use App\Models\Investment;
+use App\Models\InvestmentAsset;
+use App\Models\InvestmentPac;
 use App\Models\RecurringTransaction;
 use App\Models\RecurringTransactionSuggestion;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\InvestmentTransactionSyncService;
 use App\Services\RecurrenceDetectionService;
 use App\Services\RecurringTransactionService;
 use DomainException;
@@ -1480,5 +1484,149 @@ class RecurrenceDetectionTest extends TestCase
             'error',
             'Questo suggerimento non ha più transazioni collegate (forse eliminate dal registro). Ignoralo o rilancia il rilevamento.'
         );
+    }
+
+    #[Test]
+    public function it_skips_investment_linked_transactions(): void
+    {
+        $asset = InvestmentAsset::create([
+            'type' => 'etf',
+            'symbol' => 'PACDET',
+            'name' => 'PAC Detection Asset',
+            'currency_code' => 'EUR',
+        ]);
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'investment_asset_id' => $asset->id,
+            'amount' => 60,
+            'fees' => 0,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => Carbon::now()->subMonths(4)->startOfMonth(),
+            'status' => 'active',
+        ]);
+
+        foreach (range(1, 4) as $i) {
+            $investment = Investment::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'account_id' => $this->account->id,
+                'asset_id' => $asset->id,
+                'investment_pac_id' => $pac->id,
+                'quantity' => 1,
+                'buy_price' => 60,
+                'buy_date' => Carbon::now()->subMonths(4 - $i)->startOfMonth(),
+                'is_private' => false,
+            ]);
+
+            app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+        }
+
+        $created = $this->service->detectForHousehold($this->household->id);
+
+        $this->assertSame(0, $created);
+        $this->assertDatabaseCount('recurring_transaction_suggestions', 0);
+    }
+
+    #[Test]
+    public function it_rejects_accepting_suggestion_with_investment_transactions(): void
+    {
+        $asset = InvestmentAsset::create([
+            'type' => 'etf',
+            'symbol' => 'PACACC',
+            'name' => 'PAC Accept Asset',
+            'currency_code' => 'EUR',
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $asset->id,
+            'investment_pac_id' => InvestmentPac::create([
+                'household_id' => $this->household->id,
+                'user_id' => $this->user->id,
+                'account_id' => $this->account->id,
+                'investment_asset_id' => $asset->id,
+                'amount' => 60,
+                'currency_code' => 'EUR',
+                'frequency' => 'monthly',
+                'start_date' => Carbon::now()->subMonth(),
+                'status' => 'active',
+            ])->id,
+            'quantity' => 1,
+            'buy_price' => 60,
+            'buy_date' => Carbon::now()->subMonth(),
+            'is_private' => false,
+        ]);
+
+        $transaction = app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+        $this->assertNotNull($transaction);
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -60,
+            'currency_code' => 'EUR',
+            'description' => 'Acquisto investimento - PAC Accept Asset',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.9,
+            'status' => 'pending',
+            'transaction_ids' => [$transaction->id],
+        ]);
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('investimenti o PAC');
+
+        $this->service->acceptSuggestion($suggestion, app(RecurringTransactionService::class));
+    }
+
+    #[Test]
+    public function it_ignores_legacy_pending_suggestions_for_investments(): void
+    {
+        $asset = InvestmentAsset::create([
+            'type' => 'etf',
+            'symbol' => 'PACLEG',
+            'name' => 'PAC Legacy Asset',
+            'currency_code' => 'EUR',
+        ]);
+
+        $transactionIds = [];
+        foreach (range(1, 3) as $i) {
+            $investment = Investment::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'account_id' => $this->account->id,
+                'asset_id' => $asset->id,
+                'quantity' => 1,
+                'buy_price' => 50,
+                'buy_date' => Carbon::now()->subMonths(3 - $i)->startOfMonth(),
+                'is_private' => false,
+            ]);
+            $transaction = app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+            $transactionIds[] = $transaction->id;
+        }
+
+        $suggestion = RecurringTransactionSuggestion::create([
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'category_id' => $this->category->id,
+            'amount' => -50,
+            'currency_code' => 'EUR',
+            'description' => 'Legacy investment suggestion',
+            'detected_frequency' => 'monthly',
+            'confidence' => 0.8,
+            'status' => 'pending',
+            'transaction_ids' => $transactionIds,
+        ]);
+
+        $this->service->detectForHousehold($this->household->id);
+
+        $this->assertSame('ignored', $suggestion->fresh()->status);
     }
 }

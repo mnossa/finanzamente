@@ -246,7 +246,14 @@ class TransactionController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $query = Transaction::with(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags:id,name,color', 'recurringTransaction:id,description,frequency'])
+        $query = Transaction::with([
+            'account:id,name,currency_code',
+            'category:id,name,color,icon,type',
+            'user:id,name',
+            'tags:id,name,color',
+            'recurringTransaction:id,description,frequency',
+            'investment.investmentPac.asset:id,name',
+        ])
             ->withCount(['refunds', 'attachments'])
             ->withSum(['refunds as total_refunded_amount' => function ($q) {
                 $q->where('status', 'completed');
@@ -369,6 +376,7 @@ class TransactionController extends Controller
                     ] : null,
                     'investment_id' => $transaction->investment_id,
                     'is_investment' => $transaction->investment_id !== null,
+                    ...$this->transactionPacFields($transaction),
                 ];
             });
 
@@ -758,7 +766,16 @@ class TransactionController extends Controller
     {
         $this->authorizeTransaction($transaction);
 
-        $transaction->load(['account:id,name,currency_code', 'category:id,name,color,icon,type', 'user:id,name', 'tags', 'refunds.refundTransaction', 'attachments.uploader:id,name', 'recurringTransaction:id,description,frequency']);
+        $transaction->load([
+            'account:id,name,currency_code',
+            'category:id,name,color,icon,type',
+            'user:id,name',
+            'tags',
+            'refunds.refundTransaction',
+            'attachments.uploader:id,name',
+            'recurringTransaction:id,description,frequency',
+            'investment.investmentPac.asset:id,name',
+        ]);
 
         // Calcola informazioni sui rimborsi se è una spesa
         $refundInfo = null;
@@ -806,6 +823,7 @@ class TransactionController extends Controller
                 'refund_info' => $refundInfo,
                 'investment_id' => $transaction->investment_id,
                 'is_investment' => $transaction->isInvestmentLedger(),
+                ...$this->transactionPacFields($transaction),
                 'attachments' => $transaction->attachments->map(fn ($attachment) => [
                     'id' => $attachment->id,
                     'filename' => $attachment->filename,
@@ -1318,6 +1336,23 @@ class TransactionController extends Controller
     /**
      * Verifica che l'utente possa accedere alla transazione.
      */
+    /**
+     * @return array{is_pac: bool, pac_summary: array{id: int, asset_name: string|null}|null}
+     */
+    private function transactionPacFields(Transaction $transaction): array
+    {
+        $pac = $transaction->investment?->investmentPac;
+        $isPac = $pac !== null;
+
+        return [
+            'is_pac' => $isPac,
+            'pac_summary' => $isPac ? [
+                'id' => $pac->id,
+                'asset_name' => $pac->asset?->name,
+            ] : null,
+        ];
+    }
+
     private function authorizeTransaction(Transaction $transaction): void
     {
         $user = Auth::user();

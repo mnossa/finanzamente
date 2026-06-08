@@ -118,6 +118,30 @@ class Transaction extends Model
         return $this->investment_id !== null;
     }
 
+    public function isPacLedger(): bool
+    {
+        if ($this->investment_id === null) {
+            return false;
+        }
+
+        $this->loadMissing('investment');
+
+        return $this->investment?->investment_pac_id !== null;
+    }
+
+    /**
+     * Transazioni idonee al rilevamento automatico delle ricorrenze.
+     */
+    public function scopeEligibleForRecurrenceDetection($query)
+    {
+        return $query
+            ->whereNull('recurring_transaction_id')
+            ->whereNull('transfer_id')
+            ->whereNull('refund_id')
+            ->whereNull('inter_household_transfer_id')
+            ->whereNull('investment_id');
+    }
+
     public function transfer()
     {
         return $this->belongsTo(Transfer::class);

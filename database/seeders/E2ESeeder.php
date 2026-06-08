@@ -3,14 +3,22 @@
 namespace Database\Seeders;
 
 use App\Models\Account;
+use App\Models\Category;
 use App\Models\FinancialGoal;
 use App\Models\Household;
+use App\Models\Investment;
 use App\Models\InvestmentAsset;
+use App\Models\InvestmentPac;
 use App\Models\MagazineArticle;
 use App\Models\MagazineCategory;
+use App\Models\RecurringTransaction;
 use App\Models\Subscription;
+use App\Models\Transaction;
 use App\Models\User;
+use App\Services\CategoryService;
+use App\Services\InvestmentTransactionSyncService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -148,7 +156,7 @@ class E2ESeeder extends Seeder
         $this->command->info("Household: {$household->name} (ID: {$household->id})");
 
         // Asset investimento per form /investimenti/crea (test Playwright happy path)
-        InvestmentAsset::firstOrCreate(
+        $e2eAsset = InvestmentAsset::firstOrCreate(
             ['symbol' => 'E2ESEED'],
             [
                 'type' => 'stock',
@@ -156,6 +164,8 @@ class E2ESeeder extends Seeder
                 'currency_code' => 'EUR',
             ]
         );
+
+        $this->seedE2ETransactionSources($user, $household, $e2eAsset);
 
         // Crea un obiettivo finanziario di test per il widget dashboard
         FinancialGoal::firstOrCreate(
@@ -175,6 +185,99 @@ class E2ESeeder extends Seeder
 
         // Articoli magazine di test
         $this->seedMagazineArticles();
+    }
+
+    private function seedE2ETransactionSources(User $user, Household $household, InvestmentAsset $asset): void
+    {
+        $account = Account::where('household_id', $household->id)
+            ->where('name', 'Conto E2E Principale')
+            ->first();
+
+        if ($account === null) {
+            return;
+        }
+
+        if (! Category::query()->where('household_id', $household->id)->exists()) {
+            app(CategoryService::class)->createDefaultCategoriesForHousehold($household);
+        }
+
+        $expenseCategory = Category::query()
+            ->where('household_id', $household->id)
+            ->where('type', 'expense')
+            ->first();
+
+        if ($expenseCategory === null) {
+            return;
+        }
+
+        $pac = InvestmentPac::firstOrCreate(
+            [
+                'household_id' => $household->id,
+                'account_id' => $account->id,
+                'investment_asset_id' => $asset->id,
+            ],
+            [
+                'user_id' => $user->id,
+                'amount' => 50,
+                'fees' => 0,
+                'adjust_for_inflation' => false,
+                'currency_code' => 'EUR',
+                'frequency' => 'monthly',
+                'start_date' => Carbon::today()->subMonth()->toDateString(),
+                'status' => 'active',
+            ]
+        );
+
+        $pacInvestment = Investment::firstOrCreate(
+            [
+                'household_id' => $household->id,
+                'investment_pac_id' => $pac->id,
+                'buy_date' => Carbon::today()->subDays(5)->toDateString(),
+            ],
+            [
+                'user_id' => $user->id,
+                'account_id' => $account->id,
+                'asset_id' => $asset->id,
+                'quantity' => 1,
+                'buy_price' => 50,
+                'notes' => 'PAC automatico',
+                'is_private' => false,
+            ]
+        );
+
+        app(InvestmentTransactionSyncService::class)->syncPurchase($pacInvestment);
+
+        $recurring = RecurringTransaction::firstOrCreate(
+            [
+                'user_id' => $user->id,
+                'account_id' => $account->id,
+                'description' => 'Abbonamento E2E ricorrente',
+            ],
+            [
+                'category_id' => $expenseCategory->id,
+                'amount' => 9.99,
+                'currency_code' => 'EUR',
+                'frequency' => 'monthly',
+                'start_date' => Carbon::today()->subMonths(2)->toDateString(),
+                'last_generated_date' => Carbon::today()->subDays(2)->toDateString(),
+            ]
+        );
+
+        Transaction::updateOrCreate(
+            [
+                'account_id' => $account->id,
+                'recurring_transaction_id' => $recurring->id,
+                'date' => Carbon::today()->subDays(2)->toDateString(),
+            ],
+            [
+                'user_id' => $user->id,
+                'category_id' => $expenseCategory->id,
+                'amount' => -9.99,
+                'currency_code' => 'EUR',
+                'description' => 'Abbonamento E2E ricorrente',
+                'recurring' => true,
+            ]
+        );
     }
 
     private function seedMagazineArticles(): void

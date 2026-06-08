@@ -46,6 +46,25 @@ export const tooltipStyle = {
     color:           '#1e293b',
 };
 
+/** Viewport stretto (sotto breakpoint Tailwind `sm`) per margini e assi compatti. */
+export function useCompactChart(): boolean {
+    const [isCompact, setIsCompact] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const mediaQuery = window.matchMedia('(max-width: 639px)');
+        const update = () => setIsCompact(mediaQuery.matches);
+
+        update();
+        mediaQuery.addEventListener('change', update);
+
+        return () => mediaQuery.removeEventListener('change', update);
+    }, []);
+
+    return isCompact;
+}
+
 export function useChartDarkMode(): boolean {
     const [isDark, setIsDark] = useState(false);
 

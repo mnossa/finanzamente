@@ -237,6 +237,50 @@ class InvestmentTransactionSyncTest extends TestCase
                 ->has('transactions.data', 1)
                 ->where('transactions.data.0.investment_id', $investment->id)
                 ->where('transactions.data.0.is_investment', true)
+                ->where('transactions.data.0.is_pac', false)
+                ->where('transactions.data.0.pac_summary', null)
+            );
+    }
+
+    #[Test]
+    public function transactions_index_marks_pac_rows(): void
+    {
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 75,
+            'fees' => 1,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => now()->toDateString(),
+            'status' => 'active',
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'investment_pac_id' => $pac->id,
+            'quantity' => 1,
+            'buy_price' => 75,
+            'buy_date' => now()->toDateString(),
+            'is_private' => false,
+        ]);
+
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+
+        $this->actingAs($this->user)
+            ->get(route('transactions.index', ['type' => 'investment']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('transactions.data', 1)
+                ->where('transactions.data.0.is_pac', true)
+                ->where('transactions.data.0.pac_summary.id', $pac->id)
+                ->where('transactions.data.0.pac_summary.asset_name', $this->asset->name)
             );
     }
 

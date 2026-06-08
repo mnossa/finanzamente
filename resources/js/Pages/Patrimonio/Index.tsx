@@ -1,13 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexKpiCell from '@/Components/Index/IndexKpiCell';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import CardBox from '@/Components/CardBox';
 import { MiniAllocationBar } from '@/Pages/AssetAllocation/Index';
 import { Head, Link } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState, type ReactNode } from 'react';
 import { formatCurrency, formatDate } from '@/utils/format';
-import { moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 
 interface AllocationInstrument {
     name: string;
@@ -209,38 +212,37 @@ export default function PatrimonioIndex({
         <AuthenticatedLayout header={<PageHeader title="Patrimonio" backLink={route('dashboard')} />}>
             <Head title="Patrimonio" />
             <PageContent maxWidth="7xl">
-                <div className={moneyKpiGrid4}>
-                    <CardBox className="p-4">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</p>
-                        <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                            {formatCurrency(totalValue)}
-                        </p>
-                        <KpiHint>Liquidità sui conti + investimenti registrati (costo di carico).</KpiHint>
-                    </CardBox>
-                    <CardBox className="p-4">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Liquidità</p>
-                        <p className={clsx('mt-1 text-2xl font-bold text-cyan-600 dark:text-cyan-400', moneyTabular)}>
-                            {formatCurrency(liquidValue)}
-                        </p>
-                        <KpiHint>Somma saldi dei conti attivi.</KpiHint>
-                    </CardBox>
-                    <CardBox className="p-4">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Investimenti</p>
-                        <p className={clsx('mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
-                            {formatCurrency(investedValue)}
-                        </p>
-                        <KpiHint>Costo di carico delle posizioni aperte, commissioni incluse.</KpiHint>
-                    </CardBox>
-                    <CardBox className="p-4">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Rischio portafoglio</p>
-                        <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                            {riskIndex.toFixed(1)}/7
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{riskLabel}</p>
-                    </CardBox>
-                </div>
+                <IndexIntroSection
+                    label="Patrimonio"
+                    icon={<span className="text-sm leading-none">💰</span>}
+                    description="Liquidità sui conti e investimenti registrati, con allocazione per classe e rischio portafoglio."
+                />
+                <IndexKpiStrip>
+                    <IndexKpiCell
+                        label="Patrimonio totale"
+                        value={formatCurrency(totalValue)}
+                        detail={<KpiHint>Liquidità sui conti + investimenti registrati (costo di carico).</KpiHint>}
+                    />
+                    <IndexKpiCell
+                        label="Liquidità"
+                        value={formatCurrency(liquidValue)}
+                        valueClassName="text-cyan-600 dark:text-cyan-400"
+                        detail={<KpiHint>Somma saldi dei conti attivi.</KpiHint>}
+                    />
+                    <IndexKpiCell
+                        label="Investimenti"
+                        value={formatCurrency(investedValue)}
+                        valueClassName="text-emerald-600 dark:text-emerald-400"
+                        detail={<KpiHint>Costo di carico delle posizioni aperte, commissioni incluse.</KpiHint>}
+                    />
+                    <IndexKpiCell
+                        label="Rischio portafoglio"
+                        value={`${riskIndex.toFixed(1)}/7`}
+                        detail={riskLabel}
+                    />
+                </IndexKpiStrip>
 
-                <CardBox className="p-4 sm:p-5">
+                <CardBox className="sm:p-5">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-white">Allocazione per classe</h2>
                     <p className="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                         Gli ETF non sono tutti azionari: la classe deriva da nome e simbolo (es. obbligazionario, commodity).

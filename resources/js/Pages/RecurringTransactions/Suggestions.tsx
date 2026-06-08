@@ -86,6 +86,7 @@ interface Suggestion {
     } | null;
     account: Account;
     category: Category | null;
+    has_investment_transactions?: boolean;
 }
 
 interface SuggestionsProps {
@@ -152,7 +153,8 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
     const hasAutoMode = true;
 
     const requiresDateAlignmentChoice = suggestion.has_date_drift && dateAlignmentMode === null;
-    const acceptDisabled = processing || requiresDateAlignmentChoice;
+    const hasInvestmentConflict = suggestion.has_investment_transactions === true;
+    const acceptDisabled = processing || requiresDateAlignmentChoice || hasInvestmentConflict;
 
     const acceptWithOptions = (
         mode: 'auto' | 'active' | 'closed' | 'closed_fill_gaps' | 'active_fill_gaps' = 'auto',
@@ -217,6 +219,13 @@ function SuggestionCard({ suggestion, onAccept, onIgnore, processing }: {
                         </p>
                     </div>
                 </div>
+
+                {hasInvestmentConflict && (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100">
+                        Questo suggerimento include transazioni collegate a investimenti o PAC. Non puoi convertirle in ricorrenze:
+                        gestisci questi movimenti dalla sezione Investimenti o PAC per evitare doppie transazioni.
+                    </div>
+                )}
 
                 {/* Badge */}
                 <div className="mt-3 flex flex-wrap gap-2">

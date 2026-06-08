@@ -9,6 +9,11 @@ interface PageHeaderProps {
     title: string | ReactNode;
 
     /**
+     * Titolo breve su viewport &lt; lg (es. "PAC" al posto di "PAC — Piani di accumulo")
+     */
+    mobileTitle?: string;
+
+    /**
      * Elemento o elementi da mostrare come azioni (es. bottoni)
      */
     actions?: ReactNode;
@@ -17,6 +22,11 @@ interface PageHeaderProps {
      * Sottotitolo o descrizione opzionale
      */
     subtitle?: string;
+
+    /**
+     * Nasconde il sottotitolo sotto `sm` (header più compatto su mobile)
+     */
+    hideSubtitleOnMobile?: boolean;
 
     /**
      * Classi CSS aggiuntive per personalizzazione
@@ -47,7 +57,7 @@ interface PageHeaderProps {
  * />
  * ```
  */
-export default function PageHeader({ title, actions, subtitle, className, backLink }: PageHeaderProps) {
+export default function PageHeader({ title, mobileTitle, actions, subtitle, hideSubtitleOnMobile = false, className, backLink }: PageHeaderProps) {
     return (
         <div
             className={clsx(
@@ -66,10 +76,22 @@ export default function PageHeader({ title, actions, subtitle, className, backLi
                 )}
                 <div className="min-w-0 flex-1">
                     <h2 className="truncate text-base font-semibold leading-tight text-gray-800 dark:text-gray-200 sm:text-xl">
-                        {title}
+                        {mobileTitle ? (
+                            <>
+                                <span className="lg:hidden">{mobileTitle}</span>
+                                <span className="hidden lg:inline">{title}</span>
+                            </>
+                        ) : (
+                            title
+                        )}
                     </h2>
                     {subtitle && (
-                        <p className="mt-0.5 truncate text-xs text-gray-600 dark:text-gray-400 sm:text-sm">
+                        <p
+                            className={clsx(
+                                'mt-0.5 truncate text-xs text-gray-600 dark:text-gray-400 sm:text-sm',
+                                hideSubtitleOnMobile && 'hidden sm:block',
+                            )}
+                        >
                             {subtitle}
                         </p>
                     )}

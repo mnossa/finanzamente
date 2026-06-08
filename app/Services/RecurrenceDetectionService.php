@@ -41,6 +41,8 @@ class RecurrenceDetectionService
      */
     public function detectForHousehold(int $householdId): int
     {
+        $this->dismissPendingInvestmentSuggestions($householdId);
+
         $accountIds = Account::where('household_id', $householdId)
             ->where('active', true)
             ->pluck('id');
@@ -60,13 +62,9 @@ class RecurrenceDetectionService
      */
     public function detectForAccount(int $accountId): int
     {
-        // Carica le transazioni non già collegate a una ricorrenza,
-        // non trasferimenti, non rimborsi — degli ultimi 36 mesi.
+        // Carica le transazioni idonee al rilevamento (esclusi investimenti/PAC) degli ultimi 36 mesi.
         $transactions = Transaction::where('account_id', $accountId)
-            ->whereNull('recurring_transaction_id')
-            ->whereNull('transfer_id')
-            ->whereNull('refund_id')
-            ->whereNull('inter_household_transfer_id')
+            ->eligibleForRecurrenceDetection()
             ->where('date', '>=', Carbon::today()->subMonths(36))
             ->orderBy('date')
             ->get(['id', 'user_id', 'account_id', 'category_id', 'amount', 'currency_code', 'date', 'description']);
@@ -138,6 +136,12 @@ class RecurrenceDetectionService
         if ($transactions->isEmpty()) {
             throw new DomainException(
                 'Questo suggerimento non ha più transazioni collegate (forse eliminate dal registro). Ignoralo o rilancia il rilevamento.'
+            );
+        }
+
+        if ($transactions->contains(fn (Transaction $t) => $t->investment_id !== null)) {
+            throw new DomainException(
+                'Questo suggerimento include transazioni collegate a investimenti o PAC. Gestisci questi movimenti dalla sezione Investimenti o PAC, non come ricorrenze.'
             );
         }
 
@@ -395,6 +399,37 @@ class RecurrenceDetectionService
         }
 
         return max(0.0, min(1.0, round($score, 2)));
+    }
+
+    /**
+     * Ignora i suggerimenti pending le cui transazioni sono tutte collegate a investimenti/PAC.
+     */
+    private function dismissPendingInvestmentSuggestions(int $householdId): void
+    {
+        $pendingSuggestions = RecurringTransactionSuggestion::query()
+            ->where('status', 'pending')
+            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->get();
+
+        foreach ($pendingSuggestions as $suggestion) {
+            $ids = array_values(array_filter(array_map(
+                static fn (mixed $id): int => (int) $id,
+                (array) ($suggestion->transaction_ids ?? [])
+            )));
+
+            if ($ids === []) {
+                continue;
+            }
+
+            $investmentLinkedCount = Transaction::query()
+                ->whereIn('id', $ids)
+                ->whereNotNull('investment_id')
+                ->count();
+
+            if ($investmentLinkedCount === count($ids)) {
+                $suggestion->update(['status' => 'ignored']);
+            }
+        }
     }
 
     /**
@@ -724,9 +759,7 @@ class RecurrenceDetectionService
         $candidates = Transaction::where('account_id', $accountId)
             ->whereDate('date', '>', $afterDate->toDateString())
             ->whereNotNull('description')
-            ->whereNull('transfer_id')
-            ->whereNull('refund_id')
-            ->whereNull('inter_household_transfer_id')
+            ->eligibleForRecurrenceDetection()
             ->get(['description']);
 
         foreach ($candidates as $candidate) {

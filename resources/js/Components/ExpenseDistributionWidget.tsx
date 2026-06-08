@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import clsx from 'clsx';
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import CardBox from '@/Components/CardBox';
+import DashboardWidgetShell from '@/Components/Dashboard/DashboardWidgetShell';
+import { formatCurrency } from '@/utils/format';
 
 export interface ExpenseDistributionBucket {
     amount: number;
@@ -43,6 +45,8 @@ export interface ExpenseDistributionData {
 interface Props {
     data: ExpenseDistributionData;
     className?: string;
+    /** Dashboard: shell condiviso con gli altri widget. */
+    embedded?: boolean;
 }
 
 const BUCKETS: Array<{
@@ -83,13 +87,35 @@ const BUCKETS: Array<{
     },
 ];
 
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(amount);
+function ThresholdSettingsButton({
+    hasCustomThresholds,
+    isOpen,
+    onToggle,
+}: {
+    hasCustomThresholds: boolean;
+    isOpen: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onToggle}
+            className={clsx(
+                'flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors',
+                isOpen
+                    ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300',
+            )}
+            title="Personalizza soglie"
+            aria-label="Personalizza soglie di distribuzione spese"
+            aria-expanded={isOpen}
+        >
+            <span aria-hidden>⚙️</span>
+            <span className="hidden sm:inline">
+                {hasCustomThresholds ? 'Soglie personalizzate' : 'Soglie'}
+            </span>
+        </button>
+    );
 }
 
 function ThresholdForm({
@@ -196,47 +222,37 @@ function ThresholdForm({
  * Il widget è puramente informativo: le soglie non sono obblighi.
  * Le categorie non classificate vengono segnalate per guidare l'utente.
  */
-export default function ExpenseDistributionWidget({ data, className }: Props) {
+export default function ExpenseDistributionWidget({ data, className, embedded = false }: Props) {
     const [showThresholdForm, setShowThresholdForm] = useState(false);
 
     const hasData = data.total_expenses > 0;
     const anyExceeded = BUCKETS.some((b) => data[b.key].exceeded);
+    const subtitle = anyExceeded
+        ? `${data.current_month} · Soglia superata`
+        : data.current_month;
 
-    return (
-        <CardBox className={clsx('h-full', className)}>
-            {/* Header */}
-            <div className="mb-4 flex items-center justify-between">
-                <div>
-                    <h3 className="flex items-center gap-1.5 font-semibold text-gray-900 dark:text-white">
-                        <span>🧮</span>
-                        <span>Distribuzione Spese</span>
-                    </h3>
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {data.current_month}
-                        {anyExceeded && (
-                            <span className="ml-2 font-medium text-amber-600 dark:text-amber-400">
-                                · Una voce supera la soglia
-                            </span>
-                        )}
-                    </p>
+    const settingsButton = (
+        <ThresholdSettingsButton
+            hasCustomThresholds={data.has_custom_thresholds}
+            isOpen={showThresholdForm}
+            onToggle={() => setShowThresholdForm((value) => !value)}
+        />
+    );
+
+    const body = (
+        <>
+            {!embedded && (
+                <div className="mb-4 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Distribuzione spese</h3>
+                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+                    </div>
+                    {settingsButton}
                 </div>
-                <button
-                    type="button"
-                    onClick={() => setShowThresholdForm((v) => !v)}
-                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                    title="Personalizza soglie"
-                    aria-label="Personalizza soglie di distribuzione spese"
-                >
-                    ⚙️
-                    <span className="hidden sm:inline">
-                        {data.has_custom_thresholds ? 'Soglie personalizzate' : 'Personalizza'}
-                    </span>
-                </button>
-            </div>
+            )}
 
             {!hasData ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <span className="mb-2 text-3xl">🧮</span>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         Nessuna spesa registrata questo mese.
                     </p>
@@ -282,12 +298,19 @@ export default function ExpenseDistributionWidget({ data, className }: Props) {
                                             <span>{b.icon}</span>
                                             <span>{b.label}</span>
                                             {exceeded && (
-                                                <span
-                                                    className="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
-                                                    title={`Supera la soglia del ${threshold}%`}
-                                                >
-                                                    Attenzione
-                                                </span>
+                                                <>
+                                                    <span
+                                                        className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 sm:hidden"
+                                                        title={`Supera la soglia del ${threshold}%`}
+                                                        aria-label={`Attenzione: supera la soglia del ${threshold}%`}
+                                                    />
+                                                    <span
+                                                        className="hidden rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700 sm:inline dark:bg-amber-900/40 dark:text-amber-400"
+                                                        title={`Supera la soglia del ${threshold}%`}
+                                                    >
+                                                        Attenzione
+                                                    </span>
+                                                </>
                                             )}
                                         </span>
                                         <div className="flex items-center gap-2 text-right">
@@ -341,12 +364,12 @@ export default function ExpenseDistributionWidget({ data, className }: Props) {
                             {data.unclassified.categories.length > 0 && (
                                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                                     Classifica le categorie per una visione completa.{' '}
-                                    <a
+                                    <Link
                                         href={route('categories.index')}
-                                        className="text-emerald-500 hover:text-emerald-600 underline"
+                                        className="text-emerald-500 underline hover:text-emerald-600"
                                     >
                                         Gestisci categorie
-                                    </a>
+                                    </Link>
                                 </p>
                             )}
                         </div>
@@ -362,10 +385,30 @@ export default function ExpenseDistributionWidget({ data, className }: Props) {
                 />
             )}
 
-            {/* Footer informativo */}
             <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
                 Le soglie sono indicative — utili per capire se una voce cresce troppo.
             </p>
+        </>
+    );
+
+    if (embedded) {
+        return (
+            <DashboardWidgetShell
+                title="Distribuzione spese"
+                subtitle={subtitle}
+                detailHref={route('categories.index')}
+                detailLabel="Categorie"
+                headerActions={settingsButton}
+                className={className}
+            >
+                {body}
+            </DashboardWidgetShell>
+        );
+    }
+
+    return (
+        <CardBox className={clsx('h-full', className)}>
+            {body}
         </CardBox>
     );
 }

@@ -2,17 +2,17 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
+import IndexCardGrid from '@/Components/Index/IndexCardGrid';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import ArchiveIcon from '@/Components/Icons/ArchiveIcon';
 import EmptyState from '@/Components/EmptyState';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
-import { moneyCardGrid3, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Account {
@@ -46,7 +46,7 @@ function AccountCard({ account }: { account: Account }) {
     return (
         <CardBox
             className={clsx(
-                'p-4 shadow-sm transition-shadow hover:shadow-md',
+                'p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4',
                 !account.active && 'opacity-60'
             )}
         >
@@ -144,17 +144,11 @@ export default function Index({
             <Head title="Conti" />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge
-                                label="Panoramica conti"
-                                icon={<span className="text-sm leading-none">🏦</span>}
-                            />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Visualizza saldo totale, ripartizione per tipo e stato dei conti attivi o archiviati.
-                            </p>
-                        </div>
-                    </SectionCard>
+                    <IndexIntroSection
+                        label="Panoramica conti"
+                        icon={<span className="text-sm leading-none">🏦</span>}
+                        description="Visualizza saldo totale, ripartizione per tipo e stato dei conti attivi o archiviati."
+                    />
                     {accounts.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -186,11 +180,11 @@ export default function Index({
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                                         Conti Attivi
                                     </h3>
-                                    <div className={moneyCardGrid3}>
+                                    <IndexCardGrid>
                                         {activeAccounts.map((account) => (
                                             <AccountCard key={account.id} account={account} />
                                         ))}
-                                    </div>
+                                    </IndexCardGrid>
                                 </div>
                             )}
 
@@ -200,11 +194,11 @@ export default function Index({
                                     <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
                                         Conti Archiviati
                                     </h3>
-                                    <div className={moneyCardGrid3}>
+                                    <IndexCardGrid>
                                         {archivedAccounts.map((account) => (
                                             <AccountCard key={account.id} account={account} />
                                         ))}
-                                    </div>
+                                    </IndexCardGrid>
                                 </div>
                             )}
                         </>

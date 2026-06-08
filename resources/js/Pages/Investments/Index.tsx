@@ -2,14 +2,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexKpiCell from '@/Components/Index/IndexKpiCell';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
-import { moneyCardGrid3, moneyKpiGrid2, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyCardGrid3, moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDate, formatNumber } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
 import TradingViewMarketOverview from '@/Components/TradingViewMarketOverview';
@@ -460,22 +461,20 @@ export default function Index({
             <Head title="Investimenti" />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge label="Portafoglio investimenti" icon={<span className="text-sm leading-none">📊</span>} />
-                            <p className="hidden text-sm text-gray-600 dark:text-gray-300 sm:block">
-                                Monitora posizioni aperte e chiuse con metriche di rendimento e costi.
-                            </p>
+                    <IndexIntroSection
+                        label="Portafoglio investimenti"
+                        icon={<span className="text-sm leading-none">📊</span>}
+                        description="Monitora posizioni aperte e chiuse con metriche di rendimento e costi."
+                        extra={
                             <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{valuationNote}</p>
-                        </div>
-                    </SectionCard>
+                        }
+                    />
 
                     <IndexPageMobileToolbar>
                         <LinkButton
                             href={route('investment-pacs.index')}
                             variant="secondary"
                             size="sm"
-                            className="w-full justify-center sm:w-auto"
                         >
                             PAC
                         </LinkButton>
@@ -483,66 +482,43 @@ export default function Index({
                             href={route('investments.import')}
                             variant="secondary"
                             size="sm"
-                            className="w-full justify-center sm:w-auto"
                         >
                             📥 Importa CSV
                         </LinkButton>
                     </IndexPageMobileToolbar>
 
-                    {/* Statistiche */}
-                    <div className={moneyKpiGrid4}>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Posizioni Aperte
-                            </p>
-                            <p className={clsx('mt-1 text-3xl font-bold text-blue-600', moneyTabular)}>
-                                {stats.open_count}
-                            </p>
-                        </CardBox>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Totale Investito
-                            </p>
-                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                {formatCurrency(stats.total_invested)}
-                            </p>
-                            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                Commissioni: {formatCurrency(stats.total_fees || 0)}
-                            </p>
-                        </CardBox>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Profitto Realizzato
-                            </p>
-                            <p className={clsx(
-                                'mt-1 text-2xl font-bold',
-                                moneyTabular,
-                                stats.total_realized_profit >= 0 ? 'text-green-600' : 'text-red-600'
-                            )}>
-                                {stats.total_realized_profit >= 0 ? '+' : ''}
-                                {formatCurrency(stats.total_realized_profit)}
-                            </p>
-                        </CardBox>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Profitto Non Realizzato
-                            </p>
-                            {stats.has_price_data ? (
-                                <p className={clsx(
-                                    'mt-1 text-2xl font-bold',
-                                    moneyTabular,
-                                    stats.total_unrealized_profit >= 0 ? 'text-emerald-600' : 'text-red-600'
-                                )}>
-                                    {stats.total_unrealized_profit >= 0 ? '+' : ''}
-                                    {formatCurrency(stats.total_unrealized_profit)}
-                                </p>
-                            ) : (
-                                <p className={clsx('mt-1 text-base text-gray-400 dark:text-gray-500', moneyTabular)}>
-                                    Prezzi n/d
-                                </p>
-                            )}
-                        </CardBox>
-                    </div>
+                    <IndexKpiStrip>
+                        <IndexKpiCell
+                            label="Posizioni Aperte"
+                            value={stats.open_count}
+                            valueClassName="text-blue-600"
+                        />
+                        <IndexKpiCell
+                            label="Totale Investito"
+                            value={formatCurrency(stats.total_invested)}
+                            detail={`Commissioni: ${formatCurrency(stats.total_fees || 0)}`}
+                        />
+                        <IndexKpiCell
+                            label="Profitto Realizzato"
+                            value={`${stats.total_realized_profit >= 0 ? '+' : ''}${formatCurrency(stats.total_realized_profit)}`}
+                            valueClassName={stats.total_realized_profit >= 0 ? 'text-green-600' : 'text-red-600'}
+                        />
+                        <IndexKpiCell
+                            label="Profitto Non Realizzato"
+                            value={
+                                stats.has_price_data
+                                    ? `${stats.total_unrealized_profit >= 0 ? '+' : ''}${formatCurrency(stats.total_unrealized_profit)}`
+                                    : 'Prezzi n/d'
+                            }
+                            valueClassName={
+                                stats.has_price_data
+                                    ? stats.total_unrealized_profit >= 0
+                                        ? 'text-emerald-600'
+                                        : 'text-red-600'
+                                    : 'text-base text-gray-400 dark:text-gray-500 sm:text-base'
+                            }
+                        />
+                    </IndexKpiStrip>
 
 
                     {/* Investimenti Aperti */}

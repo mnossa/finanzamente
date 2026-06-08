@@ -1,15 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions, IndexPageMobileToolbar, mobileFilterBodyClass, mobileFilterSummaryClass, mobileKpiCellClass, mobileKpiPanelClass, mobileLegendClass, mobileListPanelClass } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TransactionListRow from '@/Components/TransactionListRow';
 import TrashIcon from '@/Components/Icons/TrashIcon';
-import EmptyState from '@/Components/EmptyState';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
+import IndexEmptyList from '@/Components/Index/IndexEmptyList';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexListCard from '@/Components/Index/IndexListCard';
 import { Head, Link, router } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
@@ -615,6 +615,7 @@ export default function Index({
     const allIds = transactions.data.map((t) => t.id);
     const isAllSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
     const isIndeterminate = selectedIds.size > 0 && !isAllSelected;
+    const isEmpty = transactions.data.length === 0;
 
     const toggleSelectAll = () => {
         if (isAllSelected) {
@@ -843,20 +844,14 @@ export default function Index({
 
             <PageContent maxWidth="7xl">
                     {/* Intro decorativa — solo su desktop */}
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge
-                                label="Registro transazioni"
-                                icon={<span className="text-sm leading-none">📒</span>}
-                            />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Filtra, seleziona e gestisci i movimenti con operazioni singole o massive.
-                            </p>
-                        </div>
-                    </SectionCard>
+                    <IndexIntroSection
+                        label="Registro transazioni"
+                        icon={<span className="text-sm leading-none">📒</span>}
+                        description="Filtra, seleziona e gestisci i movimenti con operazioni singole o massive."
+                    />
                     {/* Banner importazioni in corso */}
                     {pendingImports.length > 0 && (
-                        <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                        <div className="mb-2 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:mb-3 sm:gap-3 sm:px-4 sm:py-3">
                             <svg className="h-5 w-5 shrink-0 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -874,7 +869,6 @@ export default function Index({
                             href={route('transactions.import')}
                             variant="secondary"
                             size="sm"
-                            className="w-full justify-center sm:w-auto"
                         >
                             Importa
                         </LinkButton>
@@ -884,7 +878,6 @@ export default function Index({
                             href={exportHref}
                             variant="secondary"
                             size="sm"
-                            className="w-full justify-center sm:w-auto"
                         >
                             Esporta
                         </LinkButton>
@@ -894,7 +887,7 @@ export default function Index({
                     <CardBox className="overflow-hidden p-0 shadow-sm">
                         {/* Header filtri — sempre visibile */}
                         <details className="group" {...(hasFilters || hasDraftFilters ? { open: true } : {})}>
-                            <summary data-testid="filter-summary" className="flex cursor-pointer select-none items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                            <summary data-testid="filter-summary" className={clsx('flex cursor-pointer select-none items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200', mobileFilterSummaryClass)}>
                                 <span className="flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -917,7 +910,7 @@ export default function Index({
                             </summary>
 
                             {/* Corpo filtri — 2 colonne su mobile, flex-wrap su sm+ */}
-                            <div className="border-t border-gray-100 px-4 pb-4 pt-3 dark:border-gray-700">
+                            <div className={clsx('border-t border-gray-100 dark:border-gray-700', mobileFilterBodyClass)}>
                                 <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
                                     <select
                                         className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
@@ -1097,30 +1090,41 @@ export default function Index({
                         </details>
                     </CardBox>
 
+                    <p className={mobileLegendClass}>
+                        <span className="font-medium text-gray-600 dark:text-gray-300">Bordo sinistro:</span>
+                        {' '}
+                        <span className="text-sky-600 dark:text-sky-400">PAC</span>
+                        {' · '}
+                        <span className="text-violet-600 dark:text-violet-400">Ricorrente</span>
+                        {' · '}
+                        <span className="text-indigo-600 dark:text-indigo-400">Investimento</span>
+                    </p>
+
                     {/* Lista Transazioni */}
-                    <CardBox className="overflow-hidden shadow-sm">
-                        <div className="grid grid-cols-2 gap-3 border-b border-gray-100 px-4 py-3 text-sm sm:grid-cols-4 dark:border-gray-700">
-                            <div className="rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Transazioni</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">{summary.count}</p>
+                    <IndexListCard
+                        kpi={
+                            <div className={mobileKpiPanelClass}>
+                                <div className={clsx('bg-gray-50 dark:bg-gray-800', mobileKpiCellClass)}>
+                                    <p className="text-[10px] text-gray-500 sm:text-xs dark:text-gray-400">Transazioni</p>
+                                    <p className="text-sm font-semibold tabular-nums text-gray-900 sm:text-base dark:text-white">{summary.count}</p>
+                                </div>
+                                <div className={clsx('bg-emerald-50 dark:bg-emerald-900/20', mobileKpiCellClass)}>
+                                    <p className="text-[10px] text-emerald-600 sm:text-xs dark:text-emerald-400">Entrate</p>
+                                    <p className="text-sm font-semibold tabular-nums text-emerald-700 sm:text-base dark:text-emerald-300">{formatCurrency(summary.income, summaryCurrency)}</p>
+                                </div>
+                                <div className={clsx('bg-red-50 dark:bg-red-900/20', mobileKpiCellClass)}>
+                                    <p className="text-[10px] text-red-600 sm:text-xs dark:text-red-400">Uscite</p>
+                                    <p className="text-sm font-semibold tabular-nums text-red-700 sm:text-base dark:text-red-300">{formatCurrency(summary.expenses, summaryCurrency)}</p>
+                                </div>
+                                <div className={clsx('bg-blue-50 dark:bg-blue-900/20', mobileKpiCellClass)}>
+                                    <p className="text-[10px] text-blue-600 sm:text-xs dark:text-blue-400">Saldo</p>
+                                    <p className="text-sm font-semibold tabular-nums text-blue-700 sm:text-base dark:text-blue-300">{formatCurrency(summary.net, summaryCurrency)}</p>
+                                </div>
                             </div>
-                            <div className="rounded-lg bg-emerald-50 p-2 dark:bg-emerald-900/20">
-                                <p className="text-xs text-emerald-600 dark:text-emerald-400">Entrate</p>
-                                <p className="font-semibold text-emerald-700 dark:text-emerald-300">{formatCurrency(summary.income, summaryCurrency)}</p>
-                            </div>
-                            <div className="rounded-lg bg-red-50 p-2 dark:bg-red-900/20">
-                                <p className="text-xs text-red-600 dark:text-red-400">Uscite</p>
-                                <p className="font-semibold text-red-700 dark:text-red-300">{formatCurrency(summary.expenses, summaryCurrency)}</p>
-                            </div>
-                            <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                                <p className="text-xs text-blue-600 dark:text-blue-400">Saldo</p>
-                                <p className="font-semibold text-blue-700 dark:text-blue-300">{formatCurrency(summary.net, summaryCurrency)}</p>
-                            </div>
-                        </div>
-                        {transactions.data.length > 0 ? (
-                            <>
-                                {/* Barra selezione multipla */}
-                                <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
+                        }
+                        toolbar={
+                            !isEmpty ? (
+                                <div className={clsx('flex flex-col gap-2 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:border-gray-700', mobileListPanelClass)}>
                                     <label className="flex shrink-0 items-center gap-2 cursor-pointer select-none">
                                         <input
                                             type="checkbox"
@@ -1164,22 +1168,11 @@ export default function Index({
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-4">
-                                    {transactions.data.map((transaction) => (
-                                        <TransactionListRow
-                                            key={transaction.id}
-                                            transaction={transaction}
-                                            onDeleteClick={openDeleteDialog}
-                                            isSelected={selectedIds.has(transaction.id)}
-                                            onToggleSelect={toggleSelect}
-                                            indexQuery={returnQuery}
-                                        />
-                                    ))}
-                                </div>
-                                <Pagination data={transactions} />
-                            </>
-                        ) : (
-                            <EmptyState
+                            ) : undefined
+                        }
+                        isEmpty={isEmpty}
+                        empty={
+                            <IndexEmptyList
                                 icon="💸"
                                 title="Nessuna transazione trovata"
                                 description={
@@ -1191,8 +1184,20 @@ export default function Index({
                                 createLabel="Nuova Transazione"
                                 showCreateButton={!hasFilters}
                             />
-                        )}
-                    </CardBox>
+                        }
+                        footer={!isEmpty ? <Pagination data={transactions} /> : undefined}
+                    >
+                        {transactions.data.map((transaction) => (
+                            <TransactionListRow
+                                key={transaction.id}
+                                transaction={transaction}
+                                onDeleteClick={openDeleteDialog}
+                                isSelected={selectedIds.has(transaction.id)}
+                                onToggleSelect={toggleSelect}
+                                indexQuery={returnQuery}
+                            />
+                        ))}
+                    </IndexListCard>
             </PageContent>
         </AuthenticatedLayout>
     );

@@ -84,8 +84,7 @@ html.fm-hide-balances .fm-sensitive-amount {
     /* Header Design - Glassmorphism */
 
     .app-header {
-        @apply h-20 bg-surface-50/80 backdrop-blur-md border-b border-surface-200 
-               flex items-center justify-between px-6 z-30 sticky top-0;
+        @apply sticky top-0 z-30 flex h-14 items-center justify-between border-b border-surface-200 bg-surface-50/80 px-3 backdrop-blur-md sm:h-16 sm:px-4 lg:h-20 lg:px-6;
     }
 
     /* Button CTA primaria - Emerald con ombra colorata */

@@ -721,15 +721,15 @@ export default function Authenticated({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* Header */}
                     <header className="app-header dark:bg-slate-800/80 dark:border-slate-700">
-                        <div className="flex min-w-0 flex-1 items-start gap-3 lg:items-center">
+                        <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-3">
                             {header && (
-                                <div className="min-w-0 flex-1 py-0.5 lg:py-0">
+                                <div className="min-w-0 flex-1">
                                     {header}
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
                             {/* Search - Desktop only */}
                             {/*<div className="relative hidden md:block">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -748,7 +748,7 @@ export default function Authenticated({
                             <div className="relative" ref={notifRef}>
                                 <button
                                     onClick={() => setNotifOpen((prev) => !prev)}
-                                    className="relative p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                                    className="relative rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-slate-100 sm:p-2 dark:text-slate-400 dark:hover:bg-slate-700"
                                     aria-label="Notifiche"
                                 >
                                     <Icons.Bell />
@@ -869,7 +869,7 @@ export default function Authenticated({
                             <Dropdown>
                                 <Dropdown.Trigger>
                                     <button
-                                        className="flex items-center gap-2 p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                                        className="flex items-center gap-1.5 rounded-xl p-1.5 transition-colors hover:bg-slate-100 sm:gap-2 sm:p-2"
                                         aria-label={`Menu utente: ${user.name}`}
                                     >
                                         <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
@@ -878,7 +878,9 @@ export default function Authenticated({
                                         <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-700 ">
                                             {user.name}
                                         </span>
-                                        <Icons.ChevronDown />
+                                        <span className="hidden sm:inline">
+                                            <Icons.ChevronDown />
+                                        </span>
                                     </button>
                                 </Dropdown.Trigger>
 

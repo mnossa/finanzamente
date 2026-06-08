@@ -2,18 +2,19 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
+import IndexCardGrid from '@/Components/Index/IndexCardGrid';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
-import { moneyCardGrid3, moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -82,7 +83,7 @@ function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: bool
     return (
         <CardBox
             className={clsx(
-                'p-4 shadow-sm transition-shadow hover:shadow-md',
+                'p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4',
                 item.status === 'closed' && 'opacity-70'
             )}
         >
@@ -192,14 +193,11 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
             <Head title="Debiti e Crediti" />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge label="Debiti e crediti" icon={<span className="text-sm leading-none">💸</span>} />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Controlla quanto devi e quanto devi ricevere con stato e scadenze sempre visibili.
-                            </p>
-                        </div>
-                    </SectionCard>
+                    <IndexIntroSection
+                        label="Debiti e crediti"
+                        icon={<span className="text-sm leading-none">💸</span>}
+                        description="Controlla quanto devi e quanto devi ricevere con stato e scadenze sempre visibili."
+                    />
                     {debtsCredits.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -213,7 +211,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <div className={moneyKpiGrid3}>
+                            <IndexKpiStrip columns={3}>
                                 <div className="overflow-hidden rounded-xl bg-linear-to-br from-red-500 to-rose-600 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-red-100">
                                         Debiti Aperti
@@ -260,7 +258,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                         )}
                                     </p>
                                 </div>
-                            </div>
+                            </IndexKpiStrip>
 
                             {/* Elementi Aperti */}
                             {openItems.length > 0 && (
@@ -268,11 +266,11 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                                         Aperti ({openItems.length})
                                     </h3>
-                                    <div className={moneyCardGrid3}>
+                                    <IndexCardGrid>
                                         {openItems.map((item) => (
                                             <DebtCreditCard key={item.id} item={item} canModify={canModify} />
                                         ))}
-                                    </div>
+                                    </IndexCardGrid>
                                 </div>
                             )}
 
@@ -282,11 +280,11 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                     <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
                                         Chiusi ({closedItems.length})
                                     </h3>
-                                    <div className={moneyCardGrid3}>
+                                    <IndexCardGrid>
                                         {closedItems.map((item) => (
                                             <DebtCreditCard key={item.id} item={item} canModify={canModify} />
                                         ))}
-                                    </div>
+                                    </IndexCardGrid>
                                 </div>
                             )}
                         </>

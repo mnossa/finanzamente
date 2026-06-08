@@ -150,7 +150,11 @@ class RecurrenceDetectionController extends Controller
             ->whereIn('id', $ids)
             ->where('account_id', $s->account_id)
             ->orderBy('date')
-            ->get(['id', 'date', 'description', 'amount']);
+            ->get(['id', 'date', 'description', 'amount', 'investment_id']);
+
+        $hasInvestmentTransactions = $transactionModels->contains(
+            fn (Transaction $t) => $t->investment_id !== null
+        );
 
         $transactions = $transactionModels->map(fn ($t) => [
             'id' => $t->id,
@@ -231,6 +235,7 @@ class RecurrenceDetectionController extends Controller
                 'icon' => $s->category->icon,
                 'type' => $s->category->type,
             ] : null,
+            'has_investment_transactions' => $hasInvestmentTransactions,
         ];
     }
 

@@ -7,12 +7,12 @@ import {
     YAxis,
     Tooltip,
     Bar,
-    Legend,
 } from 'recharts';
 import clsx from 'clsx';
-import { formatEuro, getChartMutedTextColor, getChartTooltipStyle, useChartDarkMode } from './chartConfig';
+import { formatEuro, getChartMutedTextColor, getChartTooltipStyle, useChartDarkMode, useCompactChart } from './chartConfig';
 
-const CHART_HEIGHT = 256;
+const CHART_HEIGHT_DESKTOP = 256;
+const CHART_HEIGHT_MOBILE = 200;
 
 export interface CashFlowDataPoint {
     month: string;
@@ -24,6 +24,8 @@ export interface CashFlowDataPoint {
 interface CashFlowChartProps {
     data: CashFlowDataPoint[];
     className?: string;
+    /** Dashboard widget: niente titolo/legenda duplicati. */
+    embedded?: boolean;
 }
 
 /** Formatter compatto per i tick dell'asse Y (evita troncamenti) */
@@ -61,15 +63,39 @@ function CashFlowTooltip({ payload, active, label }: { payload?: Array<{ dataKey
     );
 }
 
-export default function CashFlowChart({ data, className }: CashFlowChartProps) {
+function ChartLegend() {
+    return (
+        <div className="flex items-center gap-4">
+            {[{ label: 'Entrate', color: '#10b981' }, { label: 'Uscite', color: '#f97316' }].map(({ label, color }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: color }} />
+                    <span className="text-xs text-gray-600 sm:text-sm dark:text-gray-400">{label}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export default function CashFlowChart({ data, className, embedded = false }: CashFlowChartProps) {
     const isDark = useChartDarkMode();
+    const isCompact = useCompactChart();
+
+    const chartHeight = isCompact ? CHART_HEIGHT_MOBILE : CHART_HEIGHT_DESKTOP;
+    const yAxisWidth = isCompact ? 48 : 68;
+    const xAxisAngle = isCompact ? 0 : -35;
+    const xAxisHeight = isCompact ? 28 : 54;
+    const xAxisFontSize = isCompact ? 10 : 12;
+
+    const recentSavings = data.slice(-3);
 
     if (!data.length) {
         return (
             <div className={clsx('w-full', className)}>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Entrate vs Uscite mensili
-                </p>
+                {!embedded && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Entrate vs Uscite mensili
+                    </p>
+                )}
                 <div className="flex h-48 items-center justify-center text-gray-400 dark:text-gray-600">
                     Nessun dato disponibile per il periodo selezionato
                 </div>
@@ -79,58 +105,85 @@ export default function CashFlowChart({ data, className }: CashFlowChartProps) {
 
     return (
         <div className={clsx('w-full', className)}>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-                Entrate vs Uscite mensili
-            </p>
-            <div className="mt-3 flex items-center gap-6">
-                {[{ label: 'Entrate', color: '#10b981' }, { label: 'Uscite', color: '#f97316' }].map(({ label, color }) => (
-                    <div key={label} className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 flex-none rounded-full" style={{ backgroundColor: color }} />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+            {!embedded && (
+                <>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Entrate vs Uscite mensili
+                    </p>
+                    <div className="mt-3">
+                        <ChartLegend />
                     </div>
-                ))}
-            </div>
-            <div className="mt-2">
-                <ResponsiveContainer width="99%" height={CHART_HEIGHT}>
-                    <ReBarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 28 }}>
+                </>
+            )}
+            {embedded ? (
+                <div className="mb-2 sm:mb-3">
+                    <ChartLegend />
+                </div>
+            ) : null}
+            <div className={embedded ? 'mt-1' : 'mt-2'}>
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                    <ReBarChart
+                        data={data}
+                        margin={{
+                            top: 8,
+                            right: isCompact ? 4 : 8,
+                            left: isCompact ? -12 : 0,
+                            bottom: isCompact ? 4 : 28,
+                        }}
+                    >
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
                         <XAxis
                             dataKey="month"
-                            angle={-35}
-                            textAnchor="end"
-                            height={54}
-                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                            angle={xAxisAngle}
+                            textAnchor={isCompact ? 'middle' : 'end'}
+                            height={xAxisHeight}
+                            interval={isCompact ? 'preserveStartEnd' : undefined}
+                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: xAxisFontSize }}
                         />
                         <YAxis
-                            width={68}
+                            width={yAxisWidth}
                             tickFormatter={yAxisFormatter}
-                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                            tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: xAxisFontSize }}
                         />
                         <Tooltip content={<CashFlowTooltip />} />
-                        <Legend
-                            wrapperStyle={{ color: isDark ? '#cbd5e1' : '#334155' }}
-                            formatter={(value) => <span style={{ color: isDark ? '#cbd5e1' : '#334155' }}>{value}</span>}
-                        />
-                        <Bar dataKey="Entrate" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={34} />
-                        <Bar dataKey="Uscite" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={34} />
+                        <Bar dataKey="Entrate" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={isCompact ? 28 : 34} />
+                        <Bar dataKey="Uscite" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={isCompact ? 28 : 34} />
                     </ReBarChart>
                 </ResponsiveContainer>
             </div>
-            <div className="mt-3 flex flex-wrap gap-4 border-t border-gray-100 pt-3 dark:border-gray-700">
-                {data.slice(-6).map((d) => (
-                    <div key={d.month} className="flex flex-col items-center">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{d.month}</span>
-                        <span
-                            className={
-                                d.Risparmio >= 0
-                                    ? 'text-xs font-semibold text-emerald-600 dark:text-emerald-400'
-                                    : 'text-xs font-semibold text-red-500'
-                            }
+            <div className={clsx(
+                'border-t border-gray-100 pt-3 dark:border-gray-700',
+                embedded ? 'mt-2' : 'mt-3',
+            )}
+            >
+                <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Risparmio mensile</p>
+                <div className={clsx(
+                    'grid gap-2',
+                    isCompact ? 'grid-cols-3' : 'flex flex-wrap gap-4',
+                )}
+                >
+                    {recentSavings.map((d) => (
+                        <div
+                            key={d.month}
+                            className={clsx(
+                                'rounded-lg bg-gray-50 px-2 py-1.5 text-center dark:bg-gray-700/40',
+                                !isCompact && 'min-w-[4.5rem]',
+                            )}
                         >
-                            {d.Risparmio >= 0 ? '+' : ''}{formatEuro(d.Risparmio)}
-                        </span>
-                    </div>
-                ))}
+                            <span className="block text-[11px] text-gray-500 dark:text-gray-400">{d.month}</span>
+                            <span
+                                className={clsx(
+                                    'block text-xs font-semibold tabular-nums sm:text-sm',
+                                    d.Risparmio >= 0
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-red-500',
+                                )}
+                            >
+                                {d.Risparmio >= 0 ? '+' : ''}{formatEuro(d.Risparmio)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

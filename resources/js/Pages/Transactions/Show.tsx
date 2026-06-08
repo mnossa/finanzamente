@@ -77,6 +77,11 @@ interface Transaction {
     refund_info: RefundInfo | null;
     investment_id: number | null;
     is_investment: boolean;
+    is_pac?: boolean;
+    pac_summary?: {
+        id: number;
+        asset_name: string | null;
+    } | null;
 }
 
 interface ShowProps {
@@ -467,7 +472,23 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
                         </CardBox>
                     )}
 
-                    {transaction.is_investment && (
+                    {transaction.is_pac && transaction.pac_summary && (
+                        <CardBox className="mb-4 border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900 dark:bg-sky-950/30">
+                            <p className="text-sm text-sky-900 dark:text-sky-200">
+                                Transazione generata da un piano PAC
+                                {transaction.pac_summary.asset_name ? ` (${transaction.pac_summary.asset_name})` : ''}: non può essere eliminata da qui.
+                                {' '}
+                                <Link
+                                    href={route('investment-pacs.show', transaction.pac_summary.id)}
+                                    className="font-medium underline hover:text-sky-700 dark:hover:text-sky-100"
+                                >
+                                    Apri il piano PAC
+                                </Link>
+                            </p>
+                        </CardBox>
+                    )}
+
+                    {transaction.is_investment && !transaction.is_pac && (
                         <CardBox className="mb-4 border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/30">
                             <p className="text-sm text-indigo-900 dark:text-indigo-200">
                                 Transazione collegata a un investimento: non può essere eliminata da qui.

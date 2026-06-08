@@ -3,7 +3,6 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
-import CardBox from '@/Components/CardBox';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 import PageHeader from '@/Components/PageHeader';
@@ -21,6 +20,15 @@ import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
+import DashboardWidgetShell, {
+    DashboardWidgetSegmentedControl,
+    dashboardWidgetEmptyClass as widgetEmptyClass,
+    dashboardWidgetHeaderClass as widgetHeaderClass,
+    dashboardWidgetListBodyClass as widgetListBodyClass,
+} from '@/Components/Dashboard/DashboardWidgetShell';
+import IndexKpiCell from '@/Components/Index/IndexKpiCell';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
+import { contentPanelHeaderClass } from '@/Components/IndexPageListToolbars';
 import {
     DndContext,
     closestCenter,
@@ -38,13 +46,6 @@ import {
 import { useState } from 'react';
 import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
-
-/** Padding widget dashboard: compatto su mobile, come le altre sezioni. */
-const widgetHeaderClass =
-    'flex items-center justify-between border-b border-gray-100 px-3 py-2.5 sm:px-4 sm:py-3 dark:border-gray-700';
-const widgetBodyClass = 'p-3 sm:p-4';
-const widgetListBodyClass = 'space-y-1.5 px-3 py-2 sm:p-3';
-const widgetEmptyClass = 'py-4 text-center sm:py-6';
 
 interface Account {
     id: number;
@@ -215,30 +216,28 @@ function StatCard({
     trendLabel?: string;
     className?: string;
 }) {
+    const detail = trendLabel ? (
+        <span className="flex items-center">
+            {trend ? (
+                <span className={clsx('mr-1', trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-400')}>
+                    {trend === 'up' && '↑'}
+                    {trend === 'down' && '↓'}
+                    {trend === 'neutral' && '→'}
+                </span>
+            ) : null}
+            <span className={clsx(trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-500')}>
+                {trendLabel}
+            </span>
+        </span>
+    ) : subtitle;
+
     return (
-        <CardBox className={clsx('!p-3 sm:!p-4', className)}>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-            <p className={clsx('mt-1.5 text-xl font-bold text-gray-900 dark:text-white sm:mt-2 sm:text-2xl', moneyTabular)}>{value}</p>
-            {(subtitle || trendLabel) && (
-                <div className="mt-2 flex items-center text-sm">
-                    {trend && (
-                        <span className={clsx('mr-1', trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-400')}>
-                            {trend === 'up' && '↑'}
-                            {trend === 'down' && '↓'}
-                            {trend === 'neutral' && '→'}
-                        </span>
-                    )}
-                    {trendLabel && (
-                        <span className={clsx(trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-500')}>
-                            {trendLabel}
-                        </span>
-                    )}
-                    {subtitle && !trendLabel && (
-                        <span className="text-gray-500 dark:text-gray-400">{subtitle}</span>
-                    )}
-                </div>
-            )}
-        </CardBox>
+        <IndexKpiCell
+            label={title}
+            value={value}
+            detail={detail}
+            className={className}
+        />
     );
 }
 
@@ -520,54 +519,53 @@ export default function Dashboard({
 
             case 'accounts':
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">I tuoi conti</h3>
-                            <Link href={route('accounts.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
-                        </div>
-                        <div className={widgetListBodyClass}>
-                            {accounts.length > 0
-                                ? accounts.map((account) => <AccountCard key={account.id} account={account} />)
-                                : <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />}
-                        </div>
-                    </div>
+                    <DashboardWidgetShell
+                        title="I tuoi conti"
+                        detailHref={route('accounts.index')}
+                        detailLabel="Vedi tutti"
+                        bodyClassName={widgetListBodyClass}
+                    >
+                        {accounts.length > 0
+                            ? accounts.map((account) => <AccountCard key={account.id} account={account} />)
+                            : <EmptyState message="Nessun conto trovato. Crea il tuo primo conto per iniziare!" />}
+                    </DashboardWidgetShell>
                 );
 
             case 'recent_transactions':
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">Ultime transazioni</h3>
-                            <Link href={route('transactions.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutte</Link>
-                        </div>
-                        <div className={widgetListBodyClass}>
-                            {recentTransactions.length > 0
-                                ? recentTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
-                                : <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />}
-                        </div>
-                    </div>
+                    <DashboardWidgetShell
+                        title="Ultime transazioni"
+                        detailHref={route('transactions.index')}
+                        detailLabel="Vedi tutte"
+                        bodyClassName={widgetListBodyClass}
+                    >
+                        {recentTransactions.length > 0
+                            ? recentTransactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} />)
+                            : <EmptyState message="Nessuna transazione registrata. Aggiungi la tua prima transazione!" />}
+                    </DashboardWidgetShell>
                 );
 
             case 'active_budgets':
                 return isModuleEnabled('budgets') ? (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">📊 Budget Attivi</h3>
-                            <Link href={route('budgets.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
-                        </div>
-                        <div className={widgetBodyClass}>
-                            {activeBudgets.length > 0 ? (
-                                <div className="space-y-3">
-                                    {activeBudgets.map((budget) => <BudgetCard key={budget.id} budget={budget} />)}
-                                </div>
-                            ) : (
-                                <div className={widgetEmptyClass}>
-                                    <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun budget attivo</p>
-                                    <Link href={route('budgets.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Crea il tuo primo budget →</Link>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <DashboardWidgetShell
+                        title="Budget attivi"
+                        detailHref={route('budgets.index')}
+                        detailLabel="Vedi tutti"
+                        bodyClassName={widgetListBodyClass}
+                    >
+                        {activeBudgets.length > 0 ? (
+                            <div className="space-y-2">
+                                {activeBudgets.map((budget) => <BudgetCard key={budget.id} budget={budget} />)}
+                            </div>
+                        ) : (
+                            <div className={widgetEmptyClass}>
+                                <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun budget attivo</p>
+                                <Link href={route('budgets.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                    Crea il tuo primo budget →
+                                </Link>
+                            </div>
+                        )}
+                    </DashboardWidgetShell>
                 ) : (
                     <LockedModuleCard
                         moduleId="budgets"
@@ -579,34 +577,35 @@ export default function Dashboard({
 
             case 'debts_credits':
                 return isModuleEnabled('debts_credits') ? (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">💸 Debiti e Crediti</h3>
-                            <Link href={route('debts-credits.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
-                        </div>
-                        <div className={widgetBodyClass}>
-                            {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) && (
-                                <div className={clsx('mb-4', moneyKpiGrid2)}>
-                                    <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
-                                        <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
-                                        <p className={clsx('text-lg font-bold text-red-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_debts)}</p>
-                                    </div>
-                                    <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
-                                        <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
-                                        <p className={clsx('text-lg font-bold text-emerald-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_credits)}</p>
-                                    </div>
+                    <DashboardWidgetShell
+                        title="Debiti e crediti"
+                        detailHref={route('debts-credits.index')}
+                        detailLabel="Vedi tutti"
+                        bodyClassName={widgetListBodyClass}
+                    >
+                        {(debtsCreditsSummary.total_debts > 0 || debtsCreditsSummary.total_credits > 0) ? (
+                            <IndexKpiStrip columns={2} className="mb-3">
+                                <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
+                                    <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
+                                    <p className={clsx('text-lg font-bold text-red-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_debts)}</p>
                                 </div>
-                            )}
-                            {openDebtsCredits.length > 0 ? (
-                                <div>{openDebtsCredits.map((item) => <DebtCreditRow key={item.id} item={item} />)}</div>
-                            ) : (
-                                <div className={widgetEmptyClass}>
-                                    <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun debito o credito aperto</p>
-                                    <Link href={route('debts-credits.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Aggiungi il primo →</Link>
+                                <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
+                                    <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
+                                    <p className={clsx('text-lg font-bold text-emerald-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_credits)}</p>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                            </IndexKpiStrip>
+                        ) : null}
+                        {openDebtsCredits.length > 0 ? (
+                            <div>{openDebtsCredits.map((item) => <DebtCreditRow key={item.id} item={item} />)}</div>
+                        ) : (
+                            <div className={widgetEmptyClass}>
+                                <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun debito o credito aperto</p>
+                                <Link href={route('debts-credits.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                    Aggiungi il primo →
+                                </Link>
+                            </div>
+                        )}
+                    </DashboardWidgetShell>
                 ) : (
                     <LockedModuleCard
                         moduleId="debts_credits"
@@ -618,19 +617,29 @@ export default function Dashboard({
 
             case 'quick_actions': {
                 const compact = size === 'sm';
+                const actionItems = [
+                    { href: route('transactions.create'), icon: <PlusIcon size={24} />, label: 'Nuova transazione' },
+                    { href: route('transactions.quick-session'), icon: '⚡', label: 'Sessione rapida' },
+                    { href: route('transfers.create'), icon: '🔄', label: 'Trasferimento' },
+                    { href: route('accounts.create'), icon: '🏦', label: 'Nuovo conto' },
+                    { href: route('categories.create'), icon: '🏷️', label: 'Nuova categoria' },
+                ] as const;
+
                 return (
-                    <div className="hidden lg:block">
-                        <div className="overflow-hidden rounded-xl bg-white p-3 shadow-sm dark:bg-gray-800 sm:p-4">
-                            <h3 className="mb-2 font-semibold text-gray-900 dark:text-white sm:mb-3">Azioni rapide</h3>
-                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-                                <QuickActionCard href={route('transactions.create')} icon={<PlusIcon size={28} />} label="Nuova Transazione" compact={compact} />
-                                <QuickActionCard href={route('transactions.quick-session')} icon="⚡" label="Sessione Rapida" compact={compact} />
-                                <QuickActionCard href={route('transfers.create')} icon="🔄" label="Trasferimento" compact={compact} />
-                                <QuickActionCard href={route('accounts.create')} icon="🏦" label="Nuovo Conto" compact={compact} />
-                                <QuickActionCard href={route('categories.create')} icon="🏷️" label="Nuova Categoria" compact={compact} />
-                            </div>
+                    <DashboardWidgetShell title="Azioni rapide">
+                        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-5 lg:gap-3">
+                            {actionItems.map((action) => (
+                                <QuickActionCard
+                                    key={action.href}
+                                    href={action.href}
+                                    icon={action.icon}
+                                    label={action.label}
+                                    compact={compact}
+                                    className="min-w-[6.75rem] shrink-0 snap-start p-2.5 lg:min-w-0 lg:shrink lg:snap-align-none lg:p-3 xl:p-4"
+                                />
+                            ))}
                         </div>
-                    </div>
+                    </DashboardWidgetShell>
                 );
             }
 
@@ -643,60 +652,58 @@ export default function Dashboard({
                         : 'text-red-600 dark:text-red-400';
 
                 return isModuleEnabled('investments') ? (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">📊 Asset Allocation</h3>
-                            <Link href={route('asset-allocation.index')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                Dettaglio →
-                            </Link>
-                        </div>
-                        <div className={clsx(widgetBodyClass, 'space-y-3')}>
-                            {total_value > 0 ? (
-                                <>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</span>
-                                        <span className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                            {formatCurrency(total_value)}
-                                        </span>
-                                    </div>
-                                    {/* Mini allocation bar */}
-                                    <div className="flex h-2 rounded-full overflow-hidden gap-px">
-                                        {allocation.map(a => (
-                                            <div
-                                                key={a.asset_class}
-                                                style={{ width: `${a.percentage}%`, backgroundColor: a.color }}
-                                                title={`${a.label}: ${a.percentage.toFixed(1)}%`}
-                                            />
-                                        ))}
-                                    </div>
-                                    {/* Legend */}
-                                    <div className="flex flex-wrap gap-x-3 gap-y-1">
-                                        {allocation.map(a => (
-                                            <span key={a.asset_class} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                                                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: a.color }} />
-                                                {a.label} {a.percentage.toFixed(0)}%
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">Rischio</span>
-                                        <span className={`text-sm font-semibold ${riskColor}`}>
-                                            {risk_label} — {risk_index.toFixed(1)}/7
-                                        </span>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="py-4 text-center">
-                                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                        Nessuna posizione trovata
-                                    </p>
-                                    <Link href={route('investments.create')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                        Aggiungi il primo →
-                                    </Link>
+                    <DashboardWidgetShell
+                        title="Asset allocation"
+                        subtitle="Ripartizione del patrimonio investito"
+                        detailHref={route('asset-allocation.index')}
+                    >
+                        {total_value > 0 ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Patrimonio totale</span>
+                                    <span className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
+                                        {formatCurrency(total_value)}
+                                    </span>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                                <div
+                                    className="flex h-2 overflow-hidden rounded-full gap-px"
+                                    role="img"
+                                    aria-label={allocation.map((a) => `${a.label} ${a.percentage.toFixed(1)}%`).join(', ')}
+                                >
+                                    {allocation.map((a) => (
+                                        <div
+                                            key={a.asset_class}
+                                            style={{ width: `${a.percentage}%`, backgroundColor: a.color }}
+                                            title={`${a.label}: ${a.percentage.toFixed(1)}%`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                    {allocation.map((a) => (
+                                        <span key={a.asset_class} className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                                            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: a.color }} />
+                                            {a.label} {a.percentage.toFixed(0)}%
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex items-center justify-between border-t border-gray-100 pt-1 dark:border-gray-700">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">Indice di rischio</span>
+                                    <span className={`text-sm font-semibold ${riskColor}`}>
+                                        {risk_label} · {risk_index.toFixed(1)}/7
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="py-4 text-center">
+                                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                    Nessuna posizione trovata
+                                </p>
+                                <Link href={route('investments.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                    Aggiungi il primo →
+                                </Link>
+                            </div>
+                        )}
+                    </DashboardWidgetShell>
                 ) : (
                     <LockedModuleCard
                         moduleId="investments"
@@ -707,128 +714,144 @@ export default function Dashboard({
                 );
             }
 
-            case 'net_worth':
+            case 'net_worth': {
+                const netWorthSubtitle = netWorthMode === 'cash'
+                    ? 'Solo saldo conti'
+                    : 'Conti + investimenti (costo di carico)';
+                const netWorthModeOptions = [
+                    { value: 'portfolio' as const, label: 'Patrimonio' },
+                    { value: 'cash' as const, label: 'Solo liquidità' },
+                ];
+
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white">📈 Patrimonio nel tempo</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Conti + investimenti collegati (costo di carico)</p>
+                    <DashboardWidgetShell
+                        bodyClassName={widgetListBodyClass}
+                        header={(
+                            <div className={contentPanelHeaderClass}>
+                                <div className="space-y-2.5 sm:hidden">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <h3 className="truncate text-base font-semibold text-gray-900 dark:text-white">
+                                            Patrimonio nel tempo
+                                        </h3>
+                                        <Link
+                                            href={route('analytics.net-worth')}
+                                            className="shrink-0 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                                        >
+                                            Dettagli →
+                                        </Link>
+                                    </div>
+                                    <DashboardWidgetSegmentedControl
+                                        value={netWorthMode}
+                                        options={netWorthModeOptions}
+                                        onChange={setNetWorthMode}
+                                        ariaLabel="Vista patrimonio"
+                                    />
+                                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                                        {netWorthSubtitle}
+                                    </p>
+                                </div>
+                                <div className={`${widgetHeaderClass} hidden border-0 p-0 sm:flex`}>
+                                    <div className="min-w-0">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white">Patrimonio nel tempo</h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{netWorthSubtitle}</p>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <DashboardWidgetSegmentedControl
+                                            value={netWorthMode}
+                                            options={netWorthModeOptions}
+                                            onChange={setNetWorthMode}
+                                            ariaLabel="Vista patrimonio"
+                                            className="w-auto sm:inline-grid sm:grid-cols-2"
+                                        />
+                                        <Link
+                                            href={route('analytics.net-worth')}
+                                            className="whitespace-nowrap text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                                        >
+                                            Dettagli →
+                                        </Link>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setNetWorthMode('portfolio')}
-                                    className={clsx(
-                                        'rounded-md px-2 py-1 text-xs font-medium',
-                                        netWorthMode === 'portfolio'
-                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
-                                    )}
-                                >
-                                    Patrimonio
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setNetWorthMode('cash')}
-                                    className={clsx(
-                                        'rounded-md px-2 py-1 text-xs font-medium',
-                                        netWorthMode === 'cash'
-                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700',
-                                    )}
-                                >
-                                    Solo liquidità
-                                </button>
-                                <Link href={route('analytics.net-worth')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                    Dettaglio →
-                                </Link>
-                            </div>
-                        </div>
-                        <div className={widgetBodyClass}>
-                            <NetWorthChart
-                                data={netWorthMode === 'cash' ? netWorthCashData : netWorthData}
-                                title={netWorthMode === 'cash' ? 'Liquidità nel tempo' : 'Patrimonio nel tempo'}
-                                subtitle={netWorthMode === 'cash'
-                                    ? 'Solo saldo conti'
-                                    : 'Liquidità + investimenti (costo di carico)'}
-                            />
-                        </div>
-                    </div>
+                        )}
+                    >
+                        <NetWorthChart
+                            embedded
+                            data={netWorthMode === 'cash' ? netWorthCashData : netWorthData}
+                            title={netWorthMode === 'cash' ? 'Liquidità nel tempo' : 'Patrimonio nel tempo'}
+                            subtitle={netWorthSubtitle}
+                        />
+                    </DashboardWidgetShell>
                 );
+            }
 
             case 'cash_flow':
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">💰 Panoramica Cashflow</h3>
-                            <Link href={route('analytics.cash-flow')} className="text-sm text-emerald-500 hover:text-emerald-600">
-                                Dettaglio →
-                            </Link>
-                        </div>
-                        <div className={widgetBodyClass}>
-                            <CashFlowChart data={cashFlowData} />
-                        </div>
-                    </div>
+                    <DashboardWidgetShell
+                        title="Panoramica cashflow"
+                        subtitle="Entrate, uscite e risparmio mensile"
+                        detailHref={route('analytics.cash-flow')}
+                    >
+                        <CashFlowChart embedded data={cashFlowData} />
+                    </DashboardWidgetShell>
                 );
 
             case 'expense_treemap':
                 return (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">🏷️ Spese per Categoria</h3>
-                            <Link
-                                href={route('analytics.expenses-by-category', { month: new Date().toISOString().slice(0, 7) })}
-                                className="text-sm text-emerald-500 hover:text-emerald-600"
-                            >
-                                Dettaglio →
-                            </Link>
-                        </div>
-                        <div className={widgetBodyClass}>
-                            <ExpenseTreemap data={expenseCategories} />
-                        </div>
-                    </div>
+                    <DashboardWidgetShell
+                        title="Spese per categoria"
+                        subtitle="Mese corrente"
+                        detailHref={route('analytics.expenses-by-category', { month: new Date().toISOString().slice(0, 7) })}
+                    >
+                        <ExpenseTreemap
+                            embedded
+                            data={expenseCategories}
+                            month={new Date().toISOString().slice(0, 7)}
+                        />
+                    </DashboardWidgetShell>
                 );
 
             case 'financial_goals':
                 return isModuleEnabled('financial_goals') ? (
-                    <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800">
-                        <div className={widgetHeaderClass}>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">🎯 Obiettivi Finanziari</h3>
-                            <Link href={route('financial-goals.index')} className="text-sm text-emerald-500 hover:text-emerald-600">Vedi tutti</Link>
-                        </div>
-                        <div className={widgetBodyClass}>
-                            {financialGoals.length > 0 ? (
-                                <div className="space-y-3">
-                                    {financialGoals.map((goal) => (
-                                        <Link
-                                            key={goal.id}
-                                            href={route('financial-goals.show', goal.id)}
-                                            className="block rounded-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700"
-                                        >
-                                            <div className="mb-2 flex items-center justify-between">
-                                                <div className="flex items-center space-x-2">
-                                                    <span>{goal.icon || '🎯'}</span>
-                                                    <span className="font-medium text-gray-900 dark:text-white">{goal.name}</span>
-                                                </div>
-                                                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{goal.percentage}%</span>
+                    <DashboardWidgetShell
+                        title="Obiettivi finanziari"
+                        detailHref={route('financial-goals.index')}
+                        detailLabel="Vedi tutti"
+                        bodyClassName={widgetListBodyClass}
+                    >
+                        {financialGoals.length > 0 ? (
+                            <div className="space-y-2">
+                                {financialGoals.map((goal) => (
+                                    <Link
+                                        key={goal.id}
+                                        href={route('financial-goals.show', goal.id)}
+                                        className="block rounded-lg bg-gray-50 p-3 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700"
+                                    >
+                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                                <span aria-hidden>{goal.icon || '🎯'}</span>
+                                                <span className="truncate font-medium text-gray-900 dark:text-white">{goal.name}</span>
                                             </div>
-                                            <ProgressBar percentage={goal.percentage} isExceeded={false} height="0.5rem" />
-                                            <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                                                <span className={moneyTabular}>{formatCurrency(goal.current_amount, goal.currency_code)}</span>
-                                                <span className={moneyTabular}>{formatCurrency(goal.target_amount, goal.currency_code)}</span>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className={widgetEmptyClass}>
-                                    <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun obiettivo attivo</p>
-                                    <Link href={route('financial-goals.create')} className="text-sm text-emerald-500 hover:text-emerald-600">Crea il tuo primo obiettivo →</Link>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                            <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                {goal.percentage}%
+                                            </span>
+                                        </div>
+                                        <ProgressBar percentage={goal.percentage} isExceeded={false} height="0.5rem" />
+                                        <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                            <span className={moneyTabular}>{formatCurrency(goal.current_amount, goal.currency_code)}</span>
+                                            <span className={moneyTabular}>{formatCurrency(goal.target_amount, goal.currency_code)}</span>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className={widgetEmptyClass}>
+                                <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun obiettivo attivo</p>
+                                <Link href={route('financial-goals.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                    Crea il tuo primo obiettivo →
+                                </Link>
+                            </div>
+                        )}
+                    </DashboardWidgetShell>
                 ) : (
                     <LockedModuleCard
                         moduleId="financial_goals"
@@ -839,7 +862,7 @@ export default function Dashboard({
                 );
 
             case 'expense_distribution':
-                return <ExpenseDistributionWidget data={expenseDistributionData} />;
+                return <ExpenseDistributionWidget embedded data={expenseDistributionData} />;
 
             default:
                 return null;

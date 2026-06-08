@@ -799,6 +799,8 @@ export default function Index({ analyses }: IndexProps) {
             header={
                 <PageHeader
                     title="Analisi Investimenti"
+                    mobileTitle="Analisi"
+                    hideSubtitleOnMobile
                     subtitle="Calcola risparmio e ammortamento dei tuoi investimenti energetici e tecnologici"
                     actions={
                         <IndexPageHeaderActions>
@@ -824,7 +826,7 @@ export default function Index({ analyses }: IndexProps) {
                     <button
                         type="button"
                         onClick={() => setShowWizard(true)}
-                        className="btn btn-primary w-full justify-center sm:w-auto"
+                        className="btn btn-primary justify-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                             <path d="M5 12h14" /><path d="M12 5v14" />

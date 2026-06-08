@@ -3,8 +3,10 @@ import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
+import IndexCardGrid from '@/Components/Index/IndexCardGrid';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexKpiCell from '@/Components/Index/IndexKpiCell';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -12,7 +14,7 @@ import { ProgressBar } from '@/Components/ProgressBar';
 import CardBox from '@/Components/CardBox';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
-import { moneyCardGrid3, moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -66,7 +68,7 @@ import { StatusBadge } from '@/Components/StatusBadge';
 
 function GoalCard({ goal }: { goal: FinancialGoal }) {
     return (
-        <CardBox className="overflow-hidden p-6 shadow-sm transition-shadow hover:shadow-md">
+        <CardBox className="overflow-hidden p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
             <Link
                 href={route('financial-goals.show', goal.id)}
                 className="block"
@@ -162,52 +164,33 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
             <Head title="Obiettivi Finanziari" />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge label="Obiettivi finanziari" icon={<span className="text-sm leading-none">🎯</span>} />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Pianifica i tuoi traguardi e segui avanzamento, importi e stato obiettivo.
-                            </p>
-                        </div>
-                    </SectionCard>
-                    {/* Statistiche */}
-                    <div className={moneyKpiGrid4}>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Obiettivi Attivi
-                            </p>
-                            <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                {stats.in_progress}
-                            </p>
-                        </CardBox>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Obiettivi Raggiunti
-                            </p>
-                            <p className={clsx('mt-1 text-3xl font-bold text-green-500', moneyTabular)}>
-                                {stats.reached}
-                            </p>
-                        </CardBox>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Totale Risparmiato
-                            </p>
-                            <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                {formatCurrency(stats.total_current)}
-                            </p>
-                        </CardBox>
-                        <CardBox className="p-4 shadow-sm">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Progresso Complessivo
-                            </p>
-                            <p className={clsx('mt-1 text-3xl font-bold text-emerald-600', moneyTabular)}>
-                                {overallProgress}%
-                            </p>
-                            <div className="mt-2">
-                                <ProgressBar percentage={overallProgress} color="#6366f1" />
-                            </div>
-                        </CardBox>
-                    </div>
+                    <IndexIntroSection
+                        label="Obiettivi finanziari"
+                        icon={<span className="text-sm leading-none">🎯</span>}
+                        description="Pianifica i tuoi traguardi e segui avanzamento, importi e stato obiettivo."
+                    />
+                    <IndexKpiStrip>
+                        <IndexKpiCell label="Obiettivi Attivi" value={stats.in_progress} />
+                        <IndexKpiCell
+                            label="Obiettivi Raggiunti"
+                            value={stats.reached}
+                            valueClassName="text-green-500"
+                        />
+                        <IndexKpiCell
+                            label="Totale Risparmiato"
+                            value={formatCurrency(stats.total_current)}
+                        />
+                        <IndexKpiCell
+                            label="Progresso Complessivo"
+                            value={`${overallProgress}%`}
+                            valueClassName="text-emerald-600"
+                            detail={
+                                <div className="mt-2">
+                                    <ProgressBar percentage={overallProgress} color="#6366f1" />
+                                </div>
+                            }
+                        />
+                    </IndexKpiStrip>
 
                     {/* Obiettivi in Corso */}
                     {inProgressGoals.length > 0 && (
@@ -215,11 +198,11 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <h3 className="mb-4 font-medium text-gray-900 dark:text-white">
                                 🎯 In Corso ({inProgressGoals.length})
                             </h3>
-                            <div className={moneyCardGrid3}>
+                            <IndexCardGrid>
                                 {inProgressGoals.map((goal) => (
                                     <GoalCard key={goal.id} goal={goal} />
                                 ))}
-                            </div>
+                            </IndexCardGrid>
                         </div>
                     )}
 
@@ -229,11 +212,11 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <h3 className="mb-4 font-medium text-gray-500 dark:text-gray-400">
                                 ✅ Raggiunti ({reachedGoals.length})
                             </h3>
-                            <div className={moneyCardGrid3}>
+                            <IndexCardGrid>
                                 {reachedGoals.map((goal) => (
                                     <GoalCard key={goal.id} goal={goal} />
                                 ))}
-                            </div>
+                            </IndexCardGrid>
                         </div>
                     )}
 
@@ -243,11 +226,11 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
                             <h3 className="mb-4 font-medium text-gray-400 dark:text-gray-500">
                                 ❌ Annullati ({cancelledGoals.length})
                             </h3>
-                            <div className={moneyCardGrid3}>
+                            <IndexCardGrid>
                                 {cancelledGoals.map((goal) => (
                                     <GoalCard key={goal.id} goal={goal} />
                                 ))}
-                            </div>
+                            </IndexCardGrid>
                         </div>
                     )}
 

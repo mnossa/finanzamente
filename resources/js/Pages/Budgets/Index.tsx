@@ -7,13 +7,14 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
+import IndexCardGrid from '@/Components/Index/IndexCardGrid';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import CardBox from '@/Components/CardBox';
-import { moneyCardGrid3, moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 import { ProgressBar } from '@/Components/ProgressBar';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
@@ -196,17 +197,11 @@ export default function Index({ budgets }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge
-                                label="Pianificazione budget"
-                                icon={<span className="text-sm leading-none">📊</span>}
-                            />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Monitora spese, progressi e superamenti in tempo reale per ogni categoria.
-                            </p>
-                        </div>
-                    </SectionCard>
+                    <IndexIntroSection
+                        label="Pianificazione budget"
+                        icon={<span className="text-sm leading-none">📊</span>}
+                        description="Monitora spese, progressi e superamenti in tempo reale per ogni categoria."
+                    />
                     {budgets.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState
@@ -220,7 +215,7 @@ export default function Index({ budgets }: IndexProps) {
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <div className={moneyKpiGrid3}>
+                            <IndexKpiStrip columns={3}>
                                 <div className="overflow-hidden rounded-xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-slate-300">
                                         Budget Totale
@@ -264,7 +259,7 @@ export default function Index({ budgets }: IndexProps) {
                                             : 'Attenzione alle spese'}
                                     </p>
                                 </div>
-                            </div>
+                            </IndexKpiStrip>
 
                             {/* Budget Attivi */}
                             {activeBudgets.length > 0 && (
@@ -272,11 +267,11 @@ export default function Index({ budgets }: IndexProps) {
                                     <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
                                         Budget Attivi
                                     </h3>
-                                    <div className={moneyCardGrid3}>
+                                    <IndexCardGrid>
                                         {activeBudgets.map((budget) => (
                                             <BudgetCard key={budget.id} budget={budget} onDeleteClick={openDeleteDialog} />
                                         ))}
-                                    </div>
+                                    </IndexCardGrid>
                                 </div>
                             )}
 
@@ -286,11 +281,11 @@ export default function Index({ budgets }: IndexProps) {
                                     <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
                                         Budget Passati
                                     </h3>
-                                    <div className={moneyCardGrid3}>
+                                    <IndexCardGrid>
                                         {pastBudgets.map((budget) => (
                                             <BudgetCard key={budget.id} budget={budget} onDeleteClick={openDeleteDialog} />
                                         ))}
-                                    </div>
+                                    </IndexCardGrid>
                                 </div>
                             )}
                         </>

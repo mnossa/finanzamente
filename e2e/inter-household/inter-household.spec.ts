@@ -37,9 +37,10 @@ test.describe('Trasferimenti Inter-Household', () => {
 
         await page.getByRole('link', { name: /torna alla lista/i }).click();
         await expect(page).toHaveURL('/trasferimenti-tra-nuclei');
-        await expect(page.getByText(descrizione)).toBeVisible({ timeout: 10_000 });
+        const listRowLink = page.locator('main').getByRole('link').filter({ hasText: descrizione });
+        await expect(listRowLink.first()).toBeVisible({ timeout: 10_000 });
 
-        await page.getByText(descrizione).click();
+        await listRowLink.first().click();
         await expect(page).toHaveURL(/\/trasferimenti-tra-nuclei\/\d+/, { timeout: 10_000 });
         await expect(page.getByText(descrizione)).toBeVisible();
     });

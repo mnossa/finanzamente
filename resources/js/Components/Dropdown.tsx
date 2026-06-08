@@ -54,11 +54,13 @@ const Trigger = ({ children }: PropsWithChildren) => {
 const Content = ({
     align = 'right',
     width = '48',
+    placement = 'bottom',
     contentClasses = 'py-1 bg-white',
     children,
 }: PropsWithChildren<{
     align?: 'left' | 'right';
     width?: '48';
+    placement?: 'bottom' | 'top';
     contentClasses?: string;
 }>) => {
     const { open, setOpen } = useContext(DropDownContext);
@@ -90,9 +92,10 @@ const Content = ({
             >
                 <div
                     className={clsx(
-                        'absolute z-50 mt-2 rounded-xl shadow-soft-lg border border-slate-100',
+                        'absolute z-50 rounded-xl border border-slate-100 shadow-soft-lg dark:border-slate-700',
+                        placement === 'top' ? 'bottom-full mb-2' : 'mt-2',
                         alignmentClasses,
-                        widthClasses
+                        widthClasses,
                     )}
                     onClick={() => setOpen(false)}
                 >
