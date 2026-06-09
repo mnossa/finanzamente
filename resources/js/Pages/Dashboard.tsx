@@ -1024,6 +1024,9 @@ export default function Dashboard({
                                             isEditing={isEditing}
                                             onToggleVisibility={() => toggleWidgetVisibility(widget.id)}
                                             onChangeSize={(size: WidgetSize) => setWidgetSize(widget.id, size)}
+                                            className={clsx(
+                                                widget.id === 'quick_actions' && !isEditing && 'hidden lg:flex',
+                                            )}
                                         >
                                             {content}
                                         </DashboardWidgetCard>

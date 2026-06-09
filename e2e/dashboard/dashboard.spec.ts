@@ -16,14 +16,11 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveTitle(/Dashboard/i);
     });
 
-    test('su mobile mostra azioni rapide compatte e bottom nav', async ({ page }) => {
+    test('su mobile mostra la bottom nav e nasconde il widget azioni rapide', async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/dashboard');
 
-        const heading = page.getByRole('heading', { name: 'Azioni rapide' });
-        await heading.scrollIntoViewIfNeeded();
-        await expect(heading).toBeVisible();
-        await expect(page.getByRole('main').getByRole('link', { name: 'Nuova transazione' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Azioni rapide' })).toBeHidden();
         await expect(page.getByRole('navigation', { name: /navigazione rapida/i })).toBeVisible();
     });
 

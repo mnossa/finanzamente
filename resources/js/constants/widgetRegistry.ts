@@ -90,7 +90,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
         id: 'quick_actions',
         title: 'Azioni Rapide',
-        description: 'Accesso rapido alle operazioni più frequenti.',
+        description: 'Accesso rapido alle operazioni più frequenti (solo desktop: su mobile usa la barra in basso).',
         defaultSize: 'xl',
         defaultVisible: true,
         allowedSizes: ALL_SIZES,
