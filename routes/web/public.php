@@ -4,6 +4,7 @@ use App\Http\Controllers\HouseholdInvitationController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MollieWebhookController;
 use App\Http\Controllers\RobotsController;
+use App\Http\Controllers\SharedFormulaController;
 use App\Http\Controllers\SimulationController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WaitlistController;
@@ -53,6 +54,9 @@ Route::get('/crescita-personale', [LandingController::class, 'crescita'])->name(
 
 // Simulazioni finanziarie — area open (React/Inertia)
 Route::get('/simulazioni', [SimulationController::class, 'index'])->name('simulations.public');
+
+// Anteprima pubblica widget formula (guest)
+Route::get('/shared/formula/{share_token}', [SharedFormulaController::class, 'show'])->name('shared.formula.show');
 
 // robots.txt dinamico con Sitemap URL corretto
 Route::get('/robots.txt', [RobotsController::class, 'index']);

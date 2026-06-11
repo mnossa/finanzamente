@@ -51,12 +51,15 @@ class DatabaseAnonymizationService
     private function anonymizeUsers(): int
     {
         $ownerEmail = strtolower(trim((string) config('prelaunch.owner_email', '')));
+        $systemUserEmail = strtolower(trim((string) config('financial_variables.system_user_email', '')));
+        $users = User::withTrashed()->orderBy('id')->get();
+        $devUserId = $this->resolveDevUserId($users, $ownerEmail, $systemUserEmail);
         $count = 0;
 
-        User::withTrashed()->orderBy('id')->each(function (User $user) use ($ownerEmail, &$count) {
+        foreach ($users as $user) {
             $user->forceFill([
                 'name' => 'Utente '.$user->id,
-                'email' => $this->resolveAnonymizedEmail($user, $ownerEmail),
+                'email' => $this->resolveAnonymizedEmail($user, $devUserId, $systemUserEmail),
                 'email_verified_at' => now(),
                 'password' => self::DEFAULT_PASSWORD,
                 'remember_token' => null,
@@ -65,18 +68,49 @@ class DatabaseAnonymizationService
                 'vat_number' => null,
             ])->saveQuietly();
             $count++;
-        });
+        }
 
         return $count;
     }
 
-    private function resolveAnonymizedEmail(User $user, string $ownerEmail): string
+    /**
+     * @param  iterable<int, User>  $users
+     */
+    private function resolveDevUserId(iterable $users, string $ownerEmail, string $systemUserEmail): ?int
     {
-        if ($user->id === 1) {
-            return self::OWNER_DEV_EMAIL;
+        if ($ownerEmail !== '') {
+            foreach ($users as $user) {
+                if ($this->isSystemUser($user, $systemUserEmail)) {
+                    continue;
+                }
+
+                if (strtolower($user->email) === $ownerEmail) {
+                    return $user->id;
+                }
+            }
         }
 
-        if ($ownerEmail !== '' && strtolower($user->email) === $ownerEmail) {
+        foreach ($users as $user) {
+            if (! $this->isSystemUser($user, $systemUserEmail)) {
+                return $user->id;
+            }
+        }
+
+        return null;
+    }
+
+    private function isSystemUser(User $user, string $systemUserEmail): bool
+    {
+        return $systemUserEmail !== '' && strtolower($user->email) === $systemUserEmail;
+    }
+
+    private function resolveAnonymizedEmail(User $user, ?int $devUserId, string $systemUserEmail): string
+    {
+        if ($this->isSystemUser($user, $systemUserEmail)) {
+            return 'system'.$user->id.'@anon.finanzamente.local';
+        }
+
+        if ($devUserId !== null && $user->id === $devUserId) {
             return self::OWNER_DEV_EMAIL;
         }
 

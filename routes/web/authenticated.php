@@ -14,7 +14,10 @@ use App\Http\Controllers\DebtCreditController;
 use App\Http\Controllers\DuplicateTransactionCandidateController;
 use App\Http\Controllers\ExpenseDistributionController;
 use App\Http\Controllers\FinancialGoalController;
+use App\Http\Controllers\FinancialVariableController;
 use App\Http\Controllers\FixedExpenseController;
+use App\Http\Controllers\FormulaMarketplaceController;
+use App\Http\Controllers\FormulaWidgetController;
 use App\Http\Controllers\HouseholdController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\InterHouseholdTransferController;
@@ -83,6 +86,24 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
+
+    Route::get('/widget-formule', [FormulaWidgetController::class, 'index'])->name('formula-widgets.index');
+    Route::get('/widget-formule/crea', [FormulaWidgetController::class, 'create'])->name('formula-widgets.create');
+    Route::post('/widget-formule', [FormulaWidgetController::class, 'store'])->name('formula-widgets.store');
+    Route::post('/widget-formule/anteprima', [FormulaWidgetController::class, 'preview'])->name('formula-widgets.preview');
+    Route::delete('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'destroy'])->name('formula-widgets.destroy');
+    Route::post('/widget-formule/{formula_widget}/pin', [FormulaWidgetController::class, 'pin'])->name('formula-widgets.pin');
+
+    Route::get('/widget-formule/variabili', [FinancialVariableController::class, 'index'])->name('formula-variables.index');
+    Route::post('/widget-formule/variabili', [FinancialVariableController::class, 'store'])->name('formula-variables.store');
+    Route::patch('/widget-formule/variabili/{financial_variable}', [FinancialVariableController::class, 'update'])->name('formula-variables.update');
+    Route::delete('/widget-formule/variabili/{financial_variable}', [FinancialVariableController::class, 'destroy'])->name('formula-variables.destroy');
+
+    Route::get('/widget-formule/galleria', [FormulaMarketplaceController::class, 'index'])->name('formula-marketplace.index');
+    Route::post('/widget-formule/galleria/template/{templateSlug}', [FormulaMarketplaceController::class, 'installTemplate'])->name('formula-marketplace.install-template');
+    Route::delete('/widget-formule/galleria/template/{templateSlug}', [FormulaMarketplaceController::class, 'uninstallTemplate'])->name('formula-marketplace.uninstall-template');
+    Route::post('/widget-formule/galleria/widget/{formula_widget}', [FormulaMarketplaceController::class, 'installWidget'])->name('formula-marketplace.install-widget');
+    Route::delete('/widget-formule/galleria/widget/{formula_widget}', [FormulaMarketplaceController::class, 'uninstallWidget'])->name('formula-marketplace.uninstall-widget');
     Route::put('/dashboard/distribuzione-spese/soglie', [ExpenseDistributionController::class, 'updateThresholds'])->name('expense-distribution.thresholds.update');
     Route::delete('/dashboard/distribuzione-spese/soglie', [ExpenseDistributionController::class, 'resetThresholds'])->name('expense-distribution.thresholds.reset');
 

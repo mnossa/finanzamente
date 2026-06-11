@@ -1,0 +1,77 @@
+import DashboardWidgetShell, { dashboardWidgetListBodyClass } from '@/Components/Dashboard/DashboardWidgetShell';
+import CustomFormulaWidget from '@/Components/FormulaWidgets/CustomFormulaWidget';
+import clsx from 'clsx';
+import type { FormulaWidgetPreviewStatus } from '@/hooks/useFormulaWidgetPreview';
+import type { FormulaWidgetPayload } from '@/types/formulaWidget';
+
+interface FormulaWidgetPreviewPanelProps {
+    status: FormulaWidgetPreviewStatus;
+    payload: FormulaWidgetPayload | null;
+    errors: string[];
+    title?: string;
+    className?: string;
+}
+
+export default function FormulaWidgetPreviewPanel({
+    status,
+    payload,
+    errors,
+    title = 'Anteprima',
+    className,
+}: FormulaWidgetPreviewPanelProps) {
+    const subtitle =
+        status === 'loading'
+            ? 'Aggiornamento in corso…'
+            : status === 'success' && payload
+              ? payload.periodLabel
+              : undefined;
+
+    return (
+        <div
+            className={clsx(
+                'sticky top-4 rounded-xl border border-surface-200 bg-surface-50 p-4 dark:border-gray-700 dark:bg-gray-900/40',
+                className,
+            )}
+        >
+            <h2 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">{title}</h2>
+
+            {status === 'idle' && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Scegli variabile, tipo di grafico e periodo: l&apos;anteprima si aggiorna in tempo reale con i tuoi dati.
+                </p>
+            )}
+
+            {status === 'loading' && (
+                <div className="space-y-3" aria-live="polite" aria-busy="true">
+                    <div className="h-8 w-2/3 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-32 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
+                </div>
+            )}
+
+            {status === 'error' && (
+                <div
+                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300"
+                    role="alert"
+                >
+                    <p className="font-medium">Anteprima non disponibile</p>
+                    <ul className="mt-1 list-inside list-disc space-y-0.5">
+                        {errors.map((message) => (
+                            <li key={message}>{message}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {status === 'success' && payload && (
+                <DashboardWidgetShell
+                    title={payload.name}
+                    subtitle={subtitle}
+                    bodyClassName={dashboardWidgetListBodyClass}
+                >
+                    <CustomFormulaWidget payload={payload} embedded />
+                </DashboardWidgetShell>
+            )}
+        </div>
+    );
+}

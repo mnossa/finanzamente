@@ -2,10 +2,8 @@
  * Tipi TypeScript per la personalizzazione del layout della dashboard.
  */
 
-/** Identificativi stabili dei widget disponibili nella dashboard. */
-export type WidgetId =
-    | 'total_balance'
-    | 'monthly_stats'
+/** Identificativi stabili dei widget built-in nella dashboard. */
+export type KnownWidgetId =
     | 'annual_revenue'
     | 'tax_thermometer'
     | 'lifestyle_widget'
@@ -15,11 +13,15 @@ export type WidgetId =
     | 'debts_credits'
     | 'quick_actions'
     | 'asset_allocation'
-    | 'net_worth'
-    | 'cash_flow'
     | 'expense_treemap'
     | 'financial_goals'
     | 'expense_distribution';
+
+/** Widget dinamici creati dall'utente (formula platform). */
+export type FormulaWidgetLayoutId = `formula_widget_${number}`;
+
+/** Identificativo di un widget nel layout (built-in o formula). */
+export type WidgetId = KnownWidgetId | FormulaWidgetLayoutId;
 
 /** Dimensioni supportate per ogni widget nella griglia. */
 export type WidgetSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -39,7 +41,7 @@ export interface DashboardLayoutConfig {
 
 /** Definizione statica di un widget nel registry (solo frontend). */
 export interface WidgetDefinition {
-    id: WidgetId;
+    id: KnownWidgetId;
     title: string;
     description: string;
     defaultSize: WidgetSize;

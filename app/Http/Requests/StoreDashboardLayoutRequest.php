@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Models\DashboardLayout;
+use App\Models\FormulaWidget;
+use App\Services\FormulaWidgetLayoutNormalizer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -53,6 +56,20 @@ class StoreDashboardLayoutRequest extends FormRequest
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        $config = $this->input('config');
+
+        if ($user === null || ! is_array($config)) {
+            return;
+        }
+
+        $sanitized = app(FormulaWidgetLayoutNormalizer::class)->sanitizeFormulaWidgets($user, $config);
+
+        $this->merge(['config' => $sanitized]);
+    }
+
     /**
      * Ensure only allowed widget IDs are accepted.
      */
@@ -61,8 +78,6 @@ class StoreDashboardLayoutRequest extends FormRequest
         // Deve essere allineata a: resources/js/constants/widgetRegistry.ts (WIDGET_REGISTRY)
         // e a DashboardLayout::defaultConfig()
         $allowedIds = [
-            'total_balance',
-            'monthly_stats',
             'annual_revenue',
             'tax_thermometer',
             'lifestyle_widget',
@@ -72,8 +87,6 @@ class StoreDashboardLayoutRequest extends FormRequest
             'debts_credits',
             'quick_actions',
             'asset_allocation',
-            'net_worth',
-            'cash_flow',
             'expense_treemap',
             'financial_goals',
             'expense_distribution',
@@ -82,7 +95,35 @@ class StoreDashboardLayoutRequest extends FormRequest
         $validator->after(function ($v) use ($allowedIds) {
             $widgets = $this->input('config.widgets', []);
             $ids = array_column((array) $widgets, 'id');
-            $unknownIds = array_diff($ids, $allowedIds);
+            $unknownIds = [];
+
+            foreach ($ids as $id) {
+                if (in_array($id, DashboardLayout::TIER_A_LEGACY_WIDGET_IDS, true)) {
+                    $unknownIds[] = $id;
+
+                    continue;
+                }
+
+                if (in_array($id, $allowedIds, true)) {
+                    continue;
+                }
+
+                if (preg_match('/^formula_widget_(\d+)$/', (string) $id, $matches)) {
+                    $owned = FormulaWidget::query()
+                        ->where('id', (int) $matches[1])
+                        ->where('user_id', $this->user()?->id)
+                        ->exists();
+
+                    if (! $owned) {
+                        $unknownIds[] = $id;
+                    }
+
+                    continue;
+                }
+
+                $unknownIds[] = $id;
+            }
+
             if (! empty($unknownIds)) {
                 $v->errors()->add(
                     'config.widgets',

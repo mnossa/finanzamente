@@ -12,6 +12,8 @@ interface DashboardWidgetCardProps {
     onChangeSize: (size: WidgetSize) => void;
     children: React.ReactNode;
     className?: string;
+    /** Titolo per widget dinamici (formula_widget_*). */
+    titleOverride?: string;
 }
 
 const SIZE_LABELS: Record<WidgetSize, string> = {
@@ -44,8 +46,10 @@ export default function DashboardWidgetCard({
     onChangeSize,
     children,
     className,
+    titleOverride,
 }: DashboardWidgetCardProps) {
-    const definition = WIDGET_MAP[widget.id];
+    const definition = WIDGET_MAP[widget.id as keyof typeof WIDGET_MAP];
+    const widgetTitle = titleOverride ?? definition?.title ?? widget.id;
     const allowedSizes = definition?.allowedSizes ?? ['sm', 'md', 'lg', 'xl'];
 
     const {
@@ -85,7 +89,7 @@ export default function DashboardWidgetCard({
                 <div
                     className="mb-1 flex items-center justify-between rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
                     role="toolbar"
-                    aria-label={`Controlli widget ${definition?.title ?? widget.id}`}
+                    aria-label={`Controlli widget ${widgetTitle}`}
                 >
                     {/* Maniglia drag — icona ⠿ ben visibile per comunicare la manipolabilità */}
                     <button
@@ -109,7 +113,7 @@ export default function DashboardWidgetCard({
 
                     {/* Nome widget */}
                     <span className="flex-1 truncate px-1 text-xs font-medium text-gray-600 dark:text-gray-300">
-                        {definition?.title ?? widget.id}
+                        {widgetTitle}
                     </span>
 
                     {/* Selettore dimensione */}

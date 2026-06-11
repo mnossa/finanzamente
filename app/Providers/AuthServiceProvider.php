@@ -4,12 +4,16 @@ namespace App\Providers;
 
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\FinancialVariable;
+use App\Models\FormulaWidget;
 use App\Models\InterHouseholdTransfer;
 use App\Models\SavedSimulationScenario;
 use App\Models\Transaction;
 use App\Models\Transfer;
 use App\Policies\AccountPolicy;
 use App\Policies\CategoryPolicy;
+use App\Policies\FinancialVariablePolicy;
+use App\Policies\FormulaWidgetPolicy;
 use App\Policies\InterHouseholdTransferPolicy;
 use App\Policies\SavedSimulationScenarioPolicy;
 use App\Policies\TransactionPolicy;
@@ -30,6 +34,8 @@ class AuthServiceProvider extends ServiceProvider
         Transaction::class => TransactionPolicy::class,
         Transfer::class => TransferPolicy::class,
         SavedSimulationScenario::class => SavedSimulationScenarioPolicy::class,
+        FinancialVariable::class => FinancialVariablePolicy::class,
+        FormulaWidget::class => FormulaWidgetPolicy::class,
     ];
 
     public function boot(): void

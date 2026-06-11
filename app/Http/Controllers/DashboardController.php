@@ -7,15 +7,18 @@ use App\Models\Budget;
 use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
 use App\Models\FinancialGoal;
+use App\Models\FormulaWidget;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountBalanceService;
 use App\Services\AssetClassificationService;
 use App\Services\BudgetNotificationService;
 use App\Services\FinancialMetricsService;
+use App\Services\FormulaWidgetBootstrapService;
+use App\Services\FormulaWidgetLayoutNormalizer;
+use App\Services\FormulaWidgetPayloadBuilder;
 use App\Services\InvestmentLedgerService;
 use App\Services\ModuleAccessService;
-use App\Services\NetWorthSeriesService;
 use App\Services\PortfolioSnapshotService;
 use App\Services\RevenueNotificationService;
 use App\Services\TransactionTrendNotificationService;
@@ -30,8 +33,10 @@ class DashboardController extends Controller
     public function __construct(
         private readonly AccountBalanceService $accountBalanceService,
         private readonly PortfolioSnapshotService $portfolioSnapshotService,
-        private readonly NetWorthSeriesService $netWorthSeriesService,
         private readonly FinancialMetricsService $financialMetricsService,
+        private readonly FormulaWidgetBootstrapService $formulaWidgetBootstrapService,
+        private readonly FormulaWidgetPayloadBuilder $formulaWidgetPayloadBuilder,
+        private readonly FormulaWidgetLayoutNormalizer $formulaWidgetLayoutNormalizer,
     ) {}
 
     /**
@@ -41,6 +46,12 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $householdId = $user->active_household_id;
+
+        $this->formulaWidgetBootstrapService->provisionForUser($user);
+        $this->formulaWidgetLayoutNormalizer->syncTemplateConfigs($user);
+        $dashboardLayout = $this->getDashboardLayout($user);
+        $formulaWidgetPayloads = $this->buildFormulaWidgetPayloads($user, $dashboardLayout);
+        $formulaWidgetMeta = $this->buildFormulaWidgetMeta($user, $dashboardLayout);
 
         $accounts = Account::where('household_id', $householdId)
             ->where('active', true)
@@ -208,11 +219,11 @@ class DashboardController extends Controller
             'annualRevenueData' => $this->getAnnualRevenueData($user),
             'taxThermometerData' => $this->getTaxThermometerData($user),
             'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
-            'dashboardLayout' => $this->getDashboardLayout($user),
+            'dashboardLayout' => $dashboardLayout,
+            'formulaWidgetPayloads' => $formulaWidgetPayloads,
+            'formulaWidgetMeta' => $formulaWidgetMeta,
+            'importShareToken' => session('importShareToken'),
             'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
-            'netWorthData' => $this->netWorthSeriesService->buildForChart($householdId, $user->id, 'portfolio'),
-            'netWorthCashData' => $this->netWorthSeriesService->buildForChart($householdId, $user->id, 'cash'),
-            'cashFlowData' => $this->getCashFlowData($householdId, $user->id),
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
             'financialGoals' => $this->getFinancialGoalsData($householdId),
             'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
@@ -491,6 +502,65 @@ class DashboardController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $dashboardLayout
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildFormulaWidgetPayloads(User $user, array $dashboardLayout): array
+    {
+        $widgetIds = [];
+        foreach ($dashboardLayout['widgets'] ?? [] as $entry) {
+            $id = $entry['id'] ?? '';
+            if (preg_match('/^formula_widget_(\d+)$/', (string) $id, $matches)) {
+                $widgetIds[] = (int) $matches[1];
+            }
+        }
+
+        if ($widgetIds === []) {
+            return [];
+        }
+
+        $widgets = FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', $widgetIds)
+            ->get();
+
+        return $this->formulaWidgetPayloadBuilder->buildMany($widgets, $user);
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboardLayout
+     * @return array<string, array{name: string, display_type: string}>
+     */
+    private function buildFormulaWidgetMeta(User $user, array $dashboardLayout): array
+    {
+        $widgetIds = [];
+        foreach ($dashboardLayout['widgets'] ?? [] as $entry) {
+            $id = $entry['id'] ?? '';
+            if (preg_match('/^formula_widget_(\d+)$/', (string) $id, $matches)) {
+                $widgetIds[] = (int) $matches[1];
+            }
+        }
+
+        if ($widgetIds === []) {
+            return [];
+        }
+
+        $meta = [];
+        FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', $widgetIds)
+            ->get(['id', 'name', 'display_type'])
+            ->each(function (FormulaWidget $widget) use (&$meta) {
+                $meta[(string) $widget->id] = [
+                    'name' => $widget->name,
+                    'display_type' => $widget->display_type,
+                ];
+            });
+
+        return $meta;
+    }
+
+    /**
      * Recupera la configurazione layout della dashboard per l'utente corrente.
      * Se non esiste una configurazione salvata, restituisce quella di default.
      * I widget nuovi (non presenti nel layout salvato) vengono aggiunti in coda
@@ -506,7 +576,7 @@ class DashboardController extends Controller
             return DashboardLayout::defaultConfig();
         }
 
-        $savedConfig = $layout->config;
+        $savedConfig = DashboardLayout::stripTierALegacyWidgets($layout->config);
         $defaultWidgets = DashboardLayout::defaultConfig()['widgets'];
 
         // Ricava gli ID già presenti nel layout salvato
@@ -521,7 +591,15 @@ class DashboardController extends Controller
             }
         }
 
-        return $savedConfig;
+        $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
+        $idsBefore = array_column($savedConfig['widgets'] ?? [], 'id');
+        $idsAfter = array_column($sanitized['widgets'] ?? [], 'id');
+
+        if ($idsBefore !== $idsAfter) {
+            $layout->update(['config' => $sanitized]);
+        }
+
+        return $this->formulaWidgetLayoutNormalizer->normalize($user, $sanitized);
     }
 
     /**
@@ -540,36 +618,6 @@ class DashboardController extends Controller
             'risk_label' => $snapshot['allocationRiskLabel'],
             'allocation' => $snapshot['allocation'],
         ];
-    }
-
-    /**
-     * Cashflow mensile (entrate / uscite / risparmio) degli ultimi 12 mesi.
-     * Usato dal widget "Panoramica Cashflow" della dashboard.
-     */
-    private function getCashFlowData(int $householdId, int $userId): array
-    {
-        $startDate = Carbon::now()->subYear()->startOfMonth();
-        $endDate = Carbon::now()->endOfDay();
-
-        $isSqlite = DB::getDriverName() === 'sqlite';
-        $yearExpr = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
-        $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
-
-        $transactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
-            ->whereBetween('date', [$startDate, $endDate])
-            ->whereNull('transfer_id')
-            ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income, SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expenses")
-            ->groupByRaw("{$yearExpr}, {$monthExpr}")
-            ->orderByRaw("{$yearExpr}, {$monthExpr}")
-            ->get();
-
-        return $transactions->map(fn ($row) => [
-            'month' => Carbon::createFromDate($row->year, $row->month, 1)->translatedFormat('M Y'),
-            'Entrate' => round((float) $row->income, 2),
-            'Uscite' => round((float) $row->expenses, 2),
-            'Risparmio' => round((float) $row->income - (float) $row->expenses, 2),
-        ])->values()->toArray();
     }
 
     /**

@@ -12,23 +12,25 @@ import { useModules } from '@/hooks/useModules';
 import RevenueProgressCard from '@/Components/RevenueProgressCard';
 import TaxThermometer from '@/Components/TaxThermometer';
 import LifestyleWidget, { LifestyleWidgetData } from '@/Components/LifestyleWidget';
-import CashFlowChart, { CashFlowDataPoint } from '@/Components/Charts/CashFlowChart';
-import NetWorthChart, { NetWorthDataPoint } from '@/Components/Charts/NetWorthChart';
 import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
 import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components/ExpenseDistributionWidget';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
+import CustomFormulaWidget from '@/Components/FormulaWidgets/CustomFormulaWidget';
+import {
+    FormulaWidgetMeta,
+    FormulaWidgetPayload,
+    isFormulaWidgetId,
+    parseFormulaWidgetNumericId,
+} from '@/types/formulaWidget';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
 import DashboardWidgetShell, {
-    DashboardWidgetSegmentedControl,
     dashboardWidgetEmptyClass as widgetEmptyClass,
-    dashboardWidgetHeaderClass as widgetHeaderClass,
     dashboardWidgetListBodyClass as widgetListBodyClass,
 } from '@/Components/Dashboard/DashboardWidgetShell';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
-import { contentPanelHeaderClass } from '@/Components/IndexPageListToolbars';
 import {
     DndContext,
     closestCenter,
@@ -44,7 +46,7 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useState } from 'react';
-import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
 
 interface Account {
@@ -78,13 +80,6 @@ interface Transaction {
         id: number;
         name: string;
     };
-}
-
-interface MonthlyStats {
-    income: number;
-    expenses: number;
-    net: number;
-    transaction_count: number;
 }
 
 interface ActiveBudget {
@@ -162,18 +157,7 @@ interface AssetAllocationData {
 
 interface DashboardProps {
     accounts: Account[];
-    totalBalance: number;
-    balanceBreakdown: {
-        total: number;
-        invested: number;
-        investedLinked: number;
-        patrimonioTotal: number;
-    };
     recentTransactions: Transaction[];
-    periodStats: MonthlyStats;
-    previousPeriodStats: MonthlyStats;
-    periodLabel: string;
-    previousPeriodLabel: string;
     activeBudgets: ActiveBudget[];
     openDebtsCredits: OpenDebtCredit[];
     debtsCreditsSummary: DebtsCreditsSummary;
@@ -182,12 +166,12 @@ interface DashboardProps {
     lifestyleWidgetData: LifestyleWidgetData;
     dashboardLayout: DashboardLayoutConfig;
     assetAllocationData: AssetAllocationData;
-    netWorthData: NetWorthDataPoint[];
-    netWorthCashData: NetWorthDataPoint[];
-    cashFlowData: CashFlowDataPoint[];
     expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
     expenseDistributionData: ExpenseDistributionData;
+    formulaWidgetPayloads: Record<string, FormulaWidgetPayload>;
+    formulaWidgetMeta: Record<string, FormulaWidgetMeta>;
+    importShareToken?: string | null;
 }
 
 function getAccountTypeLabel(type: string): string {
@@ -201,46 +185,6 @@ function getAccountTypeLabel(type: string): string {
         other: 'Altro',
     };
     return types[type] || type;
-}
-
-function StatCard({
-    title,
-    value,
-    subtitle,
-    trend,
-    trendLabel,
-    className,
-}: {
-    title: string;
-    value: string;
-    subtitle?: string;
-    trend?: 'up' | 'down' | 'neutral';
-    trendLabel?: string;
-    className?: string;
-}) {
-    const detail = trendLabel ? (
-        <span className="flex items-center">
-            {trend ? (
-                <span className={clsx('mr-1', trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-400')}>
-                    {trend === 'up' && '↑'}
-                    {trend === 'down' && '↓'}
-                    {trend === 'neutral' && '→'}
-                </span>
-            ) : null}
-            <span className={clsx(trend === 'up' && 'text-green-500', trend === 'down' && 'text-red-500', trend === 'neutral' && 'text-gray-500')}>
-                {trendLabel}
-            </span>
-        </span>
-    ) : subtitle;
-
-    return (
-        <IndexKpiCell
-            label={title}
-            value={value}
-            detail={detail}
-            className={className}
-        />
-    );
 }
 
 function AccountCard({ account }: { account: Account }) {
@@ -360,13 +304,7 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
 
 export default function Dashboard({
     accounts,
-    totalBalance,
-    balanceBreakdown,
     recentTransactions,
-    periodStats,
-    previousPeriodStats,
-    periodLabel,
-    previousPeriodLabel,
     activeBudgets,
     openDebtsCredits,
     debtsCreditsSummary,
@@ -375,15 +313,13 @@ export default function Dashboard({
     lifestyleWidgetData,
     dashboardLayout,
     assetAllocationData,
-    netWorthData,
-    netWorthCashData,
-    cashFlowData,
     expenseCategories,
     financialGoals,
     expenseDistributionData,
+    formulaWidgetPayloads,
+    formulaWidgetMeta = {},
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [netWorthMode, setNetWorthMode] = useState<'portfolio' | 'cash'>('portfolio');
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
     const hasVat = auth.user.user_type === 'partita_iva';
@@ -402,16 +338,6 @@ export default function Dashboard({
         hideWidgetsAndSave,
         resetLayout,
     } = useDashboardLayout(dashboardLayout);
-
-    const incomeTrend =
-        previousPeriodStats.income > 0
-            ? ((periodStats.income - previousPeriodStats.income) / previousPeriodStats.income) * 100
-            : periodStats.income > 0 ? 100 : 0;
-
-    const expensesTrend =
-        previousPeriodStats.expenses > 0
-            ? ((periodStats.expenses - previousPeriodStats.expenses) / previousPeriodStats.expenses) * 100
-            : periodStats.expenses > 0 ? 100 : 0;
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
@@ -441,63 +367,47 @@ export default function Dashboard({
         }
     }
 
+    function renderFormulaWidget(widgetId: WidgetId, editing: boolean): React.ReactNode {
+        const numericId = parseFormulaWidgetNumericId(widgetId);
+        if (!numericId) return null;
+
+        const payload = formulaWidgetPayloads[numericId];
+        if (!payload) {
+            if (!editing) return null;
+
+            const meta = formulaWidgetMeta[numericId];
+            const label = meta?.name ?? 'Widget a formula';
+
+            return (
+                <DashboardWidgetShell title={label} bodyClassName={widgetListBodyClass}>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Anteprima non disponibile. Salva il layout o ricarica la pagina se il widget è stato rimosso.
+                    </p>
+                </DashboardWidgetShell>
+            );
+        }
+
+        if (payload.type === 'kpi' && payload.variant === 'balance_summary') {
+            return <CustomFormulaWidget payload={payload} embedded />;
+        }
+
+        return (
+            <DashboardWidgetShell
+                title={payload.name}
+                subtitle={payload.periodLabel}
+                bodyClassName={widgetListBodyClass}
+            >
+                <CustomFormulaWidget payload={payload} embedded />
+            </DashboardWidgetShell>
+        );
+    }
+
     function renderWidgetContent(widgetId: WidgetId, size: string): React.ReactNode {
+        if (isFormulaWidgetId(widgetId)) {
+            return renderFormulaWidget(widgetId, isEditing);
+        }
+
         switch (widgetId) {
-            case 'total_balance':
-                return (
-                    <Link href={route('patrimonio.index')} className="block">
-                        <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-4 text-white shadow-lg transition-shadow hover:shadow-xl sm:p-5">
-                            <h3 className="text-sm font-medium text-slate-300">Saldo conti</h3>
-                            <p className={clsx('mt-1.5 text-3xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>
-                                {formatCurrency(balanceBreakdown?.total ?? totalBalance)}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">Somma saldi conti attivi (liquidità)</p>
-                            <p className="mt-2 text-sm text-slate-400">
-                                Investimenti aperti{' '}
-                                <span className={moneyTabular}>{formatCurrency(balanceBreakdown?.invested ?? 0)}</span>
-                            </p>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                                Costo di carico · non incluso nel saldo conti
-                            </p>
-                            <p className="mt-2 border-t border-slate-700/60 pt-2 text-sm text-slate-300">
-                                Patrimonio netto{' '}
-                                <span className={moneyTabular}>
-                                    {formatCurrency(
-                                        balanceBreakdown?.patrimonioTotal
-                                            ?? (balanceBreakdown?.total ?? totalBalance) + (balanceBreakdown?.investedLinked ?? 0),
-                                    )}
-                                </span>
-                            </p>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                                Saldo conti + investimenti collegati al ledger (costo di carico)
-                            </p>
-                            <p className="mt-1 text-xs text-slate-500">
-                                {accounts.length} {accounts.length === 1 ? 'conto attivo' : 'conti attivi'} · Dettaglio patrimonio
-                            </p>
-                        </div>
-                    </Link>
-                );
-
-            case 'monthly_stats':
-                return (
-                    <div className={moneyKpiGrid2}>
-                        <StatCard
-                            title="Entrate"
-                            value={formatCurrency(periodStats.income)}
-                            subtitle={periodLabel}
-                            trend={incomeTrend >= 0 ? 'up' : 'down'}
-                            trendLabel={`${incomeTrend >= 0 ? '+' : ''}${incomeTrend.toFixed(0)}% vs ${previousPeriodLabel.toLowerCase()}`}
-                        />
-                        <StatCard
-                            title="Uscite"
-                            value={formatCurrency(periodStats.expenses)}
-                            subtitle={periodLabel}
-                            trend={expensesTrend <= 0 ? 'up' : 'down'}
-                            trendLabel={`${expensesTrend >= 0 ? '+' : ''}${expensesTrend.toFixed(0)}% vs ${previousPeriodLabel.toLowerCase()}`}
-                        />
-                    </div>
-                );
-
             case 'annual_revenue':
                 if (!annualRevenueData.visible) return null;
                 return (
@@ -728,87 +638,6 @@ export default function Dashboard({
                 );
             }
 
-            case 'net_worth': {
-                const netWorthSubtitle = netWorthMode === 'cash'
-                    ? 'Saldo conti (tutti i conti attivi)'
-                    : 'Saldo conti + investimenti collegati al ledger (costo di carico)';
-                const netWorthModeOptions = [
-                    { value: 'portfolio' as const, label: 'Patrimonio' },
-                    { value: 'cash' as const, label: 'Solo liquidità' },
-                ];
-
-                return (
-                    <DashboardWidgetShell
-                        bodyClassName={widgetListBodyClass}
-                        header={(
-                            <div className={contentPanelHeaderClass}>
-                                <div className="space-y-2.5 sm:hidden">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <h3 className="truncate text-base font-semibold text-gray-900 dark:text-white">
-                                            Patrimonio nel tempo
-                                        </h3>
-                                        <Link
-                                            href={route('analytics.net-worth')}
-                                            className="shrink-0 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-                                        >
-                                            Dettagli →
-                                        </Link>
-                                    </div>
-                                    <DashboardWidgetSegmentedControl
-                                        value={netWorthMode}
-                                        options={netWorthModeOptions}
-                                        onChange={setNetWorthMode}
-                                        ariaLabel="Vista patrimonio"
-                                    />
-                                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                                        {netWorthSubtitle}
-                                    </p>
-                                </div>
-                                <div className={`${widgetHeaderClass} hidden border-0 p-0 sm:flex`}>
-                                    <div className="min-w-0">
-                                        <h3 className="font-semibold text-gray-900 dark:text-white">Patrimonio nel tempo</h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{netWorthSubtitle}</p>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        <DashboardWidgetSegmentedControl
-                                            value={netWorthMode}
-                                            options={netWorthModeOptions}
-                                            onChange={setNetWorthMode}
-                                            ariaLabel="Vista patrimonio"
-                                            className="w-auto sm:inline-grid sm:grid-cols-2"
-                                        />
-                                        <Link
-                                            href={route('analytics.net-worth')}
-                                            className="whitespace-nowrap text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-                                        >
-                                            Dettagli →
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    >
-                        <NetWorthChart
-                            embedded
-                            data={netWorthMode === 'cash' ? netWorthCashData : netWorthData}
-                            title={netWorthMode === 'cash' ? 'Liquidità nel tempo' : 'Patrimonio nel tempo'}
-                            subtitle={netWorthSubtitle}
-                        />
-                    </DashboardWidgetShell>
-                );
-            }
-
-            case 'cash_flow':
-                return (
-                    <DashboardWidgetShell
-                        title="Panoramica cashflow"
-                        subtitle="Entrate, uscite e risparmio mensile"
-                        detailHref={route('analytics.cash-flow')}
-                    >
-                        <CashFlowChart embedded data={cashFlowData} />
-                    </DashboardWidgetShell>
-                );
-
             case 'expense_treemap':
                 return (
                     <DashboardWidgetShell
@@ -1012,6 +841,11 @@ export default function Dashboard({
                                 {sortedWidgets.map((widget) => {
                                     const renderable = isWidgetRenderable(widget.id);
                                     const content = renderWidgetContent(widget.id, widget.size);
+                                    const formulaNumericId = parseFormulaWidgetNumericId(widget.id);
+                                    const formulaTitle = formulaNumericId
+                                        ? (formulaWidgetPayloads[formulaNumericId]?.name
+                                            ?? formulaWidgetMeta[formulaNumericId]?.name)
+                                        : undefined;
 
                                     if (!renderable) return null;
                                     if (!widget.visible && !isEditing) return null;
@@ -1024,6 +858,7 @@ export default function Dashboard({
                                             isEditing={isEditing}
                                             onToggleVisibility={() => toggleWidgetVisibility(widget.id)}
                                             onChangeSize={(size: WidgetSize) => setWidgetSize(widget.id, size)}
+                                            titleOverride={formulaTitle}
                                             className={clsx(
                                                 widget.id === 'quick_actions' && !isEditing && 'hidden lg:flex',
                                             )}

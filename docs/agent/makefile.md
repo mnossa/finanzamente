@@ -22,6 +22,7 @@ Always use `make` (never raw `docker compose` / host `npm`) for correct UID/GID.
 | Command | Action |
 |---------|--------|
 | `make migrate` | Run migrations |
+| `make formula-widgets-release` | One-shot Formula Widget release bootstrap (templates + dashboard migration); also auto via migration `2026_06_10_100200_*` |
 | `make fresh` | migrate:fresh |
 | `make seed` | Seeders |
 | `make db-pull-prod` | Dump MySQL da produzione → `storage/backups/` (`.env.db-pull`) |

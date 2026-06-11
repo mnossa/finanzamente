@@ -11,22 +11,6 @@ const ALL_SIZES: WidgetDefinition['allowedSizes'] = ['sm', 'md', 'lg', 'xl'];
 
 export const WIDGET_REGISTRY: WidgetDefinition[] = [
     {
-        id: 'total_balance',
-        title: 'Saldo conti',
-        description: 'Saldo conti, investimenti aperti e patrimonio netto (costo di carico).',
-        defaultSize: 'xl',
-        defaultVisible: true,
-        allowedSizes: ALL_SIZES,
-    },
-    {
-        id: 'monthly_stats',
-        title: 'Entrate e uscite',
-        description: 'Entrate e uscite degli ultimi 30 giorni, con confronto sui 30 giorni precedenti.',
-        defaultSize: 'lg',
-        defaultVisible: true,
-        allowedSizes: ALL_SIZES,
-    },
-    {
         id: 'annual_revenue',
         title: 'Fatturato Annuo',
         description: 'Monitora il fatturato annuo rispetto alla soglia del regime forfettario.',
@@ -102,22 +86,6 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         defaultSize: 'md',
         defaultVisible: true,
         requiresModule: 'investments',
-        allowedSizes: ALL_SIZES,
-    },
-    {
-        id: 'net_worth',
-        title: 'Patrimonio nel Tempo',
-        description: 'Andamento patrimonio (liquidità + investimenti collegati) o solo liquidità.',
-        defaultSize: 'md',
-        defaultVisible: true,
-        allowedSizes: ALL_SIZES,
-    },
-    {
-        id: 'cash_flow',
-        title: 'Panoramica Cashflow',
-        description: 'Entrate, uscite e risparmio mensile degli ultimi 12 mesi.',
-        defaultSize: 'md',
-        defaultVisible: true,
         allowedSizes: ALL_SIZES,
     },
     {

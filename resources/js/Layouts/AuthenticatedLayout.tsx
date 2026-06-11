@@ -179,6 +179,7 @@ const navigationSections: NavigationSection[] = [
         defaultExpanded: true,
         items: [
             { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard, moduleId: 'dashboard' },
+            { name: 'Widget a formula', href: 'formula-marketplace.index', routeMatch: 'formula-*', icon: Icons.BarChart2 },
             { name: 'Simulazioni', href: 'simulations.public', routeMatch: 'simulations.*', icon: Icons.Simulation },
         ]
     },
