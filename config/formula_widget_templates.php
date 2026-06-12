@@ -165,20 +165,6 @@ return [
         ],
     ],
     [
-        'template_slug' => 'official.lifestyle_score',
-        'name' => 'Lifestyle Inflation Score',
-        'display_type' => 'kpi',
-        'period_preset' => 'full_history',
-        'default_size' => 'xl',
-        'chart_config' => ['format' => 'percent'],
-        'variable' => [
-            'code' => 'lifestyle_score_var',
-            'name' => 'Lifestyle Score',
-            'type' => 'formula',
-            'formula_string' => '[lifestyle_score]',
-        ],
-    ],
-    [
         'template_slug' => 'official.fatturato_annuo',
         'name' => 'Fatturato annuo',
         'display_type' => 'progress',

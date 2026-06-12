@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DashboardLayout;
+use App\Models\FinancialVariable;
 use App\Models\FormulaWidget;
 use App\Models\Household;
 use App\Models\User;
@@ -32,6 +33,19 @@ class DashboardLayoutTest extends TestCase
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
+    }
+
+    private function createUserFormulaWidget(array $attributes = []): FormulaWidget
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
+
+        return FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create(array_merge([
+                'period_preset' => null,
+                'chart_config' => ['format' => 'currency'],
+            ], $attributes));
     }
 
     // ─── GET /dashboard/layout ─────────────────────────────────────────────
@@ -256,6 +270,58 @@ class DashboardLayoutTest extends TestCase
     }
 
     #[Test]
+    public function reset_layout_includes_installed_formula_widgets(): void
+    {
+        $widget = $this->createUserFormulaWidget(['default_size' => 'lg']);
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'config' => [
+                'widgets' => [
+                    ['id' => "formula_widget_{$widget->id}", 'visible' => true, 'position' => 0, 'size' => 'lg'],
+                ],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->deleteJson(route('dashboard.layout.reset'));
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => 'accounts']);
+        $response->assertJsonFragment(['id' => "formula_widget_{$widget->id}"]);
+    }
+
+    #[Test]
+    public function dashboard_heals_saved_layout_missing_installed_formula_widgets(): void
+    {
+        $widget = $this->createUserFormulaWidget(['default_size' => 'md']);
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'config' => DashboardLayout::defaultConfig(),
+        ]);
+
+        $this->withoutVite()
+            ->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('dashboardLayout.widgets', function ($widgets) use ($widget): bool {
+                    $ids = collect($widgets)->pluck('id')->all();
+
+                    return in_array("formula_widget_{$widget->id}", $ids, true);
+                })
+            );
+
+        $this->assertDatabaseHas('dashboard_layouts', [
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+        ]);
+    }
+
+    #[Test]
     public function user_cannot_access_another_users_layout(): void
     {
         $otherUser = User::factory()->create();
@@ -303,8 +369,6 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function dashboard_page_receives_saved_layout(): void
     {
-        FormulaWidget::factory()->for($this->user)->create();
-
         $config = [
             'widgets' => [
                 ['id' => 'quick_actions',       'visible' => true, 'position' => 0, 'size' => 'lg'],
@@ -329,8 +393,9 @@ class DashboardLayoutTest extends TestCase
             ->get(route('dashboard'));
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page->where('dashboardLayout.widgets.0.id', 'quick_actions')
-        );
+        $response->assertInertia(fn ($page) => $page->where('dashboardLayout.widgets', function ($widgets): bool {
+            return collect($widgets)->pluck('id')->contains('quick_actions');
+        }));
     }
 
     // ─── Regressione: financial_goals non deve essere rifiutato ───────────
@@ -401,8 +466,6 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function dashboard_page_strips_legacy_widgets_from_saved_layout(): void
     {
-        FormulaWidget::factory()->for($this->user)->create();
-
         DashboardLayout::create([
             'user_id' => $this->user->id,
             'household_id' => $this->household->id,
@@ -431,7 +494,7 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function saving_layout_strips_orphan_formula_widgets(): void
     {
-        $owned = FormulaWidget::factory()->for($this->user)->create();
+        $owned = $this->createUserFormulaWidget();
 
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), [
@@ -460,9 +523,7 @@ class DashboardLayoutTest extends TestCase
             ->officialTemplate('official.test_widget')
             ->create();
 
-        $clone = FormulaWidget::factory()
-            ->for($this->user)
-            ->create(['source_id' => $official->id]);
+        $clone = $this->createUserFormulaWidget(['source_id' => $official->id]);
 
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), [

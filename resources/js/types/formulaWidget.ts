@@ -131,4 +131,5 @@ export function isFormulaWidgetId(widgetId: string): boolean {
 export interface FormulaWidgetMeta {
     name: string;
     display_type: string;
+    variant?: string | null;
 }

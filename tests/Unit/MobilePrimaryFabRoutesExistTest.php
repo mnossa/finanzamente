@@ -34,6 +34,7 @@ class MobilePrimaryFabRoutesExistTest extends TestCase
             'investments.create',
             'investment-pacs.create',
             'investment-assets.create',
+            'formula-widgets.create',
         ];
 
         foreach ($names as $name) {

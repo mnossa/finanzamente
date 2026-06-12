@@ -246,6 +246,24 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
             ariaLabel: 'Nuova transazione',
             analyticsSection: 'inbox_fallback_transactions',
         }) ??
+        when(['formula-widgets.index'], {
+            mode: 'link',
+            href: route('formula-widgets.create'),
+            ariaLabel: 'Nuovo widget',
+            analyticsSection: 'formula_widgets',
+        }) ??
+        when(['formula-marketplace.index'], {
+            mode: 'link',
+            href: route('formula-widgets.create'),
+            ariaLabel: 'Nuovo widget',
+            analyticsSection: 'formula_marketplace',
+        }) ??
+        when(['formula-variables.index'], {
+            mode: 'link',
+            href: route('formula-widgets.create'),
+            ariaLabel: 'Nuovo widget',
+            analyticsSection: 'formula_variables',
+        }) ??
         when(['dashboard'], {
             mode: 'link',
             href: route('transactions.create'),

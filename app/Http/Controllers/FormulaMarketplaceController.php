@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PreviewMarketplaceWidgetRequest;
 use App\Models\FormulaWidget;
 use App\Services\FinancialVariableCloneService;
 use App\Services\FormulaWidgetDashboardPinService;
+use App\Services\FormulaWidgetPreviewService;
 use App\Services\FormulaWidgetRemovalService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,6 +48,19 @@ class FormulaMarketplaceController extends Controller
         ]);
     }
 
+    public function preview(PreviewMarketplaceWidgetRequest $request, FormulaWidgetPreviewService $previewService): JsonResponse
+    {
+        try {
+            return response()->json(
+                $previewService->buildFromMarketplace($request->user(), $request->validated()),
+            );
+        } catch (ValidationException $e) {
+            return response()->json([
+                'errors' => collect($e->errors())->flatten()->values()->all(),
+            ], 422);
+        }
+    }
+
     public function installTemplate(Request $request, string $templateSlug, FinancialVariableCloneService $cloneService): RedirectResponse
     {
         $user = Auth::user();
@@ -51,6 +68,10 @@ class FormulaMarketplaceController extends Controller
 
         if ($request->boolean('pin')) {
             app(FormulaWidgetDashboardPinService::class)->pin($user, $widget);
+
+            return redirect()
+                ->route('dashboard')
+                ->with('success', 'Widget aggiunto alla dashboard.');
         }
 
         return redirect()

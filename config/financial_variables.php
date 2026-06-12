@@ -375,5 +375,6 @@ return [
     /** Template ufficiali ritirati dalla galleria (sostituiti da widget built-in). */
     'retired_official_template_slugs' => [
         'official.distribuzione_spese',
+        'official.lifestyle_score',
     ],
 ];

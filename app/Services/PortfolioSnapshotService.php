@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\Investment;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class PortfolioSnapshotService
 {
@@ -33,6 +34,49 @@ class PortfolioSnapshotService
      * }
      */
     public function build(User $user): array
+    {
+        $cacheKey = sprintf('portfolio_snapshot:%d:%d', $user->id, $user->active_household_id ?? 0);
+
+        /** @var array{
+         *     positions: array<int, array<string, mixed>>,
+         *     allocation: array<int, array<string, mixed>>,
+         *     totalValue: float,
+         *     allocationTotalValue: float,
+         *     liquidValue: float,
+         *     investedValue: float,
+         *     investedLinkedValue: float,
+         *     investedUnlinkedValue: float,
+         *     riskIndex: float,
+         *     riskLabel: string,
+         *     allocationRiskIndex: float,
+         *     allocationRiskLabel: string,
+         *     accounts: array<int, array<string, mixed>>,
+         *     classColors: array<string, string>,
+         *     classLabels: array<string, string>
+         * } */
+        return Cache::store('array')->remember($cacheKey, 60, fn () => $this->computeSnapshot($user));
+    }
+
+    /**
+     * @return array{
+     *     positions: array<int, array<string, mixed>>,
+     *     allocation: array<int, array<string, mixed>>,
+     *     totalValue: float,
+     *     allocationTotalValue: float,
+     *     liquidValue: float,
+     *     investedValue: float,
+     *     investedLinkedValue: float,
+     *     investedUnlinkedValue: float,
+     *     riskIndex: float,
+     *     riskLabel: string,
+     *     allocationRiskIndex: float,
+     *     allocationRiskLabel: string,
+     *     accounts: array<int, array<string, mixed>>,
+     *     classColors: array<string, string>,
+     *     classLabels: array<string, string>
+     * }
+     */
+    private function computeSnapshot(User $user): array
     {
         $householdId = $user->active_household_id;
 

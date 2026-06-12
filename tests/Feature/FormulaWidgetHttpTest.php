@@ -117,7 +117,7 @@ class FormulaWidgetHttpTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('FormulaWidgets/Marketplace')
-                ->has('officialTemplates', 12));
+                ->has('officialTemplates', 11));
 
         $this->actingAs($this->user)
             ->post(route('formula-marketplace.install-template', 'official.saldo_liquidita'))
@@ -203,13 +203,28 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
+    public function marketplace_preview_returns_live_payload_for_official_template(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-marketplace.preview'), [
+                'template_slug' => 'official.saldo_liquidita',
+            ])
+            ->assertOk()
+            ->assertJsonStructure(['payload' => ['type', 'name', 'value']])
+            ->assertJsonPath('payload.type', 'kpi')
+            ->assertJsonPath('payload.name', 'Saldo conti');
+    }
+
+    #[Test]
     public function marketplace_can_uninstall_installed_template(): void
     {
         $this->seed(FormulaWidgetTemplateSeeder::class);
 
         $this->actingAs($this->user)
             ->post(route('formula-marketplace.install-template', 'official.saldo_liquidita'), ['pin' => true])
-            ->assertRedirect(route('formula-widgets.index'));
+            ->assertRedirect(route('dashboard'));
 
         $installed = FormulaWidget::query()
             ->where('user_id', $this->user->id)
@@ -252,7 +267,7 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
-    public function dashboard_includes_formula_widget_payloads_for_pinned_widgets(): void
+    public function dashboard_includes_priority_formula_payloads_and_defers_rest_to_async_endpoint(): void
     {
         $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
         $widget = FormulaWidget::factory()
@@ -276,6 +291,55 @@ class FormulaWidgetHttpTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->has("formulaWidgetPayloads.{$widget->id}")
                 ->where("formulaWidgetPayloads.{$widget->id}.type", 'kpi')
-                ->where("formulaWidgetPayloads.{$widget->id}.name", 'Saldo test'));
+                ->has("formulaWidgetMeta.{$widget->id}"));
+
+        $this->actingAs($this->user)
+            ->getJson(route('dashboard.formula-widget-payloads'))
+            ->assertOk()
+            ->assertJsonPath("payloads.{$widget->id}.type", 'kpi')
+            ->assertJsonPath("payloads.{$widget->id}.name", 'Saldo test');
+    }
+
+    #[Test]
+    public function lifestyle_score_official_template_is_retired_from_marketplace(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $this->actingAs($this->user)
+            ->get(route('formula-marketplace.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('officialTemplates', fn ($templates) => collect($templates)
+                    ->every(fn (array $template) => ($template['template_slug'] ?? '') !== 'official.lifestyle_score')));
+    }
+
+    #[Test]
+    public function formula_widget_payloads_endpoint_exposes_private_http_cache_headers(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
+        $widget = FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create(['display_type' => 'kpi']);
+
+        $this->actingAs($this->user)
+            ->post(route('formula-widgets.pin', $widget))
+            ->assertRedirect(route('dashboard'));
+
+        $first = $this->actingAs($this->user)
+            ->getJson(route('dashboard.formula-widget-payloads'));
+
+        $first->assertOk();
+        $cacheControl = (string) $first->headers->get('Cache-Control');
+        $this->assertStringContainsString('private', $cacheControl);
+        $this->assertStringContainsString('max-age=300', $cacheControl);
+        $this->assertNotEmpty($first->headers->get('ETag'));
+
+        $etag = $first->headers->get('ETag');
+
+        $this->actingAs($this->user)
+            ->withHeaders(['If-None-Match' => $etag])
+            ->getJson(route('dashboard.formula-widget-payloads'))
+            ->assertStatus(304);
     }
 }

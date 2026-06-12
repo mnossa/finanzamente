@@ -31,9 +31,16 @@ class FormulaWidgetLayoutNormalizer
                 }
 
                 $template = $templatesBySlug[$slug];
+                $chartConfig = $template['chart_config'] ?? $widget->chart_config;
+                $defaultSize = $template['default_size'] ?? $widget->default_size;
+
+                if ($widget->chart_config === $chartConfig && $widget->default_size === $defaultSize) {
+                    return;
+                }
+
                 $widget->forceFill([
-                    'chart_config' => $template['chart_config'] ?? $widget->chart_config,
-                    'default_size' => $template['default_size'] ?? $widget->default_size,
+                    'chart_config' => $chartConfig,
+                    'default_size' => $defaultSize,
                 ])->saveQuietly();
             });
     }
@@ -161,6 +168,45 @@ class FormulaWidgetLayoutNormalizer
         }
 
         $config['widgets'] = $normalized;
+
+        return $config;
+    }
+
+    /**
+     * Aggiunge al layout i widget formula installati dall'utente ma assenti dalla config
+     * (es. dopo "Ripristina default" o layout salvato senza formula_widget_*).
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    public function mergeInstalledFormulaWidgets(User $user, array $config): array
+    {
+        $widgets = $config['widgets'] ?? [];
+        $existingLayoutIds = array_flip(array_column($widgets, 'id'));
+        $maxPosition = $widgets === [] ? -1 : (int) max(array_column($widgets, 'position'));
+
+        FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->where('is_official_template', false)
+            ->orderBy('created_at')
+            ->each(function (FormulaWidget $widget) use (&$widgets, &$existingLayoutIds, &$maxPosition): void {
+                $layoutId = "formula_widget_{$widget->id}";
+
+                if (isset($existingLayoutIds[$layoutId])) {
+                    return;
+                }
+
+                $maxPosition++;
+                $widgets[] = [
+                    'id' => $layoutId,
+                    'visible' => true,
+                    'position' => $maxPosition,
+                    'size' => $widget->default_size ?? 'md',
+                ];
+                $existingLayoutIds[$layoutId] = true;
+            });
+
+        $config['widgets'] = $widgets;
 
         return $config;
     }

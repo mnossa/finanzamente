@@ -6,6 +6,7 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import CardBox from '@/Components/CardBox';
+import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -31,45 +32,46 @@ const DISPLAY_LABELS: Record<string, string> = {
 function WidgetCard({ widget, onDelete }: { widget: FormulaWidgetSummary; onDelete: (id: number, name: string) => void }) {
     return (
         <CardBox className="flex flex-col gap-3 p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-                <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{widget.name}</h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {DISPLAY_LABELS[widget.display_type] ?? widget.display_type}
-                        {widget.financial_variable ? ` · ${widget.financial_variable.name}` : ''}
+            <div className="min-w-0">
+                <h3 className="font-semibold text-gray-900 dark:text-white">{widget.name}</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {DISPLAY_LABELS[widget.display_type] ?? widget.display_type}
+                    {widget.financial_variable ? ` · ${widget.financial_variable.name}` : ''}
+                </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                {widget.is_public && widget.share_token && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 sm:min-w-0 sm:flex-1">
+                        Condiviso:{' '}
+                        <a
+                            href={route('shared.formula.show', widget.share_token)}
+                            className="font-medium text-primary-600 hover:underline"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            link pubblico
+                        </a>
                     </p>
-                </div>
-                <div className="flex shrink-0 gap-1">
+                )}
+                <div className="flex shrink-0 flex-col gap-2 sm:ml-auto sm:flex-row">
                     <button
                         type="button"
                         onClick={() => router.post(route('formula-widgets.pin', widget.id))}
-                        className="rounded-lg border border-surface-300 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-surface-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        className="w-full rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-900/30 dark:text-primary-200 dark:hover:bg-primary-900/50 sm:w-auto sm:py-1.5"
                     >
                         Aggiungi alla dashboard
                     </button>
                     <button
                         type="button"
                         onClick={() => onDelete(widget.id, widget.name)}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-300 px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-red-900/20 sm:w-auto sm:py-1.5"
                         aria-label={`Elimina ${widget.name}`}
                     >
                         <TrashIcon className="h-4 w-4" />
+                        Elimina
                     </button>
                 </div>
             </div>
-            {widget.is_public && widget.share_token && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Condiviso:{' '}
-                    <a
-                        href={route('shared.formula.show', widget.share_token)}
-                        className="font-medium text-primary-600 hover:underline"
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        link pubblico
-                    </a>
-                </p>
-            )}
         </CardBox>
     );
 }
@@ -82,8 +84,9 @@ export default function Index({ widgets }: IndexProps) {
             header={
                 <PageHeader
                     title="Widget a formula"
+                    mobileTitle="Widget"
                     actions={
-                        <div className="flex flex-wrap gap-2">
+                        <IndexPageHeaderActions>
                             <LinkButton href={route('formula-marketplace.index')} variant="secondary">
                                 Galleria
                             </LinkButton>
@@ -94,7 +97,7 @@ export default function Index({ widgets }: IndexProps) {
                                 <PlusIcon className="h-4 w-4" />
                                 Nuovo widget
                             </LinkButton>
-                        </div>
+                        </IndexPageHeaderActions>
                     }
                 />
             }
@@ -102,12 +105,28 @@ export default function Index({ widgets }: IndexProps) {
             <Head title="Widget a formula" />
 
             <PageContent maxWidth="5xl">
-                <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">
+                <IndexPageMobileToolbar equalWidth={false}>
+                    <LinkButton href={route('formula-marketplace.index')} variant="secondary" size="sm">
+                        Galleria
+                    </LinkButton>
+                    <LinkButton href={route('formula-variables.index')} variant="secondary" size="sm">
+                        Variabili
+                    </LinkButton>
+                </IndexPageMobileToolbar>
+
+                <p className="mb-6 hidden text-sm text-gray-600 dark:text-gray-400 sm:block">
                     Crea widget personalizzati collegati alle tue variabili finanziarie, oppure installa template dalla{' '}
                     <Link href={route('formula-marketplace.index')} className="font-medium text-primary-600 hover:underline">
                         galleria
                     </Link>
                     . Ogni widget supporta KPI, grafici Recharts (linea, barre, torta, treemap…) e anteprima live in fase di creazione.
+                </p>
+                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400 sm:hidden">
+                    Installa template dalla{' '}
+                    <Link href={route('formula-marketplace.index')} className="font-medium text-primary-600 hover:underline">
+                        galleria
+                    </Link>{' '}
+                    o crea un widget personalizzato.
                 </p>
 
                 {widgets.length === 0 ? (
@@ -125,7 +144,7 @@ export default function Index({ widgets }: IndexProps) {
                         </div>
                     </EmptyState>
                 ) : (
-                    <div className={clsx('grid gap-4 sm:grid-cols-2')}>
+                    <div className={clsx('grid gap-3 sm:grid-cols-2 sm:gap-4')}>
                         {widgets.map((widget) => (
                             <WidgetCard key={widget.id} widget={widget} onDelete={(id, name) => setDeleteTarget({ id, name })} />
                         ))}

@@ -23,7 +23,9 @@ use App\Services\PortfolioSnapshotService;
 use App\Services\RevenueNotificationService;
 use App\Services\TransactionTrendNotificationService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -48,9 +50,8 @@ class DashboardController extends Controller
         $householdId = $user->active_household_id;
 
         $this->formulaWidgetBootstrapService->provisionForUser($user);
-        $this->formulaWidgetLayoutNormalizer->syncTemplateConfigs($user);
         $dashboardLayout = $this->getDashboardLayout($user);
-        $formulaWidgetPayloads = $this->buildFormulaWidgetPayloads($user, $dashboardLayout);
+        $formulaWidgetPayloads = $this->buildPriorityFormulaWidgetPayloads($user, $dashboardLayout);
         $formulaWidgetMeta = $this->buildFormulaWidgetMeta($user, $dashboardLayout);
 
         $accounts = Account::where('household_id', $householdId)
@@ -228,6 +229,47 @@ class DashboardController extends Controller
             'financialGoals' => $this->getFinancialGoalsData($householdId),
             'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
         ]);
+    }
+
+    /**
+     * Payload dei widget a formula (caricamento differito dopo il first paint della dashboard).
+     */
+    public function formulaWidgetPayloads(Request $request): JsonResponse|Response
+    {
+        $user = Auth::user();
+        $dashboardLayout = $this->getDashboardLayout($user);
+        $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
+
+        if ($widgetIds === []) {
+            return response()
+                ->json(['payloads' => []])
+                ->header('Cache-Control', 'private, max-age=300');
+        }
+
+        $widgets = FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', $widgetIds)
+            ->get(['id', 'updated_at']);
+
+        $etagSource = $widgets
+            ->sortBy('id')
+            ->map(fn (FormulaWidget $widget) => $widget->id.':'.($widget->updated_at?->timestamp ?? 0))
+            ->implode('|');
+        $etag = '"'.md5($etagSource).'"';
+
+        if ($request->header('If-None-Match') === $etag) {
+            return response()
+                ->noContent(304)
+                ->header('ETag', $etag)
+                ->header('Cache-Control', 'private, max-age=300');
+        }
+
+        return response()
+            ->json([
+                'payloads' => $this->buildFormulaWidgetPayloads($user, $dashboardLayout),
+            ])
+            ->header('ETag', $etag)
+            ->header('Cache-Control', 'private, max-age=300');
     }
 
     /**
@@ -507,13 +549,7 @@ class DashboardController extends Controller
      */
     private function buildFormulaWidgetPayloads(User $user, array $dashboardLayout): array
     {
-        $widgetIds = [];
-        foreach ($dashboardLayout['widgets'] ?? [] as $entry) {
-            $id = $entry['id'] ?? '';
-            if (preg_match('/^formula_widget_(\d+)$/', (string) $id, $matches)) {
-                $widgetIds[] = (int) $matches[1];
-            }
-        }
+        $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
 
         if ($widgetIds === []) {
             return [];
@@ -528,8 +564,61 @@ class DashboardController extends Controller
     }
 
     /**
+     * Payload SSR per i primi widget formula visibili (above-the-fold) — migliora LCP senza bloccare il first paint completo.
+     *
      * @param  array<string, mixed>  $dashboardLayout
-     * @return array<string, array{name: string, display_type: string}>
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildPriorityFormulaWidgetPayloads(User $user, array $dashboardLayout, int $limit = 2): array
+    {
+        $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
+
+        if ($widgetIds === []) {
+            return [];
+        }
+
+        $priorityIds = array_slice($widgetIds, 0, $limit);
+
+        $widgets = FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', $priorityIds)
+            ->get();
+
+        return $this->formulaWidgetPayloadBuilder->buildMany($widgets, $user);
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboardLayout
+     * @return list<int>
+     */
+    private function extractVisibleFormulaWidgetIds(array $dashboardLayout): array
+    {
+        $entries = [];
+
+        foreach ($dashboardLayout['widgets'] ?? [] as $entry) {
+            if (! ($entry['visible'] ?? false)) {
+                continue;
+            }
+
+            $layoutId = (string) ($entry['id'] ?? '');
+            if (! preg_match('/^formula_widget_(\d+)$/', $layoutId, $matches)) {
+                continue;
+            }
+
+            $entries[] = [
+                'id' => (int) $matches[1],
+                'position' => (int) ($entry['position'] ?? 0),
+            ];
+        }
+
+        usort($entries, fn (array $a, array $b) => $a['position'] <=> $b['position']);
+
+        return array_column($entries, 'id');
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboardLayout
+     * @return array<string, array{name: string, display_type: string, variant: string|null}>
      */
     private function buildFormulaWidgetMeta(User $user, array $dashboardLayout): array
     {
@@ -549,11 +638,14 @@ class DashboardController extends Controller
         FormulaWidget::query()
             ->where('user_id', $user->id)
             ->whereIn('id', $widgetIds)
-            ->get(['id', 'name', 'display_type'])
+            ->get(['id', 'name', 'display_type', 'chart_config'])
             ->each(function (FormulaWidget $widget) use (&$meta) {
+                $chartConfig = $widget->chart_config ?? [];
+
                 $meta[(string) $widget->id] = [
                     'name' => $widget->name,
                     'display_type' => $widget->display_type,
+                    'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
                 ];
             });
 
@@ -573,7 +665,7 @@ class DashboardController extends Controller
             ->first();
 
         if (! $layout) {
-            return DashboardLayout::defaultConfig();
+            return DashboardLayout::defaultConfigForUser($user);
         }
 
         $savedConfig = DashboardLayout::stripTierALegacyWidgets($layout->config);
@@ -591,11 +683,15 @@ class DashboardController extends Controller
             }
         }
 
+        $widgetIdsBeforeMerge = array_column($savedConfig['widgets'] ?? [], 'id');
+        $savedConfig = $this->formulaWidgetLayoutNormalizer->mergeInstalledFormulaWidgets($user, $savedConfig);
+        $widgetIdsAfterMerge = array_column($savedConfig['widgets'] ?? [], 'id');
+
         $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
-        $idsBefore = array_column($savedConfig['widgets'] ?? [], 'id');
+        $idsBefore = $widgetIdsBeforeMerge;
         $idsAfter = array_column($sanitized['widgets'] ?? [], 'id');
 
-        if ($idsBefore !== $idsAfter) {
+        if ($idsBefore !== $idsAfter || $widgetIdsBeforeMerge !== $widgetIdsAfterMerge) {
             $layout->update(['config' => $sanitized]);
         }
 

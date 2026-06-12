@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FormulaWidgetLayoutNormalizer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -82,5 +83,21 @@ class DashboardLayout extends Model
         $config['widgets'] = $widgets;
 
         return $config;
+    }
+
+    /**
+     * Layout predefinito con i widget formula installati dall'utente in coda.
+     *
+     * @return array<string, mixed>
+     */
+    public static function defaultConfigForUser(User $user): array
+    {
+        /** @var FormulaWidgetLayoutNormalizer $normalizer */
+        $normalizer = app(FormulaWidgetLayoutNormalizer::class);
+
+        $config = self::defaultConfig();
+        $config = $normalizer->mergeInstalledFormulaWidgets($user, $config);
+
+        return $normalizer->normalize($user, $config);
     }
 }

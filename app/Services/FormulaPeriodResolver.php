@@ -70,6 +70,15 @@ class FormulaPeriodResolver
         $start = $rangeStart->copy()->startOfMonth();
         $end = $rangeEnd->copy()->endOfMonth();
 
+        $monthSpan = ($start->year * 12 + $start->month);
+        $endMonth = ($end->year * 12 + $end->month);
+        $totalMonths = $endMonth - $monthSpan + 1;
+
+        // Mostra sempre gli ultimi N mesi (fino a oggi), non i primi N dello storico.
+        if ($totalMonths > $maxMonths) {
+            $start = $end->copy()->subMonths($maxMonths - 1)->startOfMonth();
+        }
+
         $buckets = [];
         $cursor = $start->copy();
 

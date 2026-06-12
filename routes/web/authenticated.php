@@ -86,6 +86,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
+    Route::get('/dashboard/formula-widget-payloads', [DashboardController::class, 'formulaWidgetPayloads'])->name('dashboard.formula-widget-payloads');
 
     Route::get('/widget-formule', [FormulaWidgetController::class, 'index'])->name('formula-widgets.index');
     Route::get('/widget-formule/crea', [FormulaWidgetController::class, 'create'])->name('formula-widgets.create');
@@ -100,6 +101,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::delete('/widget-formule/variabili/{financial_variable}', [FinancialVariableController::class, 'destroy'])->name('formula-variables.destroy');
 
     Route::get('/widget-formule/galleria', [FormulaMarketplaceController::class, 'index'])->name('formula-marketplace.index');
+    Route::post('/widget-formule/galleria/anteprima', [FormulaMarketplaceController::class, 'preview'])->name('formula-marketplace.preview');
     Route::post('/widget-formule/galleria/template/{templateSlug}', [FormulaMarketplaceController::class, 'installTemplate'])->name('formula-marketplace.install-template');
     Route::delete('/widget-formule/galleria/template/{templateSlug}', [FormulaMarketplaceController::class, 'uninstallTemplate'])->name('formula-marketplace.uninstall-template');
     Route::post('/widget-formule/galleria/widget/{formula_widget}', [FormulaMarketplaceController::class, 'installWidget'])->name('formula-marketplace.install-widget');

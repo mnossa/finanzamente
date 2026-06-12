@@ -16,7 +16,8 @@ import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTree
 import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components/ExpenseDistributionWidget';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
-import CustomFormulaWidget from '@/Components/FormulaWidgets/CustomFormulaWidget';
+import FormulaWidgetSkeleton from '@/Components/FormulaWidgets/FormulaWidgetSkeleton';
+import DeferredMount from '@/Components/Dashboard/DeferredMount';
 import {
     FormulaWidgetMeta,
     FormulaWidgetPayload,
@@ -24,6 +25,7 @@ import {
     parseFormulaWidgetNumericId,
 } from '@/types/formulaWidget';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useDashboardFormulaPayloads } from '@/hooks/useDashboardFormulaPayloads';
 import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
 import DashboardWidgetShell, {
     dashboardWidgetEmptyClass as widgetEmptyClass,
@@ -45,9 +47,28 @@ import {
     sortableKeyboardCoordinates,
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useState } from 'react';
+import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
 import { moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
+
+const CustomFormulaWidget = lazy(() => import('@/Components/FormulaWidgets/CustomFormulaWidget'));
+
+function shouldDeferFormulaWidgetMount(payload: FormulaWidgetPayload): boolean {
+    return payload.type !== 'kpi' && payload.type !== 'progress';
+}
+
+function formulaWidgetSkeleton(
+    title: string,
+    meta?: FormulaWidgetMeta,
+): ReactNode {
+    return (
+        <FormulaWidgetSkeleton
+            title={title}
+            displayType={meta?.display_type}
+            variant={meta?.variant}
+        />
+    );
+}
 
 interface Account {
     id: number;
@@ -169,7 +190,7 @@ interface DashboardProps {
     expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
     expenseDistributionData: ExpenseDistributionData;
-    formulaWidgetPayloads: Record<string, FormulaWidgetPayload>;
+    formulaWidgetPayloads?: Record<string, FormulaWidgetPayload>;
     formulaWidgetMeta: Record<string, FormulaWidgetMeta>;
     importShareToken?: string | null;
 }
@@ -316,7 +337,7 @@ export default function Dashboard({
     expenseCategories,
     financialGoals,
     expenseDistributionData,
-    formulaWidgetPayloads,
+    formulaWidgetPayloads: initialFormulaWidgetPayloads = {},
     formulaWidgetMeta = {},
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -338,6 +359,9 @@ export default function Dashboard({
         hideWidgetsAndSave,
         resetLayout,
     } = useDashboardLayout(dashboardLayout);
+
+    const { payloads: formulaWidgetPayloads, loading: formulaWidgetsLoading, error: formulaWidgetsError } =
+        useDashboardFormulaPayloads(dashboardLayout, initialFormulaWidgetPayloads);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
@@ -367,16 +391,26 @@ export default function Dashboard({
         }
     }
 
-    function renderFormulaWidget(widgetId: WidgetId, editing: boolean): React.ReactNode {
+    function renderFormulaWidget(widgetId: WidgetId, editing: boolean): ReactNode {
         const numericId = parseFormulaWidgetNumericId(widgetId);
         if (!numericId) return null;
 
         const payload = formulaWidgetPayloads[numericId];
         if (!payload) {
-            if (!editing) return null;
-
             const meta = formulaWidgetMeta[numericId];
             const label = meta?.name ?? 'Widget a formula';
+
+            if (formulaWidgetsLoading && !editing) {
+                return (
+                    <FormulaWidgetSkeleton
+                        title={label}
+                        displayType={meta?.display_type}
+                        variant={meta?.variant}
+                    />
+                );
+            }
+
+            if (!editing) return null;
 
             return (
                 <DashboardWidgetShell title={label} bodyClassName={widgetListBodyClass}>
@@ -388,21 +422,40 @@ export default function Dashboard({
         }
 
         if (payload.type === 'kpi' && payload.variant === 'balance_summary') {
-            return <CustomFormulaWidget payload={payload} embedded />;
+            const content = (
+                <Suspense fallback={formulaWidgetSkeleton(payload.name, formulaWidgetMeta[numericId])}>
+                    <CustomFormulaWidget payload={payload} embedded />
+                </Suspense>
+            );
+
+            return content;
         }
 
-        return (
+        const meta = formulaWidgetMeta[numericId];
+        const shell = (
             <DashboardWidgetShell
                 title={payload.name}
                 subtitle={payload.periodLabel}
                 bodyClassName={widgetListBodyClass}
             >
-                <CustomFormulaWidget payload={payload} embedded />
+                <Suspense fallback={formulaWidgetSkeleton(payload.name, meta)}>
+                    <CustomFormulaWidget payload={payload} embedded />
+                </Suspense>
             </DashboardWidgetShell>
+        );
+
+        if (!shouldDeferFormulaWidgetMount(payload)) {
+            return shell;
+        }
+
+        return (
+            <DeferredMount fallback={formulaWidgetSkeleton(payload.name, meta)}>
+                {shell}
+            </DeferredMount>
         );
     }
 
-    function renderWidgetContent(widgetId: WidgetId, size: string): React.ReactNode {
+    function renderWidgetContent(widgetId: WidgetId, size: string): ReactNode {
         if (isFormulaWidgetId(widgetId)) {
             return renderFormulaWidget(widgetId, isEditing);
         }
@@ -738,9 +791,28 @@ export default function Dashboard({
         isModuleLocked('vat_management') &&
         (isWidgetVisible('annual_revenue') || isWidgetVisible('tax_thermometer'));
 
+    const hasFormulaWidgets = useMemo(
+        () => (dashboardLayout.widgets ?? []).some((widget) => widget.visible && isFormulaWidgetId(widget.id)),
+        [dashboardLayout.widgets],
+    );
+
     return (
         <AuthenticatedLayout header={<PageHeader title="Dashboard" />}>
-            <Head title="Dashboard" />
+            <Head title="Dashboard">
+                <meta
+                    head-key="description"
+                    name="description"
+                    content="Panoramica finanziaria del tuo nucleo: saldi, cashflow, patrimonio e widget personalizzati."
+                />
+                {hasFormulaWidgets ? (
+                    <link
+                        rel="preload"
+                        href={route('dashboard.formula-widget-payloads')}
+                        as="fetch"
+                        crossOrigin="use-credentials"
+                    />
+                ) : null}
+            </Head>
             {hideModuleMessage && (
                 <div className="fixed right-4 top-4 z-50 max-w-sm">
                     <div
@@ -783,6 +855,14 @@ export default function Dashboard({
             )}
 
             <PageContent maxWidth="7xl">
+                    {formulaWidgetsError && (
+                        <div
+                            className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
+                            role="alert"
+                        >
+                            {formulaWidgetsError}
+                        </div>
+                    )}
                     {/* Barra personalizzazione dashboard — solo in editing */}
                     {isEditing && (
                         <div

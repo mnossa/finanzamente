@@ -8,6 +8,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="theme-color" content="#4f4ce5">
+        @auth
+            <meta name="robots" content="noindex, nofollow">
+            <meta name="description" content="Area riservata Finanzamente — gestione finanziaria personale e familiare.">
+        @else
+            <meta name="description" content="Finanzamente — gestione finanziaria personale e familiare per nuclei in Italia.">
+        @endauth
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="apple-mobile-web-app-title" content="Finanzamente">
