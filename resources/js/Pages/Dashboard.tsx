@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
@@ -17,6 +17,7 @@ import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import FormulaWidgetSkeleton from '@/Components/FormulaWidgets/FormulaWidgetSkeleton';
+import FormulaWidgetTypeBadge from '@/Components/FormulaWidgets/FormulaWidgetTypeBadge';
 import DeferredMount from '@/Components/Dashboard/DeferredMount';
 import {
     FormulaWidgetMeta,
@@ -27,6 +28,7 @@ import {
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useDashboardFormulaPayloads } from '@/hooks/useDashboardFormulaPayloads';
 import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import DashboardWidgetShell, {
     dashboardWidgetEmptyClass as widgetEmptyClass,
     dashboardWidgetListBodyClass as widgetListBodyClass,
@@ -192,7 +194,16 @@ interface DashboardProps {
     expenseDistributionData: ExpenseDistributionData;
     formulaWidgetPayloads?: Record<string, FormulaWidgetPayload>;
     formulaWidgetMeta: Record<string, FormulaWidgetMeta>;
+    formulaWidgetDataVersion?: string | null;
     importShareToken?: string | null;
+}
+
+function formulaWidgetTitleBadge(meta?: FormulaWidgetMeta): ReactNode {
+    if (!meta?.display_type) {
+        return undefined;
+    }
+
+    return <FormulaWidgetTypeBadge displayType={meta.display_type} />;
 }
 
 function getAccountTypeLabel(type: string): string {
@@ -339,8 +350,10 @@ export default function Dashboard({
     expenseDistributionData,
     formulaWidgetPayloads: initialFormulaWidgetPayloads = {},
     formulaWidgetMeta = {},
+    formulaWidgetDataVersion = null,
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [deleteFormulaWidgetTarget, setDeleteFormulaWidgetTarget] = useState<{ id: number; name: string } | null>(null);
     const { isModuleEnabled, isModuleLocked } = useModules();
     const { auth } = usePage<PageProps>().props;
     const hasVat = auth.user.user_type === 'partita_iva';
@@ -361,7 +374,7 @@ export default function Dashboard({
     } = useDashboardLayout(dashboardLayout);
 
     const { payloads: formulaWidgetPayloads, loading: formulaWidgetsLoading, error: formulaWidgetsError } =
-        useDashboardFormulaPayloads(dashboardLayout, initialFormulaWidgetPayloads);
+        useDashboardFormulaPayloads(dashboardLayout, initialFormulaWidgetPayloads, formulaWidgetDataVersion);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
@@ -400,7 +413,7 @@ export default function Dashboard({
             const meta = formulaWidgetMeta[numericId];
             const label = meta?.name ?? 'Widget a formula';
 
-            if (formulaWidgetsLoading && !editing) {
+            if (!editing) {
                 return (
                     <FormulaWidgetSkeleton
                         title={label}
@@ -410,10 +423,8 @@ export default function Dashboard({
                 );
             }
 
-            if (!editing) return null;
-
             return (
-                <DashboardWidgetShell title={label} bodyClassName={widgetListBodyClass}>
+                <DashboardWidgetShell title={label} titleBadge={formulaWidgetTitleBadge(meta)} bodyClassName={widgetListBodyClass}>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         Anteprima non disponibile. Salva il layout o ricarica la pagina se il widget è stato rimosso.
                     </p>
@@ -436,6 +447,7 @@ export default function Dashboard({
             <DashboardWidgetShell
                 title={payload.name}
                 subtitle={payload.periodLabel}
+                titleBadge={formulaWidgetTitleBadge(meta)}
                 bodyClassName={widgetListBodyClass}
             >
                 <Suspense fallback={formulaWidgetSkeleton(payload.name, meta)}>
@@ -939,6 +951,19 @@ export default function Dashboard({
                                             onToggleVisibility={() => toggleWidgetVisibility(widget.id)}
                                             onChangeSize={(size: WidgetSize) => setWidgetSize(widget.id, size)}
                                             titleOverride={formulaTitle}
+                                            manageEditHref={
+                                                isEditing && formulaNumericId
+                                                    ? route('formula-widgets.edit', formulaNumericId)
+                                                    : undefined
+                                            }
+                                            onManageDelete={
+                                                isEditing && formulaNumericId
+                                                    ? () => setDeleteFormulaWidgetTarget({
+                                                        id: Number(formulaNumericId),
+                                                        name: formulaTitle ?? 'Widget a formula',
+                                                    })
+                                                    : undefined
+                                            }
                                             className={clsx(
                                                 widget.id === 'quick_actions' && !isEditing && 'hidden lg:flex',
                                             )}
@@ -976,6 +1001,26 @@ export default function Dashboard({
                         </div>
                     )}
             </PageContent>
+
+            <ConfirmDeleteDialog
+                open={deleteFormulaWidgetTarget !== null}
+                title="Elimina widget"
+                description={
+                    deleteFormulaWidgetTarget
+                        ? `Vuoi rimuovere «${deleteFormulaWidgetTarget.name}»? Verrà eliminato anche dalla dashboard.`
+                        : undefined
+                }
+                onConfirm={() => {
+                    if (!deleteFormulaWidgetTarget) {
+                        return;
+                    }
+
+                    router.delete(route('formula-widgets.destroy', deleteFormulaWidgetTarget.id), {
+                        onFinish: () => setDeleteFormulaWidgetTarget(null),
+                    });
+                }}
+                onCancel={() => setDeleteFormulaWidgetTarget(null)}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -1,4 +1,5 @@
 import DashboardWidgetShell, { dashboardWidgetListBodyClass } from '@/Components/Dashboard/DashboardWidgetShell';
+import FormulaWidgetTypeBadge from '@/Components/FormulaWidgets/FormulaWidgetTypeBadge';
 import { formulaWidgetSkeletonBodyClass } from '@/utils/formulaWidgetSkeletonClass';
 import clsx from 'clsx';
 
@@ -6,13 +7,23 @@ interface FormulaWidgetSkeletonProps {
     title: string;
     displayType?: string;
     variant?: string | null;
+    showBadge?: boolean;
 }
 
-export default function FormulaWidgetSkeleton({ title, displayType = 'kpi', variant }: FormulaWidgetSkeletonProps) {
+export default function FormulaWidgetSkeleton({
+    title,
+    displayType = 'kpi',
+    variant,
+    showBadge = true,
+}: FormulaWidgetSkeletonProps) {
     const bodyMinClass = formulaWidgetSkeletonBodyClass(displayType, variant);
 
     return (
-        <DashboardWidgetShell title={title} bodyClassName={dashboardWidgetListBodyClass}>
+        <DashboardWidgetShell
+            title={title}
+            titleBadge={showBadge && displayType ? <FormulaWidgetTypeBadge displayType={displayType} /> : undefined}
+            bodyClassName={dashboardWidgetListBodyClass}
+        >
             <div
                 className={clsx('flex flex-col justify-center animate-pulse', bodyMinClass)}
                 aria-hidden="true"

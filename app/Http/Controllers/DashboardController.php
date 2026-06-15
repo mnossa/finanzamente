@@ -15,6 +15,7 @@ use App\Services\AssetClassificationService;
 use App\Services\BudgetNotificationService;
 use App\Services\FinancialMetricsService;
 use App\Services\FormulaWidgetBootstrapService;
+use App\Services\FormulaWidgetDataVersionService;
 use App\Services\FormulaWidgetLayoutNormalizer;
 use App\Services\FormulaWidgetPayloadBuilder;
 use App\Services\InvestmentLedgerService;
@@ -39,6 +40,7 @@ class DashboardController extends Controller
         private readonly FormulaWidgetBootstrapService $formulaWidgetBootstrapService,
         private readonly FormulaWidgetPayloadBuilder $formulaWidgetPayloadBuilder,
         private readonly FormulaWidgetLayoutNormalizer $formulaWidgetLayoutNormalizer,
+        private readonly FormulaWidgetDataVersionService $formulaWidgetDataVersionService,
     ) {}
 
     /**
@@ -51,6 +53,7 @@ class DashboardController extends Controller
 
         $this->formulaWidgetBootstrapService->provisionForUser($user);
         $dashboardLayout = $this->getDashboardLayout($user);
+        $formulaWidgetDataVersion = $this->formulaWidgetDataVersionService->resolveForUser($user);
         $formulaWidgetPayloads = $this->buildPriorityFormulaWidgetPayloads($user, $dashboardLayout);
         $formulaWidgetMeta = $this->buildFormulaWidgetMeta($user, $dashboardLayout);
 
@@ -223,6 +226,7 @@ class DashboardController extends Controller
             'dashboardLayout' => $dashboardLayout,
             'formulaWidgetPayloads' => $formulaWidgetPayloads,
             'formulaWidgetMeta' => $formulaWidgetMeta,
+            'formulaWidgetDataVersion' => $formulaWidgetDataVersion,
             'importShareToken' => session('importShareToken'),
             'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
@@ -239,36 +243,33 @@ class DashboardController extends Controller
         $user = Auth::user();
         $dashboardLayout = $this->getDashboardLayout($user);
         $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
+        $dataVersion = $this->formulaWidgetDataVersionService->resolveForUser($user);
 
         if ($widgetIds === []) {
             return response()
-                ->json(['payloads' => []])
+                ->json(['payloads' => [], 'dataVersion' => $dataVersion])
                 ->header('Cache-Control', 'private, max-age=300');
         }
 
-        $widgets = FormulaWidget::query()
-            ->where('user_id', $user->id)
-            ->whereIn('id', $widgetIds)
-            ->get(['id', 'updated_at']);
+        $requestedIds = $this->resolveRequestedFormulaWidgetIds($request, $widgetIds);
+        $etag = $this->buildFormulaWidgetPayloadsEtag($dataVersion, $widgetIds);
+        $isFullPayloadRequest = $requestedIds === $widgetIds;
 
-        $etagSource = $widgets
-            ->sortBy('id')
-            ->map(fn (FormulaWidget $widget) => $widget->id.':'.($widget->updated_at?->timestamp ?? 0))
-            ->implode('|');
-        $etag = '"'.md5($etagSource).'"';
-
-        if ($request->header('If-None-Match') === $etag) {
+        if ($isFullPayloadRequest && $request->header('If-None-Match') === $etag) {
             return response()
                 ->noContent(304)
                 ->header('ETag', $etag)
+                ->header('X-Formula-Widget-Data-Version', $dataVersion)
                 ->header('Cache-Control', 'private, max-age=300');
         }
 
         return response()
             ->json([
-                'payloads' => $this->buildFormulaWidgetPayloads($user, $dashboardLayout),
+                'payloads' => $this->buildFormulaWidgetPayloads($user, $dashboardLayout, $requestedIds),
+                'dataVersion' => $dataVersion,
             ])
             ->header('ETag', $etag)
+            ->header('X-Formula-Widget-Data-Version', $dataVersion)
             ->header('Cache-Control', 'private, max-age=300');
     }
 
@@ -547,7 +548,11 @@ class DashboardController extends Controller
      * @param  array<string, mixed>  $dashboardLayout
      * @return array<string, array<string, mixed>>
      */
-    private function buildFormulaWidgetPayloads(User $user, array $dashboardLayout): array
+    /**
+     * @param  list<int>|null  $onlyWidgetIds  Se valorizzato, costruisce solo questi ID (nell'ordine del layout).
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildFormulaWidgetPayloads(User $user, array $dashboardLayout, ?array $onlyWidgetIds = null): array
     {
         $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
 
@@ -555,12 +560,74 @@ class DashboardController extends Controller
             return [];
         }
 
-        $widgets = FormulaWidget::query()
+        if ($onlyWidgetIds !== null) {
+            $allowed = array_flip($widgetIds);
+            $widgetIds = array_values(array_filter(
+                $onlyWidgetIds,
+                fn (int $id) => isset($allowed[$id]),
+            ));
+        }
+
+        if ($widgetIds === []) {
+            return [];
+        }
+
+        $widgetsById = FormulaWidget::query()
             ->where('user_id', $user->id)
             ->whereIn('id', $widgetIds)
-            ->get();
+            ->get()
+            ->keyBy('id');
 
-        return $this->formulaWidgetPayloadBuilder->buildMany($widgets, $user);
+        $orderedWidgets = [];
+        foreach ($widgetIds as $widgetId) {
+            $widget = $widgetsById->get($widgetId);
+            if ($widget !== null) {
+                $orderedWidgets[] = $widget;
+            }
+        }
+
+        return $this->formulaWidgetPayloadBuilder->buildMany($orderedWidgets, $user);
+    }
+
+    /**
+     * @param  list<int>  $layoutWidgetIds
+     * @return list<int>
+     */
+    private function resolveRequestedFormulaWidgetIds(Request $request, array $layoutWidgetIds): array
+    {
+        $rawIds = $request->query('ids');
+        if (! is_string($rawIds) || trim($rawIds) === '') {
+            return $layoutWidgetIds;
+        }
+
+        $requested = [];
+        foreach (explode(',', $rawIds) as $part) {
+            $part = trim($part);
+            if ($part !== '' && ctype_digit($part)) {
+                $requested[] = (int) $part;
+            }
+        }
+
+        if ($requested === []) {
+            return $layoutWidgetIds;
+        }
+
+        $allowed = array_flip($layoutWidgetIds);
+
+        return array_values(array_filter(
+            $requested,
+            fn (int $id) => isset($allowed[$id]),
+        ));
+    }
+
+    /**
+     * @param  list<int>  $layoutWidgetIds
+     */
+    private function buildFormulaWidgetPayloadsEtag(string $dataVersion, array $layoutWidgetIds): string
+    {
+        $source = $dataVersion.'|'.implode(',', $layoutWidgetIds);
+
+        return '"'.md5($source).'"';
     }
 
     /**

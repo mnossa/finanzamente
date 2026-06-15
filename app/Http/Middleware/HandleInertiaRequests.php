@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\AppNotification;
 use App\Models\Consent;
+use App\Services\FormulaWidgetDataVersionService;
 use App\Services\HouseholdPermissionService;
 use App\Services\ModuleAccessService;
 use Illuminate\Http\Request;
@@ -61,6 +62,9 @@ class HandleInertiaRequests extends Middleware
                 'name' => $user->activeHousehold->name,
                 'is_owner' => $user->activeHousehold->owner_user_id === $user->id,
             ] : null,
+            'formulaWidgetDataVersion' => fn () => $user
+                ? app(FormulaWidgetDataVersionService::class)->resolveForUser($user)
+                : null,
             'permissions' => [
                 'canModify' => $canModify,
                 'role' => $userRole,
@@ -71,6 +75,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'info' => fn () => $request->session()->get('info'),
+                'duplicateWidget' => fn () => $request->session()->get('duplicateWidget'),
+                'duplicateMarketplaceWidget' => fn () => $request->session()->get('duplicateMarketplaceWidget'),
             ],
             'notifications' => fn () => $user ? [
                 'unread_count' => AppNotification::where('user_id', $user->id)->where('read', false)->count(),

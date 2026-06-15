@@ -106,6 +106,7 @@ export interface FormulaWidgetSummary {
     id: number;
     name: string;
     display_type: string;
+    description?: string;
     period_preset: string | null;
     chart_config: Record<string, unknown> | null;
     default_size: string;
@@ -117,6 +118,7 @@ export interface FormulaWidgetSummary {
     is_official_template?: boolean;
     installed?: boolean;
     installed_widget_id?: number | null;
+    source_id?: number | null;
 }
 
 export function parseFormulaWidgetNumericId(widgetId: string): string | null {

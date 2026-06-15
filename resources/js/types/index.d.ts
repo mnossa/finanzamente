@@ -1,3 +1,5 @@
+import type { FormulaWidgetSummary } from '@/types/formulaWidget';
+
 export interface User {
     id: number;
     name: string;
@@ -84,12 +86,15 @@ export type PageProps<
         user: User;
     };
     activeHousehold?: ActiveHousehold | null;
+    formulaWidgetDataVersion?: string | null;
     permissions: Permissions;
     modules: ModulesMap;
     flash?: {
         success?: string;
         error?: string;
         info?: string;
+        duplicateWidget?: FormulaWidgetSummary;
+        duplicateMarketplaceWidget?: FormulaWidgetSummary;
     };
     notifications: {
         unread_count: number;

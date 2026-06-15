@@ -91,6 +91,8 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::get('/widget-formule', [FormulaWidgetController::class, 'index'])->name('formula-widgets.index');
     Route::get('/widget-formule/crea', [FormulaWidgetController::class, 'create'])->name('formula-widgets.create');
     Route::post('/widget-formule', [FormulaWidgetController::class, 'store'])->name('formula-widgets.store');
+    Route::get('/widget-formule/{formula_widget}/modifica', [FormulaWidgetController::class, 'edit'])->name('formula-widgets.edit');
+    Route::put('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'update'])->name('formula-widgets.update');
     Route::post('/widget-formule/anteprima', [FormulaWidgetController::class, 'preview'])->name('formula-widgets.preview');
     Route::delete('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'destroy'])->name('formula-widgets.destroy');
     Route::post('/widget-formule/{formula_widget}/pin', [FormulaWidgetController::class, 'pin'])->name('formula-widgets.pin');

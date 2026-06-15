@@ -23,6 +23,7 @@ const detailLinkClass =
 interface DashboardWidgetShellProps {
     title?: string;
     subtitle?: string;
+    titleBadge?: React.ReactNode;
     detailHref?: string;
     detailLabel?: string;
     headerActions?: React.ReactNode;
@@ -36,6 +37,7 @@ interface DashboardWidgetShellProps {
 export default function DashboardWidgetShell({
     title,
     subtitle,
+    titleBadge,
     detailHref,
     detailLabel = 'Dettagli',
     headerActions,
@@ -47,9 +49,12 @@ export default function DashboardWidgetShell({
     const defaultHeader = (
         <div className={dashboardWidgetHeaderClass}>
             <div className="min-w-0">
-                <h3 className="truncate text-base font-semibold text-gray-900 sm:text-[15px] dark:text-white">
-                    {title}
-                </h3>
+                <div className="flex min-w-0 items-center gap-2">
+                    <h3 className="truncate text-base font-semibold text-gray-900 sm:text-[15px] dark:text-white">
+                        {title}
+                    </h3>
+                    {titleBadge}
+                </div>
                 {subtitle ? (
                     <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
                 ) : null}

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PreviewMarketplaceWidgetRequest;
 use App\Models\FormulaWidget;
+use App\Models\User;
 use App\Services\FinancialVariableCloneService;
 use App\Services\FormulaWidgetDashboardPinService;
+use App\Services\FormulaWidgetDuplicateService;
 use App\Services\FormulaWidgetPreviewService;
 use App\Services\FormulaWidgetRemovalService;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +20,10 @@ use Inertia\Response;
 
 class FormulaMarketplaceController extends Controller
 {
+    public function __construct(
+        private readonly FormulaWidgetDuplicateService $formulaWidgetDuplicateService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -45,6 +51,7 @@ class FormulaMarketplaceController extends Controller
         return Inertia::render('FormulaWidgets/Marketplace', [
             'officialTemplates' => $official,
             'communityWidgets' => $community,
+            'chartTypes' => config('financial_variables.chart_types', []),
         ]);
     }
 
@@ -64,6 +71,17 @@ class FormulaMarketplaceController extends Controller
     public function installTemplate(Request $request, string $templateSlug, FinancialVariableCloneService $cloneService): RedirectResponse
     {
         $user = Auth::user();
+        $sourceWidget = FormulaWidget::query()
+            ->where('template_slug', $templateSlug)
+            ->where('is_official_template', true)
+            ->with('financialVariable')
+            ->firstOrFail();
+
+        $duplicate = $this->assertNoDuplicateOrRedirect($user, $sourceWidget);
+        if ($duplicate instanceof RedirectResponse) {
+            return $duplicate;
+        }
+
         $widget = $cloneService->installTemplate($user, $templateSlug);
 
         if ($request->boolean('pin')) {
@@ -86,6 +104,13 @@ class FormulaMarketplaceController extends Controller
 
         if (! $formulaWidget->is_public) {
             abort(404);
+        }
+
+        $formulaWidget->loadMissing('financialVariable');
+
+        $duplicate = $this->assertNoDuplicateOrRedirect($user, $formulaWidget);
+        if ($duplicate instanceof RedirectResponse) {
+            return $duplicate;
         }
 
         $cloned = $cloneService->installWidget($user, $formulaWidget);
@@ -140,7 +165,7 @@ class FormulaMarketplaceController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formatListing(FormulaWidget $widget, ?int $userId): array
+    public static function formatMarketplaceSuggestion(FormulaWidget $widget, ?int $userId = null): array
     {
         $installedWidget = null;
         if ($userId !== null) {
@@ -152,10 +177,49 @@ class FormulaMarketplaceController extends Controller
 
         return [
             ...FormulaWidgetController::formatWidget($widget),
+            'description' => (string) (config("financial_variables.chart_types.{$widget->display_type}.description") ?? ''),
             'template_slug' => $widget->template_slug,
             'is_official_template' => $widget->is_official_template,
             'installed' => $installedWidget !== null,
             'installed_widget_id' => $installedWidget?->id,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatListing(FormulaWidget $widget, ?int $userId): array
+    {
+        return self::formatMarketplaceSuggestion($widget, $userId);
+    }
+
+    private function assertNoDuplicateOrRedirect(User $user, FormulaWidget $sourceWidget): ?RedirectResponse
+    {
+        $sourceWidget->loadMissing('financialVariable');
+
+        if ($sourceWidget->financialVariable === null) {
+            return null;
+        }
+
+        $duplicate = $this->formulaWidgetDuplicateService->findDuplicate(
+            $user,
+            $sourceWidget->financialVariable,
+            $sourceWidget->display_type,
+            $sourceWidget->period_preset,
+            $sourceWidget->chart_config,
+        );
+
+        if ($duplicate === null) {
+            return null;
+        }
+
+        $duplicate->loadMissing('financialVariable:id,code,name,type,formula_string');
+
+        return redirect()
+            ->back()
+            ->withErrors([
+                'widget' => 'Hai già un widget equivalente nella libreria. Usa quello esistente invece di installarne un altro dalla galleria.',
+            ])
+            ->with('duplicateWidget', FormulaWidgetController::formatWidget($duplicate));
     }
 }

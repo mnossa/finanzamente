@@ -8,6 +8,7 @@ import FormActionsBar from '@/Components/FormActionsBar';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import CreateFinancialVariableModal from '@/Components/FormulaWidgets/CreateFinancialVariableModal';
+import DuplicateFormulaWidgetNotice from '@/Components/FormulaWidgets/DuplicateFormulaWidgetNotice';
 import FormulaWidgetCreateGuide from '@/Components/FormulaWidgets/FormulaWidgetCreateGuide';
 import FormulaWidgetPreviewPanel from '@/Components/FormulaWidgets/FormulaWidgetPreviewPanel';
 import { useFormulaWidgetPreview } from '@/hooks/useFormulaWidgetPreview';
@@ -15,10 +16,11 @@ import {
     formulaWidgetRequiresPeriod,
     formulaWidgetUsesSeries,
 } from '@/utils/formulaWidgetForm';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useMemo, useState } from 'react';
-import type { FinancialVariableSummary, SystemVariableMeta } from '@/types/formulaWidget';
+import type { FinancialVariableSummary, FormulaWidgetSummary, SystemVariableMeta } from '@/types/formulaWidget';
+import type { PageProps } from '@/types';
 
 interface ChartTypeMeta {
     label: string;
@@ -31,6 +33,7 @@ interface CreateProps {
     systemVariables: SystemVariableMeta[];
     chartTypes: Record<string, ChartTypeMeta>;
     periodPresets: Record<string, { label: string }>;
+    editingWidget?: FormulaWidgetSummary | null;
 }
 
 interface CreateWidgetForm {
@@ -50,29 +53,68 @@ interface CreateWidgetForm {
     };
 }
 
-export default function Create({ variables, systemVariables, chartTypes, periodPresets }: CreateProps) {
+const DEFAULT_CHART_CONFIG: CreateWidgetForm['chart_config'] = {
+    show_delta: false,
+    format: 'currency',
+    value_code: 'annual_revenue',
+    threshold_code: 'revenue_threshold',
+    series: [
+        { code: 'household_balance', label: 'Liquidità' },
+        { code: 'total_investments', label: 'Investimenti' },
+    ],
+};
+
+function buildInitialForm(
+    variables: FinancialVariableSummary[],
+    editingWidget?: FormulaWidgetSummary | null,
+): CreateWidgetForm {
+    const chartConfig = editingWidget?.chart_config ?? {};
+
+    return {
+        name: editingWidget?.name ?? '',
+        financial_variable_id: editingWidget?.financial_variable?.id ?? variables[0]?.id ?? '',
+        display_type: editingWidget?.display_type ?? 'kpi',
+        period_preset: editingWidget?.period_preset ?? '',
+        default_size: editingWidget?.default_size ?? 'md',
+        is_public: editingWidget?.is_public ?? false,
+        pin_to_dashboard: false,
+        chart_config: {
+            ...DEFAULT_CHART_CONFIG,
+            show_delta: Boolean(chartConfig.show_delta),
+            format: String(chartConfig.format ?? DEFAULT_CHART_CONFIG.format),
+            value_code: String(chartConfig.value_code ?? DEFAULT_CHART_CONFIG.value_code),
+            threshold_code: String(chartConfig.threshold_code ?? DEFAULT_CHART_CONFIG.threshold_code),
+            series: Array.isArray(chartConfig.series) && chartConfig.series.length > 0
+                ? chartConfig.series.map((entry) => ({
+                    code: String((entry as { code?: string }).code ?? ''),
+                    label: (entry as { label?: string }).label,
+                }))
+                : DEFAULT_CHART_CONFIG.series,
+        },
+    };
+}
+
+export default function Create({
+    variables,
+    systemVariables,
+    chartTypes,
+    periodPresets,
+    editingWidget = null,
+}: CreateProps) {
+    const isEditing = editingWidget !== null;
+    const { flash } = usePage<PageProps>().props;
     const [localVariables, setLocalVariables] = useState(variables);
     const [variableModalOpen, setVariableModalOpen] = useState(false);
+    const [duplicateDismissed, setDuplicateDismissed] = useState(false);
 
-    const { data, setData, post, processing, errors } = useForm<CreateWidgetForm>({
-        name: '',
-        financial_variable_id: variables[0]?.id ?? '',
-        display_type: 'kpi',
-        period_preset: '',
-        default_size: 'md',
-        is_public: false,
-        pin_to_dashboard: true,
-        chart_config: {
-            show_delta: false,
-            format: 'currency',
-            value_code: 'annual_revenue',
-            threshold_code: 'revenue_threshold',
-            series: [
-                { code: 'household_balance', label: 'Liquidità' },
-                { code: 'total_investments', label: 'Investimenti' },
-            ],
-        },
-    });
+    const duplicateWidget = flash?.duplicateWidget;
+    const duplicateMarketplaceWidget = flash?.duplicateMarketplaceWidget;
+    const showOwnDuplicateNotice = duplicateWidget !== undefined && !duplicateDismissed;
+    const showMarketplaceDuplicateNotice = duplicateMarketplaceWidget !== undefined && !duplicateDismissed;
+
+    const { data, setData, post, put, processing, errors } = useForm<CreateWidgetForm>(
+        () => buildInitialForm(variables, editingWidget),
+    );
 
     const requiresPeriod = formulaWidgetRequiresPeriod(data.display_type, data.chart_config);
     const usesSeries = formulaWidgetUsesSeries(data.display_type);
@@ -99,18 +141,45 @@ export default function Create({ variables, systemVariables, chartTypes, periodP
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+
+        if (isEditing && editingWidget) {
+            put(route('formula-widgets.update', editingWidget.id));
+
+            return;
+        }
+
         post(route('formula-widgets.store'));
     };
+
+    const pageTitle = isEditing ? 'Modifica widget a formula' : 'Nuovo widget a formula';
 
     return (
         <AuthenticatedLayout
             header={
-                <PageHeader title="Nuovo widget a formula" backLink={route('formula-widgets.index')} />
+                <PageHeader title={pageTitle} backLink={route('formula-widgets.index')} />
             }
         >
-            <Head title="Nuovo widget a formula" />
+            <Head title={pageTitle} />
 
             <PageContent maxWidth="7xl">
+                {showOwnDuplicateNotice ? (
+                    <div className="mb-6">
+                        <DuplicateFormulaWidgetNotice
+                            widget={duplicateWidget}
+                            onDismiss={() => setDuplicateDismissed(true)}
+                        />
+                    </div>
+                ) : null}
+                {showMarketplaceDuplicateNotice ? (
+                    <div className="mb-6">
+                        <DuplicateFormulaWidgetNotice
+                            widget={duplicateMarketplaceWidget}
+                            variant="marketplace"
+                            onDismiss={() => setDuplicateDismissed(true)}
+                        />
+                    </div>
+                ) : null}
+
                 <div className={clsx('grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] xl:grid-cols-[minmax(0,1fr)_24rem]')}>
                     <form onSubmit={submit} className="space-y-6">
                         <FormulaWidgetCreateGuide
@@ -333,14 +402,16 @@ export default function Create({ variables, systemVariables, chartTypes, periodP
                         <SectionCard>
                             <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Pubblicazione</h2>
                             <div className="space-y-3">
-                                <label className="flex items-center gap-2 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.pin_to_dashboard}
-                                        onChange={(e) => setData('pin_to_dashboard', e.target.checked)}
-                                    />
-                                    Aggiungi subito alla dashboard
-                                </label>
+                                {!isEditing ? (
+                                    <label className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.pin_to_dashboard}
+                                            onChange={(e) => setData('pin_to_dashboard', e.target.checked)}
+                                        />
+                                        Aggiungi subito alla dashboard
+                                    </label>
+                                ) : null}
                                 <label className="flex items-center gap-2 text-sm">
                                     <input
                                         type="checkbox"
@@ -359,8 +430,9 @@ export default function Create({ variables, systemVariables, chartTypes, periodP
                             >
                                 Annulla
                             </Link>
+                            <InputError message={(errors as { widget?: string }).widget} className="sm:mr-auto" />
                             <PrimaryButton disabled={processing || localVariables.length === 0}>
-                                Crea widget
+                                {isEditing ? 'Salva modifiche' : 'Crea widget'}
                             </PrimaryButton>
                         </FormActionsBar>
                     </form>
