@@ -50,9 +50,9 @@ test.describe('Obiettivi Finanziari', () => {
 });
 
 test.describe('Widget Obiettivi in Dashboard', () => {
-    /** Pannello widget (header + body), non l'intero main. h3 → min-w-0 → header → shell. */
+    /** Pannello widget (header + body): h3 → flex row → colonna titolo → header → shell. */
     function goalsWidget(page: Page) {
-        return page.getByRole('heading', { name: 'Obiettivi finanziari' }).locator('../../..');
+        return page.getByRole('heading', { name: 'Obiettivi finanziari' }).locator('../../../..');
     }
 
     function goalDetailLinks(page: Page) {

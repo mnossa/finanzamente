@@ -109,8 +109,8 @@ export default function Create({
 
     const duplicateWidget = flash?.duplicateWidget;
     const duplicateMarketplaceWidget = flash?.duplicateMarketplaceWidget;
-    const showOwnDuplicateNotice = duplicateWidget !== undefined && !duplicateDismissed;
-    const showMarketplaceDuplicateNotice = duplicateMarketplaceWidget !== undefined && !duplicateDismissed;
+    const showOwnDuplicateNotice = duplicateWidget != null && !duplicateDismissed;
+    const showMarketplaceDuplicateNotice = duplicateMarketplaceWidget != null && !duplicateDismissed;
 
     const { data, setData, post, put, processing, errors } = useForm<CreateWidgetForm>(
         () => buildInitialForm(variables, editingWidget),

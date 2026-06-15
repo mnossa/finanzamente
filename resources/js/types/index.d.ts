@@ -93,8 +93,8 @@ export type PageProps<
         success?: string;
         error?: string;
         info?: string;
-        duplicateWidget?: FormulaWidgetSummary;
-        duplicateMarketplaceWidget?: FormulaWidgetSummary;
+        duplicateWidget?: FormulaWidgetSummary | null;
+        duplicateMarketplaceWidget?: FormulaWidgetSummary | null;
     };
     notifications: {
         unread_count: number;

@@ -84,7 +84,7 @@ export default function Index({ widgets }: IndexProps) {
     const { flash, errors } = usePage<PageProps>().props;
     const duplicateWidget = flash?.duplicateWidget;
     const duplicateErrorMessage = typeof errors?.widget === 'string' ? errors.widget : undefined;
-    const showOwnDuplicateNotice = duplicateWidget !== undefined && !duplicateDismissed;
+    const showOwnDuplicateNotice = duplicateWidget != null && !duplicateDismissed;
 
     return (
         <AuthenticatedLayout

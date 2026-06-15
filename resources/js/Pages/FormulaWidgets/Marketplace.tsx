@@ -184,8 +184,8 @@ export default function Marketplace({
     const duplicateWidget = flash?.duplicateWidget;
     const duplicateMarketplaceWidget = flash?.duplicateMarketplaceWidget;
     const duplicateErrorMessage = typeof errors?.widget === 'string' ? errors.widget : undefined;
-    const showOwnDuplicateNotice = duplicateWidget !== undefined && !duplicateDismissed;
-    const showMarketplaceDuplicateNotice = duplicateMarketplaceWidget !== undefined && !duplicateDismissed;
+    const showOwnDuplicateNotice = duplicateWidget != null && !duplicateDismissed;
+    const showMarketplaceDuplicateNotice = duplicateMarketplaceWidget != null && !duplicateDismissed;
 
     return (
         <AuthenticatedLayout
