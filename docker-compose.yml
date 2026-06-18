@@ -1,4 +1,18 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: finanzamente-redis
+    restart: unless-stopped
+    networks:
+      - finanzamente
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   db_e2e:
     image: mysql:9.6
     container_name: finanzamente-db-e2e
@@ -39,8 +53,12 @@ services:
     ports:
       - "9000:9000"
     depends_on:
-      - db
-      - nginx
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nginx:
+        condition: service_started
   db:
     image: mysql:9.6
     container_name: finanzamente-db
@@ -104,8 +122,12 @@ services:
     networks:
       - finanzamente
     depends_on:
-      - app
-      - db
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: >
       sh -c "while true; do php artisan schedule:run --verbose; sleep 60; done"
 
@@ -122,8 +144,12 @@ services:
     networks:
       - finanzamente
     depends_on:
-      - app
-      - db
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: >
       sh -c "php artisan queue:work --queue=default --tries=3 --sleep=1 --timeout=120 --no-interaction"
 
@@ -182,7 +208,10 @@ services:
     networks:
       - finanzamente
     depends_on:
-      - db_e2e
+      db_e2e:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   # Nginx dedicato ai test E2E — porta 8081, proxia verso app_e2e:9000.
   # Il server principale (porta 8080) resta intatto durante i test.

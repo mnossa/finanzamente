@@ -8,12 +8,30 @@
 #   APP_KEY, APP_URL, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
 #   DB_ROOT_PASSWORD, MAIL_*, ADV_THROTTLE_SALT, BACKUP_ENCRYPTION_KEY, IMAGE_TAG
 #   Opzionale sul VPS: DEPLOY_MIN_FREE_MB (MiB liberi dopo pre-pulizia Docker; default deploy 4096; vedi deploy GitHub)
-#   In produzione usa QUEUE_CONNECTION=database (o redis): con "sync" gli import grandi
+#   In produzione usa QUEUE_CONNECTION=redis: con "sync" gli import grandi
 #   eseguono nella richiesta HTTP e possono superare il max_execution_time di PHP-FPM (~30s).
 #   (Opzionale) PYTHON_SERVICES_URL — in compose è fissata per servizio; vedi environment sotto.
 # =============================================================================
 
 services:
+
+  # ── Redis (cache, sessioni, code) ───────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: finanzamente-redis
+    restart: unless-stopped
+    networks:
+      - finanzamente
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   # ── Applicazione (PHP-FPM + Nginx via supervisord) ─────────────────────────
   app:
@@ -22,7 +40,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Servizio Python (uvicorn main:app) nello stesso container via supervisord (localhost)
+      # Python on-demand per artisan manuale (magazine:link-suggestions, ecc.)
       PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     # Porta 80 gestita da Caddy: il container è raggiungibile solo internamente
     # ports:
@@ -36,6 +54,8 @@ services:
       - finanzamente
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost/up"]
@@ -58,8 +78,8 @@ services:
     environment:
       # Non rieseguire migrate/optimize: già fatto dal container app
       SKIP_INIT: "true"
-      # Servizio Python nel container app: raggiungibile via rete Docker interna
-      PYTHON_SERVICES_URL: "http://app:8000"
+      # Python on-demand nel container scheduler (comandi magazine / cohort)
+      PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     volumes:
       - storage:/var/www/storage
       - bootstrap_cache:/var/www/bootstrap/cache
@@ -91,8 +111,8 @@ services:
     environment:
       # Non rieseguire migrate/optimize: già fatto dal container app
       SKIP_INIT: "true"
-      # Servizio Python nel container app: raggiungibile via rete Docker interna
-      PYTHON_SERVICES_URL: "http://app:8000"
+      # Python on-demand nel container scheduler (comandi magazine / cohort)
+      PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     volumes:
       - storage:/var/www/storage
       - bootstrap_cache:/var/www/bootstrap/cache

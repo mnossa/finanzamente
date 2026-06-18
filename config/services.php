@@ -217,6 +217,10 @@ return [
             'PYTHON_SERVICES_URL',
             env('PYTHON_LINKER_URL', 'http://127.0.0.1:8000')
         ),
+        // true: i comandi schedulati avviano uvicorn solo se /health non risponde
+        'manage_process' => env('PYTHON_SERVICES_MANAGE_PROCESS', true),
+        'startup_timeout' => env('PYTHON_SERVICES_STARTUP_TIMEOUT', 120),
+        'shutdown_after_use' => env('PYTHON_SERVICES_SHUTDOWN_AFTER_USE', true),
     ],
 
 ];

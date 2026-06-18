@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\LinkSuggestion;
 use App\Models\LinkSuggestionRun;
 use App\Models\MagazineArticle;
+use App\Services\PythonServices\PythonServicesProcessManager;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
@@ -22,7 +23,7 @@ class SuggestArticleLinks extends Command
 
     protected $description = 'Scansiona gli articoli magazine e suggerisce link interni tramite similarità semantica (output via email)';
 
-    public function handle(): int
+    public function handle(PythonServicesProcessManager $pythonServices): int
     {
         $start = microtime(true);
         $maxSuggestions = (int) $this->option('max');
@@ -32,33 +33,40 @@ class SuggestArticleLinks extends Command
 
         $pythonServicesUrl = rtrim((string) config('services.python_services.url'), '/');
 
-        // Verifica che il servizio Python sia raggiungibile (max 3 tentativi con backoff)
-        $maxRetries = 3;
-        $retryDelay = 5;
-        $lastError = null;
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-            try {
-                $health = Http::timeout(5)->get("{$pythonServicesUrl}/health");
-                if ($health->successful()) {
-                    $lastError = null;
-                    break;
-                }
-                $lastError = new \RuntimeException("HTTP {$health->status()}");
-            } catch (\Throwable $e) {
-                $lastError = $e;
-            }
-            if ($attempt < $maxRetries) {
-                $this->warn("Tentativo {$attempt}/{$maxRetries}: servizio Python non raggiungibile, attendo {$retryDelay}s...");
-                sleep($retryDelay);
-            }
-        }
-        if ($lastError !== null) {
-            $this->error("Servizio Python non raggiungibile ({$pythonServicesUrl}): ".$lastError->getMessage());
-            Log::error('magazine:link-suggestions — servizio Python non raggiungibile', ['error' => $lastError->getMessage()]);
+        try {
+            return $pythonServices->run(function () use (
+                $start,
+                $maxSuggestions,
+                $maxPerArticle,
+                $minScore,
+                $maxScore,
+                $pythonServicesUrl,
+            ) {
+                return $this->runWithPythonService(
+                    $start,
+                    $maxSuggestions,
+                    $maxPerArticle,
+                    $minScore,
+                    $maxScore,
+                    $pythonServicesUrl,
+                );
+            });
+        } catch (\Throwable $e) {
+            $this->error("Servizio Python non raggiungibile ({$pythonServicesUrl}): ".$e->getMessage());
+            Log::error('magazine:link-suggestions — servizio Python non raggiungibile', ['error' => $e->getMessage()]);
 
             return 1;
         }
+    }
 
+    private function runWithPythonService(
+        float $start,
+        int $maxSuggestions,
+        int $maxPerArticle,
+        float $minScore,
+        float $maxScore,
+        string $pythonServicesUrl,
+    ): int {
         $converter = new CommonMarkConverter;
 
         // Carica tutti gli articoli pubblicati con contenuto sufficiente

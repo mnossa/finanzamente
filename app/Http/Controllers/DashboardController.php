@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\AccountBalanceService;
 use App\Services\AssetClassificationService;
 use App\Services\BudgetNotificationService;
+use App\Services\DashboardCacheService;
 use App\Services\FinancialMetricsService;
 use App\Services\FormulaWidgetBootstrapService;
 use App\Services\FormulaWidgetDataVersionService;
@@ -41,6 +42,7 @@ class DashboardController extends Controller
         private readonly FormulaWidgetPayloadBuilder $formulaWidgetPayloadBuilder,
         private readonly FormulaWidgetLayoutNormalizer $formulaWidgetLayoutNormalizer,
         private readonly FormulaWidgetDataVersionService $formulaWidgetDataVersionService,
+        private readonly DashboardCacheService $dashboardCacheService,
     ) {}
 
     /**
@@ -52,6 +54,50 @@ class DashboardController extends Controller
         $householdId = $user->active_household_id;
 
         $this->formulaWidgetBootstrapService->provisionForUser($user);
+
+        $periodLabel = 'Ultimi 30 giorni';
+        $previousPeriodLabel = '30 giorni precedenti';
+        $endOfPeriod = Carbon::now()->endOfDay();
+        $startOfPeriod = Carbon::now()->subDays(29)->startOfDay();
+        $endOfPrevious = Carbon::now()->subDays(30)->endOfDay();
+        $startOfPrevious = Carbon::now()->subDays(59)->startOfDay();
+
+        $payload = $this->dashboardCacheService->rememberIndexPayload($user, function () use (
+            $user,
+            $householdId,
+            $startOfPeriod,
+            $endOfPeriod,
+            $startOfPrevious,
+            $endOfPrevious,
+        ) {
+            return array_merge($this->buildIndexPayload($user), [
+                'periodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod),
+                'previousPeriodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious),
+            ]);
+        });
+
+        (new BudgetNotificationService)->checkAndNotify($user, $householdId);
+        (new TransactionTrendNotificationService)->checkAndNotify(
+            $user,
+            $payload['periodStats'],
+            $payload['previousPeriodStats'],
+            $periodLabel,
+            $previousPeriodLabel,
+        );
+
+        return Inertia::render('Dashboard', array_merge($payload, [
+            'periodLabel' => $periodLabel,
+            'previousPeriodLabel' => $previousPeriodLabel,
+            'importShareToken' => session('importShareToken'),
+        ]));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildIndexPayload(User $user): array
+    {
+        $householdId = $user->active_household_id;
         $dashboardLayout = $this->getDashboardLayout($user);
         $formulaWidgetDataVersion = $this->formulaWidgetDataVersionService->resolveForUser($user);
         $formulaWidgetPayloads = $this->buildPriorityFormulaWidgetPayloads($user, $dashboardLayout);
@@ -78,7 +124,6 @@ class DashboardController extends Controller
             'patrimonioTotal' => $portfolioSnapshot['totalValue'],
         ];
 
-        // Transazioni recenti (ultime 10)
         $recentTransactions = Transaction::with(['account', 'category', 'user'])
             ->whereHas('account', function ($query) use ($householdId) {
                 $query->where('household_id', $householdId);
@@ -114,31 +159,6 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Statistiche rolling: ultimi 30 giorni vs 30 giorni precedenti
-        $periodLabel = 'Ultimi 30 giorni';
-        $previousPeriodLabel = '30 giorni precedenti';
-
-        $endOfPeriod = Carbon::now()->endOfDay();
-        $startOfPeriod = Carbon::now()->subDays(29)->startOfDay();
-
-        $periodStats = $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod);
-
-        $endOfPrevious = Carbon::now()->subDays(30)->endOfDay();
-        $startOfPrevious = Carbon::now()->subDays(59)->startOfDay();
-
-        $previousPeriodStats = $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious);
-
-        // Controlla e crea notifiche per budget e trend di spesa/entrate
-        (new BudgetNotificationService)->checkAndNotify($user, $householdId);
-        (new TransactionTrendNotificationService)->checkAndNotify(
-            $user,
-            $periodStats,
-            $previousPeriodStats,
-            $periodLabel,
-            $previousPeriodLabel
-        );
-
-        // Budget attivi (con spesa calcolata)
         $activeBudgets = Budget::where('household_id', $householdId)
             ->where('period_start', '<=', now())
             ->where('period_end', '>=', now())
@@ -172,7 +192,6 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Debiti e Crediti aperti
         $openDebtsCredits = DebtCredit::where('household_id', $householdId)
             ->whereIn('status', ['open', 'overdue'])
             ->with('currency')
@@ -191,7 +210,6 @@ class DashboardController extends Controller
                 'currency_symbol' => $dc->currency->symbol,
             ]);
 
-        // Totali debiti e crediti (saldo residuo, non importo originale)
         $debtsCreditsSummary = [
             'total_debts' => DebtCredit::where('household_id', $householdId)
                 ->where('type', 'debt')
@@ -208,15 +226,11 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        return Inertia::render('Dashboard', [
+        return [
             'accounts' => $accountsWithBalance,
             'totalBalance' => $totalBalance,
             'balanceBreakdown' => $balanceBreakdown,
             'recentTransactions' => $recentTransactions,
-            'periodStats' => $periodStats,
-            'previousPeriodStats' => $previousPeriodStats,
-            'periodLabel' => $periodLabel,
-            'previousPeriodLabel' => $previousPeriodLabel,
             'activeBudgets' => $activeBudgets,
             'openDebtsCredits' => $openDebtsCredits,
             'debtsCreditsSummary' => $debtsCreditsSummary,
@@ -227,12 +241,11 @@ class DashboardController extends Controller
             'formulaWidgetPayloads' => $formulaWidgetPayloads,
             'formulaWidgetMeta' => $formulaWidgetMeta,
             'formulaWidgetDataVersion' => $formulaWidgetDataVersion,
-            'importShareToken' => session('importShareToken'),
             'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
             'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
             'financialGoals' => $this->getFinancialGoalsData($householdId),
             'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
-        ]);
+        ];
     }
 
     /**
@@ -265,7 +278,11 @@ class DashboardController extends Controller
 
         return response()
             ->json([
-                'payloads' => $this->buildFormulaWidgetPayloads($user, $dashboardLayout, $requestedIds),
+                'payloads' => $this->dashboardCacheService->rememberFormulaPayloads(
+                    $user,
+                    $requestedIds,
+                    fn () => $this->buildFormulaWidgetPayloads($user, $dashboardLayout, $requestedIds),
+                ),
                 'dataVersion' => $dataVersion,
             ])
             ->header('ETag', $etag)

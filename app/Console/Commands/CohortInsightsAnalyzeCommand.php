@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\CohortInsights\CohortInsightNotificationWriter;
 use App\Services\CohortInsights\CohortInsightPythonClient;
 use App\Services\CohortInsights\CohortInsightSnapshotBuilder;
+use App\Services\PythonServices\PythonServicesProcessManager;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,7 @@ class CohortInsightsAnalyzeCommand extends Command
     public function handle(
         CohortInsightSnapshotBuilder $snapshotBuilder,
         CohortInsightNotificationWriter $writer,
+        PythonServicesProcessManager $pythonServices,
     ): int {
         if (! config('cohort_insights.enabled', true)) {
             $this->info('Cohort insights disabilitati (COHORT_INSIGHTS_ENABLED).');
@@ -56,29 +58,24 @@ class CohortInsightsAnalyzeCommand extends Command
 
         $this->info('Righe snapshot: '.count($rows));
 
-        $client = CohortInsightPythonClient::fromConfig();
-
-        if (! $client->pingHealth()) {
-            $this->error('Servizio Python non raggiungibile (/health).');
-
-            return self::FAILURE;
-        }
-
-        $kMin = (int) config('cohort_insights.k_min', 50);
-        $gap = (int) config('cohort_insights.median_gap_pct_points', 15);
-
         try {
-            $insights = $client->analyze($periodKey, $kMin, $gap, $rows);
+            return $pythonServices->run(function () use ($writer, $periodKey, $rows, $map) {
+                $client = CohortInsightPythonClient::fromConfig();
+
+                $kMin = (int) config('cohort_insights.k_min', 50);
+                $gap = (int) config('cohort_insights.median_gap_pct_points', 15);
+
+                $insights = $client->analyze($periodKey, $kMin, $gap, $rows);
+                $created = $writer->write($periodKey, $insights, $map);
+                $this->info("Notifiche create: {$created}");
+
+                return self::SUCCESS;
+            });
         } catch (Throwable $e) {
             Log::error('insights:cohort-analyze — fallita chiamata python', ['error' => $e->getMessage()]);
             $this->error($e->getMessage());
 
             return self::FAILURE;
         }
-
-        $created = $writer->write($periodKey, $insights, $map);
-        $this->info("Notifiche create: {$created}");
-
-        return self::SUCCESS;
     }
 }

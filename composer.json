@@ -17,6 +17,7 @@
         "laravel/tinker": "^2.10.1",
         "mollie/mollie-api-php": "^3.9",
         "openspout/openspout": "^5",
+        "predis/predis": "^3.0",
         "spatie/laravel-honeypot": "^4.7",
         "spatie/laravel-sitemap": "^7.4",
         "symfony/expression-language": "^7.0",

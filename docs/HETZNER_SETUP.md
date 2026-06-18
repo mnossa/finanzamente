@@ -336,9 +336,15 @@ DB_PASSWORD=SCEGLI_PASSWORD_SICURA_QUI
 DB_ROOT_PASSWORD=SCEGLI_ROOT_PASSWORD_SICURA_QUI
 
 # ── Cache / Session / Queue ────────────────────────────────────────────────
-SESSION_DRIVER=database
-CACHE_STORE=database
-QUEUE_CONNECTION=database
+BROADCAST_DRIVER=log
+CACHE_DRIVER=redis
+CACHE_STORE=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+REDIS_CLIENT=predis
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=null
 
 # ── Mail (esempio con Mailgun o SMTP) ──────────────────────────────────────
 MAIL_MAILER=smtp

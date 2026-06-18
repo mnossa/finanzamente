@@ -88,11 +88,7 @@ class PortfolioSnapshotService
             ->orderBy('name')
             ->get();
 
-        /** @var array<int, float> $accountBalances */
-        $accountBalances = [];
-        foreach ($accounts as $account) {
-            $accountBalances[$account->id] = $this->accountBalanceService->computeBalance($account, $user);
-        }
+        $accountBalances = $this->accountBalanceService->batchComputeBalances($accounts, $user);
 
         $investments = Investment::with([
             'asset.currency:code,symbol',

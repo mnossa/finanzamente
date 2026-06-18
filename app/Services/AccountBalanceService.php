@@ -21,19 +21,53 @@ class AccountBalanceService
     }
 
     /**
+     * @param  Collection<int, Account>  $accounts
+     * @return array<int, float>
+     */
+    public function batchComputeBalances(Collection $accounts, ?User $viewer = null): array
+    {
+        if ($accounts->isEmpty()) {
+            return [];
+        }
+
+        $accountIds = $accounts->pluck('id');
+
+        $transactionSums = Transaction::query()
+            ->whereIn('account_id', $accountIds)
+            ->when($viewer, function ($query) use ($viewer) {
+                $query->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $viewer->id));
+            })
+            ->groupBy('account_id')
+            ->selectRaw('account_id, COALESCE(SUM(amount), 0) as total')
+            ->pluck('total', 'account_id');
+
+        $balances = [];
+        foreach ($accounts as $account) {
+            $balances[$account->id] = round(
+                (float) $account->initial_balance + (float) ($transactionSums[$account->id] ?? 0),
+                2,
+            );
+        }
+
+        return $balances;
+    }
+
+    /**
      * @param  Collection<int, Account>|null  $accounts
      * @return Collection<int, array<string, mixed>>
      */
     public function mapAccountsWithBalance(Collection $accounts, User $viewer): Collection
     {
-        return $accounts->map(function (Account $account) use ($viewer) {
+        $balances = $this->batchComputeBalances($accounts, $viewer);
+
+        return $accounts->map(function (Account $account) use ($balances) {
             return [
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $account->type,
                 'currency_code' => $account->currency_code,
                 'initial_balance' => (float) $account->initial_balance,
-                'current_balance' => $this->computeBalance($account, $viewer),
+                'current_balance' => $balances[$account->id] ?? 0.0,
                 'is_private' => $account->is_private,
             ];
         });
@@ -47,7 +81,9 @@ class AccountBalanceService
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
             ->get();
 
-        return round((float) $this->mapAccountsWithBalance($accounts, $user)->sum('current_balance'), 2);
+        $balances = $this->batchComputeBalances($accounts, $user);
+
+        return round((float) array_sum($balances), 2);
     }
 
     public function syncStoredBalance(Account $account, ?User $viewer = null): Account
