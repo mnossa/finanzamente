@@ -344,7 +344,7 @@ jobs:
 
             # Pull la nuova immagine da Docker Hub
             echo "==> [deploy] Pull immagine Docker Hub..."
-            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull app scheduler queue-worker
+            IMAGE_TAG="${IMAGE_TAG}" docker compose -f docker-compose.prod.yml pull redis app scheduler queue-worker
 
             # Aggiorna IMAGE_TAG nel file .env del server
             if grep -q "^IMAGE_TAG=" .env; then
@@ -373,6 +373,27 @@ jobs:
               fi
               echo "    In attesa MySQL... (stato: ${DB_STATUS})"
               sleep 10
+            done
+
+            # Redis (cache, sessioni, code) — richiesto se .env usa REDIS_HOST=redis
+            echo "==> [deploy] Avvio Redis..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps redis
+
+            echo "==> [deploy] Attesa Redis healthy (max 1 min)..."
+            REDIS_DEADLINE=$(($(date +%s) + 60))
+            while true; do
+              REDIS_STATUS=$(docker inspect --format='{{.State.Health.Status}}' finanzamente-redis 2>/dev/null || echo "unknown")
+              if [ "${REDIS_STATUS}" = "healthy" ]; then
+                echo "==> [deploy] Redis healthy!"
+                break
+              fi
+              if [ "$(date +%s)" -ge "${REDIS_DEADLINE}" ]; then
+                echo "==> [deploy] TIMEOUT: Redis non è healthy entro 1 minuto."
+                docker logs finanzamente-redis --tail=50 || true
+                false
+              fi
+              echo "    In attesa Redis... (stato: ${REDIS_STATUS})"
+              sleep 3
             done
 
             # Avvia il resto dell'infrastruttura (no-recreate + no-deps)
