@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\AppNotification;
 use App\Models\Consent;
+use App\Models\User;
 use App\Services\FormulaWidgetDataVersionService;
 use App\Services\HouseholdPermissionService;
 use App\Services\ModuleAccessService;
@@ -55,7 +55,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $user,
+                'user' => $user ? $this->serializeAuthUser($user) : null,
             ],
             'activeHousehold' => fn () => $user?->activeHousehold ? [
                 'id' => $user->activeHousehold->id,
@@ -78,22 +78,9 @@ class HandleInertiaRequests extends Middleware
                 'duplicateWidget' => fn () => $request->session()->get('duplicateWidget'),
                 'duplicateMarketplaceWidget' => fn () => $request->session()->get('duplicateMarketplaceWidget'),
             ],
-            'notifications' => fn () => $user ? [
-                'unread_count' => AppNotification::where('user_id', $user->id)->where('read', false)->count(),
-                'items' => AppNotification::where('user_id', $user->id)
-                    ->orderByDesc('created_at')
-                    ->limit(10)
-                    ->get()
-                    ->map(fn ($n) => [
-                        'id' => $n->id,
-                        'title' => $n->title,
-                        'message' => $n->message,
-                        'read' => $n->read,
-                        'action_url' => $this->resolveNotificationActionUrl($n->notification_key),
-                        'created_at' => $n->created_at->diffForHumans(),
-                    ])
-                    ->toArray(),
-            ] : ['unread_count' => 0, 'items' => []],
+            'notifications' => fn () => $user
+                ? ['deferred' => true, 'unread_count' => 0, 'items' => []]
+                : ['deferred' => false, 'unread_count' => 0, 'items' => []],
             'googleDrive' => [
                 'clientId' => config('services.google_drive.client_id', ''),
                 'apiKey' => config('services.google_drive.api_key', ''),
@@ -129,58 +116,27 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Restituisce l'URL di azione per tipi notifica noti.
+     * @return array<string, mixed>
      */
-    private function resolveNotificationActionUrl(?string $notificationKey): ?string
+    private function serializeAuthUser(User $user): array
     {
-        if (! $notificationKey) {
-            return null;
-        }
-
-        if (str_starts_with($notificationKey, 'recurring_detect_')) {
-            return route('recurrence-detection.index');
-        }
-
-        if (str_starts_with($notificationKey, 'recurring_remind_')) {
-            $parts = explode('_', $notificationKey);
-            $recurringId = $parts[2] ?? null;
-            if ($recurringId && is_numeric($recurringId)) {
-                return route('recurring-transactions.show', (int) $recurringId);
-            }
-        }
-
-        if (str_starts_with($notificationKey, 'recurring_sync_')) {
-            $parts = explode('_', $notificationKey);
-            $recurringId = $parts[2] ?? null;
-            if ($recurringId && is_numeric($recurringId)) {
-                return route('recurring-transactions.show', (int) $recurringId);
-            }
-        }
-
-        if (str_starts_with($notificationKey, 'inbox_telegram_')) {
-            return route('inbox.index');
-        }
-
-        if (str_starts_with($notificationKey, 'cohort_wants_share_')) {
-            return route('dashboard');
-        }
-
-        if (str_starts_with($notificationKey, 'duplicates_detect_')) {
-            return route('transactions.duplicates.index');
-        }
-
-        if (str_starts_with($notificationKey, 'monthly_spending_')) {
-            $parts = explode('_', $notificationKey);
-            $yearMonth = $parts[2] ?? null;
-            if ($yearMonth && preg_match('/^\d{4}-\d{2}$/', $yearMonth)) {
-                return route('transactions.index', [
-                    'type' => 'expense',
-                    'from' => $yearMonth.'-01',
-                    'to' => date('Y-m-t', strtotime($yearMonth.'-01')),
-                ]);
-            }
-        }
-
-        return null;
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'user_type' => $user->user_type,
+            'preferences' => $user->preferences,
+            'profile_settings' => $user->profile_settings,
+            'default_currency_code' => $user->default_currency_code,
+            'income_band' => $user->income_band,
+            'macro_region' => $user->macro_region,
+            'birth_date' => $user->birth_date?->format('Y-m-d'),
+            'active_household_id' => $user->active_household_id,
+            'email_verified_at' => $user->email_verified_at,
+            'profile_completed' => $user->profile_completed,
+            'status' => $user->status,
+        ];
     }
 }

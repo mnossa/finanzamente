@@ -120,20 +120,22 @@ class ExpenseDistributionTest extends TestCase
     // ─── Dashboard — dati distribuzione spese ─────────────────────────────
 
     #[Test]
-    public function dashboard_includes_expense_distribution_data(): void
+    public function deferred_widgets_include_expense_distribution_data(): void
     {
         $response = $this->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->getJson(route('dashboard.deferred-widgets'));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->has('expenseDistributionData')
-            ->has('expenseDistributionData.needs')
-            ->has('expenseDistributionData.wants')
-            ->has('expenseDistributionData.investments')
-            ->has('expenseDistributionData.unclassified')
-            ->has('expenseDistributionData.total_expenses')
-            ->has('expenseDistributionData.thresholds')
-        );
+        $response->assertJsonStructure([
+            'expenseDistributionData' => [
+                'needs',
+                'wants',
+                'investments',
+                'unclassified',
+                'total_expenses',
+                'thresholds',
+            ],
+        ]);
     }
 
     #[Test]
@@ -180,14 +182,13 @@ class ExpenseDistributionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->getJson(route('dashboard.deferred-widgets'));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.total_expenses', 1000)
-            ->where('expenseDistributionData.needs.amount', 500)
-            ->where('expenseDistributionData.wants.amount', 200)
-            ->where('expenseDistributionData.unclassified.amount', 300)
-        );
+        $response->assertJsonPath('expenseDistributionData.total_expenses', 1000);
+        $response->assertJsonPath('expenseDistributionData.needs.amount', 500);
+        $response->assertJsonPath('expenseDistributionData.wants.amount', 200);
+        $response->assertJsonPath('expenseDistributionData.unclassified.amount', 300);
     }
 
     #[Test]
@@ -204,25 +205,25 @@ class ExpenseDistributionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->getJson(route('dashboard.deferred-widgets'));
 
-        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.thresholds.needs', 40)
-            ->where('expenseDistributionData.thresholds.wants', 40)
-            ->where('expenseDistributionData.has_custom_thresholds', true)
-        );
+        $response->assertOk();
+        $response->assertJsonPath('expenseDistributionData.thresholds.needs', 40);
+        $response->assertJsonPath('expenseDistributionData.thresholds.wants', 40);
+        $response->assertJsonPath('expenseDistributionData.has_custom_thresholds', true);
     }
 
     #[Test]
     public function expense_distribution_uses_default_thresholds_when_not_customized(): void
     {
         $response = $this->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->getJson(route('dashboard.deferred-widgets'));
 
-        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.thresholds.needs', 50)
-            ->where('expenseDistributionData.thresholds.wants', 30)
-            ->where('expenseDistributionData.thresholds.investments', 20)
-            ->where('expenseDistributionData.has_custom_thresholds', false)
-        );
+        $response->assertOk();
+        $response->assertJsonPath('expenseDistributionData.thresholds.needs', 50);
+        $response->assertJsonPath('expenseDistributionData.thresholds.wants', 30);
+        $response->assertJsonPath('expenseDistributionData.thresholds.investments', 20);
+        $response->assertJsonPath('expenseDistributionData.has_custom_thresholds', false);
     }
 
     #[Test]
@@ -243,10 +244,10 @@ class ExpenseDistributionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->getJson(route('dashboard.deferred-widgets'));
 
-        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.total_expenses', 0)
-        );
+        $response->assertOk();
+        $response->assertJsonPath('expenseDistributionData.total_expenses', 0);
     }
 
     #[Test]
@@ -280,10 +281,10 @@ class ExpenseDistributionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->getJson(route('dashboard.deferred-widgets'));
 
-        $response->assertInertia(fn ($page) => $page->where('expenseDistributionData.wants.exceeded', true)
-            ->where('expenseDistributionData.needs.exceeded', false)
-        );
+        $response->assertOk();
+        $response->assertJsonPath('expenseDistributionData.wants.exceeded', true);
+        $response->assertJsonPath('expenseDistributionData.needs.exceeded', false);
     }
 }

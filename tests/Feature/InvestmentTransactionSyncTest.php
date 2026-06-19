@@ -169,11 +169,9 @@ class InvestmentTransactionSyncTest extends TestCase
         $this->actingAs($this->user)->post(route('investment-pacs.run-now', $pac));
 
         $this->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->getJson(route('dashboard.deferred-widgets'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('expenseDistributionData.investments.amount', 300)
-            );
+            ->assertJsonPath('expenseDistributionData.investments.amount', 300);
 
         $this->actingAs($this->user)
             ->get('/punteggio-stile-vita')
@@ -302,11 +300,9 @@ class InvestmentTransactionSyncTest extends TestCase
         ]);
 
         $this->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->getJson(route('dashboard.deferred-widgets'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('expenseDistributionData.investments.amount', 505)
-            );
+            ->assertJsonPath('expenseDistributionData.investments.amount', 505);
 
         Carbon::setTestNow();
     }

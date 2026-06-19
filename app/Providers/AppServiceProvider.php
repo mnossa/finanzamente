@@ -42,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::prefetch(concurrency: 3);
+        Vite::prefetch(concurrency: 1);
         // Customizza il rendering dei link Markdown per aggiungere rel="nofollow" ai link esterni
         Str::macro('markdownWithNofollow', function ($string, $options = []) {
             $options = array_merge([

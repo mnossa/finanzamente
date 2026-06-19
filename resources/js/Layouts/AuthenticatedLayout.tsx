@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import { useHeaderNotifications } from '@/hooks/useHeaderNotifications';
 import { nav } from '@/utils/analytics';
 import Dropdown from '@/Components/Dropdown';
 import ThemeToggle from '@/Components/ThemeToggle';
@@ -473,7 +474,8 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { auth, activeHousehold, notifications, plan: planData, isAdmin, privacy } = usePage<PageProps>().props;
+    const { auth, activeHousehold, notifications: sharedNotifications, plan: planData, isAdmin, privacy } = usePage<PageProps>().props;
+    const { notifications } = useHeaderNotifications(sharedNotifications);
     const features = usePage<PageProps & { features?: Record<string, boolean> }>().props.features ?? {};
     const user = auth.user;
     const { isModuleEnabled, isPro } = useModules();
@@ -654,6 +656,7 @@ export default function Authenticated({
                         <button
                             onClick={() => setSidebarOpen(false)}
                             className="lg:hidden text-slate-400 hover:text-white transition-colors p-1"
+                            aria-label="Chiudi menu"
                         >
                             <Icons.X />
                         </button>
@@ -871,12 +874,14 @@ export default function Authenticated({
                                 <Dropdown.Trigger>
                                     <button
                                         className="flex items-center gap-1.5 rounded-xl p-1.5 transition-colors hover:bg-slate-100 sm:gap-2 sm:p-2"
-                                        aria-label={`Menu utente: ${user.name}`}
+                                        aria-haspopup="menu"
+                                        aria-expanded={undefined}
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-semibold text-sm">
+                                        <span className="sr-only">Menu utente</span>
+                                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-700 font-semibold text-sm dark:text-emerald-300">
                                             {user.name.charAt(0).toUpperCase()}
                                         </div>
-                                        <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-700 ">
+                                        <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-700" aria-hidden="true">
                                             {user.name}
                                         </span>
                                         <span className="hidden sm:inline">
@@ -967,12 +972,12 @@ function MobileBottomNav({
                     onClick={() => nav.bottomBar('home')}
                     className={clsx(
                         'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
-                        isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                        isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
-                    aria-label="Dashboard"
+                    aria-label="Home"
                 >
-                    <Icons.Dashboard />
-                    <span className="text-[10px] font-medium leading-none">Home</span>
+                    <span aria-hidden="true"><Icons.Dashboard /></span>
+                    <span className="text-xs font-medium leading-none" aria-hidden="true">Home</span>
                 </Link>
 
                 {/* Transazioni */}
@@ -981,12 +986,12 @@ function MobileBottomNav({
                     onClick={() => nav.bottomBar('movimenti')}
                     className={clsx(
                         'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
-                        isTransactions ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                        isTransactions ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Transazioni"
                 >
-                    <Icons.ArrowLeftRight />
-                    <span className="text-[10px] font-medium leading-none">Transazioni</span>
+                    <span aria-hidden="true"><Icons.ArrowLeftRight /></span>
+                    <span className="text-xs font-medium leading-none" aria-hidden="true">Transazioni</span>
                 </Link>
 
                 {/* FAB — nascosto dove non c'è un'azione primaria sensata (es. simulazioni) */}
@@ -1030,22 +1035,22 @@ function MobileBottomNav({
                     onClick={() => nav.bottomBar('conti')}
                     className={clsx(
                         'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
-                        isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                        isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Conti"
                 >
-                    <Icons.Wallet />
-                    <span className="text-[10px] font-medium leading-none">Conti</span>
+                    <span aria-hidden="true"><Icons.Wallet /></span>
+                    <span className="text-xs font-medium leading-none" aria-hidden="true">Conti</span>
                 </Link>
 
                 {/* Altro / Menu */}
                 <button
                     onClick={onMenuOpen}
-                    className="flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl text-slate-500 dark:text-slate-400 transition-colors"
-                    aria-label="Apri menu"
+                    className="flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl text-slate-700 dark:text-slate-200 transition-colors"
+                    aria-label="Altro"
                 >
-                    <Icons.Menu />
-                    <span className="text-[10px] font-medium leading-none">Altro</span>
+                    <span aria-hidden="true"><Icons.Menu /></span>
+                    <span className="text-xs font-medium leading-none" aria-hidden="true">Altro</span>
                 </button>
             </div>
         </nav>

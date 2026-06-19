@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 /**
  * Regression guard per Core Web Vitals sulla dashboard con lazy load widget formula.
  * CLS: skeleton a altezza riservata + payload prioritari SSR per above-the-fold.
+ * TBT: long task budget dopo defer dnd-kit / Recharts.
  */
 test.describe('Dashboard — Core Web Vitals (lazy load widget formula)', () => {
     test('accumula poco layout shift durante il caricamento dei widget formula', async ({ page }) => {
@@ -41,5 +42,35 @@ test.describe('Dashboard — Core Web Vitals (lazy load widget formula)', () => 
         await page.goto('/dashboard');
 
         await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 5000 });
+    });
+
+    test('accumula pochi long task durante il boot della dashboard', async ({ page }) => {
+        await page.goto('/dashboard');
+
+        const longTaskStats = await page.evaluate(async () => {
+            const tasks: number[] = [];
+
+            const observer = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    tasks.push(entry.duration);
+                }
+            });
+
+            observer.observe({ type: 'longtask', buffered: true });
+
+            await new Promise((resolve) => window.setTimeout(resolve, 5000));
+
+            observer.disconnect();
+
+            const totalBlocking = tasks.reduce((sum, duration) => sum + Math.max(0, duration - 50), 0);
+
+            return {
+                count: tasks.length,
+                totalBlockingMs: totalBlocking,
+            };
+        });
+
+        expect(longTaskStats.count).toBeLessThan(25);
+        expect(longTaskStats.totalBlockingMs).toBeLessThan(2500);
     });
 });

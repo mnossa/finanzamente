@@ -1,7 +1,6 @@
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
+import type { DashboardDragHandleAttributes, DashboardDragHandleListeners } from '@/types/dashboardDrag';
 import { WidgetConfig, WidgetSize } from '@/types/dashboard';
 import { WIDGET_MAP } from '@/constants/widgetRegistry';
 
@@ -12,10 +11,11 @@ interface DashboardWidgetCardProps {
     onChangeSize: (size: WidgetSize) => void;
     children: React.ReactNode;
     className?: string;
-    /** Titolo per widget dinamici (formula_widget_*). */
     titleOverride?: string;
     manageEditHref?: string;
     onManageDelete?: () => void;
+    dragHandleAttributes?: DashboardDragHandleAttributes;
+    dragHandleListeners?: DashboardDragHandleListeners;
 }
 
 const SIZE_LABELS: Record<WidgetSize, string> = {
@@ -32,15 +32,6 @@ const SIZE_COL_CLASSES: Record<WidgetSize, string> = {
     xl: 'col-span-full xl:col-span-6',
 };
 
-/**
- * Wrapper draggable per ogni widget della dashboard.
- *
- * In modalità modifica mostra:
- * - maniglia di trascinamento
- * - pulsante di visibilità (mostra/nascondi)
- * - selettore dimensione (tra quelle consentite)
- * - overlay semitrasparente sui widget nascosti
- */
 export default function DashboardWidgetCard({
     widget,
     isEditing,
@@ -51,54 +42,25 @@ export default function DashboardWidgetCard({
     titleOverride,
     manageEditHref,
     onManageDelete,
+    dragHandleAttributes,
+    dragHandleListeners,
 }: DashboardWidgetCardProps) {
     const definition = WIDGET_MAP[widget.id as keyof typeof WIDGET_MAP];
     const widgetTitle = titleOverride ?? definition?.title ?? widget.id;
     const allowedSizes = definition?.allowedSizes ?? ['sm', 'md', 'lg', 'xl'];
+    const isSortableShell = dragHandleAttributes !== undefined;
 
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({ id: widget.id, disabled: !isEditing });
-
-    const style: React.CSSProperties = {
-        transform: isDragging
-            ? `${CSS.Transform.toString(transform)} scale(1.02)`
-            : CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 50 : undefined,
-    };
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            className={clsx(
-                SIZE_COL_CLASSES[widget.size],
-                'flex flex-col',
-                // Effetto sollevamento durante il drag
-                isDragging && 'opacity-90 shadow-2xl ring-2 ring-emerald-400 rounded-xl',
-                // Bordo tratteggiato in modalità editing per segnalare la manipolabilità
-                isEditing && !isDragging && 'rounded-xl outline-dashed outline-2 outline-emerald-400/50 dark:outline-emerald-600/50',
-                isEditing && !widget.visible && 'opacity-50',
-                className
-            )}
-        >
-            {/* Barra di controllo in modalità modifica */}
+    const cardBody = (
+        <>
             {isEditing && (
                 <div
                     className="mb-1 flex items-center justify-between rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700"
                     role="toolbar"
                     aria-label={`Controlli widget ${widgetTitle}`}
                 >
-                    {/* Maniglia drag — icona ⠿ ben visibile per comunicare la manipolabilità */}
                     <button
-                        {...attributes}
-                        {...listeners}
+                        {...dragHandleAttributes}
+                        {...dragHandleListeners}
                         type="button"
                         className="cursor-grab touch-none rounded p-1.5 text-gray-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 active:cursor-grabbing dark:text-gray-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
                         aria-label="Trascina per riordinare"
@@ -115,12 +77,10 @@ export default function DashboardWidgetCard({
                         </svg>
                     </button>
 
-                    {/* Nome widget */}
                     <span className="flex-1 truncate px-1 text-xs font-medium text-gray-600 dark:text-gray-300">
                         {widgetTitle}
                     </span>
 
-                    {/* Selettore dimensione */}
                     <div
                         className="mr-1 flex items-center gap-0.5"
                         role="group"
@@ -135,7 +95,7 @@ export default function DashboardWidgetCard({
                                     'rounded px-1.5 py-0.5 text-xs font-medium transition-colors',
                                     widget.size === s
                                         ? 'bg-emerald-500 text-white'
-                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700',
                                 )}
                                 aria-pressed={widget.size === s}
                                 aria-label={`Dimensione ${s.toUpperCase()}`}
@@ -146,7 +106,6 @@ export default function DashboardWidgetCard({
                         ))}
                     </div>
 
-                    {/* Toggle visibilità */}
                     {manageEditHref ? (
                         <a
                             href={manageEditHref}
@@ -179,7 +138,7 @@ export default function DashboardWidgetCard({
                             'rounded p-1 transition-colors',
                             widget.visible
                                 ? 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700',
                         )}
                         aria-pressed={widget.visible}
                         aria-label={widget.visible ? 'Nascondi widget' : 'Mostra widget'}
@@ -200,15 +159,31 @@ export default function DashboardWidgetCard({
                 </div>
             )}
 
-            {/* Contenuto del widget */}
             <div className={clsx('flex-1 [&>*]:h-full', !widget.visible && isEditing && 'pointer-events-none select-none')}>
                 {children}
             </div>
+        </>
+    );
+
+    if (isSortableShell) {
+        return <>{cardBody}</>;
+    }
+
+    return (
+        <div
+            className={clsx(
+                SIZE_COL_CLASSES[widget.size],
+                'flex flex-col',
+                isEditing && 'rounded-xl outline-dashed outline-2 outline-emerald-400/50 dark:outline-emerald-600/50',
+                isEditing && !widget.visible && 'opacity-50',
+                className,
+            )}
+        >
+            {cardBody}
         </div>
     );
 }
 
-/** Restituisce la classe CSS col-span per un widget in base alla sua dimensione. */
 export function getWidgetColSpanClass(size: WidgetSize): string {
     return SIZE_COL_CLASSES[size];
 }

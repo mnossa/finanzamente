@@ -4,13 +4,32 @@ interface DeferredMountProps {
     children: ReactNode;
     fallback: ReactNode;
     rootMargin?: string;
+    /** After viewport intersection, wait for an idle slice before mounting (defers Recharts boot). */
+    scheduleIdle?: boolean;
+}
+
+function scheduleWhenIdle(callback: () => void): () => void {
+    if (typeof window.requestIdleCallback === 'function') {
+        const id = window.requestIdleCallback(callback, { timeout: 2000 });
+
+        return () => window.cancelIdleCallback(id);
+    }
+
+    const id = window.setTimeout(callback, 1);
+
+    return () => window.clearTimeout(id);
 }
 
 /**
  * Monta i figli solo quando il contenitore entra (o sta per entrare) nel viewport.
  * Riduce TBT/INP evitando Recharts e layout pesanti fuori schermo.
  */
-export default function DeferredMount({ children, fallback, rootMargin = '180px' }: DeferredMountProps) {
+export default function DeferredMount({
+    children,
+    fallback,
+    rootMargin = '180px',
+    scheduleIdle = false,
+}: DeferredMountProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
 
@@ -24,16 +43,26 @@ export default function DeferredMount({ children, fallback, rootMargin = '180px'
             return;
         }
 
-        if (typeof IntersectionObserver === 'undefined') {
-            setMounted(true);
+        let cancelIdle: (() => void) | undefined;
 
-            return;
+        const reveal = () => {
+            if (scheduleIdle) {
+                cancelIdle = scheduleWhenIdle(() => setMounted(true));
+            } else {
+                setMounted(true);
+            }
+        };
+
+        if (typeof IntersectionObserver === 'undefined') {
+            reveal();
+
+            return () => cancelIdle?.();
         }
 
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry?.isIntersecting) {
-                    setMounted(true);
+                    reveal();
                     observer.disconnect();
                 }
             },
@@ -42,8 +71,11 @@ export default function DeferredMount({ children, fallback, rootMargin = '180px'
 
         observer.observe(element);
 
-        return () => observer.disconnect();
-    }, [mounted, rootMargin]);
+        return () => {
+            observer.disconnect();
+            cancelIdle?.();
+        };
+    }, [mounted, rootMargin, scheduleIdle]);
 
     return <div ref={containerRef}>{mounted ? children : fallback}</div>;
 }

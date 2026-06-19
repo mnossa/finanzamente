@@ -18,7 +18,7 @@ export const dashboardWidgetListBodyClass = contentPanelListBodyClass;
 export const dashboardWidgetEmptyClass = contentPanelEmptyClass;
 
 const detailLinkClass =
-    'shrink-0 whitespace-nowrap text-xs font-medium text-emerald-600 hover:text-emerald-700 sm:text-sm dark:text-emerald-400 dark:hover:text-emerald-300';
+    'shrink-0 whitespace-nowrap text-xs font-medium text-emerald-700 hover:text-emerald-800 sm:text-sm dark:text-emerald-300 dark:hover:text-emerald-200';
 
 interface DashboardWidgetShellProps {
     title?: string;

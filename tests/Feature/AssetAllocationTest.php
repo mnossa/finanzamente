@@ -266,19 +266,20 @@ class AssetAllocationTest extends TestCase
     // ── Dashboard includes assetAllocationData ────────────────────────────────
 
     #[Test]
-    public function dashboard_page_includes_asset_allocation_data(): void
+    public function deferred_widgets_include_asset_allocation_data(): void
     {
-        $response = $this->withoutVite()
-            ->actingAs($this->user)
-            ->get(route('dashboard'));
+        $response = $this->actingAs($this->user)
+            ->getJson(route('dashboard.deferred-widgets'));
 
-        $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page->has('assetAllocationData')
-            ->has('assetAllocationData.total_value')
-            ->has('assetAllocationData.risk_index')
-            ->has('assetAllocationData.risk_label')
-            ->has('assetAllocationData.allocation')
-        );
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'assetAllocationData' => [
+                'total_value',
+                'risk_index',
+                'risk_label',
+                'allocation',
+            ],
+        ]);
     }
 
     // ── Default layout includes asset_allocation widget ───────────────────────

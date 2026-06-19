@@ -236,16 +236,34 @@ class DashboardController extends Controller
             'debtsCreditsSummary' => $debtsCreditsSummary,
             'annualRevenueData' => $this->getAnnualRevenueData($user),
             'taxThermometerData' => $this->getTaxThermometerData($user),
-            'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
             'dashboardLayout' => $dashboardLayout,
             'formulaWidgetPayloads' => $formulaWidgetPayloads,
             'formulaWidgetMeta' => $formulaWidgetMeta,
             'formulaWidgetDataVersion' => $formulaWidgetDataVersion,
-            'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
-            'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
             'financialGoals' => $this->getFinancialGoalsData($householdId),
-            'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
         ];
+    }
+
+    /**
+     * Widget dashboard caricati dopo il first paint (lifestyle, allocazione, grafici spese).
+     */
+    public function deferredWidgets(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        $payload = $this->dashboardCacheService->rememberDeferredWidgets($user, function () use ($user, $householdId) {
+            return [
+                'lifestyleWidgetData' => $this->getLifestyleWidgetData($user),
+                'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
+                'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
+                'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
+            ];
+        });
+
+        return response()
+            ->json($payload)
+            ->header('Cache-Control', 'private, max-age=300');
     }
 
     /**
@@ -653,7 +671,7 @@ class DashboardController extends Controller
      * @param  array<string, mixed>  $dashboardLayout
      * @return array<string, array<string, mixed>>
      */
-    private function buildPriorityFormulaWidgetPayloads(User $user, array $dashboardLayout, int $limit = 2): array
+    private function buildPriorityFormulaWidgetPayloads(User $user, array $dashboardLayout, int $limit = 4): array
     {
         $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
 
@@ -661,14 +679,26 @@ class DashboardController extends Controller
             return [];
         }
 
-        $priorityIds = array_slice($widgetIds, 0, $limit);
-
-        $widgets = FormulaWidget::query()
+        $widgetsById = FormulaWidget::query()
             ->where('user_id', $user->id)
-            ->whereIn('id', $priorityIds)
-            ->get();
+            ->whereIn('id', $widgetIds)
+            ->get()
+            ->keyBy('id');
 
-        return $this->formulaWidgetPayloadBuilder->buildMany($widgets, $user);
+        $orderedWidgets = collect($widgetIds)
+            ->map(fn (int $id) => $widgetsById->get($id))
+            ->filter()
+            ->values();
+
+        $lightWidgets = $orderedWidgets
+            ->filter(fn (FormulaWidget $widget) => in_array($widget->display_type, ['kpi', 'progress'], true))
+            ->take($limit);
+
+        if ($lightWidgets->isEmpty()) {
+            return [];
+        }
+
+        return $this->formulaWidgetPayloadBuilder->buildMany($lightWidgets->values()->all(), $user);
     }
 
     /**

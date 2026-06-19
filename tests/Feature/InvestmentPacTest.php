@@ -401,11 +401,9 @@ class InvestmentPacTest extends TestCase
         ])->assertRedirect(route('investment-pacs.index'));
 
         $this->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->getJson(route('dashboard.deferred-widgets'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('assetAllocationData.total_value')
-                ->where('assetAllocationData.total_value', 400));
+            ->assertJsonPath('assetAllocationData.total_value', 400);
 
         Carbon::setTestNow();
     }

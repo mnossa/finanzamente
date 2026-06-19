@@ -9,16 +9,14 @@ import PageHeader from '@/Components/PageHeader';
 import PageContent from '@/Components/PageContent';
 import { LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
-import RevenueProgressCard from '@/Components/RevenueProgressCard';
-import TaxThermometer from '@/Components/TaxThermometer';
-import LifestyleWidget, { LifestyleWidgetData } from '@/Components/LifestyleWidget';
-import ExpenseTreemap, { ExpenseCategory } from '@/Components/Charts/ExpenseTreemap';
-import ExpenseDistributionWidget, { ExpenseDistributionData } from '@/Components/ExpenseDistributionWidget';
 import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import FormulaWidgetSkeleton from '@/Components/FormulaWidgets/FormulaWidgetSkeleton';
+import FormulaKpiWidget from '@/Components/FormulaWidgets/FormulaKpiWidget';
 import FormulaWidgetTypeBadge from '@/Components/FormulaWidgets/FormulaWidgetTypeBadge';
 import DeferredMount from '@/Components/Dashboard/DeferredMount';
+import DashboardWidgetGridStatic from '@/Components/Dashboard/DashboardWidgetGridStatic';
+import DashboardEditGridLoader from '@/Components/Dashboard/DashboardEditGridLoader';
 import {
     FormulaWidgetMeta,
     FormulaWidgetPayload,
@@ -27,7 +25,7 @@ import {
 } from '@/types/formulaWidget';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useDashboardFormulaPayloads } from '@/hooks/useDashboardFormulaPayloads';
-import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
+import { useDashboardDeferredWidgets } from '@/hooks/useDashboardDeferredWidgets';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import DashboardWidgetShell, {
     dashboardWidgetEmptyClass as widgetEmptyClass,
@@ -35,28 +33,31 @@ import DashboardWidgetShell, {
 } from '@/Components/Dashboard/DashboardWidgetShell';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
-import {
-    DndContext,
-    closestCenter,
-    PointerSensor,
-    KeyboardSensor,
-    useSensor,
-    useSensors,
-    DragEndEvent,
-} from '@dnd-kit/core';
-import {
-    SortableContext,
-    sortableKeyboardCoordinates,
-    rectSortingStrategy,
-} from '@dnd-kit/sortable';
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
+import type { DashboardDragEndEvent } from '@/types/dashboardDrag';
 import { moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
 
-const CustomFormulaWidget = lazy(() => import('@/Components/FormulaWidgets/CustomFormulaWidget'));
+const RevenueProgressCard = lazy(() => import('@/Components/RevenueProgressCard'));
+const TaxThermometer = lazy(() => import('@/Components/TaxThermometer'));
+const LifestyleWidget = lazy(() => import('@/Components/LifestyleWidget'));
+const ExpenseTreemap = lazy(() => import('@/Components/Charts/ExpenseTreemap'));
+const ExpenseDistributionWidget = lazy(() => import('@/Components/ExpenseDistributionWidget'));
+const FormulaChartWidget = lazy(() => import('@/Components/FormulaWidgets/FormulaChartWidget'));
 
-function shouldDeferFormulaWidgetMount(payload: FormulaWidgetPayload): boolean {
-    return payload.type !== 'kpi' && payload.type !== 'progress';
+function WidgetChartSkeleton({ className }: { className?: string }) {
+    return (
+        <div
+            className={clsx('min-h-[12rem] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-700/50', className)}
+            aria-hidden
+        />
+    );
+}
+
+function isFormulaKpiOrProgressPayload(
+    payload: FormulaWidgetPayload,
+): payload is Extract<FormulaWidgetPayload, { type: 'kpi' }> | Extract<FormulaWidgetPayload, { type: 'progress' }> {
+    return payload.type === 'kpi' || payload.type === 'progress';
 }
 
 function formulaWidgetSkeleton(
@@ -186,12 +187,8 @@ interface DashboardProps {
     debtsCreditsSummary: DebtsCreditsSummary;
     annualRevenueData: AnnualRevenueData;
     taxThermometerData: TaxThermometerData;
-    lifestyleWidgetData: LifestyleWidgetData;
     dashboardLayout: DashboardLayoutConfig;
-    assetAllocationData: AssetAllocationData;
-    expenseCategories: ExpenseCategory[];
     financialGoals: FinancialGoal[];
-    expenseDistributionData: ExpenseDistributionData;
     formulaWidgetPayloads?: Record<string, FormulaWidgetPayload>;
     formulaWidgetMeta: Record<string, FormulaWidgetMeta>;
     formulaWidgetDataVersion?: string | null;
@@ -232,7 +229,7 @@ function AccountCard({ account }: { account: Account }) {
                     <p className="text-xs text-gray-500 dark:text-gray-400">{getAccountTypeLabel(account.type)}</p>
                 </div>
             </div>
-            <p className={clsx('text-sm font-semibold', moneyTabular, account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500')}>
+            <p className={clsx('text-sm font-semibold', moneyTabular, account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(account.current_balance, account.currency_code)}
             </p>
         </div>
@@ -264,7 +261,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
                     {transaction.account.name} · {formatDateShort(transaction.date)}
                 </p>
             </div>
-            <p className={clsx('text-sm font-semibold shrink-0', moneyTabular, isIncome ? 'text-green-500' : 'text-red-500')}>
+            <p className={clsx('text-sm font-semibold shrink-0', moneyTabular, isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')}>
                 {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
             </p>
         </Link>
@@ -291,7 +288,7 @@ function BudgetCard({ budget }: { budget: ActiveBudget }) {
                     <span>{budget.category_icon || '📁'}</span>
                     <span className="font-medium text-gray-900 dark:text-white">{budget.category_name}</span>
                 </div>
-                {budget.is_exceeded && <span className="text-red-500">⚠️</span>}
+                {budget.is_exceeded && <span className="text-red-600 dark:text-red-400">⚠️</span>}
             </div>
             <ProgressBar percentage={budget.percentage} isExceeded={budget.is_exceeded} height="0.5rem" />
             <div className="mt-1 flex justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -318,16 +315,16 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
                 <div>
                     <p className="font-medium text-gray-900 dark:text-white">
                         {item.counterparty}
-                        {isOverdue && <span className="ml-1 text-red-500">⚠️</span>}
+                        {isOverdue && <span className="ml-1 text-red-600 dark:text-red-400">⚠️</span>}
                     </p>
                     {item.due_date && (
-                        <p className={clsx('text-xs', isOverdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400')}>
+                        <p className={clsx('text-xs', isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400')}>
                             Scadenza: {formatDateShort(item.due_date)}
                         </p>
                     )}
                 </div>
             </div>
-            <span className={clsx('font-semibold', moneyTabular, isDebt ? 'text-red-500' : 'text-emerald-500')}>
+            <span className={clsx('font-semibold', moneyTabular, isDebt ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400')}>
                 {isDebt ? '-' : '+'}{formatCurrency(item.amount, item.currency_code)}
             </span>
         </Link>
@@ -342,12 +339,8 @@ export default function Dashboard({
     debtsCreditsSummary,
     annualRevenueData,
     taxThermometerData,
-    lifestyleWidgetData,
     dashboardLayout,
-    assetAllocationData,
-    expenseCategories,
     financialGoals,
-    expenseDistributionData,
     formulaWidgetPayloads: initialFormulaWidgetPayloads = {},
     formulaWidgetMeta = {},
     formulaWidgetDataVersion = null,
@@ -373,15 +366,22 @@ export default function Dashboard({
         resetLayout,
     } = useDashboardLayout(dashboardLayout);
 
-    const { payloads: formulaWidgetPayloads, loading: formulaWidgetsLoading, error: formulaWidgetsError } =
+    const { payloads: formulaWidgetPayloads, error: formulaWidgetsError } =
         useDashboardFormulaPayloads(dashboardLayout, initialFormulaWidgetPayloads, formulaWidgetDataVersion);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-    );
+    const {
+        data: deferredWidgets,
+        error: deferredWidgetsError,
+    } = useDashboardDeferredWidgets();
 
-    function handleDragEnd(event: DragEndEvent) {
+    const {
+        lifestyleWidgetData,
+        assetAllocationData,
+        expenseCategories,
+        expenseDistributionData,
+    } = deferredWidgets;
+
+    function handleDragEnd(event: DashboardDragEndEvent) {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
         const oldIndex = sortedWidgets.findIndex((w) => w.id === active.id);
@@ -432,37 +432,39 @@ export default function Dashboard({
             );
         }
 
-        if (payload.type === 'kpi' && payload.variant === 'balance_summary') {
-            const content = (
-                <Suspense fallback={formulaWidgetSkeleton(payload.name, formulaWidgetMeta[numericId])}>
-                    <CustomFormulaWidget payload={payload} embedded />
-                </Suspense>
-            );
+        if (isFormulaKpiOrProgressPayload(payload)) {
+            if (payload.type === 'kpi' && payload.variant === 'balance_summary') {
+                return <FormulaKpiWidget payload={payload} embedded />;
+            }
 
-            return content;
+            const meta = formulaWidgetMeta[numericId];
+
+            return (
+                <DashboardWidgetShell
+                    title={payload.name}
+                    subtitle={payload.periodLabel}
+                    titleBadge={formulaWidgetTitleBadge(meta)}
+                    bodyClassName={widgetListBodyClass}
+                >
+                    <FormulaKpiWidget payload={payload} embedded />
+                </DashboardWidgetShell>
+            );
         }
 
         const meta = formulaWidgetMeta[numericId];
-        const shell = (
-            <DashboardWidgetShell
-                title={payload.name}
-                subtitle={payload.periodLabel}
-                titleBadge={formulaWidgetTitleBadge(meta)}
-                bodyClassName={widgetListBodyClass}
-            >
-                <Suspense fallback={formulaWidgetSkeleton(payload.name, meta)}>
-                    <CustomFormulaWidget payload={payload} embedded />
-                </Suspense>
-            </DashboardWidgetShell>
-        );
-
-        if (!shouldDeferFormulaWidgetMount(payload)) {
-            return shell;
-        }
 
         return (
-            <DeferredMount fallback={formulaWidgetSkeleton(payload.name, meta)}>
-                {shell}
+            <DeferredMount fallback={formulaWidgetSkeleton(payload.name, meta)} scheduleIdle>
+                <DashboardWidgetShell
+                    title={payload.name}
+                    subtitle={payload.periodLabel}
+                    titleBadge={formulaWidgetTitleBadge(meta)}
+                    bodyClassName={widgetListBodyClass}
+                >
+                    <Suspense fallback={formulaWidgetSkeleton(payload.name, meta)}>
+                        <FormulaChartWidget payload={payload} embedded />
+                    </Suspense>
+                </DashboardWidgetShell>
             </DeferredMount>
         );
     }
@@ -476,27 +478,41 @@ export default function Dashboard({
             case 'annual_revenue':
                 if (!annualRevenueData.visible) return null;
                 return (
-                    <RevenueProgressCard
-                        currentRevenue={annualRevenueData.annual_revenue}
-                        threshold={annualRevenueData.revenue_threshold}
-                        percentage={annualRevenueData.revenue_percentage}
-                        year={new Date().getFullYear()}
-                    />
+                    <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[8rem]" />} scheduleIdle>
+                        <Suspense fallback={<WidgetChartSkeleton className="min-h-[8rem]" />}>
+                            <RevenueProgressCard
+                                currentRevenue={annualRevenueData.annual_revenue}
+                                threshold={annualRevenueData.revenue_threshold}
+                                percentage={annualRevenueData.revenue_percentage}
+                                year={new Date().getFullYear()}
+                            />
+                        </Suspense>
+                    </DeferredMount>
                 );
 
             case 'tax_thermometer':
                 if (!taxThermometerData.visible) return null;
                 return (
-                    <TaxThermometer
-                        grossIncome={taxThermometerData.gross_income}
-                        taxRate={taxThermometerData.tax_rate}
-                        inpsRate={taxThermometerData.inps_rate}
-                    />
+                    <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[8rem]" />} scheduleIdle>
+                        <Suspense fallback={<WidgetChartSkeleton className="min-h-[8rem]" />}>
+                            <TaxThermometer
+                                grossIncome={taxThermometerData.gross_income}
+                                taxRate={taxThermometerData.tax_rate}
+                                inpsRate={taxThermometerData.inps_rate}
+                            />
+                        </Suspense>
+                    </DeferredMount>
                 );
 
             case 'lifestyle_widget':
                 return isModuleEnabled('lifestyle_score')
-                    ? <LifestyleWidget data={lifestyleWidgetData} />
+                    ? (
+                        <DeferredMount fallback={<WidgetChartSkeleton />} scheduleIdle>
+                            <Suspense fallback={<WidgetChartSkeleton />}>
+                                <LifestyleWidget data={lifestyleWidgetData} />
+                            </Suspense>
+                        </DeferredMount>
+                    )
                     : (
                         <LockedModuleCard
                             moduleId="lifestyle_score"
@@ -549,7 +565,7 @@ export default function Dashboard({
                         ) : (
                             <div className={widgetEmptyClass}>
                                 <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun budget attivo</p>
-                                <Link href={route('budgets.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                <Link href={route('budgets.create')} className="text-sm font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200">
                                     Crea il tuo primo budget →
                                 </Link>
                             </div>
@@ -576,11 +592,11 @@ export default function Dashboard({
                             <IndexKpiStrip columns={2} className="mb-3">
                                 <div className="rounded-lg bg-red-50 p-3 text-center dark:bg-red-900/20">
                                     <p className="text-xs text-red-600 dark:text-red-400">Debiti</p>
-                                    <p className={clsx('text-lg font-bold text-red-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_debts)}</p>
+                                    <p className={clsx('text-lg font-bold text-red-600 dark:text-red-400', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_debts)}</p>
                                 </div>
                                 <div className="rounded-lg bg-emerald-50 p-3 text-center dark:bg-emerald-900/20">
-                                    <p className="text-xs text-emerald-600 dark:text-emerald-400">Crediti</p>
-                                    <p className={clsx('text-lg font-bold text-emerald-500', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_credits)}</p>
+                                    <p className="text-xs text-emerald-700 dark:text-emerald-300">Crediti</p>
+                                    <p className={clsx('text-lg font-bold text-emerald-600 dark:text-emerald-400', moneyTabular)}>{formatCurrency(debtsCreditsSummary.total_credits)}</p>
                                 </div>
                             </IndexKpiStrip>
                         ) : null}
@@ -589,7 +605,7 @@ export default function Dashboard({
                         ) : (
                             <div className={widgetEmptyClass}>
                                 <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun debito o credito aperto</p>
-                                <Link href={route('debts-credits.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                <Link href={route('debts-credits.create')} className="text-sm font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200">
                                     Aggiungi il primo →
                                 </Link>
                             </div>
@@ -635,13 +651,14 @@ export default function Dashboard({
             case 'asset_allocation': {
                 const { allocation, total_value, risk_index, risk_label } = assetAllocationData;
                 const riskColor = risk_index <= 2
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-700 dark:text-emerald-300'
                     : risk_index <= 4
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-red-600 dark:text-red-400';
+                        ? 'text-amber-700 dark:text-amber-300'
+                        : 'text-red-700 dark:text-red-300';
 
                 return isModuleEnabled('investments') ? (
-                    <DashboardWidgetShell
+                    <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[10rem]" />} scheduleIdle>
+                        <DashboardWidgetShell
                         title="Asset allocation"
                         subtitle="Conti + investimenti inclusi nel calcolo allocazione"
                         detailHref={route('asset-allocation.index')}
@@ -687,12 +704,13 @@ export default function Dashboard({
                                 <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                                     Nessuna posizione trovata
                                 </p>
-                                <Link href={route('investments.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                <Link href={route('investments.create')} className="text-sm font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200">
                                     Aggiungi il primo →
                                 </Link>
                             </div>
                         )}
-                    </DashboardWidgetShell>
+                        </DashboardWidgetShell>
+                    </DeferredMount>
                 ) : (
                     <LockedModuleCard
                         moduleId="investments"
@@ -710,11 +728,15 @@ export default function Dashboard({
                         subtitle="Mese corrente"
                         detailHref={route('analytics.expenses-by-category', { month: new Date().toISOString().slice(0, 7) })}
                     >
-                        <ExpenseTreemap
-                            embedded
-                            data={expenseCategories}
-                            month={new Date().toISOString().slice(0, 7)}
-                        />
+                        <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[16rem]" />} scheduleIdle>
+                            <Suspense fallback={<WidgetChartSkeleton className="min-h-[16rem]" />}>
+                                <ExpenseTreemap
+                                    embedded
+                                    data={expenseCategories}
+                                    month={new Date().toISOString().slice(0, 7)}
+                                />
+                            </Suspense>
+                        </DeferredMount>
                     </DashboardWidgetShell>
                 );
 
@@ -739,7 +761,7 @@ export default function Dashboard({
                                                 <span aria-hidden>{goal.icon || '🎯'}</span>
                                                 <span className="truncate font-medium text-gray-900 dark:text-white">{goal.name}</span>
                                             </div>
-                                            <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                            <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
                                                 {goal.percentage}%
                                             </span>
                                         </div>
@@ -754,7 +776,7 @@ export default function Dashboard({
                         ) : (
                             <div className={widgetEmptyClass}>
                                 <p className="mb-3 text-gray-500 dark:text-gray-400">Nessun obiettivo attivo</p>
-                                <Link href={route('financial-goals.create')} className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+                                <Link href={route('financial-goals.create')} className="text-sm font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200">
                                     Crea il tuo primo obiettivo →
                                 </Link>
                             </div>
@@ -770,7 +792,13 @@ export default function Dashboard({
                 );
 
             case 'expense_distribution':
-                return <ExpenseDistributionWidget embedded data={expenseDistributionData} />;
+                return (
+                    <DeferredMount fallback={<WidgetChartSkeleton />} scheduleIdle>
+                        <Suspense fallback={<WidgetChartSkeleton />}>
+                            <ExpenseDistributionWidget embedded data={expenseDistributionData} />
+                        </Suspense>
+                    </DeferredMount>
+                );
 
             default:
                 return null;
@@ -806,6 +834,47 @@ export default function Dashboard({
     const hasFormulaWidgets = useMemo(
         () => (dashboardLayout.widgets ?? []).some((widget) => widget.visible && isFormulaWidgetId(widget.id)),
         [dashboardLayout.widgets],
+    );
+
+    const sortableWidgetIds = useMemo(
+        () => sortedWidgets.filter((w) => isWidgetRenderable(w.id)).map((w) => w.id),
+        [sortedWidgets, annualRevenueData.visible, taxThermometerData.visible, hasVat],
+    );
+
+    const widgetGridItems = useMemo(
+        () => sortedWidgets.map((widget) => {
+            const formulaNumericId = parseFormulaWidgetNumericId(widget.id);
+
+            return {
+                widget,
+                content: renderWidgetContent(widget.id, widget.size),
+                formulaTitle: formulaNumericId
+                    ? (formulaWidgetPayloads[formulaNumericId]?.name
+                        ?? formulaWidgetMeta[formulaNumericId]?.name)
+                    : undefined,
+                formulaNumericId,
+                renderable: isWidgetRenderable(widget.id),
+            };
+        }),
+        [
+            sortedWidgets,
+            isEditing,
+            formulaWidgetPayloads,
+            formulaWidgetMeta,
+            deferredWidgets,
+            accounts,
+            recentTransactions,
+            activeBudgets,
+            openDebtsCredits,
+            debtsCreditsSummary,
+            annualRevenueData,
+            taxThermometerData,
+            financialGoals,
+            expenseCategories,
+            expenseDistributionData,
+            lifestyleWidgetData,
+            assetAllocationData,
+        ],
     );
 
     return (
@@ -875,6 +944,14 @@ export default function Dashboard({
                             {formulaWidgetsError}
                         </div>
                     )}
+                    {deferredWidgetsError && (
+                        <div
+                            className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
+                            role="alert"
+                        >
+                            {deferredWidgetsError}
+                        </div>
+                    )}
                     {/* Barra personalizzazione dashboard — solo in editing */}
                     {isEditing && (
                         <div
@@ -919,62 +996,25 @@ export default function Dashboard({
                         </div>
                     )}
 
-                    {/* Griglia widget con DnD */}
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                    >
-                        <SortableContext
-                            items={sortedWidgets.filter((w) => isWidgetRenderable(w.id)).map((w) => w.id)}
-                            strategy={rectSortingStrategy}
-                        >
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-6 xl:gap-6">
-                                {sortedWidgets.map((widget) => {
-                                    const renderable = isWidgetRenderable(widget.id);
-                                    const content = renderWidgetContent(widget.id, widget.size);
-                                    const formulaNumericId = parseFormulaWidgetNumericId(widget.id);
-                                    const formulaTitle = formulaNumericId
-                                        ? (formulaWidgetPayloads[formulaNumericId]?.name
-                                            ?? formulaWidgetMeta[formulaNumericId]?.name)
-                                        : undefined;
-
-                                    if (!renderable) return null;
-                                    if (!widget.visible && !isEditing) return null;
-                                    if (content === null && !isEditing) return null;
-
-                                    return (
-                                        <DashboardWidgetCard
-                                            key={widget.id}
-                                            widget={widget}
-                                            isEditing={isEditing}
-                                            onToggleVisibility={() => toggleWidgetVisibility(widget.id)}
-                                            onChangeSize={(size: WidgetSize) => setWidgetSize(widget.id, size)}
-                                            titleOverride={formulaTitle}
-                                            manageEditHref={
-                                                isEditing && formulaNumericId
-                                                    ? route('formula-widgets.edit', formulaNumericId)
-                                                    : undefined
-                                            }
-                                            onManageDelete={
-                                                isEditing && formulaNumericId
-                                                    ? () => setDeleteFormulaWidgetTarget({
-                                                        id: Number(formulaNumericId),
-                                                        name: formulaTitle ?? 'Widget a formula',
-                                                    })
-                                                    : undefined
-                                            }
-                                            className={clsx(
-                                                widget.id === 'quick_actions' && !isEditing && 'hidden lg:flex',
-                                            )}
-                                        >
-                                            {content}
-                                        </DashboardWidgetCard>
-                                    );
-                                })}
-                            </div>
-                        </SortableContext>
-                    </DndContext>
+                    {/* Griglia widget */}
+                    {isEditing ? (
+                        <DashboardEditGridLoader
+                            items={widgetGridItems}
+                            sortableIds={sortableWidgetIds}
+                            onDragEnd={handleDragEnd}
+                            onToggleVisibility={toggleWidgetVisibility}
+                            onChangeSize={setWidgetSize}
+                            onManageDelete={setDeleteFormulaWidgetTarget}
+                            fallback={<WidgetChartSkeleton className="min-h-[24rem]" />}
+                        />
+                    ) : (
+                        <DashboardWidgetGridStatic
+                            items={widgetGridItems}
+                            isEditing={false}
+                            onToggleVisibility={toggleWidgetVisibility}
+                            onChangeSize={setWidgetSize}
+                        />
+                    )}
 
                     {/* Moduli Suggeriti (se bloccati) */}
                     {(shouldShowInvestmentsUpsell || shouldShowVatUpsell) && !isEditing && (

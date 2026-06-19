@@ -22,7 +22,7 @@ test('logout reindirizza alla homepage', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 
     // Apri il menu utente e verifica che esista il form di logout
-    await page.locator('[aria-label*="Menu utente"]').click();
+    await page.getByRole('button', { name: 'Menu utente' }).click();
     const logoutButton = page.locator('form[action*="disconnettiti"] button[type="submit"]');
     await logoutButton.waitFor({ state: 'visible', timeout: 5_000 });
 

@@ -56,7 +56,7 @@ test.describe('Dashboard principale', () => {
     });
 
     test('il menu utente apre e naviga al profilo', async ({ page }) => {
-        await page.locator('[aria-label*="Menu utente"], [aria-label*="menu utente"]').click();
+        await page.getByRole('button', { name: 'Menu utente' }).click();
         await page.locator('a[href*="/profilo"]').first().click();
         await expect(page).toHaveURL('/profilo');
     });

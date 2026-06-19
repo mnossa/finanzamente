@@ -361,7 +361,7 @@ class NotificationSystemTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_unread_count_shared_via_inertia(): void
+    public function test_unread_count_available_via_notifications_header_endpoint(): void
     {
         $user = $this->createUserWithHousehold();
 
@@ -369,11 +369,10 @@ class NotificationSystemTest extends TestCase
         AppNotification::create(['user_id' => $user->id, 'title' => 'B', 'message' => 'Msg', 'read' => true]);
 
         $response = $this->actingAs($user)
-            ->withoutVite()
-            ->get(route('dashboard'));
+            ->getJson(route('notifications.header'));
 
-        $response->assertInertia(fn ($page) => $page->where('notifications.unread_count', 1)
-        );
+        $response->assertOk();
+        $response->assertJsonPath('unread_count', 1);
     }
 
     public function test_recurring_detection_notification_has_action_url(): void
@@ -389,11 +388,9 @@ class NotificationSystemTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)
-            ->withoutVite()
-            ->get(route('dashboard'));
+            ->getJson(route('notifications.header'));
 
-        $response->assertInertia(fn ($page) => $page
-            ->where('notifications.items.0.action_url', route('recurrence-detection.index'))
-        );
+        $response->assertOk();
+        $response->assertJsonPath('items.0.action_url', route('recurrence-detection.index'));
     }
 }

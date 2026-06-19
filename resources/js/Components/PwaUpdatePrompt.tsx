@@ -2,6 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { registerSW } from 'virtual:pwa-register';
 
+function scheduleIdleTask(task: () => void): void {
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => task(), { timeout: 4000 });
+
+        return;
+    }
+
+    window.setTimeout(task, 1500);
+}
+
 export default function PwaUpdatePrompt() {
     const [needRefresh, setNeedRefresh] = useState(false);
     const [reloadApp, setReloadApp] = useState<((reloadPage?: boolean) => Promise<void>) | null>(null);
@@ -11,14 +21,34 @@ export default function PwaUpdatePrompt() {
             return;
         }
 
-        const update = registerSW({
-            immediate: true,
-            onNeedRefresh() {
-                setNeedRefresh(true);
-            },
-        });
+        let cancelled = false;
 
-        setReloadApp(() => update);
+        const register = () => {
+            if (cancelled) {
+                return;
+            }
+
+            const update = registerSW({
+                immediate: true,
+                onNeedRefresh() {
+                    setNeedRefresh(true);
+                },
+            });
+
+            setReloadApp(() => update);
+        };
+
+        const onLoad = () => scheduleIdleTask(register);
+        if (document.readyState === 'complete') {
+            onLoad();
+        } else {
+            window.addEventListener('load', onLoad, { once: true });
+        }
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener('load', onLoad);
+        };
     }, []);
 
     const handleReload = useCallback(() => {

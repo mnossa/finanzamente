@@ -2,12 +2,23 @@ import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode, command }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const port = env.VITE_PORT ? parseInt(env.VITE_PORT) : 5174;
     const hmrHost = env.APP_URL ? new URL(env.APP_URL).hostname : 'localhost';
     return {
+        resolve: {
+            dedupe: ['react', 'react-dom'],
+            alias: {
+                react: path.resolve(projectRoot, 'node_modules/react'),
+                'react-dom': path.resolve(projectRoot, 'node_modules/react-dom'),
+            },
+        },
         server: {
             port,
             host: '0.0.0.0',
@@ -133,6 +144,12 @@ export default defineConfig(({ mode, command }) => {
         build: {
             chunkSizeWarningLimit: 900,
             minify: 'oxc',
+            modulePreload: {
+                resolveDependencies: (filename, deps) =>
+                    deps.filter(
+                        (dep) => !dep.includes('vendor-dnd') && !dep.includes('vendor-recharts'),
+                    ),
+            },
             rollupOptions: {
                 output: {
                     ...(command === 'build'
@@ -149,6 +166,17 @@ export default defineConfig(({ mode, command }) => {
                     manualChunks(id) {
                         if (!id.includes('node_modules')) return;
 
+                        if (
+                            id.includes('/react/') ||
+                            id.includes('/react-dom/') ||
+                            id.includes('/react-is/') ||
+                            id.includes('/scheduler/')
+                        ) {
+                            return 'vendor-react';
+                        }
+                        if (id.includes('/clsx/') || id.includes('@inertiajs')) {
+                            return 'vendor-inertia';
+                        }
                         if (id.includes('recharts')) {
                             return 'vendor-recharts';
                         }
@@ -160,15 +188,6 @@ export default defineConfig(({ mode, command }) => {
                         }
                         if (id.includes('@dnd-kit')) {
                             return 'vendor-dnd';
-                        }
-                        if (
-                            id.includes('@inertiajs') ||
-                            id.includes('react-dom') ||
-                            id.includes('node_modules/react/') ||
-                            id.includes('node_modules/react-is') ||
-                            id.includes('scheduler')
-                        ) {
-                            return 'vendor-inertia';
                         }
                     },
                 },

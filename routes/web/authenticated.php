@@ -87,6 +87,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
     Route::get('/dashboard/formula-widget-payloads', [DashboardController::class, 'formulaWidgetPayloads'])->name('dashboard.formula-widget-payloads');
+    Route::get('/dashboard/deferred-widgets', [DashboardController::class, 'deferredWidgets'])->name('dashboard.deferred-widgets');
 
     Route::get('/widget-formule', [FormulaWidgetController::class, 'index'])->name('formula-widgets.index');
     Route::get('/widget-formule/crea', [FormulaWidgetController::class, 'create'])->name('formula-widgets.create');
@@ -114,6 +115,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     // Notifiche in-app
     Route::post('/notifiche/{notification}/segna-letto', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifiche/segna-tutte-lette', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::get('/notifiche/header', [NotificationController::class, 'header'])->name('notifications.header');
 
     // ===== ROTTE PRO — Inbox, Telegram =====
     Route::middleware(['requires-pro'])->group(function () {

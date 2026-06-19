@@ -44,6 +44,21 @@ class DashboardCacheService
         );
     }
 
+    /**
+     * @template T
+     *
+     * @param  callable(): T  $builder
+     * @return T
+     */
+    public function rememberDeferredWidgets(User $user, callable $builder): mixed
+    {
+        return Cache::remember(
+            $this->deferredWidgetsCacheKey($user),
+            self::TTL_SECONDS,
+            $builder,
+        );
+    }
+
     private function indexCacheKey(User $user): string
     {
         $version = $this->dashboardDataVersionService->resolveForUser($user);
@@ -71,6 +86,18 @@ class DashboardCacheService
             $user->active_household_id ?? 0,
             $version,
             md5(implode(',', $sortedIds)),
+        );
+    }
+
+    private function deferredWidgetsCacheKey(User $user): string
+    {
+        $version = $this->dashboardDataVersionService->resolveForUser($user);
+
+        return sprintf(
+            'dashboard:%d:%d:%s:deferred',
+            $user->id,
+            $user->active_household_id ?? 0,
+            $version,
         );
     }
 }

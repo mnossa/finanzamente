@@ -26,7 +26,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'Figtree', ...defaultSansStack],
+                sans: ['Figtree', 'Inter', ...defaultSansStack],
             },
             colors: {
                 // Design System Finanzamente

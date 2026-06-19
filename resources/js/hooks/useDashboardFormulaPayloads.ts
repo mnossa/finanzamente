@@ -191,34 +191,37 @@ export function useDashboardFormulaPayloads(
         const controller = new AbortController();
         let cancelled = false;
 
-        async function loadSequentially(): Promise<void> {
+        async function loadBatch(): Promise<void> {
             let mergedPayloads = shouldRefreshStaleCache ? { ...initialPayloads } : { ...bootstrapPayloads };
-            let currentEtag = cachedEntry?.etag ?? null;
-            let currentDataVersion = cachedEntry?.dataVersion ?? dataVersion;
 
             const pendingIds = shouldRefreshStaleCache
                 ? widgetIds
                 : widgetIds.filter((id) => mergedPayloads[id] === undefined);
 
-            for (const widgetId of pendingIds) {
-                if (cancelled) {
-                    return;
-                }
+            if (pendingIds.length === 0) {
+                return;
+            }
 
-                try {
-                    const isFullRequest = pendingIds.length === widgetIds.length
-                        && pendingIds.every((id, index) => id === widgetIds[index]);
-                    const result = await fetchFormulaWidgetPayloads(
-                        [widgetId],
-                        currentEtag,
-                        controller.signal,
-                        isFullRequest,
-                    );
+            let currentEtag = cachedEntry?.etag ?? null;
+            let currentDataVersion = cachedEntry?.dataVersion ?? dataVersion;
 
-                    mergedPayloads = mergeFetchedPayloads(mergedPayloads, widgetId, result, cachedEntry);
+            try {
+                const result = await fetchFormulaWidgetPayloads(
+                    pendingIds,
+                    currentEtag,
+                    controller.signal,
+                    pendingIds.length === widgetIds.length
+                        && pendingIds.every((id, index) => id === widgetIds[index]),
+                );
 
-                    if (mergedPayloads[widgetId] === undefined && result.notModified) {
-                        const retry = await fetchFormulaWidgetPayloads([widgetId], null, controller.signal, false);
+                if (result.notModified) {
+                    for (const widgetId of pendingIds) {
+                        mergedPayloads = mergeFetchedPayloads(mergedPayloads, widgetId, result, cachedEntry);
+                    }
+
+                    const missingAfter304 = pendingIds.filter((id) => mergedPayloads[id] === undefined);
+                    if (missingAfter304.length > 0) {
+                        const retry = await fetchFormulaWidgetPayloads(missingAfter304, null, controller.signal, false);
                         mergedPayloads = { ...mergedPayloads, ...retry.payloads };
                         if (retry.etag) {
                             currentEtag = retry.etag;
@@ -226,43 +229,46 @@ export function useDashboardFormulaPayloads(
                         if (retry.dataVersion) {
                             currentDataVersion = retry.dataVersion;
                         }
-                    } else {
-                        if (result.etag) {
-                            currentEtag = result.etag;
-                        }
-                        if (result.dataVersion) {
-                            currentDataVersion = result.dataVersion;
-                        }
                     }
+                } else {
+                    mergedPayloads = { ...mergedPayloads, ...result.payloads };
+                    if (result.etag) {
+                        currentEtag = result.etag;
+                    }
+                    if (result.dataVersion) {
+                        currentDataVersion = result.dataVersion;
+                    }
+                }
 
-                    setPayloads({ ...mergedPayloads });
-                    writeFormulaWidgetPayloadCache(
-                        householdId,
-                        widgetIdsKey,
-                        mergedPayloads,
-                        currentEtag,
-                        currentDataVersion,
-                    );
+                if (cancelled) {
+                    return;
+                }
+
+                setPayloads({ ...mergedPayloads });
+                writeFormulaWidgetPayloadCache(
+                    householdId,
+                    widgetIdsKey,
+                    mergedPayloads,
+                    currentEtag,
+                    currentDataVersion,
+                );
+                setError(null);
+            } catch (err) {
+                if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') {
+                    return;
+                }
+
+                if (cacheComplete) {
                     setError(null);
-                } catch (err) {
-                    if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') {
-                        return;
-                    }
-
-                    if (cacheComplete) {
-                        setError(null);
-
-                        return;
-                    }
-
-                    setError('Non sono riuscito a caricare i widget a formula. Riprova tra poco.');
 
                     return;
                 }
+
+                setError('Non sono riuscito a caricare i widget a formula. Riprova tra poco.');
             }
         }
 
-        loadSequentially()
+        loadBatch()
             .finally(() => {
                 if (!cancelled) {
                     setLoading(false);

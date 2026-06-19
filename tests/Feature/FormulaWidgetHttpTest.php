@@ -531,6 +531,47 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
+    public function dashboard_ssr_priority_includes_only_kpi_and_progress_formula_widgets(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
+
+        $kpiWidget = FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create([
+                'name' => 'KPI saldo',
+                'display_type' => 'kpi',
+            ]);
+
+        $chartWidget = FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create([
+                'name' => 'Grafico saldo',
+                'display_type' => 'bar',
+            ]);
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'config' => [
+                'widgets' => [
+                    ['id' => "formula_widget_{$chartWidget->id}", 'visible' => true, 'position' => 0, 'size' => 'md'],
+                    ['id' => "formula_widget_{$kpiWidget->id}", 'visible' => true, 'position' => 1, 'size' => 'md'],
+                ],
+            ],
+        ]);
+
+        $this->withoutVite()
+            ->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has("formulaWidgetPayloads.{$kpiWidget->id}")
+                ->where("formulaWidgetPayloads.{$kpiWidget->id}.type", 'kpi')
+                ->missing("formulaWidgetPayloads.{$chartWidget->id}"));
+    }
+
+    #[Test]
     public function lifestyle_score_official_template_is_retired_from_marketplace(): void
     {
         $this->seed(FormulaWidgetTemplateSeeder::class);
@@ -655,5 +696,59 @@ class FormulaWidgetHttpTest extends TestCase
             ->headers->get('ETag');
 
         $this->assertNotSame($before, $after);
+    }
+
+    #[Test]
+    public function dashboard_ssr_prioritizes_kpi_formula_widgets_within_priority_payload_limit(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
+
+        $chartWidgets = collect(range(0, 3))->map(fn (int $index) => FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create([
+                'name' => "Chart {$index}",
+                'display_type' => 'bar',
+            ]));
+
+        $kpiWidget = FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create([
+                'name' => 'KPI prioritario',
+                'display_type' => 'kpi',
+            ]);
+
+        $widgets = $chartWidgets
+            ->map(fn (FormulaWidget $widget, int $index) => [
+                'id' => "formula_widget_{$widget->id}",
+                'visible' => true,
+                'position' => $index,
+                'size' => 'md',
+            ])
+            ->push([
+                'id' => "formula_widget_{$kpiWidget->id}",
+                'visible' => true,
+                'position' => 4,
+                'size' => 'md',
+            ])
+            ->all();
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'config' => ['widgets' => $widgets],
+        ]);
+
+        $excludedChart = $chartWidgets->last();
+
+        $this->withoutVite()
+            ->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->has("formulaWidgetPayloads.{$kpiWidget->id}")
+                ->missing("formulaWidgetPayloads.{$excludedChart->id}")
+            );
     }
 }

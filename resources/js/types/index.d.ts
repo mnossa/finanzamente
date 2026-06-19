@@ -97,6 +97,7 @@ export type PageProps<
         duplicateMarketplaceWidget?: FormulaWidgetSummary | null;
     };
     notifications: {
+        deferred?: boolean;
         unread_count: number;
         items: AppNotification[];
     };

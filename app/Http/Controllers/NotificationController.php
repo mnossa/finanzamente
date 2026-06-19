@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\AppNotification;
+use App\Services\NotificationHeaderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -13,6 +15,22 @@ use Illuminate\Support\Facades\Auth;
  */
 class NotificationController extends Controller
 {
+    public function __construct(
+        private readonly NotificationHeaderService $notificationHeaderService,
+    ) {}
+
+    /**
+     * Payload leggero per la campanella header (caricamento differito).
+     */
+    public function header(): JsonResponse
+    {
+        $user = Auth::user();
+
+        return response()
+            ->json($this->notificationHeaderService->forUser($user))
+            ->header('Cache-Control', 'private, no-cache');
+    }
+
     /**
      * Marca una notifica come letta.
      */

@@ -42,11 +42,18 @@ function formatCurrency(amount: number): string {
     }).format(amount);
 }
 
-function getScoreColor(score: number | null): string {
-    if (score === null) return '#94a3b8';
-    if (score >= 30) return '#10b981'; // emerald-500
-    if (score >= 10) return '#f59e0b'; // amber-500
-    return '#ef4444';                  // red-500
+function getScoreBadgeClass(score: number | null): string {
+    if (score === null) {
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200';
+    }
+    if (score >= 30) {
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
+    }
+    if (score >= 10) {
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
+    }
+
+    return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
 }
 
 function getScoreLabel(score: number | null): string {
@@ -149,7 +156,9 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
 
     // ── Stato attivo ─────────────────────────────────────────────────────────
     const score      = data.lifestyle_score;
-    const scoreColor = getScoreColor(score);
+    const scoreColor = score !== null
+        ? (score >= 30 ? '#059669' : score >= 10 ? '#b45309' : '#dc2626')
+        : '#64748b';
     const scoreLabel = getScoreLabel(score);
 
     // Dimensioni gauge circolare SVG
@@ -179,10 +188,7 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
                             Tocca per dettagli
                         </p>
                     </div>
-                    <span
-                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                        style={{ backgroundColor: scoreColor + '20', color: scoreColor }}
-                    >
+                    <span className={clsx('rounded-full px-2 py-0.5 text-xs font-semibold', getScoreBadgeClass(score))}>
                         {scoreLabel}
                     </span>
                 </div>
@@ -232,7 +238,7 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Spese effettive</span>
-                                <span className="font-medium text-red-500">
+                                <span className="font-medium text-red-700 dark:text-red-300">
                                     {formatCurrency(data.effective_expenses)}
                                 </span>
                             </div>
@@ -242,7 +248,7 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
                         {data.trend.direction !== 'unknown' && (
                             <div className="mt-3 flex items-center gap-1.5 text-xs">
                                 {data.trend.direction === 'up' && (
-                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                    <span className="font-semibold text-emerald-700 dark:text-emerald-300">
                                         ↑ +{data.trend.delta?.toFixed(1)}% vs 30 gg fa
                                     </span>
                                 )}

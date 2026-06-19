@@ -1,7 +1,15 @@
 import { useState, useCallback } from 'react';
-import { arrayMove } from '@dnd-kit/sortable';
 import axios from 'axios';
 import { DashboardLayoutConfig, WidgetConfig, WidgetId, WidgetSize } from '@/types/dashboard';
+
+/** Reorder array item without @dnd-kit (keeps vendor-dnd off the dashboard critical path). */
+function arrayMove<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+    const next = [...items];
+    const [removed] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, removed);
+
+    return next;
+}
 
 interface UseDashboardLayoutReturn {
     config: DashboardLayoutConfig;

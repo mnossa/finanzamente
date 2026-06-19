@@ -138,11 +138,9 @@ class FinancialConsistencyTest extends TestCase
         app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
 
         $this->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->getJson(route('dashboard.deferred-widgets'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('expenseDistributionData.investments.amount', 410)
-            );
+            ->assertJsonPath('expenseDistributionData.investments.amount', 410);
 
         Carbon::setTestNow();
     }
@@ -180,11 +178,9 @@ class FinancialConsistencyTest extends TestCase
         app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
 
         $this->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->getJson(route('dashboard.deferred-widgets'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('expenseDistributionData.investments.amount', 600)
-            );
+            ->assertJsonPath('expenseDistributionData.investments.amount', 600);
 
         $this->actingAs($this->user)
             ->get('/punteggio-stile-vita')
@@ -231,11 +227,9 @@ class FinancialConsistencyTest extends TestCase
         ]);
 
         $this->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->getJson(route('dashboard.deferred-widgets'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('expenseDistributionData.investments.amount', 800)
-            );
+            ->assertJsonPath('expenseDistributionData.investments.amount', 800);
 
         $this->actingAs($this->user)
             ->get('/punteggio-stile-vita')
