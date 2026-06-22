@@ -305,26 +305,10 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                     label="Reddito Lordo"
                                     value={formatEur(metrics.gross_income)}
                                 />
-                                {metrics.is_partita_iva && (
-                                    <>
-                                        <MetricCard
-                                            label={`INPS (${metrics.inps_rate}%)`}
-                                            value={formatEur(metrics.inps_amount)}
-                                            color="text-orange-400"
-                                        />
-                                        <MetricCard
-                                            label={`Flat Tax (${metrics.tax_rate}% su lordo−INPS)`}
-                                            value={formatEur(metrics.flat_tax_amount)}
-                                            color="text-orange-500"
-                                            sub="base imponibile = lordo − INPS"
-                                        />
-                                    </>
-                                )}
                                 <MetricCard
                                     label="Reddito Netto"
                                     value={formatEur(metrics.net_income)}
                                     color="text-emerald-600"
-                                    sub={metrics.is_partita_iva ? 'al netto delle tasse' : undefined}
                                 />
                                 <MetricCard
                                     label="Spese Totali"
@@ -346,12 +330,6 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
 
                             {/* Formula visuale */}
                             <div className="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-500 dark:bg-gray-700/50 dark:text-gray-400 space-y-1">
-                                {metrics.is_partita_iva && (
-                                    <p className="font-mono">
-                                        INPS = Lordo × {metrics.inps_rate}% &nbsp;|&nbsp;
-                                        Flat Tax = (Lordo − INPS) × {metrics.tax_rate}%
-                                    </p>
-                                )}
                                 <p className="font-mono">
                                     Score = (Reddito Netto − Spese Effettive) ÷ Reddito Netto × 100
                                 </p>

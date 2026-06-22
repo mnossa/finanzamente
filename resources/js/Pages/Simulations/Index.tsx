@@ -7,6 +7,7 @@ import SimulationsContent, { type SimulationsContentProps } from '@/Components/S
 type IndexProps = SimulationsContentProps & {
     canSave: boolean;
     savedScenarios: SimulationsContentProps['savedScenarios'];
+    pacActiveCount?: number;
 };
 
 export default function SimulationsIndex(props: IndexProps) {

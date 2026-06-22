@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
@@ -8,7 +9,11 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
-import { Head, Link, router } from '@inertiajs/react';
+import IndexEntityCard, {
+    IndexEntityCardFooterButton,
+    IndexEntityCardFooterLink,
+} from '@/Components/Index/IndexEntityCard';
+import { Head, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState } from 'react';
 import CardBox from '@/Components/CardBox';
@@ -50,71 +55,66 @@ function CategoryCard({
     onDelete: (id: number) => void;
 }) {
     return (
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-            {/* Top row: icon + name + actions */}
-            <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-3 min-w-0">
+        <IndexEntityCard
+            icon={<span>{category.icon || '📁'}</span>}
+            iconClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
+            iconStyle={{
+                backgroundColor: category.color ? `${category.color}20` : '#e5e7eb',
+            }}
+            title={category.name}
+            extra={
+                <div className="flex flex-wrap items-center gap-1.5">
                     <span
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl"
-                        style={{ backgroundColor: category.color ? category.color + '20' : '#e5e7eb' }}
+                        className={clsx(
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                            category.transactions_count === 0
+                                ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+                        )}
                     >
-                        {category.icon || '📁'}
+                        {category.transactions_count === 0
+                            ? '— Mai usata'
+                            : `${category.transactions_count} transazion${category.transactions_count === 1 ? 'e' : 'i'}`}
                     </span>
-                    <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                        {category.name}
-                    </h4>
+                    {category.is_fixed_expense && (
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            📌 Spesa Fissa
+                        </span>
+                    )}
+                    {category.expense_distribution && (
+                        <span
+                            className={clsx(
+                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                                category.expense_distribution === 'needs' &&
+                                    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                                category.expense_distribution === 'wants' &&
+                                    'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
+                                category.expense_distribution === 'investments' &&
+                                    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                            )}
+                        >
+                            {category.expense_distribution === 'needs' && '🏠 Necessità'}
+                            {category.expense_distribution === 'wants' && '🎯 Extra'}
+                            {category.expense_distribution === 'investments' && '📈 Investimenti'}
+                        </span>
+                    )}
                 </div>
-                <div className="flex items-center shrink-0 gap-1">
-                    <Link
-                        href={route('categories.edit', category.id)}
-                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                        title="Modifica"
-                    >
+            }
+            footer={
+                <>
+                    <IndexEntityCardFooterLink href={route('categories.edit', category.id)} title="Modifica">
                         <PencilIcon size={16} />
-                    </Link>
-                    <button
-                        onClick={(e) => { e.preventDefault(); onDelete(category.id); }}
-                        className="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                    </IndexEntityCardFooterLink>
+                    <IndexEntityCardFooterButton
+                        onClick={() => onDelete(category.id)}
                         title="Elimina"
+                        className="hover:text-red-600 dark:hover:text-red-400"
                     >
                         <TrashIcon size={16} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Bottom row: badges + transaction count */}
-            <div className="flex flex-wrap items-center gap-1.5">
-                {/* Utilizzo */}
-                <span className={clsx(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                    category.transactions_count === 0
-                        ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                        : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
-                )}>
-                    {category.transactions_count === 0
-                        ? '— Mai usata'
-                        : `${category.transactions_count} transazion${category.transactions_count === 1 ? 'e' : 'i'}`}
-                </span>
-
-                {category.is_fixed_expense && (
-                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        📌 Spesa Fissa
-                    </span>
-                )}
-                {category.expense_distribution && (
-                    <span className={clsx(
-                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                        category.expense_distribution === 'needs'       && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                        category.expense_distribution === 'wants'       && 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200',
-                        category.expense_distribution === 'investments' && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
-                    )}>
-                        {category.expense_distribution === 'needs'       && '🏠 Necessità'}
-                        {category.expense_distribution === 'wants'       && '🎯 Extra'}
-                        {category.expense_distribution === 'investments' && '📈 Investimenti'}
-                    </span>
-                )}
-            </div>
-        </div>
+                    </IndexEntityCardFooterButton>
+                </>
+            }
+        />
     );
 }
 
@@ -175,6 +175,7 @@ export default function Index({ categories, byType, categoryTypes }: IndexProps)
             />
 
             <PageContent maxWidth="7xl">
+                    <OrganizationHubNav active="categories" />
                     <IndexIntroSection
                         label="Classificazione movimenti"
                         icon={<span className="text-sm leading-none">🏷️</span>}

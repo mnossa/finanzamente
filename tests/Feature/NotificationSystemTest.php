@@ -217,7 +217,7 @@ class NotificationSystemTest extends TestCase
     public function test_expense_increase_notification_created(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService;
+        $service = app(TransactionTrendNotificationService::class);
 
         $service->checkAndNotify(
             $user,
@@ -238,7 +238,7 @@ class NotificationSystemTest extends TestCase
     public function test_income_increase_notification_created(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService;
+        $service = app(TransactionTrendNotificationService::class);
 
         $service->checkAndNotify(
             $user,
@@ -259,7 +259,7 @@ class NotificationSystemTest extends TestCase
     public function test_no_trend_notification_when_change_below_threshold(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService;
+        $service = app(TransactionTrendNotificationService::class);
 
         // Solo 5% di variazione, sotto la soglia del 20%
         $service->checkAndNotify(
@@ -276,7 +276,7 @@ class NotificationSystemTest extends TestCase
     public function test_no_trend_notification_when_previous_month_has_no_data(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService;
+        $service = app(TransactionTrendNotificationService::class);
 
         $service->checkAndNotify(
             $user,
@@ -292,7 +292,7 @@ class NotificationSystemTest extends TestCase
     public function test_trend_notification_not_duplicated(): void
     {
         $user = $this->createUserWithHousehold();
-        $service = new TransactionTrendNotificationService;
+        $service = app(TransactionTrendNotificationService::class);
 
         $currentStats = ['income' => 2000, 'expenses' => 1500, 'net' => 500, 'transaction_count' => 10];
         $lastMonthStats = ['income' => 2000, 'expenses' => 1000, 'net' => 1000, 'transaction_count' => 8];

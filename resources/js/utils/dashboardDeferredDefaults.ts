@@ -18,6 +18,17 @@ export interface DashboardDeferredWidgetsData {
     };
     expenseCategories: ExpenseCategory[];
     expenseDistributionData: ExpenseDistributionData;
+    pacProjectionData: {
+        horizon_months: number;
+        monthly_total: number;
+        active_pac_count: number;
+        series: Array<{
+            month: string;
+            label: string;
+            contributions: number;
+            cumulative: number;
+        }>;
+    };
 }
 
 export const emptyExpenseDistributionData: ExpenseDistributionData = {
@@ -39,7 +50,6 @@ export const emptyDeferredWidgetsData: DashboardDeferredWidgetsData = {
         lifestyle_score: null,
         net_income: 0,
         effective_expenses: 0,
-        is_partita_iva: false,
         top_categories: [],
         trend: {
             last30_score: null,
@@ -56,4 +66,10 @@ export const emptyDeferredWidgetsData: DashboardDeferredWidgetsData = {
     },
     expenseCategories: [],
     expenseDistributionData: emptyExpenseDistributionData,
+    pacProjectionData: {
+        horizon_months: 12,
+        monthly_total: 0,
+        active_pac_count: 0,
+        series: [],
+    },
 };

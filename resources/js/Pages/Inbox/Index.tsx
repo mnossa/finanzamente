@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { mobileFilterBodyClass, mobileFilterSummaryClass } from '@/Components/IndexPageListToolbars';
 import CardBox from '@/Components/CardBox';
@@ -703,6 +704,7 @@ export default function InboxIndex({
             header={
                 <PageHeader
                     title="Inbox"
+                    backLink={route('categories.index')}
                     hideSubtitleOnMobile
                     subtitle={
                         pendingCount > 0
@@ -715,8 +717,7 @@ export default function InboxIndex({
             <Head title="Inbox" />
 
             <PageContent>
-
-                {/* Banner se ci sono voci da verificare, con azioni bulk */}
+                <OrganizationHubNav active="inbox" />
                 {pendingCount > 0 && (
                     <IndexInfoBanner
                         icon="⚠"

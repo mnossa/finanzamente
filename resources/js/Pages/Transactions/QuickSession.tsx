@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import CashflowHubNav from '@/Components/CashflowHubNav';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -379,8 +380,7 @@ export default function QuickSession({ accounts, categories, sessionTransactions
             <Head title="Sessione Rapida" />
 
             <PageContent>
-
-                {/* Istruzione */}
+                <CashflowHubNav active="quick-session" />
                 <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20 sm:mb-4 sm:gap-3 sm:p-4">
                     <span className="shrink-0 text-lg sm:text-xl">⚡</span>
                     <div className="text-xs leading-snug text-blue-800 dark:text-blue-200 sm:text-sm sm:leading-normal">

@@ -55,7 +55,7 @@ class LandingPageTest extends TestCase
         return [
             'investitori' => ['/per-investitori', 'landing.investitori', 'Per chi investe'],
             'famiglie' => ['/per-famiglie', 'landing.famiglie', 'famiglie e coppie'],
-            'freelance' => ['/per-freelance', 'landing.freelance', 'Freelance'],
+            'freelance' => ['/per-freelance', 'landing.freelance', 'investitori'],
             'lavoratori' => ['/per-lavoratori', 'landing.lavoratori', 'lavoratori'],
             'pianificatori' => ['/per-pianificatori', 'landing.pianificatori', 'pianificatori'],
             'tech-savvy' => ['/per-tech-savvy', 'landing.tech-savvy', 'tech-savvy'],
@@ -68,6 +68,12 @@ class LandingPageTest extends TestCase
     public function landing_pages_are_accessible(string $url, string $routeName, string $keyword): void
     {
         $response = $this->get($url);
+
+        if ($routeName === 'landing.freelance') {
+            $response->assertRedirect(route('landing.investitori'));
+
+            return;
+        }
 
         $response->assertStatus(200);
     }
@@ -94,7 +100,15 @@ class LandingPageTest extends TestCase
         ];
 
         foreach ($urls as $url) {
-            $this->get($url)->assertStatus(200);
+            $response = $this->get($url);
+
+            if ($url === '/per-freelance') {
+                $response->assertRedirect(route('landing.investitori'));
+
+                continue;
+            }
+
+            $response->assertStatus(200);
         }
     }
 }

@@ -12,7 +12,6 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountBalanceService;
 use App\Services\AssetClassificationService;
-use App\Services\BudgetNotificationService;
 use App\Services\DashboardCacheService;
 use App\Services\FinancialMetricsService;
 use App\Services\FormulaWidgetBootstrapService;
@@ -21,9 +20,10 @@ use App\Services\FormulaWidgetLayoutNormalizer;
 use App\Services\FormulaWidgetPayloadBuilder;
 use App\Services\InvestmentLedgerService;
 use App\Services\ModuleAccessService;
+use App\Services\PacProjectionService;
 use App\Services\PortfolioSnapshotService;
 use App\Services\RevenueNotificationService;
-use App\Services\TransactionTrendNotificationService;
+use App\Services\UpcomingCashflowService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,6 +43,8 @@ class DashboardController extends Controller
         private readonly FormulaWidgetLayoutNormalizer $formulaWidgetLayoutNormalizer,
         private readonly FormulaWidgetDataVersionService $formulaWidgetDataVersionService,
         private readonly DashboardCacheService $dashboardCacheService,
+        private readonly PacProjectionService $pacProjectionService,
+        private readonly UpcomingCashflowService $upcomingCashflowService,
     ) {}
 
     /**
@@ -75,15 +77,6 @@ class DashboardController extends Controller
                 'previousPeriodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious),
             ]);
         });
-
-        (new BudgetNotificationService)->checkAndNotify($user, $householdId);
-        (new TransactionTrendNotificationService)->checkAndNotify(
-            $user,
-            $payload['periodStats'],
-            $payload['previousPeriodStats'],
-            $periodLabel,
-            $previousPeriodLabel,
-        );
 
         return Inertia::render('Dashboard', array_merge($payload, [
             'periodLabel' => $periodLabel,
@@ -229,6 +222,7 @@ class DashboardController extends Controller
         return [
             'accounts' => $accountsWithBalance,
             'totalBalance' => $totalBalance,
+            'projectedHouseholdBalance' => $this->upcomingCashflowService->projectedHouseholdBalance($user),
             'balanceBreakdown' => $balanceBreakdown,
             'recentTransactions' => $recentTransactions,
             'activeBudgets' => $activeBudgets,
@@ -258,6 +252,7 @@ class DashboardController extends Controller
                 'assetAllocationData' => $this->getAssetAllocationWidgetData($user),
                 'expenseCategories' => $this->getExpenseCategoryData($householdId, $user->id),
                 'expenseDistributionData' => $this->getExpenseDistributionData($user, $householdId),
+                'pacProjectionData' => $this->getPacProjectionWidgetData($user),
             ];
         });
 
@@ -828,6 +823,11 @@ class DashboardController extends Controller
             'risk_label' => $snapshot['allocationRiskLabel'],
             'allocation' => $snapshot['allocation'],
         ];
+    }
+
+    private function getPacProjectionWidgetData(User $user): array
+    {
+        return $this->pacProjectionService->buildHouseholdProjection($user, 12);
     }
 
     /**

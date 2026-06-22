@@ -8,8 +8,11 @@ import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
-import { Head, Link, router } from '@inertiajs/react';
-import clsx from 'clsx';
+import IndexEntityCard, {
+    IndexEntityCardFooterButton,
+    IndexEntityCardFooterLink,
+} from '@/Components/Index/IndexEntityCard';
+import { Head, router } from '@inertiajs/react';
 import CardBox from '@/Components/CardBox';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
@@ -28,49 +31,34 @@ interface IndexProps {
 
 function TagCard({ tag, onDeleteClick }: { tag: Tag; onDeleteClick: (id: number, name: string) => void }) {
     return (
-        <CardBox className="p-4 shadow-sm transition-shadow hover:shadow-md">
-            <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                    <div
-                        className="flex h-10 w-10 items-center justify-center rounded-full"
-                        style={{ backgroundColor: tag.color }}
-                    >
-                        <span className="text-lg text-white">🏷️</span>
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">
-                            {tag.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {tag.transactions_count}{' '}
-                            {tag.transactions_count === 1
-                                ? 'transazione'
-                                : 'transazioni'}
-                        </p>
-                    </div>
-                </div>
-                <div
-                    className="h-4 w-4 rounded-full border-2 border-white shadow-sm"
+        <IndexEntityCard
+            icon={<span className="text-lg text-white">🏷️</span>}
+            iconClassName="flex h-10 w-10 items-center justify-center rounded-full"
+            iconStyle={{ backgroundColor: tag.color }}
+            title={tag.name}
+            subtitle={`${tag.transactions_count} ${tag.transactions_count === 1 ? 'transazione' : 'transazioni'}`}
+            aside={
+                <span
+                    className="mt-1 block h-4 w-4 rounded-full border-2 border-white shadow-sm"
                     style={{ backgroundColor: tag.color }}
+                    aria-hidden
                 />
-            </div>
-            <div className="mt-3 flex justify-end space-x-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-                <Link
-                    href={route('tags.edit', tag.id)}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                    title="Modifica"
-                >
-                    <PencilIcon size={18} />
-                </Link>
-                <button
-                    onClick={() => onDeleteClick(tag.id, tag.name)}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                    title="Elimina"
-                >
-                    <TrashIcon size={18} />
-                </button>
-            </div>
-        </CardBox>
+            }
+            footer={
+                <>
+                    <IndexEntityCardFooterLink href={route('tags.edit', tag.id)} title="Modifica">
+                        <PencilIcon size={16} />
+                    </IndexEntityCardFooterLink>
+                    <IndexEntityCardFooterButton
+                        onClick={() => onDeleteClick(tag.id, tag.name)}
+                        title="Elimina"
+                        className="hover:text-red-600 dark:hover:text-red-400"
+                    >
+                        <TrashIcon size={16} />
+                    </IndexEntityCardFooterButton>
+                </>
+            }
+        />
     );
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\InvestmentPac;
 use App\Models\SavedSimulationScenario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -22,10 +23,16 @@ class SimulationController extends Controller
         ];
 
         if ($request->user() && $request->user()->active_household_id) {
+            $householdId = $request->user()->active_household_id;
+
             return Inertia::render('Simulations/Index', [
                 ...$sharedProps,
                 'canSave' => true,
                 'savedScenarios' => $this->savedScenariosForUser($request),
+                'pacActiveCount' => InvestmentPac::query()
+                    ->where('household_id', $householdId)
+                    ->where('status', 'active')
+                    ->count(),
             ]);
         }
 

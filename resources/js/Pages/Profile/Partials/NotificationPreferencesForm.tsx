@@ -4,82 +4,100 @@ import axios from 'axios';
 import { useState } from 'react';
 import type { PageProps } from '@/types';
 
-type RecurringReminderPrefs = {
-    enabled: boolean;
+type DueFrequency = 'daily' | 'weekly' | 'never';
+
+type UpcomingDuePrefs = {
+    frequency: DueFrequency;
     channels: Array<'in_app' | 'email'>;
 };
+
 type MonthlySpendingPrefs = {
     enabled: boolean;
     channels: Array<'in_app' | 'email'>;
 };
-type InvestmentPacReminderPrefs = {
-    enabled: boolean;
-    channels: Array<'in_app' | 'email'>;
-};
+
+function resolveInitialFrequency(prefs: {
+    upcoming_due_dates?: UpcomingDuePrefs;
+    recurring_reminder?: { enabled: boolean };
+    investment_pac_reminder?: { enabled: boolean };
+} | undefined): DueFrequency {
+    if (prefs?.upcoming_due_dates?.frequency) {
+        return prefs.upcoming_due_dates.frequency;
+    }
+
+    const recurringEnabled = prefs?.recurring_reminder?.enabled ?? true;
+    const pacEnabled = prefs?.investment_pac_reminder?.enabled ?? true;
+
+    if (!recurringEnabled && !pacEnabled) {
+        return 'never';
+    }
+
+    return 'daily';
+}
+
+function resolveInitialChannels(prefs: {
+    upcoming_due_dates?: UpcomingDuePrefs;
+    recurring_reminder?: { channels?: Array<'in_app' | 'email'> };
+} | undefined): Array<'in_app' | 'email'> {
+    if (prefs?.upcoming_due_dates?.channels?.length) {
+        return prefs.upcoming_due_dates.channels;
+    }
+
+    return prefs?.recurring_reminder?.channels ?? ['in_app', 'email'];
+}
 
 export default function NotificationPreferencesForm() {
     const { auth } = usePage<PageProps>().props;
     const prefs = (auth.user?.preferences as Record<string, unknown> | undefined)?.notifications as
         | {
-              recurring_reminder?: RecurringReminderPrefs;
+              upcoming_due_dates?: UpcomingDuePrefs;
+              recurring_reminder?: { enabled: boolean; channels?: Array<'in_app' | 'email'> };
+              investment_pac_reminder?: { enabled: boolean };
               monthly_spending?: MonthlySpendingPrefs;
-              investment_pac_reminder?: InvestmentPacReminderPrefs;
+              educational_suggestions?: { enabled: boolean };
           }
         | undefined;
 
-    const initial: RecurringReminderPrefs = {
-        enabled: prefs?.recurring_reminder?.enabled ?? true,
-        channels: prefs?.recurring_reminder?.channels ?? ['in_app', 'email'],
-    };
-
-    const initialPac: InvestmentPacReminderPrefs = {
-        enabled: prefs?.investment_pac_reminder?.enabled ?? true,
-        channels: prefs?.investment_pac_reminder?.channels ?? ['in_app', 'email'],
-    };
-
-    const [enabled, setEnabled] = useState(initial.enabled);
-    const [inApp, setInApp] = useState(initial.channels.includes('in_app'));
-    const [email, setEmail] = useState(initial.channels.includes('email'));
+    const [dueFrequency, setDueFrequency] = useState<DueFrequency>(resolveInitialFrequency(prefs));
+    const [dueInApp, setDueInApp] = useState(resolveInitialChannels(prefs).includes('in_app'));
+    const [dueEmail, setDueEmail] = useState(resolveInitialChannels(prefs).includes('email'));
     const [monthlyEnabled, setMonthlyEnabled] = useState(prefs?.monthly_spending?.enabled ?? true);
     const [monthlyInApp, setMonthlyInApp] = useState((prefs?.monthly_spending?.channels ?? ['in_app']).includes('in_app'));
     const [monthlyEmail, setMonthlyEmail] = useState((prefs?.monthly_spending?.channels ?? ['in_app']).includes('email'));
-    const [pacEnabled, setPacEnabled] = useState(initialPac.enabled);
-    const [pacInApp, setPacInApp] = useState(initialPac.channels.includes('in_app'));
-    const [pacEmail, setPacEmail] = useState(initialPac.channels.includes('email'));
+    const [suggestionsEnabled, setSuggestionsEnabled] = useState(prefs?.educational_suggestions?.enabled ?? true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
     const save = () => {
         setSaving(true);
         setSaved(false);
-        const channels: Array<'in_app' | 'email'> = [];
-        if (inApp) channels.push('in_app');
-        if (email) channels.push('email');
+
+        const dueChannels: Array<'in_app' | 'email'> = [
+            ...(dueInApp ? ['in_app' as const] : []),
+            ...(dueEmail ? ['email' as const] : []),
+        ];
 
         const monthlyChannels: Array<'in_app' | 'email'> = [
             ...(monthlyInApp ? ['in_app' as const] : []),
             ...(monthlyEmail ? ['email' as const] : []),
-        ];
-        const pacChannels: Array<'in_app' | 'email'> = [
-            ...(pacInApp ? ['in_app' as const] : []),
-            ...(pacEmail ? ['email' as const] : []),
         ];
 
         axios
             .patch(
                 route('user.preferences.notifications'),
                 {
-                    recurring_reminder: {
-                        enabled,
-                        channels: channels.length > 0 ? channels : ['in_app'],
+                    upcoming_due_dates: {
+                        frequency: dueFrequency,
+                        channels: dueFrequency === 'never'
+                            ? (dueChannels.length > 0 ? dueChannels : ['in_app'])
+                            : (dueChannels.length > 0 ? dueChannels : ['in_app']),
                     },
                     monthly_spending: {
                         enabled: monthlyEnabled,
                         channels: monthlyChannels.length > 0 ? monthlyChannels : ['in_app'],
                     },
-                    investment_pac_reminder: {
-                        enabled: pacEnabled,
-                        channels: pacChannels.length > 0 ? pacChannels : ['in_app'],
+                    educational_suggestions: {
+                        enabled: suggestionsEnabled,
                     },
                 },
                 {
@@ -99,44 +117,89 @@ export default function NotificationPreferencesForm() {
     return (
         <CardBox>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Notifiche</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Promemoria il giorno prima di una transazione ricorrente in scadenza.
-            </p>
 
-            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                <input
-                    type="checkbox"
-                    checked={enabled}
-                    onChange={(e) => setEnabled(e.target.checked)}
-                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                Attiva promemoria ricorrenze
-            </label>
+            <div className="mt-4">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Prossime scadenze</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Ricorrenze e PAC programmati: scegli quando ricevere un promemoria, solo se ci sono scadenze imminenti.
+                </p>
 
-            {enabled && (
-                <div className="mt-3 space-y-2 pl-6">
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <fieldset className="mt-3 space-y-2">
+                    <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                         <input
-                            type="checkbox"
-                            checked={inApp}
-                            onChange={(e) => setInApp(e.target.checked)}
-                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            type="radio"
+                            name="upcoming_due_frequency"
+                            value="daily"
+                            checked={dueFrequency === 'daily'}
+                            onChange={() => setDueFrequency('daily')}
+                            className="mt-0.5 border-gray-300 text-emerald-600 focus:ring-emerald-500"
                         />
-                        Notifica in app
+                        <span>
+                            <span className="font-medium">Ogni giorno</span>
+                            <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                Consigliato — promemoria il giorno prima di ogni scadenza.
+                            </span>
+                        </span>
                     </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                         <input
-                            type="checkbox"
-                            checked={email}
-                            onChange={(e) => setEmail(e.target.checked)}
-                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            type="radio"
+                            name="upcoming_due_frequency"
+                            value="weekly"
+                            checked={dueFrequency === 'weekly'}
+                            onChange={() => setDueFrequency('weekly')}
+                            className="mt-0.5 border-gray-300 text-emerald-600 focus:ring-emerald-500"
                         />
-                        Email
+                        <span>
+                            <span className="font-medium">Una volta a settimana</span>
+                            <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                Riepilogo del lunedì con le scadenze dei prossimi 7 giorni.
+                            </span>
+                        </span>
                     </label>
-                </div>
-            )}
+                    <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                            type="radio"
+                            name="upcoming_due_frequency"
+                            value="never"
+                            checked={dueFrequency === 'never'}
+                            onChange={() => setDueFrequency('never')}
+                            className="mt-0.5 border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <span>
+                            <span className="font-medium">Mai</span>
+                            <span className="block text-xs text-amber-600 dark:text-amber-400">
+                                Sconsigliato — potresti dimenticare pagamenti o versamenti importanti.
+                            </span>
+                        </span>
+                    </label>
+                </fieldset>
 
-            <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                {dueFrequency !== 'never' && (
+                    <div className="mt-3 space-y-2 pl-1">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <input
+                                type="checkbox"
+                                checked={dueInApp}
+                                onChange={(e) => setDueInApp(e.target.checked)}
+                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            Notifica in app
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <input
+                                type="checkbox"
+                                checked={dueEmail}
+                                onChange={(e) => setDueEmail(e.target.checked)}
+                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            Email
+                        </label>
+                    </div>
+                )}
+            </div>
+
+            <label className="mt-6 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input
                     type="checkbox"
                     checked={monthlyEnabled}
@@ -172,35 +235,12 @@ export default function NotificationPreferencesForm() {
             <label className="mt-4 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <input
                     type="checkbox"
-                    checked={pacEnabled}
-                    onChange={(e) => setPacEnabled(e.target.checked)}
+                    checked={suggestionsEnabled}
+                    onChange={(e) => setSuggestionsEnabled(e.target.checked)}
                     className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                Attiva promemoria PAC investimenti
+                Suggerimenti educativi in app (trend, duplicati, promemoria contestuali)
             </label>
-
-            {pacEnabled && (
-                <div className="mt-3 space-y-2 pl-6">
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <input
-                            type="checkbox"
-                            checked={pacInApp}
-                            onChange={(e) => setPacInApp(e.target.checked)}
-                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        Notifica in app
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                        <input
-                            type="checkbox"
-                            checked={pacEmail}
-                            onChange={(e) => setPacEmail(e.target.checked)}
-                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        Email
-                    </label>
-                </div>
-            )}
 
             <div className="mt-4 flex items-center gap-3">
                 <button

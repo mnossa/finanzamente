@@ -70,6 +70,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function BillingForm({ subscription }: { subscription: SubscriptionData | null }) {
+    const [showBusinessBilling, setShowBusinessBilling] = useState(false);
     const { data, setData, patch, processing, errors, recentlySuccessful } = useForm({
         billing_name: subscription?.billing_name ?? '',
         billing_email: subscription?.billing_email ?? '',
@@ -117,25 +118,42 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
                     <InputError message={errors.billing_email} className="mt-1" />
                 </div>
                 <div>
-                    <InputLabel htmlFor="billing_company" value="Azienda (opzionale)" />
-                    <TextInput
-                        id="billing_company"
-                        name="billing_company"
-                        value={data.billing_company}
-                        className="mt-1 block w-full"
-                        onChange={(e) => setData('billing_company', e.target.value)}
-                    />
-                </div>
-                <div>
-                    <InputLabel htmlFor="billing_vat" value="P.IVA / C.F. (opzionale)" />
+                    <InputLabel htmlFor="billing_vat" value="Codice Fiscale (opzionale)" />
                     <TextInput
                         id="billing_vat"
                         name="billing_vat"
                         value={data.billing_vat}
-                        className="mt-1 block w-full"
-                        onChange={(e) => setData('billing_vat', e.target.value)}
+                        className="mt-1 block w-full uppercase"
+                        onChange={(e) => setData('billing_vat', e.target.value.toUpperCase())}
                     />
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Per la ricevuta o fattura del piano Pro.
+                    </p>
                 </div>
+                <div className="sm:col-span-2">
+                    <button
+                        type="button"
+                        onClick={() => setShowBusinessBilling((open) => !open)}
+                        className="text-sm font-medium text-emerald-700 hover:text-emerald-800 dark:text-emerald-300"
+                    >
+                        {showBusinessBilling ? 'Nascondi' : 'Fattura intestata ad azienda (opzionale)'}
+                    </button>
+                </div>
+                {showBusinessBilling && (
+                    <div className="sm:col-span-2">
+                        <InputLabel htmlFor="billing_company" value="Ragione sociale" />
+                        <TextInput
+                            id="billing_company"
+                            name="billing_company"
+                            value={data.billing_company}
+                            className="mt-1 block w-full"
+                            onChange={(e) => setData('billing_company', e.target.value)}
+                        />
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Se serve fattura aziendale, inserisci la Partita IVA nel campo Codice Fiscale sopra.
+                        </p>
+                    </div>
+                )}
                 <div className="sm:col-span-2">
                     <InputLabel htmlFor="billing_address" value="Indirizzo (opzionale)" />
                     <TextInput

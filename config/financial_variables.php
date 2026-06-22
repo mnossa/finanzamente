@@ -146,6 +146,36 @@ return [
             'resolver' => 'expense_distribution',
             'field' => 'investments',
         ],
+        'pac_monthly_total' => [
+            'label' => 'Versamenti mensili PAC attivi',
+            'requires_period' => false,
+            'resolver' => 'investment_pac_metrics',
+            'field' => 'monthly_total',
+        ],
+        'pac_ytd_contributions' => [
+            'label' => 'Versamenti PAC da inizio anno',
+            'requires_period' => false,
+            'resolver' => 'investment_pac_metrics',
+            'field' => 'ytd_contributions',
+        ],
+        'pac_projected_contributions' => [
+            'label' => 'Versamenti PAC proiettati (12 mesi)',
+            'requires_period' => false,
+            'resolver' => 'investment_pac_metrics',
+            'field' => 'projected_contributions',
+        ],
+        'pac_projected_patrimonio' => [
+            'label' => 'Patrimonio PAC proiettato (12 mesi)',
+            'requires_period' => false,
+            'resolver' => 'investment_pac_metrics',
+            'field' => 'projected_patrimonio',
+        ],
+        'pac_active_count' => [
+            'label' => 'Numero PAC attivi',
+            'requires_period' => false,
+            'resolver' => 'investment_pac_metrics',
+            'field' => 'active_count',
+        ],
     ],
 
     /**
@@ -272,6 +302,11 @@ return [
         'expense_needs' => '[expense_needs] / [period_expenses] * 100',
         'expense_wants' => '[expense_wants]',
         'expense_investments' => '[expense_investments]',
+        'pac_monthly_total' => '[pac_monthly_total]',
+        'pac_ytd_contributions' => '[pac_ytd_contributions]',
+        'pac_projected_contributions' => '[pac_projected_contributions]',
+        'pac_projected_patrimonio' => '[pac_projected_patrimonio]',
+        'pac_active_count' => '[pac_active_count]',
         'current_year' => '[current_year]',
         'current_month' => '[period_expenses] / [current_month]',
         'current_day' => '[period_net] / [current_day]',

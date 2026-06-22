@@ -19,7 +19,9 @@ test.describe('Trasferimenti', () => {
     });
 
     test('il link nuovo trasferimento porta al form', async ({ page }) => {
-        await visibleHrefLocator(page, '/trasferimenti/crea').click();
+        const createLink = visibleHrefLocator(page, '/trasferimenti/crea');
+        await createLink.scrollIntoViewIfNeeded();
+        await createLink.click();
         await expect(page).toHaveURL('/trasferimenti/crea');
         await expect(page).toHaveTitle(/nuovo trasferimento/i);
     });

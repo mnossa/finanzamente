@@ -58,6 +58,11 @@ export interface TransactionListRowTransaction {
     is_investment?: boolean;
     is_pac?: boolean;
     pac_summary?: TransactionListRowPacSummary | null;
+    is_future?: boolean;
+    is_virtual?: boolean;
+    virtual_source?: 'recurring' | 'pac' | null;
+    virtual_source_id?: number | null;
+    projected_balance_after?: number | null;
 }
 
 export type TransactionListIndexQuery = Record<string, string | number>;
@@ -144,6 +149,8 @@ export default function TransactionListRow({
     onToggleSelect,
     indexQuery,
 }: TransactionListRowProps) {
+    const isFuture = transaction.is_future === true;
+    const isVirtual = transaction.is_virtual === true;
     const isIncome = transaction.amount > 0;
     const isTransfer = transaction.transfer_id !== null;
     const isRefund = transaction.refund_id !== null;
@@ -188,6 +195,20 @@ export default function TransactionListRow({
 
     const secondaryIndicatorEntries: { label: string; node: React.ReactNode }[] = [];
 
+    if (isFuture) {
+        secondaryIndicatorEntries.push({
+            label: isVirtual ? 'Movimento previsto' : 'Transazione programmata',
+            node: (
+                <RowIndicator
+                    key="future"
+                    label={isVirtual ? 'Movimento previsto' : 'Transazione programmata'}
+                    className="bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                >
+                    {isVirtual ? '🔮' : '📅'}
+                </RowIndicator>
+            ),
+        });
+    }
     if (isTransfer) {
         secondaryIndicatorEntries.push({
             label: 'Trasferimento tra conti',
@@ -296,7 +317,13 @@ export default function TransactionListRow({
           ? route('investments.show', transaction.investment_id!)
           : null;
 
-    const detailHref = route('transactions.show', { transaction: transaction.id, ...indexQuery });
+    const detailHref = isVirtual
+        ? transaction.virtual_source === 'pac' && transaction.virtual_source_id
+            ? route('investment-pacs.show', transaction.virtual_source_id)
+            : transaction.virtual_source === 'recurring' && transaction.virtual_source_id
+              ? route('recurring-transactions.show', transaction.virtual_source_id)
+              : route('transactions.index')
+        : route('transactions.show', { transaction: transaction.id, ...indexQuery });
     const rowStateClass = isSelected
         ? 'bg-emerald-50 dark:bg-emerald-900/20'
         : 'hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50';
@@ -316,7 +343,9 @@ export default function TransactionListRow({
 
     const metaLabel = `${formatDate(transaction.date)} · ${transaction.account.name}`;
 
-    const checkbox = (
+    const checkbox = isVirtual ? (
+        <span className="inline-block h-4 w-4 shrink-0" aria-hidden />
+    ) : (
         <input
             type="checkbox"
             checked={isSelected}
@@ -334,6 +363,7 @@ export default function TransactionListRow({
                 mobileListRowInsetClass,
                 rowStateClass,
                 borderClasses,
+                isFuture && 'opacity-60',
             )}
             title={rowTitle ? `${title} — ${rowTitle}` : title}
         >
@@ -357,6 +387,11 @@ export default function TransactionListRow({
                         </p>
                         <p className={amountClassName}>{formattedAmount}</p>
                     </div>
+                    {isFuture && transaction.projected_balance_after != null ? (
+                        <p className="col-start-2 text-[10px] leading-tight text-gray-500 dark:text-gray-400">
+                            Saldo previsto dopo: {formatCurrency(transaction.projected_balance_after, transaction.account.currency_code)}
+                        </p>
+                    ) : null}
                     <div className="col-start-2 flex min-h-4 min-w-0 items-center gap-1 overflow-hidden">
                         <span
                             className="min-w-0 truncate text-[11px] leading-none text-gray-500 dark:text-gray-400"
@@ -411,8 +446,13 @@ export default function TransactionListRow({
                     ) : null}
                 </div>
 
-                <div className="flex shrink-0 items-center justify-end gap-2">
+                <div className="flex shrink-0 flex-col items-end justify-center gap-0.5">
                     <p className={amountClassName}>{formattedAmount}</p>
+                    {isFuture && transaction.projected_balance_after != null ? (
+                        <p className="text-[10px] leading-tight text-gray-500 dark:text-gray-400">
+                            Saldo previsto: {formatCurrency(transaction.projected_balance_after, transaction.account.currency_code)}
+                        </p>
+                    ) : null}
                     <div className="flex items-center gap-1">
                         <Link
                             href={detailHref}
@@ -421,44 +461,48 @@ export default function TransactionListRow({
                         >
                             <EyeIcon size={16} />
                         </Link>
-                        <Link
-                            href={route('transactions.edit', { transaction: transaction.id, ...indexQuery })}
-                            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                            title="Modifica"
-                        >
-                            <PencilIcon size={16} />
-                        </Link>
-                        {investmentActionHref ? (
-                            <Link
-                                href={investmentActionHref}
-                                className={clsx(
-                                    'rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
-                                    isPac
-                                        ? 'hover:text-sky-600 dark:hover:text-sky-400'
-                                        : 'hover:text-indigo-600 dark:hover:text-indigo-400',
+                        {!isVirtual ? (
+                            <>
+                                <Link
+                                    href={route('transactions.edit', { transaction: transaction.id, ...indexQuery })}
+                                    className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                                    title="Modifica"
+                                >
+                                    <PencilIcon size={16} />
+                                </Link>
+                                {investmentActionHref ? (
+                                    <Link
+                                        href={investmentActionHref}
+                                        className={clsx(
+                                            'rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700',
+                                            isPac
+                                                ? 'hover:text-sky-600 dark:hover:text-sky-400'
+                                                : 'hover:text-indigo-600 dark:hover:text-indigo-400',
+                                        )}
+                                        title={isPac ? 'Apri il piano PAC collegato' : "Gestisci dall'investimento collegato"}
+                                    >
+                                        <span className="text-sm" aria-hidden>
+                                            {isPac ? '📊' : '📈'}
+                                        </span>
+                                    </Link>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            onDeleteClick({
+                                                id: transaction.id,
+                                                description: title,
+                                                isInvestment,
+                                            })
+                                        }
+                                        className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
+                                        title="Elimina"
+                                    >
+                                        <TrashIcon size={16} />
+                                    </button>
                                 )}
-                                title={isPac ? 'Apri il piano PAC collegato' : "Gestisci dall'investimento collegato"}
-                            >
-                                <span className="text-sm" aria-hidden>
-                                    {isPac ? '📊' : '📈'}
-                                </span>
-                            </Link>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    onDeleteClick({
-                                        id: transaction.id,
-                                        description: title,
-                                        isInvestment,
-                                    })
-                                }
-                                className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                                title="Elimina"
-                            >
-                                <TrashIcon size={16} />
-                            </button>
-                        )}
+                            </>
+                        ) : null}
                     </div>
                 </div>
             </div>

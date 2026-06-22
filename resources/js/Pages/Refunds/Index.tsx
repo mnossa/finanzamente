@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
@@ -104,6 +105,7 @@ export default function Index({ refunds }: IndexProps) {
             header={
                 <PageHeader
                     title="Rimborsi"
+                    backLink={route('categories.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('refunds.create')} icon={<PlusIcon />}>
@@ -127,6 +129,7 @@ export default function Index({ refunds }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
+                <OrganizationHubNav active="refunds" />
                 <IndexIntroSection
                     label="Rimborsi"
                     icon={<span className="text-sm leading-none">💸</span>}

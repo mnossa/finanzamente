@@ -43,6 +43,7 @@ class InvestmentPacController extends Controller
                 'start_date' => $pac->start_date?->format('Y-m-d'),
                 'end_date' => $pac->end_date?->format('Y-m-d'),
                 'last_executed_at' => $pac->last_executed_at?->format('Y-m-d'),
+                'next_execution_date' => $this->investmentPacService->calculateNextExecutionDate($pac)?->format('Y-m-d'),
                 'status' => $pac->status,
                 'notes' => $pac->notes,
                 'investments_count' => (int) $pac->investments_count,
@@ -141,6 +142,7 @@ class InvestmentPacController extends Controller
                 'start_date' => $investmentPac->start_date?->format('Y-m-d'),
                 'end_date' => $investmentPac->end_date?->format('Y-m-d'),
                 'last_executed_at' => $investmentPac->last_executed_at?->format('Y-m-d'),
+                'next_execution_date' => $this->investmentPacService->calculateNextExecutionDate($investmentPac)?->format('Y-m-d'),
                 'status' => $investmentPac->status,
                 'notes' => $investmentPac->notes,
                 'asset' => [

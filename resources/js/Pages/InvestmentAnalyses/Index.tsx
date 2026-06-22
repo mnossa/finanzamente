@@ -8,6 +8,7 @@ import { Head, router } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
+import InvestmentHubNav from '@/Components/InvestmentHubNav';
 
 // ─── Tipi ────────────────────────────────────────────────────────────────────
 
@@ -800,6 +801,7 @@ export default function Index({ analyses }: IndexProps) {
                 <PageHeader
                     title="Analisi Investimenti"
                     mobileTitle="Analisi"
+                    backLink={route('investments.index')}
                     hideSubtitleOnMobile
                     subtitle="Calcola risparmio e ammortamento dei tuoi investimenti energetici e tecnologici"
                     actions={
@@ -822,6 +824,7 @@ export default function Index({ analyses }: IndexProps) {
             <Head title="Analisi Investimenti" />
 
             <PageContent>
+                <InvestmentHubNav active="analyses" />
                 <IndexPageMobileToolbar>
                     <button
                         type="button"

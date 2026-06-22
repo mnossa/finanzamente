@@ -15,6 +15,7 @@ export interface PacListCardPac {
     start_date: string;
     end_date: string | null;
     last_executed_at: string | null;
+    next_execution_date?: string | null;
     status: string;
     investments_count: number;
     asset: { id: number; name: string; symbol: string; isin: string | null };
@@ -100,6 +101,12 @@ export default function PacListCard({ pac, onRunNow, onToggleStatus, onDelete }:
                         <div className="col-span-2 min-w-0">
                             <dt className="sr-only">Ultimo versamento</dt>
                             <dd className="truncate">Ultimo {formatDateShort(pac.last_executed_at)}</dd>
+                        </div>
+                    ) : null}
+                    {pac.next_execution_date ? (
+                        <div className="col-span-2 min-w-0">
+                            <dt className="sr-only">Prossimo versamento</dt>
+                            <dd className="truncate">Prossimo {formatDateShort(pac.next_execution_date)}</dd>
                         </div>
                     ) : null}
                     {pac.end_date ? (

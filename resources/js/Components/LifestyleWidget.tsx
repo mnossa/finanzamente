@@ -10,7 +10,6 @@ export interface LifestyleWidgetData {
     lifestyle_score: number | null;
     net_income: number;
     effective_expenses: number;
-    is_partita_iva: boolean;
     top_categories: Array<{
         category_id: number | null;
         name: string;

@@ -83,7 +83,6 @@ return [
                 'Asset allocation',
                 'Analisi investimenti',
                 'Integrazione Telegram',
-                'Gestione IVA (Partita IVA)',
                 'Trasferimenti tra household',
                 'Export PDF e XLS avanzati (prossimamente)',
             ],

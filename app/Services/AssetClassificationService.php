@@ -94,7 +94,7 @@ class AssetClassificationService
         }
 
         if ($asset->type === 'etf') {
-            return self::inferEtfAllocationClass($asset->name, $asset->symbol);
+            return self::inferEtfAllocationClass($asset->name, $asset->symbol, $asset->isin);
         }
 
         return self::ASSET_TYPE_CLASS[$asset->type] ?? 'other';
@@ -103,28 +103,28 @@ class AssetClassificationService
     /**
      * Suggerimento automatico per il form asset (da tipo + nome/simbolo).
      */
-    public static function suggestAllocationClass(string $type, ?string $name = null, ?string $symbol = null): string
+    public static function suggestAllocationClass(string $type, ?string $name = null, ?string $symbol = null, ?string $isin = null): string
     {
         if ($type === 'etf') {
-            return self::inferEtfAllocationClass($name, $symbol);
+            return self::inferEtfAllocationClass($name, $symbol, $isin);
         }
 
         return self::ASSET_TYPE_CLASS[$type] ?? 'other';
     }
 
-    private static function inferEtfAllocationClass(?string $name, ?string $symbol): string
+    private static function inferEtfAllocationClass(?string $name, ?string $symbol, ?string $isin = null): string
     {
-        $haystack = strtolower(trim(($name ?? '').' '.($symbol ?? '')));
+        $haystack = strtolower(trim(($name ?? '').' '.($symbol ?? '').' '.($isin ?? '')));
 
         if ($haystack === '') {
             return 'equities';
         }
 
-        if (preg_match('/\b(bond|obblig|aggregate|treasury|govt|gilt|eurogov|fixed.?income|titoli.?stato)\b/i', $haystack)) {
+        if (preg_match('/\b(bond|obblig|aggregate|treasury|govt|gilt|eurogov|fixed.?income|titoli.?stato|corporate|high.?yield|emerging.?market.?bond|tips|inflation.?linked)\b/i', $haystack)) {
             return 'bonds';
         }
 
-        if (preg_match('/\b(gold|silver|commodit|materia.?prima|oil|petrolio|wti|brent|platinum|copper)\b/i', $haystack)) {
+        if (preg_match('/\b(gold|silver|commodit|materia.?prima|oil|petrolio|wti|brent|platinum|copper|reit|real.?estate)\b/i', $haystack)) {
             return 'commodities';
         }
 

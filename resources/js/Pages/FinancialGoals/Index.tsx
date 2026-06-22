@@ -1,13 +1,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import PlanningHubNav from '@/Components/PlanningHubNav';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
+import IndexEntityCard from '@/Components/Index/IndexEntityCard';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { ProgressBar } from '@/Components/ProgressBar';
@@ -68,72 +70,62 @@ import { StatusBadge } from '@/Components/StatusBadge';
 
 function GoalCard({ goal }: { goal: FinancialGoal }) {
     return (
-        <CardBox className="overflow-hidden p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4">
-            <Link
-                href={route('financial-goals.show', goal.id)}
-                className="block"
-            >
-            <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <div
-                        className="flex h-12 w-12 items-center justify-center rounded-full text-2xl"
-                        style={{
-                            backgroundColor: goal.color ? `${goal.color}20` : '#6366f120',
-                        }}
-                    >
-                        {goal.icon || '🎯'}
-                    </div>
-                    <div>
-                        <h3 className={clsx(
-                            'font-semibold text-gray-900 dark:text-white',
-                            goal.status === 'cancelled' && 'line-through opacity-50'
-                        )}>
-                            {goal.name}
-                        </h3>
-                        <StatusBadge
-                            status={goal.status}
-                            statusLabel={goal.status_label}
-                            isOverdue={goal.is_overdue}
-                        />
-                    </div>
-                </div>
-                <div className="text-right">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+        <IndexEntityCard
+            href={route('financial-goals.show', goal.id)}
+            dimmed={goal.status === 'cancelled'}
+            icon={<span>{goal.icon || '🎯'}</span>}
+            iconClassName="flex h-10 w-10 items-center justify-center rounded-full text-xl sm:h-11 sm:w-11 sm:text-2xl"
+            iconStyle={{
+                backgroundColor: goal.color ? `${goal.color}20` : '#6366f120',
+            }}
+            title={
+                <span className={clsx(goal.status === 'cancelled' && 'line-through opacity-50')}>
+                    {goal.name}
+                </span>
+            }
+            subtitle={
+                <StatusBadge
+                    status={goal.status}
+                    statusLabel={goal.status_label}
+                    isOverdue={goal.is_overdue}
+                />
+            }
+            aside={
+                goal.target_date ? (
+                    <p className="text-xs text-gray-500 sm:text-sm dark:text-gray-400">
                         {formatDate(goal.target_date)}
                     </p>
-                </div>
-            </div>
-
-            <div className="mt-4">
-                <div className="flex items-end justify-between">
-                    <div>
-                        <p className={clsx('text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                            {formatCurrency(goal.current_amount, goal.currency.code)}
-                        </p>
-                        <p className={clsx('text-sm text-gray-500 dark:text-gray-400', moneyTabular)}>
-                            di {formatCurrency(goal.target_amount, goal.currency.code)}
-                        </p>
-                    </div>
-                    <div className="text-right">
+                ) : undefined
+            }
+            extra={
+                <>
+                    <div className="flex items-end justify-between gap-2">
+                        <div>
+                            <p className={clsx('text-lg font-bold text-gray-900 sm:text-xl dark:text-white', moneyTabular)}>
+                                {formatCurrency(goal.current_amount, goal.currency.code)}
+                            </p>
+                            <p className={clsx('text-xs text-gray-500 sm:text-sm dark:text-gray-400', moneyTabular)}>
+                                di {formatCurrency(goal.target_amount, goal.currency.code)}
+                            </p>
+                        </div>
                         <p
-                            className={clsx('text-3xl font-bold', moneyTabular)}
+                            className={clsx('text-2xl font-bold sm:text-3xl', moneyTabular)}
                             style={{ color: goal.color || '#6366f1' }}
                         >
                             {goal.progress_percentage}%
                         </p>
                     </div>
-                </div>
-                <div className="mt-3">
-                    <ProgressBar percentage={goal.progress_percentage} color={goal.color} />
-                </div>
-                {goal.remaining_amount > 0 && goal.status === 'in_progress' && (
-                    <p className={clsx('mt-2 text-sm text-gray-500 dark:text-gray-400', moneyTabular)}>
-                        Mancano ancora {formatCurrency(goal.remaining_amount, goal.currency.code)}
-                    </p>
-                )}
-            </div>
-            </Link>
-        </CardBox>
+                    <div className="mt-2.5">
+                        <ProgressBar percentage={goal.progress_percentage} color={goal.color} />
+                    </div>
+                    {goal.remaining_amount > 0 && goal.status === 'in_progress' && (
+                        <p className={clsx('mt-2 text-xs text-gray-500 sm:text-sm dark:text-gray-400', moneyTabular)}>
+                            Mancano ancora {formatCurrency(goal.remaining_amount, goal.currency.code)}
+                        </p>
+                    )}
+                </>
+            }
+        />
     );
 }
 
@@ -151,6 +143,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
             header={
                 <PageHeader
                     title="Obiettivi Finanziari"
+                    backLink={route('budgets.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('financial-goals.create')} icon={<PlusIcon />}>
@@ -164,6 +157,7 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
             <Head title="Obiettivi Finanziari" />
 
             <PageContent maxWidth="7xl">
+                    <PlanningHubNav active="goals" />
                     <IndexIntroSection
                         label="Obiettivi finanziari"
                         icon={<span className="text-sm leading-none">🎯</span>}

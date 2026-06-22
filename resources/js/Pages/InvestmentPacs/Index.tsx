@@ -5,6 +5,7 @@ import PacListCard from '@/Components/InvestmentPacs/PacListCard';
 import LinkButton from '@/Components/LinkButton';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import InvestmentHubNav from '@/Components/InvestmentHubNav';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
@@ -21,6 +22,7 @@ interface Pac {
     start_date: string;
     end_date: string | null;
     last_executed_at: string | null;
+    next_execution_date?: string | null;
     status: string;
     notes: string | null;
     investments_count: number;
@@ -62,6 +64,7 @@ export default function InvestmentPacIndex({ pacs }: { pacs: Pac[] }) {
                 <PageHeader
                     title="PAC — Piani di accumulo"
                     mobileTitle="PAC"
+                    backLink={route('investments.index')}
                     subtitle="Versamenti ricorrenti su ETF, fondi e altri strumenti"
                     hideSubtitleOnMobile
                     actions={<LinkButton href={route('investment-pacs.create')}>Nuovo PAC</LinkButton>}
@@ -79,6 +82,7 @@ export default function InvestmentPacIndex({ pacs }: { pacs: Pac[] }) {
                 onCancel={closeDeleteDialog}
             />
             <PageContent>
+                <InvestmentHubNav active="pacs" />
                 <IndexIntroSection
                     label="PAC"
                     icon={<span className="text-sm leading-none">📈</span>}

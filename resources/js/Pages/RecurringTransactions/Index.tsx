@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
@@ -93,6 +94,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                 <PageHeader
                     title="Transazioni Ricorrenti"
                     mobileTitle="Ricorrenti"
+                    backLink={route('categories.index')}
                     hideSubtitleOnMobile
                     actions={
                         <IndexPageHeaderActions>
@@ -120,6 +122,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
             />
 
             <PageContent maxWidth="7xl">
+                <OrganizationHubNav active="recurring" />
                 <IndexIntroSection
                     label="Ricorrenze"
                     icon={<span className="text-sm leading-none">🔁</span>}

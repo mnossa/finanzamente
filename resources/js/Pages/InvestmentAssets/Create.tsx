@@ -33,9 +33,10 @@ interface CreateProps {
     currencies: Currency[];
     types: Types;
     typeIcons: TypeIcons;
+    allocationClasses: Record<string, string>;
 }
 
-export default function Create({ currencies, types, typeIcons }: CreateProps) {
+export default function Create({ currencies, types, typeIcons, allocationClasses }: CreateProps) {
     const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
 
     if (isGuidedCreateEnabled(features)) {
@@ -63,6 +64,7 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
         exchange: '',
         name: '',
         currency_code: 'EUR',
+        allocation_asset_class: '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -212,6 +214,24 @@ export default function Create({ currencies, types, typeIcons }: CreateProps) {
                                         </p>
                                         <InputError message={errors.exchange} className="mt-2" />
                                     </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <InputLabel htmlFor="allocation_asset_class" value="Classe allocazione patrimonio" />
+                                    <select
+                                        id="allocation_asset_class"
+                                        className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                        value={data.allocation_asset_class}
+                                        onChange={(e) => setData('allocation_asset_class', e.target.value)}
+                                    >
+                                        <option value="">Automatica (in base a tipo e nome)</option>
+                                        {Object.entries(allocationClasses)
+                                            .filter(([key]) => key !== 'liquidity')
+                                            .map(([key, label]) => (
+                                                <option key={key} value={key}>{label}</option>
+                                            ))}
+                                    </select>
+                                    <InputError message={errors.allocation_asset_class} className="mt-2" />
                                 </div>
 
                                 {/* Valuta */}

@@ -1,12 +1,23 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import PlanningHubNav from '@/Components/PlanningHubNav';
+import IndexIntroSection from '@/Components/Index/IndexIntroSection';
+import IndexKpiCell from '@/Components/Index/IndexKpiCell';
+import IndexListCard from '@/Components/Index/IndexListCard';
+import IndexListRow from '@/Components/Index/IndexListRow';
+import IndexEmptyList from '@/Components/Index/IndexEmptyList';
+import CardBox from '@/Components/CardBox';
+import {
+    contentPanelHeaderClass,
+    indexPageInsetX,
+    IndexPageMobileToolbar,
+} from '@/Components/IndexPageListToolbars';
 import { Head, Link, router } from '@inertiajs/react';
 import PageHeader from '@/Components/PageHeader';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import clsx from 'clsx';
-import React from 'react';
-import CardBox from '@/Components/CardBox';
-import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
+import { formatCurrency, formatDate } from '@/utils/format';
 
 interface Category {
     id: number;
@@ -50,23 +61,28 @@ interface IndexProps {
     year: number;
 }
 
-function formatCurrency(amount: number, currency: string = 'EUR'): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: currency,
-    }).format(amount);
-}
+function TaxDeductionRow({ transaction }: { transaction: Transaction }) {
+    const currencyCode = transaction.account.currency_code;
+    const expenseAmount = Math.abs(transaction.amount);
+    const deductibleAmount = expenseAmount * transaction.tax_deduction_rate / 100;
 
-function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('it-IT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    });
+    return (
+        <IndexListRow
+            href={route('transactions.show', transaction.id)}
+            avatar={transaction.category?.icon || '💸'}
+            title={transaction.description || transaction.category?.name || 'Transazione'}
+            subtitle={`${formatDate(transaction.date)} · ${transaction.account.name}`}
+            amount={formatCurrency(expenseAmount, currencyCode)}
+            amountDetail={
+                <p className={clsx('text-xs text-emerald-600 dark:text-emerald-400', moneyTabular)}>
+                    {transaction.tax_deduction_rate}% · {formatCurrency(deductibleAmount, currencyCode)}
+                </p>
+            }
+        />
+    );
 }
 
 export default function Index({ transactions = [], summary, year }: IndexProps) {
-    // Provide safe defaults for summary
     const safeSummary = {
         total_transactions: summary?.total_transactions ?? 0,
         total_amount: summary?.total_amount ?? 0,
@@ -88,7 +104,7 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
     };
 
     const getTypeLabel = (typeValue: string) => {
-        return TAX_DEDUCTION_TYPES.find(t => t.value === typeValue)?.label || typeValue;
+        return TAX_DEDUCTION_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
     };
 
     const calculateTypeTotal = (typeTransactions: Transaction[]) => {
@@ -96,227 +112,200 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
     };
 
     const calculateTypeDeductible = (typeTransactions: Transaction[]) => {
-        return typeTransactions.reduce((sum, t) => 
-            sum + (Math.abs(t.amount) * t.tax_deduction_rate / 100), 0
+        return typeTransactions.reduce(
+            (sum, t) => sum + (Math.abs(t.amount) * t.tax_deduction_rate / 100),
+            0,
         );
     };
+
+    const hasTransactions = transactions.length > 0;
 
     return (
         <AuthenticatedLayout
             header={
                 <PageHeader
                     title="Spese detraibili"
-                    backLink={route('dashboard')}
+                    backLink={route('budgets.index')}
                 />
             }
         >
             <Head title="Spese detraibili" />
 
             <PageContent>
-                    {/* Header con filtri ed export */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        {/* Filtro anno */}
-                        <div className="flex items-center gap-3">
-                            <label htmlFor="year" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Anno fiscale:
-                            </label>
-                            <select
-                                id="year"
-                                value={year}
-                                onChange={(e) => handleYearChange(Number(e.target.value))}
-                                className="rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                            >
-                                {safeSummary.years.map((y) => (
-                                    <option key={y} value={y}>
-                                        {y}
-                                    </option>
-                                ))}
-                            </select>
+                <PlanningHubNav active="tax-deductions" />
+                <IndexIntroSection
+                    label="Detrazioni fiscali"
+                    icon={<span className="text-sm leading-none">📋</span>}
+                    description="Riepilogo spese detraibili per anno fiscale, con export PDF e allegati per il commercialista."
+                />
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="year" className="shrink-0 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Anno fiscale
+                        </label>
+                        <select
+                            id="year"
+                            value={year}
+                            onChange={(e) => handleYearChange(Number(e.target.value))}
+                            className="min-h-10 w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:w-auto dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        >
+                            {safeSummary.years.map((y) => (
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {hasTransactions && (
+                    <IndexPageMobileToolbar className="mt-0">
+                        <button
+                            type="button"
+                            onClick={handleExportPdf}
+                            className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 text-sm font-medium text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+                        >
+                            📄 Esporta PDF
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleExportAttachments}
+                            className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
+                        >
+                            📦 Esporta allegati
+                        </button>
+                    </IndexPageMobileToolbar>
+                )}
+
+                {hasTransactions && (
+                    <div className="hidden gap-2 sm:flex sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={handleExportPdf}
+                            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+                        >
+                            📄 Esporta PDF
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleExportAttachments}
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                        >
+                            📦 Esporta Allegati (ZIP)
+                        </button>
+                    </div>
+                )}
+
+                {hasTransactions ? (
+                    <>
+                        <div className="flex flex-col gap-2 sm:gap-3">
+                            <div className={clsx(moneyKpiGrid2, 'gap-2 sm:gap-3')}>
+                                <IndexKpiCell
+                                    label="Transazioni"
+                                    value={safeSummary.total_transactions}
+                                    className="!p-3 sm:!p-4"
+                                />
+                                <IndexKpiCell
+                                    label="Totale spese"
+                                    value={formatCurrency(safeSummary.total_amount)}
+                                    className="!p-3 sm:!p-4"
+                                />
+                            </div>
+                            <IndexKpiCell
+                                label="Importo detraibile"
+                                value={formatCurrency(safeSummary.total_deductible)}
+                                detail="Somma delle quote detraibili"
+                                valueClassName="text-emerald-600 dark:text-emerald-400"
+                                className="!p-3 sm:!p-4"
+                            />
                         </div>
 
-                        {/* Bottoni export */}
-                        {transactions.length > 0 && (
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleExportPdf}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-700 dark:hover:bg-red-800"
-                                >
-                                    📄 Esporta PDF
-                                </button>
-                                <button
-                                    onClick={handleExportAttachments}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                                >
-                                    📦 Esporta Allegati (ZIP)
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                        <div className="space-y-3">
+                            {Object.entries(safeSummary.grouped_by_type).map(([type, typeTransactions]) => {
+                                const typeLabel = getTypeLabel(type);
+                                const typeTotal = calculateTypeTotal(typeTransactions);
+                                const typeDeductible = calculateTypeDeductible(typeTransactions);
 
-                    {/* Statistiche */}
-                    {transactions.length > 0 ? (
-                        <>
-                            <div className={moneyKpiGrid3}>
-                                {/* Totale transazioni */}
-                                <CardBox className="p-6 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                Transazioni
-                                            </p>
-                                            <p className={clsx('mt-2 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                                {safeSummary.total_transactions}
-                                            </p>
-                                        </div>
-                                        <span className="text-4xl">📋</span>
-                                    </div>
-                                </CardBox>
-
-                                {/* Totale spese */}
-                                <CardBox className="p-6 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                                Totale Spese
-                                            </p>
-                                            <p className={clsx('mt-2 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                                {formatCurrency(safeSummary.total_amount)}
-                                            </p>
-                                        </div>
-                                        <span className="text-4xl">💸</span>
-                                    </div>
-                                </CardBox>
-
-                                {/* Totale detraibile */}
-                                <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-emerald-50">
-                                                Importo Detraibile
-                                            </p>
-                                            <p className={clsx('mt-2 text-3xl font-bold text-white', moneyTabular)}>
-                                                {formatCurrency(safeSummary.total_deductible)}
-                                            </p>
-                                        </div>
-                                        <span className="text-4xl">💰</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Transazioni raggruppate per tipo */}
-                            <div className="space-y-4">
-                                {Object.entries(safeSummary.grouped_by_type).map(([type, typeTransactions]) => {
-                                    const typeLabel = getTypeLabel(type);
-                                    const typeTotal = calculateTypeTotal(typeTransactions);
-                                    const typeDeductible = calculateTypeDeductible(typeTransactions);
-
-                                    return (
-                                        <CardBox
-                                            key={type}
-                                            className="overflow-hidden shadow-sm"
-                                        >
-                                            {/* Header tipo */}
-                                            <div className="border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
-                                                <div className="flex items-center justify-between">
-                                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                return (
+                                    <IndexListCard
+                                        key={type}
+                                        header={
+                                            <div className={contentPanelHeaderClass}>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <h3 className="text-sm font-semibold text-gray-900 sm:text-base dark:text-white">
                                                         {typeLabel}
                                                     </h3>
-                                                    <div className="text-right">
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                            {typeTransactions.length} {typeTransactions.length === 1 ? 'transazione' : 'transazioni'}
+                                                    <div className="shrink-0 text-right">
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                            {typeTransactions.length}{' '}
+                                                            {typeTransactions.length === 1 ? 'transazione' : 'transazioni'}
                                                         </p>
-                                                        <p className={clsx('text-lg font-semibold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
-                                                            Detraibile: {formatCurrency(typeDeductible)}
+                                                        <p
+                                                            className={clsx(
+                                                                'text-sm font-semibold text-emerald-600 dark:text-emerald-400',
+                                                                moneyTabular,
+                                                            )}
+                                                        >
+                                                            {formatCurrency(typeDeductible)}
                                                         </p>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            {/* Lista transazioni */}
-                                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                                                {typeTransactions.map((transaction) => (
-                                                    <Link
-                                                        key={transaction.id}
-                                                        href={route('transactions.show', transaction.id)}
-                                                        className="block p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-2xl">
-                                                                    {transaction.category?.icon || '💸'}
-                                                                </span>
-                                                                <div>
-                                                                    <p className="font-medium text-gray-900 dark:text-white">
-                                                                        {transaction.description || transaction.category?.name || 'Transazione'}
-                                                                    </p>
-                                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                                        {formatDate(transaction.date)} · {transaction.account.name}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <p className={clsx('font-semibold text-gray-900 dark:text-white', moneyTabular)}>
-                                                                    {formatCurrency(Math.abs(transaction.amount), transaction.account.currency_code)}
-                                                                </p>
-                                                                <p className={clsx('text-sm text-emerald-600 dark:text-emerald-400', moneyTabular)}>
-                                                                    {transaction.tax_deduction_rate}% · {formatCurrency(
-                                                                        Math.abs(transaction.amount) * transaction.tax_deduction_rate / 100,
-                                                                        transaction.account.currency_code
-                                                                    )}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </Link>
-                                                ))}
+                                        }
+                                        footer={
+                                            <div
+                                                className={clsx(
+                                                    indexPageInsetX,
+                                                    'flex justify-between border-t border-gray-100 py-2.5 text-xs sm:text-sm dark:border-gray-700',
+                                                )}
+                                            >
+                                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                                    Totale categoria
+                                                </span>
+                                                <span
+                                                    className={clsx(
+                                                        'font-bold text-gray-900 dark:text-white',
+                                                        moneyTabular,
+                                                    )}
+                                                >
+                                                    {formatCurrency(typeTotal)}
+                                                </span>
                                             </div>
+                                        }
+                                    >
+                                        {typeTransactions.map((transaction) => (
+                                            <TaxDeductionRow
+                                                key={transaction.id}
+                                                transaction={transaction}
+                                            />
+                                        ))}
+                                    </IndexListCard>
+                                );
+                            })}
+                        </div>
 
-                                            {/* Footer tipo con totale */}
-                                            <div className="border-t border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="font-medium text-gray-700 dark:text-gray-300">
-                                                        Totale categoria
-                                                    </span>
-                                                    <span className={clsx('font-bold text-gray-900 dark:text-white', moneyTabular)}>
-                                                        {formatCurrency(typeTotal)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </CardBox>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Info finale */}
-                            <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-700 dark:bg-emerald-900/20">
-                                <h4 className="mb-3 flex items-center text-lg font-semibold text-emerald-900 dark:text-emerald-100">
-                                    <span className="mr-2">💡</span> Promemoria
-                                </h4>
-                                <ul className="space-y-2 text-sm text-emerald-800 dark:text-emerald-200">
-                                    <li>• Verifica che tutti gli allegati (scontrini, fatture) siano presenti</li>
-                                    <li>• Esporta il PDF e gli allegati da consegnare al commercialista o al CAF</li>
-                                    <li>• Le percentuali indicate sono standard, potrebbero variare in base alla normativa vigente</li>
-                                    <li>• Conserva una copia di backup di tutti i documenti</li>
-                                </ul>
-                            </div>
-                        </>
-                    ) : (
-                        /* Empty state */
-                        <CardBox className="p-12 text-center shadow-sm">
-                            <span className="text-6xl">📋</span>
-                            <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
-                                Nessuna transazione detraibile per l'anno {year}
-                            </h3>
-                            <p className="mt-2 text-gray-500 dark:text-gray-400">
-                                Inizia a registrare spese detraibili per la dichiarazione dei redditi.
-                            </p>
-                            <Link
-                                href={route('transactions.create')}
-                                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                            >
-                                ➕ Nuova Transazione
-                            </Link>
-                        </CardBox>
-                    )}
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 sm:p-4 dark:border-emerald-700 dark:bg-emerald-900/20">
+                            <h4 className="mb-2 flex items-center text-sm font-semibold text-emerald-900 sm:text-base dark:text-emerald-100">
+                                <span className="mr-1.5">💡</span> Promemoria
+                            </h4>
+                            <ul className="space-y-1.5 text-xs text-emerald-800 sm:text-sm dark:text-emerald-200">
+                                <li>• Verifica che tutti gli allegati (scontrini, fatture) siano presenti</li>
+                                <li>• Esporta il PDF e gli allegati da consegnare al commercialista o al CAF</li>
+                                <li>• Le percentuali indicate sono standard, potrebbero variare in base alla normativa vigente</li>
+                                <li>• Conserva una copia di backup di tutti i documenti</li>
+                            </ul>
+                        </div>
+                    </>
+                ) : (
+                    <IndexEmptyList
+                        icon="📋"
+                        title={`Nessuna transazione detraibile per l'anno ${year}`}
+                        description="Inizia a registrare spese detraibili per la dichiarazione dei redditi."
+                        createUrl={route('transactions.create')}
+                        createLabel="Nuova transazione"
+                    />
+                )}
             </PageContent>
         </AuthenticatedLayout>
     );

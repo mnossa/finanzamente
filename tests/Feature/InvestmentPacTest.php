@@ -409,6 +409,64 @@ class InvestmentPacTest extends TestCase
     }
 
     #[Test]
+    public function deferred_widgets_include_pac_projection_data_when_active_pac_exists(): void
+    {
+        Carbon::setTestNow('2026-06-15');
+
+        InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-01-10',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->user)
+            ->getJson(route('dashboard.deferred-widgets'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'pacProjectionData' => [
+                    'monthly_total',
+                    'active_pac_count',
+                    'series',
+                ],
+            ])
+            ->assertJsonPath('pacProjectionData.active_pac_count', 1)
+            ->assertJsonPath('pacProjectionData.monthly_total', 100);
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function pac_show_includes_next_execution_date(): void
+    {
+        Carbon::setTestNow('2026-06-04');
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-06-05',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('investment-pacs.show', $pac))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('pac.next_execution_date', '2026-06-05')
+            );
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
     public function investments_index_exposes_pac_metadata_for_grouped_rendering(): void
     {
         $pac = InvestmentPac::create([

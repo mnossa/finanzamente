@@ -122,12 +122,6 @@
             <div class="metric-label">Reddito Lordo</div>
             <div class="metric-value">{{ $fmtEur($metrics['gross_income']) }}</div>
         </div>
-        @if($metrics['is_partita_iva'])
-        <div class="metric-box">
-            <div class="metric-label">Tasse Stimate ({{ $metrics['tax_rate'] }}% + {{ $metrics['inps_rate'] }}% INPS)</div>
-            <div class="metric-value orange">{{ $fmtEur($metrics['estimated_taxes']) }}</div>
-        </div>
-        @endif
         <div class="metric-box">
             <div class="metric-label">Reddito Netto</div>
             <div class="metric-value green">{{ $fmtEur($metrics['net_income']) }}</div>

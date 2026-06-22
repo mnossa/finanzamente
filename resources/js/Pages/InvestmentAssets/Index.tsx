@@ -13,6 +13,7 @@ import React from 'react';
 import CardBox from '@/Components/CardBox';
 import { moneyKpiGrid4, moneyTabular } from '@/utils/moneyGridClasses';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import InvestmentHubNav from '@/Components/InvestmentHubNav';
 
 interface Currency {
     code: string;
@@ -102,6 +103,7 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
             header={
                 <PageHeader
                     title="Asset Finanziari"
+                    backLink={route('investments.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('investment-assets.create')} icon={<PlusIcon />}>
@@ -125,6 +127,7 @@ export default function Index({ assets, groupedAssets, stats, types, typeIcons }
             />
 
             <PageContent>
+                <InvestmentHubNav active="assets" />
                     {/* Statistiche */}
                     <div className={moneyKpiGrid4}>
                         <CardBox className="p-4 shadow-sm">

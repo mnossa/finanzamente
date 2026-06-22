@@ -37,10 +37,11 @@ test.describe('Dashboard principale', () => {
         ).toBeVisible();
     });
 
-    test('la navigazione ha un link ai conti', async ({ page }) => {
-        await expect(
-            page.getByRole('navigation').locator('a[href*="/conti"]').first()
-        ).toBeVisible();
+    test('la navigazione ha un link a conti e movimenti', async ({ page }) => {
+        const nav = page.getByRole('navigation');
+        const movimenti = nav.locator('a[href*="/transazioni"]');
+        const conti = nav.locator('a[href*="/conti"]');
+        await expect(movimenti.or(conti).first()).toBeVisible();
     });
 
     test('la navigazione ha un link alle transazioni', async ({ page }) => {

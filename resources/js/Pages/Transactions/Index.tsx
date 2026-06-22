@@ -1,11 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import CashflowHubNav from '@/Components/CashflowHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar, mobileFilterBodyClass, mobileFilterSummaryClass, mobileKpiCellClass, mobileKpiPanelClass, mobileLegendClass, mobileListPanelClass } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions, IndexPageMobileToolbar, mobileFilterBodyClass, mobileFilterSummaryClass, mobileLegendClass, mobileListPanelClass } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
-import TransactionListRow from '@/Components/TransactionListRow';
+import TransactionListRow, { type TransactionListRowTransaction } from '@/Components/TransactionListRow';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
@@ -248,6 +249,8 @@ interface IndexProps {
     activeImports: Array<{ id: number; status: string; rows_total: number; rows_imported: number; created_at: string }>;
     summary: { count: number; income: number; expenses: number; net: number };
     currencies: Array<{ code: string; name: string; symbol: string | null }>;
+    upcomingMovements: TransactionListRowTransaction[];
+    projectedHouseholdBalance: number | null;
 }
 
 // Sentinel: campo non modificato
@@ -527,6 +530,8 @@ export default function Index({
     activeImports,
     summary,
     currencies,
+    upcomingMovements = [],
+    projectedHouseholdBalance = null,
 }: IndexProps) {
     const summaryCurrency = filters.currency_code || 'EUR';
 
@@ -843,6 +848,7 @@ export default function Index({
             />
 
             <PageContent maxWidth="7xl">
+                    <CashflowHubNav active="transactions" />
                     {/* Intro decorativa — solo su desktop */}
                     <IndexIntroSection
                         label="Registro transazioni"
@@ -1100,28 +1106,58 @@ export default function Index({
                         <span className="text-indigo-600 dark:text-indigo-400">Investimento</span>
                     </p>
 
+                    {upcomingMovements.length > 0 ? (
+                        <IndexListCard
+                            header={(
+                                <div className="flex flex-col gap-1 border-b border-gray-100 px-4 py-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Prossimi movimenti</h2>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Ricorrenze e PAC previsti (non inclusi nel saldo attuale).
+                                        </p>
+                                    </div>
+                                    {projectedHouseholdBalance != null ? (
+                                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                                            Dopo movimenti programmati (90 gg):{' '}
+                                            <span className="font-semibold tabular-nums">{formatCurrency(projectedHouseholdBalance, summaryCurrency)}</span>
+                                        </p>
+                                    ) : null}
+                                </div>
+                            )}
+                            isEmpty={false}
+                        >
+                            {upcomingMovements.map((movement) => (
+                                <TransactionListRow
+                                    key={movement.id}
+                                    transaction={movement}
+                                    onDeleteClick={() => undefined}
+                                    isSelected={false}
+                                    onToggleSelect={() => undefined}
+                                    indexQuery={returnQuery}
+                                />
+                            ))}
+                        </IndexListCard>
+                    ) : null}
+
                     {/* Lista Transazioni */}
                     <IndexListCard
-                        kpi={
-                            <div className={mobileKpiPanelClass}>
-                                <div className={clsx('bg-gray-50 dark:bg-gray-800', mobileKpiCellClass)}>
-                                    <p className="text-[10px] text-gray-500 sm:text-xs dark:text-gray-400">Transazioni</p>
-                                    <p className="text-sm font-semibold tabular-nums text-gray-900 sm:text-base dark:text-white">{summary.count}</p>
-                                </div>
-                                <div className={clsx('bg-emerald-50 dark:bg-emerald-900/20', mobileKpiCellClass)}>
-                                    <p className="text-[10px] text-emerald-600 sm:text-xs dark:text-emerald-400">Entrate</p>
-                                    <p className="text-sm font-semibold tabular-nums text-emerald-700 sm:text-base dark:text-emerald-300">{formatCurrency(summary.income, summaryCurrency)}</p>
-                                </div>
-                                <div className={clsx('bg-red-50 dark:bg-red-900/20', mobileKpiCellClass)}>
-                                    <p className="text-[10px] text-red-600 sm:text-xs dark:text-red-400">Uscite</p>
-                                    <p className="text-sm font-semibold tabular-nums text-red-700 sm:text-base dark:text-red-300">{formatCurrency(summary.expenses, summaryCurrency)}</p>
-                                </div>
-                                <div className={clsx('bg-blue-50 dark:bg-blue-900/20', mobileKpiCellClass)}>
-                                    <p className="text-[10px] text-blue-600 sm:text-xs dark:text-blue-400">Saldo</p>
-                                    <p className="text-sm font-semibold tabular-nums text-blue-700 sm:text-base dark:text-blue-300">{formatCurrency(summary.net, summaryCurrency)}</p>
-                                </div>
+                        kpi={(
+                            <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                    Saldo nel periodo:{' '}
+                                    <span
+                                        className={clsx(
+                                            'font-semibold tabular-nums',
+                                            summary.net >= 0
+                                                ? 'text-gray-900 dark:text-white'
+                                                : 'text-red-600 dark:text-red-400',
+                                        )}
+                                    >
+                                        {formatCurrency(summary.net, summaryCurrency)}
+                                    </span>
+                                </p>
                             </div>
-                        }
+                        )}
                         toolbar={
                             !isEmpty ? (
                                 <div className={clsx('flex flex-col gap-2 border-b border-gray-100 sm:flex-row sm:items-center sm:justify-between sm:gap-3 dark:border-gray-700', mobileListPanelClass)}>

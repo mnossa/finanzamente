@@ -75,8 +75,6 @@ class DashboardLayoutTest extends TestCase
             'widgets' => [
                 ['id' => 'quick_actions',       'visible' => true,  'position' => 0, 'size' => 'lg'],
                 ['id' => 'accounts',             'visible' => false, 'position' => 1, 'size' => 'lg'],
-                ['id' => 'annual_revenue',       'visible' => true,  'position' => 2, 'size' => 'lg'],
-                ['id' => 'tax_thermometer',      'visible' => true,  'position' => 3, 'size' => 'lg'],
                 ['id' => 'lifestyle_widget',     'visible' => true,  'position' => 4, 'size' => 'lg'],
                 ['id' => 'recent_transactions',  'visible' => true,  'position' => 5, 'size' => 'md'],
                 ['id' => 'active_budgets',       'visible' => true,  'position' => 6, 'size' => 'md'],
@@ -109,8 +107,6 @@ class DashboardLayoutTest extends TestCase
             'config' => [
                 'widgets' => [
                     ['id' => 'accounts',             'visible' => true, 'position' => 0, 'size' => 'lg'],
-                    ['id' => 'annual_revenue',       'visible' => true, 'position' => 1, 'size' => 'lg'],
-                    ['id' => 'tax_thermometer',      'visible' => true, 'position' => 2, 'size' => 'lg'],
                     ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 3, 'size' => 'lg'],
                     ['id' => 'recent_transactions',  'visible' => true, 'position' => 4, 'size' => 'md'],
                     ['id' => 'active_budgets',       'visible' => true, 'position' => 5, 'size' => 'md'],
@@ -141,8 +137,6 @@ class DashboardLayoutTest extends TestCase
                 'config' => [
                     'widgets' => [
                         ['id' => 'accounts',             'visible' => true, 'position' => 0, 'size' => 'lg'],
-                        ['id' => 'annual_revenue',       'visible' => true, 'position' => 1, 'size' => 'lg'],
-                        ['id' => 'tax_thermometer',      'visible' => true, 'position' => 2, 'size' => 'lg'],
                         ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 3, 'size' => 'lg'],
                         ['id' => 'recent_transactions',  'visible' => true, 'position' => 4, 'size' => 'md'],
                         ['id' => 'active_budgets',       'visible' => true, 'position' => 5, 'size' => 'md'],
@@ -159,8 +153,6 @@ class DashboardLayoutTest extends TestCase
                     'widgets' => [
                         ['id' => 'quick_actions',        'visible' => true,  'position' => 0, 'size' => 'lg'],
                         ['id' => 'accounts',             'visible' => false, 'position' => 1, 'size' => 'lg'],
-                        ['id' => 'annual_revenue',       'visible' => true,  'position' => 2, 'size' => 'lg'],
-                        ['id' => 'tax_thermometer',      'visible' => true,  'position' => 3, 'size' => 'lg'],
                         ['id' => 'lifestyle_widget',     'visible' => true,  'position' => 4, 'size' => 'lg'],
                         ['id' => 'recent_transactions',  'visible' => true,  'position' => 5, 'size' => 'md'],
                         ['id' => 'active_budgets',       'visible' => true,  'position' => 6, 'size' => 'md'],
@@ -373,8 +365,6 @@ class DashboardLayoutTest extends TestCase
             'widgets' => [
                 ['id' => 'quick_actions',       'visible' => true, 'position' => 0, 'size' => 'lg'],
                 ['id' => 'accounts',             'visible' => true, 'position' => 1, 'size' => 'lg'],
-                ['id' => 'annual_revenue',       'visible' => true, 'position' => 2, 'size' => 'lg'],
-                ['id' => 'tax_thermometer',      'visible' => true, 'position' => 4, 'size' => 'lg'],
                 ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 5, 'size' => 'lg'],
                 ['id' => 'accounts',             'visible' => true, 'position' => 6, 'size' => 'md'],
                 ['id' => 'recent_transactions',  'visible' => true, 'position' => 7, 'size' => 'md'],
@@ -432,9 +422,9 @@ class DashboardLayoutTest extends TestCase
     public function all_allowed_widget_ids_are_accepted_by_validation(): void
     {
         $allWidgets = [
-            'annual_revenue', 'tax_thermometer', 'lifestyle_widget', 'accounts',
+            'lifestyle_widget', 'accounts',
             'recent_transactions', 'active_budgets', 'debts_credits', 'quick_actions',
-            'asset_allocation', 'expense_treemap', 'financial_goals', 'expense_distribution',
+            'asset_allocation', 'expense_treemap', 'financial_goals', 'expense_distribution', 'pac_projection',
         ];
 
         $widgets = array_values(array_map(fn ($id, $pos) => [

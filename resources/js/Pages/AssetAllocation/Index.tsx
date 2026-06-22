@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import InvestmentHubNav from '@/Components/InvestmentHubNav';
 import PageHeader from '@/Components/PageHeader';
 import CardBox from '@/Components/CardBox';
 import EmptyState from '@/Components/EmptyState';
@@ -12,11 +13,10 @@ import {
     Pie,
     Cell,
     Tooltip,
-    Legend,
 } from 'recharts';
 import { getChartTooltipStyle, useChartDarkMode } from '@/Components/Charts/chartConfig';
 import React, { useState } from 'react';
-import { moneyKpiGrid2, moneyTabular } from '@/utils/moneyGridClasses';
+import { moneySummaryGrid2, moneyTabular } from '@/utils/moneyGridClasses';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,9 +110,15 @@ function RiskGauge({ index, label }: { index: number; label: string }) {
     const pct = ((index - 1) / 6) * 100;
     return (
         <div>
-            <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-gray-500 dark:text-gray-400">1 — Molto Basso</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">7 — Molto Alto</span>
+            <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 sm:text-xs">
+                    <span className="sm:hidden">1</span>
+                    <span className="hidden sm:inline">1 — Molto Basso</span>
+                </span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 sm:text-xs">
+                    <span className="sm:hidden">7</span>
+                    <span className="hidden sm:inline">7 — Molto Alto</span>
+                </span>
             </div>
             <div className="relative h-3 rounded-full bg-gray-200 dark:bg-gray-700">
                 <div
@@ -180,7 +186,7 @@ function PositionModal({ position, onClose }: { position: Position; onClose: () 
                     </button>
                 </div>
 
-                <div className={clsx(moneyKpiGrid2, 'gap-3')}>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
                         <p className="text-xs text-gray-500 dark:text-gray-400">Controvalore</p>
                         <p className={clsx('text-lg font-bold text-gray-900 dark:text-white', moneyTabular)}>
@@ -293,8 +299,10 @@ export default function AssetAllocationIndex({
             header={
                 <PageHeader
                     title="Asset Allocation"
+                    mobileTitle="Allocazione"
                     subtitle="Panoramica del tuo patrimonio per asset class"
-                    backLink={route('dashboard')}
+                    hideSubtitleOnMobile
+                    backLink={route('investments.index')}
                 />
             }
         >
@@ -305,6 +313,7 @@ export default function AssetAllocationIndex({
             )}
 
             <PageContent>
+                <InvestmentHubNav active="allocation" />
 
                 {isEmpty ? (
                     <CardBox>
@@ -325,42 +334,42 @@ export default function AssetAllocationIndex({
                 ) : (
                     <>
                         {/* Totale + Rischio */}
-                        <div className={moneyKpiGrid2}>
-                            <CardBox className="p-5 shadow-sm">
+                        <div className={moneySummaryGrid2}>
+                            <CardBox className="min-w-0 p-4 shadow-sm sm:p-5">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Base allocazione</p>
-                                <p className={clsx('mt-1 text-3xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
+                                <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl', moneyTabular)}>
                                     {formatCurrency(totalValue)}
                                 </p>
-                                <p className="mt-2 text-xs text-gray-400">
+                                <p className="mt-2 text-xs leading-relaxed text-gray-400">
                                     Conti + investimenti inclusi nel calcolo · {positions.length} posizioni
                                 </p>
                                 <MiniAllocationBar allocation={allocation} className="mt-3" />
                             </CardBox>
 
-                            <CardBox className="p-5 shadow-sm">
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Indice di Rischio</p>
+                            <CardBox className="min-w-0 p-4 shadow-sm sm:p-5">
+                                <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">Indice di Rischio</p>
                                 <RiskGauge index={riskIndex} label={riskLabel} />
-                                <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 text-center">
+                                <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-500">
                                     Scala KIID 1–7 · Media ponderata per valore
                                 </p>
                             </CardBox>
                         </div>
 
                         {/* Donut Chart + Allocation List */}
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <CardBox className="p-5 shadow-sm">
-                                <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+                            <CardBox className="min-w-0 p-4 shadow-sm sm:p-5">
+                                <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">
                                     Breakdown per Asset Class
                                 </h2>
-                                <div className="h-64">
+                                <div className="mx-auto h-48 w-full max-w-xs sm:h-56 sm:max-w-none">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
+                                        <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                                             <Pie
                                                 data={allocation}
                                                 cx="50%"
                                                 cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={100}
+                                                innerRadius="52%"
+                                                outerRadius="78%"
                                                 dataKey="value"
                                                 nameKey="label"
                                                 paddingAngle={2}
@@ -376,31 +385,24 @@ export default function AssetAllocationIndex({
                                                 content={<AllocationTooltip />}
                                                 wrapperStyle={{ zIndex: 1000, outline: 'none' }}
                                             />
-                                            <Legend
-                                                formatter={(value) => (
-                                                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                                                        {value}
-                                                    </span>
-                                                )}
-                                            />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </div>
 
                                 <div className="mt-4 space-y-2">
                                     {allocation.map((entry) => (
-                                        <div key={entry.asset_class} className="flex items-center gap-3">
+                                        <div key={entry.asset_class} className="flex min-w-0 items-center gap-2 sm:gap-3">
                                             <span
-                                                className="h-3 w-3 flex-shrink-0 rounded-full"
+                                                className="h-3 w-3 shrink-0 rounded-full"
                                                 style={{ backgroundColor: entry.color }}
                                             />
-                                            <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                                            <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">
                                                 {entry.label}
                                             </span>
-                                            <span className={clsx('text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
+                                            <span className={clsx('shrink-0 text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
                                                 {formatCurrency(entry.value)}
                                             </span>
-                                            <span className={clsx('w-12 text-right text-xs text-gray-400', moneyTabular)}>
+                                            <span className={clsx('w-10 shrink-0 text-right text-xs text-gray-400 sm:w-12', moneyTabular)}>
                                                 {entry.percentage.toFixed(1)}%
                                             </span>
                                         </div>
@@ -409,8 +411,8 @@ export default function AssetAllocationIndex({
                             </CardBox>
 
                             {/* Positions List */}
-                            <CardBox className="shadow-sm overflow-hidden">
-                                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+                            <CardBox className="min-w-0 overflow-hidden shadow-sm">
+                                <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700 sm:p-5">
                                     <h2 className="text-base font-semibold text-gray-900 dark:text-white">
                                         Posizioni Aperte
                                     </h2>
@@ -422,7 +424,7 @@ export default function AssetAllocationIndex({
                                             key={pos.id}
                                             type="button"
                                             onClick={() => setSelectedPosition(pos)}
-                                            className="w-full text-left flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+                                            className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 sm:gap-3 sm:px-5"
                                         >
                                             <span
                                                 className="h-2.5 w-2.5 flex-shrink-0 rounded-full"

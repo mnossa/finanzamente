@@ -12,6 +12,7 @@ import {
 } from '@/utils/simulationTabState';
 import CardBox from '@/Components/CardBox';
 import clsx from 'clsx';
+import { Link } from '@inertiajs/react';
 import {
     ResponsiveContainer,
     AreaChart,
@@ -65,6 +66,7 @@ export interface SimulationsContentProps {
     showRegistrationCta?: boolean;
     canSave?: boolean;
     savedScenarios?: SavedScenarioListItem[];
+    pacActiveCount?: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1073,6 +1075,7 @@ export default function SimulationsContent({
     showRegistrationCta = false,
     canSave = false,
     savedScenarios = [],
+    pacActiveCount = 0,
 }: SimulationsContentProps) {
     const defaultCrisisId = crisisScenarios[0]?.id ?? '';
     const [activeTab, setActiveTab] = useState<TabId>('compound');
@@ -1116,6 +1119,20 @@ export default function SimulationsContent({
                         </div>
                     </div>
                 </CardBox>
+
+                {pacActiveCount > 0 ? (
+                    <CardBox className="border border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/40">
+                        <p className="text-sm text-sky-900 dark:text-sky-100">
+                            Hai <strong>{pacActiveCount}</strong> PAC attivi con versamenti reali.
+                            {' '}
+                            <Link href={route('investment-pacs.index')} className="font-semibold underline hover:no-underline">
+                                Usa i tuoi PAC
+                            </Link>
+                            {' '}
+                            per proiezioni basate sui tuoi piani di accumulo.
+                        </p>
+                    </CardBox>
+                ) : null}
 
                 {/* Tabs — scroll orizzontale su mobile (flex parent può comprimere senza min-w-0) */}
                 <div className="w-full min-w-0">

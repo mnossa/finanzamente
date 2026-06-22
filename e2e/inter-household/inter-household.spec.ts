@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { selectOptionByText } from '../helpers';
+import { selectOptionByText, visibleHrefLocator } from '../helpers';
 
 test.describe('Trasferimenti Inter-Household', () => {
     test.beforeEach(async ({ page }) => {
@@ -12,7 +12,9 @@ test.describe('Trasferimenti Inter-Household', () => {
     });
 
     test('apre form creazione trasferimento', async ({ page }) => {
-        await page.getByRole('link', { name: /nuovo trasferimento/i }).first().click();
+        const createLink = visibleHrefLocator(page, '/trasferimenti-tra-nuclei/crea');
+        await createLink.scrollIntoViewIfNeeded();
+        await createLink.click();
         await expect(page).toHaveURL('/trasferimenti-tra-nuclei/crea');
         await expect(page).toHaveTitle(/nuovo trasferimento tra households/i);
     });

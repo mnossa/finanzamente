@@ -8,6 +8,7 @@ use App\Models\Household;
 use App\Models\RecurringTransaction;
 use App\Services\RecurringReminderFormatter;
 use App\Services\RecurringTransactionService;
+use App\Services\UpcomingDueNotificationPreferenceService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,7 @@ class RemindRecurringTransactions extends Command
     public function __construct(
         private RecurringTransactionService $recurringService,
         private RecurringReminderFormatter $reminderFormatter,
+        private UpcomingDueNotificationPreferenceService $dueNotificationPreferences,
     ) {
         parent::__construct();
     }
@@ -65,17 +67,11 @@ class RemindRecurringTransactions extends Command
         $details = $this->reminderFormatter->format($recurring, $nextDue);
 
         foreach ($household->users as $user) {
-            $prefs = is_array($user->preferences) ? $user->preferences : [];
-            $notifPrefs = $prefs['notifications']['recurring_reminder'] ?? [];
-            $enabled = $notifPrefs['enabled'] ?? true;
-            if (! $enabled) {
+            if (! $this->dueNotificationPreferences->isDaily($user)) {
                 continue;
             }
 
-            $channels = $notifPrefs['channels'] ?? ['in_app', 'email'];
-            if (! is_array($channels)) {
-                $channels = ['in_app', 'email'];
-            }
+            $channels = $this->dueNotificationPreferences->channels($user);
 
             if (in_array('in_app', $channels, true)) {
                 $exists = AppNotification::where('user_id', $user->id)

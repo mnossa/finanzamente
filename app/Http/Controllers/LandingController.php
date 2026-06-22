@@ -7,6 +7,7 @@ use App\Services\StructuredDataService;
 use Artesaos\SEOTools\Facades\OpenGraph;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use Artesaos\SEOTools\Facades\TwitterCard;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
@@ -69,23 +70,9 @@ class LandingController extends Controller
         return view('landing.famiglie', $this->planData());
     }
 
-    public function freelance(): View
+    public function freelance(): RedirectResponse
     {
-        SEOMeta::setTitle('Finanzamente Pro per Freelance e Partita IVA — Gestione IVA e spese deducibili');
-        SEOMeta::setDescription('Tieni sotto controllo IVA, spese deducibili e fatturazione. Finanzamente Pro è pensato per freelance e professionisti con Partita IVA in Italia.');
-        SEOMeta::setKeywords(['gestione IVA', 'freelance finanze', 'partita IVA', 'spese deducibili', 'budget freelance Italia']);
-        SEOMeta::setCanonical(url('/per-freelance'));
-        OpenGraph::setTitle('Finanzamente Pro — Per Freelance e P.IVA');
-        OpenGraph::setDescription('Gestione IVA, spese deducibili e finanze da libero professionista. Tutto in un\'unica app italiana.');
-        OpenGraph::setUrl(url('/per-freelance'));
-        OpenGraph::addProperty('type', 'website');
-        TwitterCard::setTitle('Finanzamente Pro per Freelance');
-        TwitterCard::setDescription('IVA e spese deducibili sotto controllo, senza stress.');
-        TwitterCard::addValue('card', 'summary_large_image');
-
-        $this->structuredDataService->forLandingPage(url('/per-freelance'), 'Per Freelance e Partita IVA');
-
-        return view('landing.freelance', $this->planData());
+        return redirect()->route('landing.investitori', [], 301);
     }
 
     public function lavoratori(): View

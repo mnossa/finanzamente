@@ -78,8 +78,6 @@ class StoreDashboardLayoutRequest extends FormRequest
         // Deve essere allineata a: resources/js/constants/widgetRegistry.ts (WIDGET_REGISTRY)
         // e a DashboardLayout::defaultConfig()
         $allowedIds = [
-            'annual_revenue',
-            'tax_thermometer',
             'lifestyle_widget',
             'accounts',
             'recent_transactions',
@@ -90,6 +88,7 @@ class StoreDashboardLayoutRequest extends FormRequest
             'expense_treemap',
             'financial_goals',
             'expense_distribution',
+            'pac_projection',
         ];
 
         $validator->after(function ($v) use ($allowedIds) {

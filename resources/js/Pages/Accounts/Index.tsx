@@ -1,7 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import CashflowHubNav from '@/Components/CashflowHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import LinkButton from '@/Components/LinkButton';
@@ -9,9 +10,13 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import ArchiveIcon from '@/Components/Icons/ArchiveIcon';
 import EmptyState from '@/Components/EmptyState';
-import { Head, Link, router } from '@inertiajs/react';
-import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
+import IndexEntityCard, {
+    IndexEntityCardFooterButton,
+    IndexEntityCardFooterLink,
+} from '@/Components/Index/IndexEntityCard';
+import { Head, router } from '@inertiajs/react';
+import clsx from 'clsx';
 import { moneyTabular } from '@/utils/moneyGridClasses';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
@@ -43,79 +48,55 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
 
 
 function AccountCard({ account }: { account: Account }) {
+    const showInitialBalance = account.current_balance !== account.initial_balance;
+
     return (
-        <CardBox
-            className={clsx(
-                'p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4',
-                !account.active && 'opacity-60'
-            )}
-        >
-            <Link
-                href={route('accounts.show', account.id)}
-                className="block"
-            >
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                        <span className="text-3xl">
-                            {getAccountTypeIcon(account.type)}
+        <IndexEntityCard
+            href={route('accounts.show', account.id)}
+            icon={getAccountTypeIcon(account.type)}
+            dimmed={!account.active}
+            title={
+                <>
+                    {account.name}
+                    {account.is_private && (
+                        <span className="ml-1 text-xs text-gray-400">🔒</span>
+                    )}
+                    {!account.active && (
+                        <span className="ml-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400 sm:text-xs">
+                            Archiviato
                         </span>
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {account.name}
-                                {account.is_private && (
-                                    <span className="ml-2 text-xs text-gray-400">🔒</span>
-                                )}
-                                {!account.active && (
-                                    <span className="ml-2 rounded bg-gray-200 px-2 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                        Archiviato
-                                    </span>
-                                )}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {account.type_label}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p
-                            className={clsx(
-                                'text-lg font-bold',
-                                moneyTabular,
-                                account.current_balance >= 0
-                                    ? 'text-gray-900 dark:text-white'
-                                    : 'text-red-500'
-                            )}
-                        >
-                            {formatCurrency(account.current_balance, account.currency_code)}
-                        </p>
-                        {account.current_balance !== account.initial_balance && (
-                            <p className={clsx('text-xs text-gray-400', moneyTabular)}>
-                                Iniziale: {formatCurrency(account.initial_balance, account.currency_code)}
-                            </p>
-                        )}
-                    </div>
-                </div>
-            </Link>
-            <div className="mt-3 flex justify-end space-x-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-                <Link
-                    href={route('accounts.edit', account.id)}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                    title="Modifica"
-                >
-                    <PencilIcon size={18} />
-                </Link>
-                <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        router.post(route('accounts.toggle-active', account.id));
-                    }}
-                    className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                    title={account.active ? 'Archivia' : 'Riattiva'}
-                >
-                    <ArchiveIcon size={18} />
-                </button>
-            </div>
-        </CardBox>
+                    )}
+                </>
+            }
+            subtitle={account.type_label}
+            amount={formatCurrency(account.current_balance, account.currency_code)}
+            amountClassName={
+                account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-500'
+            }
+            amountDetail={
+                showInitialBalance ? (
+                    <p className={clsx('text-[11px] text-gray-400 sm:text-xs', moneyTabular)}>
+                        Iniziale: {formatCurrency(account.initial_balance, account.currency_code)}
+                    </p>
+                ) : undefined
+            }
+            footer={
+                <>
+                    <IndexEntityCardFooterLink
+                        href={route('accounts.edit', account.id)}
+                        title="Modifica"
+                    >
+                        <PencilIcon size={16} />
+                    </IndexEntityCardFooterLink>
+                    <IndexEntityCardFooterButton
+                        onClick={() => router.post(route('accounts.toggle-active', account.id))}
+                        title={account.active ? 'Archivia' : 'Riattiva'}
+                    >
+                        <ArchiveIcon size={16} />
+                    </IndexEntityCardFooterButton>
+                </>
+            }
+        />
     );
 }
 
@@ -131,6 +112,7 @@ export default function Index({
             header={
                 <PageHeader
                     title="I tuoi Conti"
+                    backLink={route('transactions.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('accounts.create')} icon={<PlusIcon />}>
@@ -144,6 +126,12 @@ export default function Index({
             <Head title="Conti" />
 
             <PageContent maxWidth="7xl">
+                    <CashflowHubNav active="accounts" />
+                    <IndexPageMobileToolbar>
+                        <LinkButton href={route('accounts.create')} icon={<PlusIcon />} size="sm">
+                            Nuovo Conto
+                        </LinkButton>
+                    </IndexPageMobileToolbar>
                     <IndexIntroSection
                         label="Panoramica conti"
                         icon={<span className="text-sm leading-none">🏦</span>}
@@ -162,14 +150,14 @@ export default function Index({
                     ) : (
                         <>
                             {/* Saldo conti */}
-                            <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
-                                <h3 className="text-sm font-medium text-slate-300">
+                            <div className="overflow-hidden rounded-2xl bg-linear-to-br from-slate-800 to-slate-900 p-3 text-white shadow-lg sm:p-6">
+                                <h3 className="text-xs font-medium text-slate-300 sm:text-sm">
                                     Saldo conti
                                 </h3>
-                                <p className={clsx('mt-2 text-4xl font-bold', moneyTabular)}>
+                                <p className={clsx('mt-1 text-2xl font-bold sm:mt-2 sm:text-4xl', moneyTabular)}>
                                     {formatCurrency(totalBalance)}
                                 </p>
-                                <p className="mt-1 text-sm text-slate-400">
+                                <p className="mt-0.5 text-xs text-slate-400 sm:mt-1 sm:text-sm">
                                     {activeAccounts.length} {activeAccounts.length === 1 ? 'conto attivo' : 'conti attivi'}
                                 </p>
                             </div>
@@ -177,10 +165,10 @@ export default function Index({
                             {/* Lista Conti Attivi */}
                             {activeAccounts.length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                                    <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white sm:mb-4 sm:text-lg">
                                         Conti Attivi
                                     </h3>
-                                    <IndexCardGrid>
+                                    <IndexCardGrid className="gap-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-3">
                                         {activeAccounts.map((account) => (
                                             <AccountCard key={account.id} account={account} />
                                         ))}
@@ -191,10 +179,10 @@ export default function Index({
                             {/* Lista Conti Archiviati */}
                             {archivedAccounts.length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
+                                    <h3 className="mb-2 text-base font-semibold text-gray-500 dark:text-gray-400 sm:mb-4 sm:text-lg">
                                         Conti Archiviati
                                     </h3>
-                                    <IndexCardGrid>
+                                    <IndexCardGrid className="gap-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-3">
                                         {archivedAccounts.map((account) => (
                                             <AccountCard key={account.id} account={account} />
                                         ))}

@@ -18,6 +18,7 @@ class SystemVariableResolver
         private readonly DashboardPeriodStatsService $dashboardPeriodStatsService,
         private readonly ExpenseDistributionMetricsService $expenseDistributionMetricsService,
         private readonly ContextVariableResolver $contextVariableResolver,
+        private readonly PacProjectionService $pacProjectionService,
     ) {}
 
     public function isSystemCode(string $code): bool
@@ -76,6 +77,7 @@ class SystemVariableResolver
             'revenue_threshold' => $this->resolveRevenueThreshold($user),
             'expense_distribution' => $this->resolveExpenseDistributionField($user, $startDate, $endDate, $meta['field']),
             'linked_investments_at' => $this->investmentLedgerService->linkedInvestedValueAt($user, $endDate),
+            'investment_pac_metrics' => $this->resolvePacMetricField($user, $endDate, $meta['field']),
             'context' => $this->contextVariableResolver->resolve($startDate, $endDate, $meta['field']),
             default => throw ValidationException::withMessages([
                 'variable_code' => "Resolver non configurato per [{$code}].",
@@ -114,6 +116,10 @@ class SystemVariableResolver
                     'investments_unlinked' => 'investedUnlinkedValue',
                     default => 'totalValue',
                 });
+            }
+
+            if (str_starts_with($code, 'pac_')) {
+                return $this->resolvePacMetricAt($user, $bucketEnd, $code);
             }
 
             return $this->resolve($user, $code, $bucketEnd->copy()->startOfDay(), $bucketEnd);
@@ -182,7 +188,7 @@ class SystemVariableResolver
         foreach ($accounts as $account) {
             $sum = (float) $account->transactions()
                 ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
-                ->where('date', '<=', $asOfDate->toDateString())
+                ->whereDate('date', '<=', $asOfDate)
                 ->sum('amount');
 
             $total += (float) $account->initial_balance + $sum;
@@ -229,6 +235,32 @@ class SystemVariableResolver
         $metrics = $this->expenseDistributionMetricsService->calculate($user, $start, $end);
 
         return (float) ($metrics[$field] ?? 0.0);
+    }
+
+    private function resolvePacMetricField(User $user, Carbon $asOfDate, string $field): float
+    {
+        return $this->resolvePacMetricAt($user, $asOfDate, match ($field) {
+            'monthly_total' => 'pac_monthly_total',
+            'ytd_contributions' => 'pac_ytd_contributions',
+            'projected_contributions' => 'pac_projected_contributions',
+            'projected_patrimonio' => 'pac_projected_patrimonio',
+            'active_count' => 'pac_active_count',
+            default => 'pac_monthly_total',
+        });
+    }
+
+    private function resolvePacMetricAt(User $user, Carbon $asOfDate, string $code): float
+    {
+        $asOf = \Illuminate\Support\Carbon::parse($asOfDate);
+
+        return match ($code) {
+            'pac_monthly_total' => $this->pacProjectionService->getMonthlyTotal($user),
+            'pac_ytd_contributions' => $this->pacProjectionService->getYtdContributions($user, $asOf),
+            'pac_projected_contributions' => $this->pacProjectionService->getProjectedContributions($user, 12, $asOf),
+            'pac_projected_patrimonio' => $this->pacProjectionService->getProjectedPatrimonio($user, 12, 0.0, $asOf),
+            'pac_active_count' => (float) $this->pacProjectionService->getActivePacCount($user),
+            default => 0.0,
+        };
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class AccountBalanceService
@@ -34,6 +35,7 @@ class AccountBalanceService
 
         $transactionSums = Transaction::query()
             ->whereIn('account_id', $accountIds)
+            ->whereDate('date', '<=', Carbon::today())
             ->when($viewer, function ($query) use ($viewer) {
                 $query->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $viewer->id));
             })
@@ -100,6 +102,7 @@ class AccountBalanceService
             ->where('account_id', $account->id)
             ->when($viewer, function ($query) use ($viewer) {
                 $query->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $viewer->id));
-            });
+            })
+            ->whereDate('date', '<=', Carbon::today());
     }
 }

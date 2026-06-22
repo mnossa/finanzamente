@@ -53,6 +53,10 @@ class TransactionTrendNotificationService
         ],
     ];
 
+    public function __construct(
+        private readonly NotificationThrottleService $notificationThrottleService,
+    ) {}
+
     /**
      * Verifica le variazioni di trend su finestra rolling 30 giorni e crea notifiche se necessario.
      *
@@ -102,7 +106,7 @@ class TransactionTrendNotificationService
                 ->where('notification_key', $notificationKey)
                 ->exists();
 
-            if (! $alreadyNotified) {
+            if (! $alreadyNotified && $this->notificationThrottleService->canCreateSuggestion($user, $notificationKey)) {
                 AppNotification::create([
                     'user_id' => $user->id,
                     'title' => $trigger['title'],

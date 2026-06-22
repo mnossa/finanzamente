@@ -4,8 +4,6 @@
 
 /** Identificativi stabili dei widget built-in nella dashboard. */
 export type KnownWidgetId =
-    | 'annual_revenue'
-    | 'tax_thermometer'
     | 'lifestyle_widget'
     | 'accounts'
     | 'recent_transactions'
@@ -15,7 +13,8 @@ export type KnownWidgetId =
     | 'asset_allocation'
     | 'expense_treemap'
     | 'financial_goals'
-    | 'expense_distribution';
+    | 'expense_distribution'
+    | 'pac_projection';
 
 /** Widget dinamici creati dall'utente (formula platform). */
 export type FormulaWidgetLayoutId = `formula_widget_${number}`;
@@ -46,8 +45,6 @@ export interface WidgetDefinition {
     description: string;
     defaultSize: WidgetSize;
     defaultVisible: boolean;
-    /** Se true, il widget viene mostrato solo a utenti con Partita IVA. */
-    requiresVat?: boolean;
     /** Se impostato, il widget richiede che il modulo sia abilitato. */
     requiresModule?: string;
     /** Dimensioni consentite per questo widget. */

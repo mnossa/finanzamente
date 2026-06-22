@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import CashflowHubNav from '@/Components/CashflowHubNav';
 import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
@@ -119,6 +120,7 @@ export default function Index({ transfers, filters }: IndexProps) {
                 <PageHeader
                     title="Trasferimenti tra Households"
                     mobileTitle="Trasf. HH"
+                    backLink={route('transactions.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('inter-household-transfers.create')}>
@@ -133,6 +135,7 @@ export default function Index({ transfers, filters }: IndexProps) {
             <Head title="Trasferimenti tra Households" />
 
             <PageContent maxWidth="7xl">
+                <CashflowHubNav active="inter-household" />
                 <IndexIntroSection
                     label="Trasferimenti household"
                     icon={<span className="text-sm leading-none">🏠</span>}

@@ -119,8 +119,8 @@ class InvestmentPacReminderTest extends TestCase
         $this->user->update([
             'preferences' => [
                 'notifications' => [
-                    'investment_pac_reminder' => [
-                        'enabled' => false,
+                    'upcoming_due_dates' => [
+                        'frequency' => 'never',
                         'channels' => ['in_app', 'email'],
                     ],
                 ],

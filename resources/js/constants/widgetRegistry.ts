@@ -2,32 +2,10 @@ import { WidgetDefinition } from '@/types/dashboard';
 
 /**
  * Registry centrale dei widget disponibili nella dashboard.
- *
- * Ogni widget ha un ID stabile, un titolo in italiano, una dimensione di
- * default e le dimensioni consentite. I vincoli di visibilità (es. P.IVA,
- * moduli) sono indicati tramite le proprietà `requiresVat` e `requiresModule`.
  */
 const ALL_SIZES: WidgetDefinition['allowedSizes'] = ['sm', 'md', 'lg', 'xl'];
 
 export const WIDGET_REGISTRY: WidgetDefinition[] = [
-    {
-        id: 'annual_revenue',
-        title: 'Fatturato Annuo',
-        description: 'Monitora il fatturato annuo rispetto alla soglia del regime forfettario.',
-        defaultSize: 'lg',
-        defaultVisible: true,
-        requiresVat: true,
-        allowedSizes: ALL_SIZES,
-    },
-    {
-        id: 'tax_thermometer',
-        title: 'Termometro Tasse',
-        description: 'Stima le tasse e i contributi INPS in base al reddito lordo.',
-        defaultSize: 'lg',
-        defaultVisible: true,
-        requiresVat: true,
-        allowedSizes: ALL_SIZES,
-    },
     {
         id: 'lifestyle_widget',
         title: 'Lifestyle Inflation Score',
@@ -111,6 +89,15 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         description: 'Analisi della distribuzione delle spese per Necessità, Extra e Investimenti (regola 50/30/20).',
         defaultSize: 'md',
         defaultVisible: true,
+        allowedSizes: ALL_SIZES,
+    },
+    {
+        id: 'pac_projection',
+        title: 'Proiezione PAC',
+        description: 'Versamenti mensili previsti dai piani di accumulo attivi (solo contributi, senza rendimento di mercato).',
+        defaultSize: 'md',
+        defaultVisible: false,
+        requiresModule: 'investments',
         allowedSizes: ALL_SIZES,
     },
 ];

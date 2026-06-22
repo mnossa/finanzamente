@@ -15,6 +15,7 @@ Artisan::command('inspire', function () {
 Schedule::command('recurring:generate')->dailyAt('00:01');
 
 Schedule::command('recurring:remind')->dailyAt('08:00');
+Schedule::command('upcoming-due:notify-weekly')->weeklyOn(1, '08:30');
 
 /**
  * Rigenera la sitemap.xml ogni notte alle 02:00.
@@ -69,6 +70,7 @@ Schedule::command('consents:enforce-retention')->dailyAt('03:30');
  */
 Schedule::command('insights:cohort-analyze')->dailyAt('04:15');
 Schedule::command('notifications:monthly-spending')->dailyAt('23:40');
+Schedule::command('notifications:household-insights')->dailyAt('09:10');
 
 Schedule::command('investment-pacs:run')->dailyAt('00:20');
 Schedule::command('investment-pacs:remind')->dailyAt('08:15');

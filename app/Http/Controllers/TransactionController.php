@@ -12,8 +12,10 @@ use App\Models\InterHouseholdTransfer;
 use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\TransactionImport;
+use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
 use App\Services\TransactionSplitService;
+use App\Services\UpcomingCashflowService;
 use App\Support\TransactionDescriptionFilter;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -327,16 +329,48 @@ class TransactionController extends Controller
         $summaryExpenses = (float) abs((float) (clone $summaryQuery)->where('transactions.amount', '<', 0)->sum('transactions.amount'));
         $summaryCount = (int) (clone $summaryQuery)->count();
 
+        $today = Carbon::today();
+        $householdAccounts = Account::query()
+            ->where('household_id', $householdId)
+            ->where('active', true)
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
+            ->get();
+        $balanceService = app(AccountBalanceService::class);
+        $settledBalances = $balanceService->batchComputeBalances($householdAccounts, $user);
+        $futureTransactionsByAccount = Transaction::query()
+            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->whereDate('date', '>', $today)
+            ->orderBy('date')
+            ->orderBy('created_at')
+            ->get(['id', 'account_id', 'amount', 'date'])
+            ->groupBy('account_id');
+
         $transactions = $query
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(25)
             ->appends($request->only($filterQueryKeys))
-            ->through(function ($transaction) {
+            ->through(function ($transaction) use ($today, $settledBalances, $futureTransactionsByAccount) {
+                $isFuture = $transaction->date->isAfter($today);
+                $projectedBalanceAfter = null;
+
+                if ($isFuture) {
+                    $balance = (float) ($settledBalances[$transaction->account_id] ?? 0.0);
+                    foreach ($futureTransactionsByAccount->get($transaction->account_id, collect()) as $futureTx) {
+                        if ($futureTx->date->lte($transaction->date)) {
+                            $balance += (float) $futureTx->amount;
+                        }
+                    }
+                    $projectedBalanceAfter = round($balance, 2);
+                }
+
                 return [
                     'id' => $transaction->id,
                     'amount' => (float) $transaction->amount,
                     'date' => $transaction->date->format('Y-m-d'),
+                    'is_future' => $isFuture,
+                    'projected_balance_after' => $projectedBalanceAfter,
                     'description' => $transaction->description,
                     'is_private' => $transaction->is_private,
                     'is_tax_deductible' => $transaction->is_tax_deductible,
@@ -407,8 +441,14 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'color']);
 
+        $accountFilter = $request->filled('account_id') ? (int) $request->account_id : null;
+        $upcomingService = app(UpcomingCashflowService::class);
+        $showUpcoming = ! $request->filled('from') && ! $request->filled('to') && ! $request->filled('type');
+
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
+            'upcomingMovements' => $showUpcoming ? $upcomingService->buildUpcomingMovements($user, $accountFilter) : [],
+            'projectedHouseholdBalance' => $showUpcoming ? $upcomingService->projectedHouseholdBalance($user) : null,
             'accounts' => $accounts,
             'categories' => $categories,
             'debtCredits' => $debtCredits,

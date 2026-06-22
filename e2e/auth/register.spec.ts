@@ -22,15 +22,10 @@ test.describe('Autenticazione — Registrazione', () => {
         await expect(page.locator('[type="submit"]')).toBeVisible();
     });
 
-    test('il campo fiscal_code è visibile per il tipo persona (default)', async ({ page }) => {
+    test('il campo fiscal_code è visibile in registrazione', async ({ page }) => {
         await expect(page.locator('input[name="fiscal_code"]')).toBeVisible();
-        await expect(page.locator('input[name="vat_number"]')).not.toBeVisible();
-    });
-
-    test('selezionando partita_iva cambia il campo fiscale', async ({ page }) => {
-        await page.locator('select[name="user_type"]').selectOption('partita_iva');
-        await expect(page.locator('input[name="vat_number"]')).toBeVisible();
-        await expect(page.locator('input[name="fiscal_code"]')).not.toBeVisible();
+        await expect(page.locator('select[name="user_type"]')).toHaveCount(0);
+        await expect(page.locator('input[name="vat_number"]')).toHaveCount(0);
     });
 
     test('password e conferma non coincidenti producono un errore', async ({ page }) => {

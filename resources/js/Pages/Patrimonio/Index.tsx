@@ -89,6 +89,7 @@ interface Props {
     totalValue: number;
     liquidValue: number;
     investedValue: number;
+    investedUnlinkedValue: number;
     riskIndex: number;
     riskLabel: string;
     allocation: AllocationEntry[];
@@ -202,6 +203,7 @@ export default function PatrimonioIndex({
     totalValue,
     liquidValue,
     investedValue,
+    investedUnlinkedValue,
     riskIndex,
     riskLabel,
     allocation,
@@ -236,6 +238,14 @@ export default function PatrimonioIndex({
                         valueClassName="text-emerald-600 dark:text-emerald-400"
                         detail={<KpiHint>Costo di carico delle posizioni aperte, commissioni incluse.</KpiHint>}
                     />
+                    {investedUnlinkedValue > 0 ? (
+                        <IndexKpiCell
+                            label="Investito non collegato"
+                            value={formatCurrency(investedUnlinkedValue)}
+                            valueClassName="text-amber-600 dark:text-amber-400"
+                            detail={<KpiHint>PAC o posizioni senza movimento sul conto: non inclusi nel patrimonio netto.</KpiHint>}
+                        />
+                    ) : null}
                     <IndexKpiCell
                         label="Rischio portafoglio"
                         value={`${riskIndex.toFixed(1)}/7`}

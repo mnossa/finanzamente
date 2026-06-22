@@ -24,6 +24,11 @@ class DashboardPeriodStatsService
             ];
         }
 
+        $effectiveEnd = $endDate->copy();
+        if ($effectiveEnd->gt(Carbon::today())) {
+            $effectiveEnd = Carbon::today();
+        }
+
         $query = Transaction::whereHas('account', function ($query) use ($householdId) {
             $query->where('household_id', $householdId)
                 ->where('active', true);
@@ -32,7 +37,7 @@ class DashboardPeriodStatsService
                 $query->where('is_private', false)
                     ->orWhere('user_id', $user->id);
             })
-            ->whereBetween('date', [$startDate, $endDate])
+            ->whereBetween('date', [$startDate, $effectiveEnd])
             ->whereNull('transfer_id');
 
         $income = (float) (clone $query)->where('amount', '>', 0)->sum('amount');

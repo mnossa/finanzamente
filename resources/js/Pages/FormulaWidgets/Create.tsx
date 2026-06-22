@@ -56,8 +56,8 @@ interface CreateWidgetForm {
 const DEFAULT_CHART_CONFIG: CreateWidgetForm['chart_config'] = {
     show_delta: false,
     format: 'currency',
-    value_code: 'annual_revenue',
-    threshold_code: 'revenue_threshold',
+    value_code: 'household_balance',
+    threshold_code: 'total_investments',
     series: [
         { code: 'household_balance', label: 'Liquidità' },
         { code: 'total_investments', label: 'Investimenti' },

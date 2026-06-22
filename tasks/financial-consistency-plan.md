@@ -191,7 +191,7 @@ Fase 4 (transfer filter)  →  Fase 5 (grafico patrimonio reale)
 ## Definition of done (per fase)
 
 - [x] Test in `FinancialConsistencyTest` verdi con comportamento **target**
-- [ ] `make test`, `make pint-check`, E2E smoke dashboard + investimenti + patrimonio
+- [x] `make test`, `make pint-check`, E2E smoke dashboard + investimenti + patrimonio
 - [x] Testi UI italiani coerenti con formula sotto il numero
 - [x] Nessun widget mostra “totale” senza indicare cosa include/esclude
 

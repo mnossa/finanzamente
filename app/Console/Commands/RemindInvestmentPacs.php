@@ -8,6 +8,7 @@ use App\Models\Household;
 use App\Models\InvestmentPac;
 use App\Services\InvestmentPacReminderFormatter;
 use App\Services\InvestmentPacService;
+use App\Services\UpcomingDueNotificationPreferenceService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,7 @@ class RemindInvestmentPacs extends Command
     public function __construct(
         private readonly InvestmentPacService $investmentPacService,
         private readonly InvestmentPacReminderFormatter $formatter,
+        private readonly UpcomingDueNotificationPreferenceService $dueNotificationPreferences,
     ) {
         parent::__construct();
     }
@@ -62,17 +64,11 @@ class RemindInvestmentPacs extends Command
         $details = $this->formatter->format($pac, $nextDue);
 
         foreach ($household->users as $user) {
-            $prefs = is_array($user->preferences) ? $user->preferences : [];
-            $notifPrefs = $prefs['notifications']['investment_pac_reminder'] ?? [];
-            $enabled = $notifPrefs['enabled'] ?? true;
-            if (! $enabled) {
+            if (! $this->dueNotificationPreferences->isDaily($user)) {
                 continue;
             }
 
-            $channels = $notifPrefs['channels'] ?? ['in_app', 'email'];
-            if (! is_array($channels)) {
-                $channels = ['in_app', 'email'];
-            }
+            $channels = $this->dueNotificationPreferences->channels($user);
 
             if (in_array('in_app', $channels, true)) {
                 $exists = AppNotification::where('user_id', $user->id)

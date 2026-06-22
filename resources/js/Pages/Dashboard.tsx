@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
@@ -9,7 +9,6 @@ import PageHeader from '@/Components/PageHeader';
 import PageContent from '@/Components/PageContent';
 import { LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
-import { PageProps } from '@/types';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import FormulaWidgetSkeleton from '@/Components/FormulaWidgets/FormulaWidgetSkeleton';
 import FormulaKpiWidget from '@/Components/FormulaWidgets/FormulaKpiWidget';
@@ -38,11 +37,10 @@ import type { DashboardDragEndEvent } from '@/types/dashboardDrag';
 import { moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
 
-const RevenueProgressCard = lazy(() => import('@/Components/RevenueProgressCard'));
-const TaxThermometer = lazy(() => import('@/Components/TaxThermometer'));
 const LifestyleWidget = lazy(() => import('@/Components/LifestyleWidget'));
 const ExpenseTreemap = lazy(() => import('@/Components/Charts/ExpenseTreemap'));
 const ExpenseDistributionWidget = lazy(() => import('@/Components/ExpenseDistributionWidget'));
+const PacProjectionChart = lazy(() => import('@/Components/Charts/PacProjectionChart'));
 const FormulaChartWidget = lazy(() => import('@/Components/FormulaWidgets/FormulaChartWidget'));
 
 function WidgetChartSkeleton({ className }: { className?: string }) {
@@ -135,23 +133,6 @@ interface DebtsCreditsSummary {
     overdue_count: number;
 }
 
-interface AnnualRevenueData {
-    visible: boolean;
-    has_vat: boolean;
-    revenue_tracking_enabled: boolean;
-    annual_revenue: number;
-    revenue_threshold: number;
-    revenue_percentage: number;
-}
-
-interface TaxThermometerData {
-    visible: boolean;
-    has_vat: boolean;
-    gross_income: number;
-    tax_rate: number;
-    inps_rate: number;
-}
-
 interface AssetAllocationEntry {
     asset_class: string;
     label: string;
@@ -185,8 +166,6 @@ interface DashboardProps {
     activeBudgets: ActiveBudget[];
     openDebtsCredits: OpenDebtCredit[];
     debtsCreditsSummary: DebtsCreditsSummary;
-    annualRevenueData: AnnualRevenueData;
-    taxThermometerData: TaxThermometerData;
     dashboardLayout: DashboardLayoutConfig;
     financialGoals: FinancialGoal[];
     formulaWidgetPayloads?: Record<string, FormulaWidgetPayload>;
@@ -337,8 +316,6 @@ export default function Dashboard({
     activeBudgets,
     openDebtsCredits,
     debtsCreditsSummary,
-    annualRevenueData,
-    taxThermometerData,
     dashboardLayout,
     financialGoals,
     formulaWidgetPayloads: initialFormulaWidgetPayloads = {},
@@ -348,8 +325,6 @@ export default function Dashboard({
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [deleteFormulaWidgetTarget, setDeleteFormulaWidgetTarget] = useState<{ id: number; name: string } | null>(null);
     const { isModuleEnabled, isModuleLocked } = useModules();
-    const { auth } = usePage<PageProps>().props;
-    const hasVat = auth.user.user_type === 'partita_iva';
 
     const {
         sortedWidgets,
@@ -379,6 +354,7 @@ export default function Dashboard({
         assetAllocationData,
         expenseCategories,
         expenseDistributionData,
+        pacProjectionData,
     } = deferredWidgets;
 
     function handleDragEnd(event: DashboardDragEndEvent) {
@@ -475,35 +451,6 @@ export default function Dashboard({
         }
 
         switch (widgetId) {
-            case 'annual_revenue':
-                if (!annualRevenueData.visible) return null;
-                return (
-                    <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[8rem]" />} scheduleIdle>
-                        <Suspense fallback={<WidgetChartSkeleton className="min-h-[8rem]" />}>
-                            <RevenueProgressCard
-                                currentRevenue={annualRevenueData.annual_revenue}
-                                threshold={annualRevenueData.revenue_threshold}
-                                percentage={annualRevenueData.revenue_percentage}
-                                year={new Date().getFullYear()}
-                            />
-                        </Suspense>
-                    </DeferredMount>
-                );
-
-            case 'tax_thermometer':
-                if (!taxThermometerData.visible) return null;
-                return (
-                    <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[8rem]" />} scheduleIdle>
-                        <Suspense fallback={<WidgetChartSkeleton className="min-h-[8rem]" />}>
-                            <TaxThermometer
-                                grossIncome={taxThermometerData.gross_income}
-                                taxRate={taxThermometerData.tax_rate}
-                                inpsRate={taxThermometerData.inps_rate}
-                            />
-                        </Suspense>
-                    </DeferredMount>
-                );
-
             case 'lifestyle_widget':
                 return isModuleEnabled('lifestyle_score')
                     ? (
@@ -800,20 +747,36 @@ export default function Dashboard({
                     </DeferredMount>
                 );
 
+            case 'pac_projection':
+                return isModuleEnabled('investments') ? (
+                    <DeferredMount fallback={<WidgetChartSkeleton className="min-h-[14rem]" />} scheduleIdle>
+                        <DashboardWidgetShell
+                            title="Proiezione PAC"
+                            subtitle="Versamenti previsti · 12 mesi · solo contributi"
+                            detailHref={route('investment-pacs.index')}
+                            detailLabel="Gestisci PAC"
+                        >
+                            <Suspense fallback={<WidgetChartSkeleton className="min-h-[14rem]" />}>
+                                <PacProjectionChart series={pacProjectionData.series} />
+                            </Suspense>
+                        </DashboardWidgetShell>
+                    </DeferredMount>
+                ) : (
+                    <LockedModuleCard
+                        moduleId="investments"
+                        showHideButton
+                        onHideModule={() => hideLockedWidget(['pac_projection'])}
+                        isHiding={isSaving}
+                    />
+                );
+
             default:
                 return null;
         }
     }
 
     function isWidgetRenderable(widgetId: WidgetId): boolean {
-        switch (widgetId) {
-            case 'annual_revenue':
-                return annualRevenueData.visible || hasVat;
-            case 'tax_thermometer':
-                return taxThermometerData.visible || hasVat;
-            default:
-                return true;
-        }
+        return true;
     }
 
     function isWidgetVisible(widgetId: WidgetId): boolean {
@@ -826,11 +789,6 @@ export default function Dashboard({
         isModuleLocked('investments') &&
         isWidgetVisible('asset_allocation');
 
-    const shouldShowVatUpsell =
-        !isModuleEnabled('vat_management') &&
-        isModuleLocked('vat_management') &&
-        (isWidgetVisible('annual_revenue') || isWidgetVisible('tax_thermometer'));
-
     const hasFormulaWidgets = useMemo(
         () => (dashboardLayout.widgets ?? []).some((widget) => widget.visible && isFormulaWidgetId(widget.id)),
         [dashboardLayout.widgets],
@@ -838,7 +796,7 @@ export default function Dashboard({
 
     const sortableWidgetIds = useMemo(
         () => sortedWidgets.filter((w) => isWidgetRenderable(w.id)).map((w) => w.id),
-        [sortedWidgets, annualRevenueData.visible, taxThermometerData.visible, hasVat],
+        [sortedWidgets],
     );
 
     const widgetGridItems = useMemo(
@@ -867,11 +825,10 @@ export default function Dashboard({
             activeBudgets,
             openDebtsCredits,
             debtsCreditsSummary,
-            annualRevenueData,
-            taxThermometerData,
             financialGoals,
             expenseCategories,
             expenseDistributionData,
+            pacProjectionData,
             lifestyleWidgetData,
             assetAllocationData,
         ],
@@ -1017,26 +974,16 @@ export default function Dashboard({
                     )}
 
                     {/* Moduli Suggeriti (se bloccati) */}
-                    {(shouldShowInvestmentsUpsell || shouldShowVatUpsell) && !isEditing && (
+                    {shouldShowInvestmentsUpsell && !isEditing && (
                         <div>
                             <h3 className="mb-2 text-base font-semibold text-gray-900 dark:text-white sm:mb-4 sm:text-lg">✨ Sblocca Nuove Funzionalità</h3>
                             <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-6">
-                                {shouldShowInvestmentsUpsell && (
-                                    <LockedModuleCard
-                                        moduleId="investments"
-                                        showHideButton
-                                        onHideModule={() => hideLockedWidget(['asset_allocation'])}
-                                        isHiding={isSaving}
-                                    />
-                                )}
-                                {shouldShowVatUpsell && (
-                                    <LockedModuleCard
-                                        moduleId="vat_management"
-                                        showHideButton
-                                        onHideModule={() => hideLockedWidget(['annual_revenue', 'tax_thermometer'])}
-                                        isHiding={isSaving}
-                                    />
-                                )}
+                                <LockedModuleCard
+                                    moduleId="investments"
+                                    showHideButton
+                                    onHideModule={() => hideLockedWidget(['asset_allocation'])}
+                                    isHiding={isSaving}
+                                />
                             </div>
                         </div>
                     )}

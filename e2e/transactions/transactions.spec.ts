@@ -172,6 +172,7 @@ test.describe('Transazioni', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/transazioni');
         const importLink = visibleHrefLocator(page, '/transazioni/importa');
+        await importLink.scrollIntoViewIfNeeded();
         await expect(importLink).toBeVisible();
         await importLink.click();
         await expect(page).toHaveURL(/\/transazioni\/importa/);

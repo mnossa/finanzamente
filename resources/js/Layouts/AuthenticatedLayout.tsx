@@ -17,7 +17,7 @@ import axios from 'axios';
 import { FM_MOBILE_PRIMARY_FORM_ID, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
-type UINotification = AppNotification & { action_url?: string | null };
+type UINotification = AppNotification & { action_url?: string | null; severity?: 'info' | 'warning' | 'critical' };
 
 // Icone SVG inline per evitare dipendenze esterne
 const Icons = {
@@ -161,9 +161,10 @@ interface NavigationItem {
     icon: () => React.JSX.Element;
     altRouteMatch?: string;
     excludeRouteMatch?: string;
+    routeMatchPatterns?: string[];
     hrefParams?: Record<string, string | number | boolean | null | undefined>;
-    moduleId?: string; // ID del modulo associato per controllo accesso
-    requiresPro?: boolean; // Esclusivo piano Pro
+    moduleId?: string;
+    requiresPro?: boolean;
 }
 
 // Tipo per le sezioni di navigazione
@@ -188,45 +189,62 @@ const navigationSections: NavigationSection[] = [
         title: 'Conti & Movimenti',
         defaultExpanded: true,
         items: [
-            { name: 'Conti', href: 'accounts.index', routeMatch: 'accounts.*', icon: Icons.Wallet, moduleId: 'accounts' },
-            { name: 'Transazioni', href: 'transactions.index', routeMatch: 'transactions.*', excludeRouteMatch: 'transactions.quick-session', icon: Icons.ArrowLeftRight, moduleId: 'transactions' },
-            { name: 'Sessione Rapida', href: 'transactions.quick-session', routeMatch: 'transactions.quick-session', icon: Icons.Zap },
-            { name: 'Trasferimenti', href: 'transfers.index', routeMatch: 'transfers.*', icon: Icons.Transfer, moduleId: 'transfers' },
-            { name: 'Trasf. Households', href: 'inter-household-transfers.index', routeMatch: 'inter-household-transfers.*', icon: Icons.ArrowLeftRight, moduleId: 'inter_household_transfers', requiresPro: true },
-        ]
+            {
+                name: 'Conti e movimenti',
+                href: 'transactions.index',
+                routeMatch: 'transactions.index',
+                routeMatchPatterns: ['accounts.*', 'transactions.*', 'transfers.*', 'inter-household-transfers.*'],
+                icon: Icons.ArrowLeftRight,
+            },
+        ],
     },
     {
         title: 'Organizzazione',
         defaultExpanded: false,
         items: [
-            { name: 'Inbox', href: 'inbox.index', routeMatch: 'inbox.*', icon: Icons.Tags, moduleId: 'inbox', requiresPro: true },
-            { name: 'Categorie', href: 'categories.index', routeMatch: 'categories.*', icon: Icons.Tags, moduleId: 'categories' },
-            { name: 'Rimborsi', href: 'refunds.index', routeMatch: 'refunds.*', icon: Icons.Undo, moduleId: 'refunds' },
-            { name: 'Ricorrenti', href: 'recurring-transactions.index', routeMatch: 'recurring-transactions.*', icon: Icons.Repeat, moduleId: 'recurring_transactions' },
-        ]
+            {
+                name: 'Organizzazione',
+                href: 'categories.index',
+                routeMatch: 'categories.index',
+                routeMatchPatterns: ['categories.*', 'inbox.*', 'refunds.*', 'recurring-transactions.*'],
+                icon: Icons.Tags,
+            },
+        ],
     },
     {
         title: 'Pianificazione & Risparmio',
         defaultExpanded: false,
         items: [
-            { name: 'Budget', href: 'budgets.index', routeMatch: 'budgets.*', icon: Icons.PiggyBank, moduleId: 'budgets' },
-            { name: 'Debiti/Crediti', href: 'debts-credits.index', routeMatch: 'debts-credits.*', icon: Icons.HandCoins, moduleId: 'debts_credits' },
-            { name: 'Obiettivi', href: 'financial-goals.index', routeMatch: 'financial-goals.*', icon: Icons.Target, moduleId: 'financial_goals' },
-            { name: 'Spese detraibili', href: 'tax-deductions.index', routeMatch: 'tax-deductions.*', icon: Icons.Briefcase, moduleId: 'tax_refund_730', requiresPro: true },
-            // { name: 'Gestione IVA', href: 'vat-management.index', routeMatch: 'vat-management.*', icon: Icons.Briefcase, moduleId: 'vat_management', requiresPro: true }, // Implementazione futura
-        ]
+            {
+                name: 'Pianificazione',
+                href: 'budgets.index',
+                routeMatch: 'budgets.index',
+                routeMatchPatterns: ['budgets.*', 'debts-credits.*', 'financial-goals.*', 'tax-deductions.*'],
+                icon: Icons.PiggyBank,
+            },
+        ],
     },
     {
         title: 'Investimenti',
         defaultExpanded: false,
         items: [
-            { name: 'Investimenti', href: 'investments.index', routeMatch: 'investments.*', icon: Icons.TrendingUp, moduleId: 'investments', requiresPro: true },
-            { name: 'PAC', href: 'investment-pacs.index', routeMatch: 'investment-pacs.*', icon: Icons.Repeat, moduleId: 'investments', requiresPro: true },
-            { name: 'Asset Allocation', href: 'asset-allocation.index', routeMatch: 'asset-allocation.*', icon: Icons.BarChart2, moduleId: 'asset_allocation', requiresPro: true },
-            { name: 'Gestisci Asset', href: 'investment-assets.index', routeMatch: 'investment-assets.*', icon: Icons.Briefcase, moduleId: 'investment_assets', requiresPro: true },
-            { name: 'Analisi Investimenti', href: 'investment-analyses.index', routeMatch: 'investment-analyses.*', icon: Icons.TrendingUp, moduleId: 'investment_analyses', requiresPro: true },
-        ]
-    }
+            {
+                name: 'Investimenti',
+                href: 'investments.index',
+                routeMatch: 'investments.index',
+                routeMatchPatterns: [
+                    'investments.*',
+                    'investment-pacs.*',
+                    'asset-allocation.*',
+                    'investment-assets.*',
+                    'investment-analyses.*',
+                ],
+                icon: Icons.TrendingUp,
+                moduleId: 'investments',
+                requiresPro: true,
+            },
+        ],
+    },
 ];
 
 function PlanAlertBanner() {
@@ -407,7 +425,12 @@ function CollapsibleNavSection({
     isPro,
 }: {
     section: NavigationSection;
-    isRouteActive: (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string) => boolean;
+    isRouteActive: (
+        routeMatch: string,
+        altRouteMatch?: string,
+        excludeRouteMatch?: string,
+        routeMatchPatterns?: string[],
+    ) => boolean;
     onClick?: () => void;
     forceExpanded?: boolean;
     isPro: boolean;
@@ -416,7 +439,7 @@ function CollapsibleNavSection({
 
     // Controlla se qualche elemento della sezione è attivo
     const hasActiveItem = section.items.some(item =>
-        isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch)
+        isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch, item.routeMatchPatterns)
     );
 
     // Espande automaticamente se c'è un elemento attivo nella sezione
@@ -427,6 +450,21 @@ function CollapsibleNavSection({
     }, [hasActiveItem, isExpanded]);
 
     const effectivelyExpanded = forceExpanded || isExpanded;
+    const isSingleItem = section.items.length === 1;
+
+    if (isSingleItem) {
+        const item = section.items[0];
+        return (
+            <div className="mb-2">
+                <SidebarNavItem
+                    item={item}
+                    isActive={isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch, item.routeMatchPatterns)}
+                    isPro={isPro}
+                    onClick={onClick}
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="mb-2">
@@ -460,7 +498,7 @@ function CollapsibleNavSection({
                     <SidebarNavItem
                         key={item.name}
                         item={item}
-                        isActive={isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch)}
+                        isActive={isRouteActive(item.routeMatch, item.altRouteMatch, item.excludeRouteMatch, item.routeMatchPatterns)}
                         isPro={isPro}
                         onClick={onClick}
                     />
@@ -557,9 +595,17 @@ export default function Authenticated({
         );
     }, [privacy?.analytics_enabled]);
 
-    const isRouteActive = (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string): boolean => {
+    const isRouteActive = (
+        routeMatch: string,
+        altRouteMatch?: string,
+        excludeRouteMatch?: string,
+        routeMatchPatterns?: string[],
+    ): boolean => {
         if (excludeRouteMatch && route().current(excludeRouteMatch)) return false;
-        return !!(route().current(routeMatch) || (altRouteMatch && route().current(altRouteMatch)));
+        if (route().current(routeMatch)) return true;
+        if (altRouteMatch && route().current(altRouteMatch)) return true;
+        if (routeMatchPatterns?.some((pattern) => route().current(pattern))) return true;
+        return false;
     };
 
     // Filtra le sezioni in base ai moduli disponibili.
@@ -808,9 +854,13 @@ export default function Authenticated({
                                                         key={notif.id}
                                                         className={clsx(
                                                             'px-4 py-3 flex items-start gap-3 transition-colors',
-                                                            notif.read
-                                                                ? 'bg-white dark:bg-slate-800'
-                                                                : 'bg-emerald-50 dark:bg-emerald-900/10'
+                                                            notif.severity === 'critical'
+                                                                ? 'bg-rose-50 dark:bg-rose-900/20'
+                                                                : notif.severity === 'warning'
+                                                                  ? 'bg-amber-50 dark:bg-amber-900/10'
+                                                                  : notif.read
+                                                                    ? 'bg-white dark:bg-slate-800'
+                                                                    : 'bg-emerald-50 dark:bg-emerald-900/10'
                                                         )}
                                                     >
                                                         <div className="flex-1 min-w-0">
@@ -835,7 +885,7 @@ export default function Authenticated({
                                                                         setNotifOpen(false);
                                                                     }}
                                                                 >
-                                                                    Vai ai suggerimenti
+                                                                    Vai al dettaglio
                                                                 </Link>
                                                             )}
                                                             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
@@ -931,8 +981,8 @@ export default function Authenticated({
                     <PlanAlertBanner />
 
                     {/* Scrollable Content */}
-                    <main className="flex-1 overflow-y-auto p-2 pb-19 sm:p-4 md:p-6 lg:p-8 sm:pb-20 lg:pb-8">
-                        <div className="max-w-7xl mx-auto">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-2 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:p-8 lg:pb-8">
+                        <div className="mx-auto min-w-0 max-w-7xl">
                             {children}
                         </div>
                     </main>
@@ -951,27 +1001,37 @@ function MobileBottomNav({
     isRouteActive,
     onMenuOpen,
 }: {
-    isRouteActive: (routeMatch: string, altRouteMatch?: string, excludeRouteMatch?: string) => boolean;
+    isRouteActive: (
+        routeMatch: string,
+        altRouteMatch?: string,
+        excludeRouteMatch?: string,
+        routeMatchPatterns?: string[],
+    ) => boolean;
     onMenuOpen: () => void;
 }) {
     const isDashboard = isRouteActive('dashboard');
-    const isTransactions = isRouteActive('transactions.*', undefined, 'transactions.quick-session');
+    const isCashflow = isRouteActive(
+        'transactions.index',
+        undefined,
+        undefined,
+        ['accounts.*', 'transactions.*', 'transfers.*', 'inter-household-transfers.*'],
+    );
     const isAccounts = isRouteActive('accounts.*');
     const primaryFab = resolveMobilePrimaryFab();
 
     return (
         <nav
-            className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700"
+            className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border-t border-slate-200 dark:border-slate-700"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             aria-label="Navigazione rapida"
         >
-            <div className="flex items-center justify-around h-16">
+            <div className="flex items-end justify-around h-[3.75rem] px-1">
                 {/* Dashboard */}
                 <Link
                     href={route('dashboard')}
                     onClick={() => nav.bottomBar('home')}
                     className={clsx(
-                        'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
+                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
                         isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Home"
@@ -985,8 +1045,8 @@ function MobileBottomNav({
                     href={route('transactions.index')}
                     onClick={() => nav.bottomBar('movimenti')}
                     className={clsx(
-                        'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
-                        isTransactions ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
+                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
+                        isCashflow ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Transazioni"
                 >
@@ -1034,7 +1094,7 @@ function MobileBottomNav({
                     href={route('accounts.index')}
                     onClick={() => nav.bottomBar('conti')}
                     className={clsx(
-                        'flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl transition-colors',
+                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
                         isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Conti"
@@ -1046,7 +1106,7 @@ function MobileBottomNav({
                 {/* Altro / Menu */}
                 <button
                     onClick={onMenuOpen}
-                    className="flex flex-col items-center justify-center gap-0.5 w-14 py-1 rounded-xl text-slate-700 dark:text-slate-200 transition-colors"
+                    className="flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-slate-700 transition-colors dark:text-slate-200"
                     aria-label="Altro"
                 >
                     <span aria-hidden="true"><Icons.Menu /></span>

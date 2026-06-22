@@ -45,4 +45,25 @@ class AssetClassificationServiceTest extends TestCase
 
         $this->assertSame('bonds', AssetClassificationService::resolveInvestmentAssetClass($asset));
     }
+
+    #[Test]
+    public function commodity_etf_is_classified_as_commodities(): void
+    {
+        $asset = new InvestmentAsset([
+            'type' => 'etf',
+            'name' => 'iShares Physical Gold ETC',
+            'symbol' => 'SGLD.MI',
+        ]);
+
+        $this->assertSame('commodities', AssetClassificationService::resolveInvestmentAssetClass($asset));
+    }
+
+    #[Test]
+    public function suggest_allocation_uses_isin_in_inference(): void
+    {
+        $this->assertSame(
+            'bonds',
+            AssetClassificationService::suggestAllocationClass('etf', 'UCITS ETF', 'BOND', 'IE00B4WXJD76')
+        );
+    }
 }

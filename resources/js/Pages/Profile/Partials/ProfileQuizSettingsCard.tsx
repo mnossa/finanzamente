@@ -42,27 +42,7 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
             <div className="mt-6 space-y-4">
                 {profileSettings ? (
                     <>
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
-                                <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                    Partita IVA
-                                </div>
-                                <div className="mt-2 flex items-center gap-2">
-                                    <span
-                                        className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-                                            profileSettings.has_vat
-                                                ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400'
-                                                : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                                        }`}
-                                    >
-                                        {profileSettings.has_vat ? '✓' : '✗'}
-                                    </span>
-                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                        {profileSettings.has_vat ? 'Sì' : 'No'}
-                                    </span>
-                                </div>
-                            </div>
-
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
                                 <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                     Situazione

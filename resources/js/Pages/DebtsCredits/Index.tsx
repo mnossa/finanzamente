@@ -1,20 +1,25 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import PlanningHubNav from '@/Components/PlanningHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
+import IndexEntityCard, {
+    IndexEntityCardFooterButton,
+    IndexEntityCardFooterLink,
+} from '@/Components/Index/IndexEntityCard';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
-import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
+import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
-import { moneyTabular } from '@/utils/moneyGridClasses';
+import { moneyKpiGrid2 } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -81,90 +86,77 @@ function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: bool
     const isDebt = item.type === 'debt';
 
     return (
-        <CardBox
-            className={clsx(
-                'p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4',
-                item.status === 'closed' && 'opacity-70'
+        <IndexEntityCard
+            href={route('debts-credits.show', item.id)}
+            dimmed={item.status === 'closed'}
+            icon={<span className="text-lg">{isDebt ? '📤' : '📥'}</span>}
+            iconClassName={clsx(
+                'flex h-10 w-10 items-center justify-center rounded-full',
+                isDebt ? 'bg-red-100 dark:bg-red-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30',
             )}
-        >
-            <Link href={route('debts-credits.show', item.id)} className="block">
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div
-                            className={clsx(
-                                'flex h-10 w-10 items-center justify-center rounded-full',
-                                isDebt
-                                    ? 'bg-red-100 dark:bg-red-900/30'
-                                    : 'bg-emerald-100 dark:bg-emerald-900/30'
-                            )}
-                        >
-                            <span className="text-lg">{isDebt ? '📤' : '📥'}</span>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {item.counterparty}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {item.type_label}
-                                {item.due_date && ` • Scadenza: ${formatDate(item.due_date)}`}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p
-                            className={clsx(
-                                'text-lg font-bold',
-                                moneyTabular,
-                                isDebt ? 'text-red-500' : 'text-emerald-500'
-                            )}
-                        >
-                            {isDebt ? '-' : '+'}
-                            {formatCurrency(item.remaining_amount, item.currency.code)}
-                        </p>
-                        <StatusBadge status={item.status} statusLabel={item.status_label} />
-                    </div>
-                </div>
-                {item.description && (
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+            title={item.counterparty}
+            subtitle={
+                <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span>
+                        {item.type_label}
+                        {item.due_date ? ` · Scad. ${formatDate(item.due_date)}` : ''}
+                    </span>
+                    <StatusBadge
+                        status={item.status}
+                        statusLabel={item.status_label}
+                        size="sm"
+                    />
+                </span>
+            }
+            amount={
+                <>
+                    {isDebt ? '−' : '+'}
+                    {formatCurrency(item.remaining_amount, item.currency.code)}
+                </>
+            }
+            amountClassName={isDebt ? 'text-red-500' : 'text-emerald-500'}
+            extra={
+                item.description ? (
+                    <p className="line-clamp-1 text-xs text-gray-500 dark:text-gray-400">
                         {item.description}
                     </p>
-                )}
-            </Link>
-
-            {canModify && (
-                <div className="mt-3 flex justify-end space-x-2 border-t border-gray-100 pt-3 dark:border-gray-700">
-                    {item.status !== 'closed' ? (
-                        <button
-                            onClick={handleClose}
-                            className="rounded px-3 py-1 text-sm text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                ) : undefined
+            }
+            footer={
+                canModify ? (
+                    <>
+                        {item.status !== 'closed' ? (
+                            <button
+                                type="button"
+                                onClick={handleClose}
+                                className="mr-auto rounded px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-50 sm:text-sm dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+                            >
+                                ✓ Chiudi
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleReopen}
+                                className="mr-auto rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 sm:text-sm dark:text-blue-400 dark:hover:bg-blue-900/20"
+                            >
+                                ↩ Riapri
+                            </button>
+                        )}
+                        <IndexEntityCardFooterLink href={route('debts-credits.edit', item.id)} title="Modifica">
+                            <PencilIcon size={16} />
+                        </IndexEntityCardFooterLink>
+                        <IndexEntityCardFooterButton
+                            onClick={handleDelete}
+                            title="Elimina"
+                            className="hover:text-red-600 dark:hover:text-red-400"
                         >
-                            ✓ Chiudi
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleReopen}
-                            className="rounded px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                        >
-                            ↩ Riapri
-                        </button>
-                    )}
-                    <Link
-                        href={route('debts-credits.edit', item.id)}
-                        className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-gray-700 dark:hover:text-blue-400"
-                        title="Modifica"
-                    >
-                        <PencilIcon size={18} />
-                    </Link>
-                    <button
-                        onClick={handleDelete}
-                        className="rounded p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-700 dark:hover:text-red-400"
-                        title="Elimina"
-                    >
-                        <TrashIcon size={18} />
-                    </button>
-                </div>
-            )}
-        </CardBox>
+                            <TrashIcon size={16} />
+                        </IndexEntityCardFooterButton>
+                    </>
+                ) : undefined
+            }
+            footerClassName="flex items-center justify-end gap-0.5"
+        />
     );
 }
 
@@ -180,6 +172,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
             header={
                 <PageHeader
                     title="Debiti e Crediti"
+                    backLink={route('budgets.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('debts-credits.create')} icon={<PlusIcon />}>
@@ -193,6 +186,7 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
             <Head title="Debiti e Crediti" />
 
             <PageContent maxWidth="7xl">
+                <PlanningHubNav active="debts" />
                     <IndexIntroSection
                         label="Debiti e crediti"
                         icon={<span className="text-sm leading-none">💸</span>}
@@ -211,62 +205,47 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <IndexKpiStrip columns={3}>
-                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-red-500 to-rose-600 p-6 text-white shadow-lg">
-                                    <h3 className="text-sm font-medium text-red-100">
-                                        Debiti Aperti
-                                    </h3>
-                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
-                                        {formatCurrency(summary.total_debts)}
-                                    </p>
-                                    <p className="mt-1 text-sm text-red-200">
-                                        Soldi che devi
-                                    </p>
+                            <div className="flex flex-col gap-2 sm:gap-3">
+                                <div className={clsx(moneyKpiGrid2, 'gap-2 sm:gap-3')}>
+                                    <IndexKpiCell
+                                        label="Debiti aperti"
+                                        value={formatCurrency(summary.total_debts)}
+                                        detail="Soldi che devi"
+                                        valueClassName="text-red-600 dark:text-red-400"
+                                        className="!p-3 sm:!p-4"
+                                    />
+                                    <IndexKpiCell
+                                        label="Crediti aperti"
+                                        value={formatCurrency(summary.total_credits)}
+                                        detail="Soldi che ti devono"
+                                        valueClassName="text-emerald-600 dark:text-emerald-400"
+                                        className="!p-3 sm:!p-4"
+                                    />
                                 </div>
-                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg">
-                                    <h3 className="text-sm font-medium text-emerald-100">
-                                        Crediti Aperti
-                                    </h3>
-                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
-                                        {formatCurrency(summary.total_credits)}
-                                    </p>
-                                    <p className="mt-1 text-sm text-emerald-200">
-                                        Soldi che ti devono
-                                    </p>
-                                </div>
-                                <div
-                                    className={clsx(
-                                        'overflow-hidden rounded-xl p-6 text-white shadow-lg',
+                                <IndexKpiCell
+                                    label="Bilancio netto"
+                                    value={formatCurrency(summary.total_credits - summary.total_debts)}
+                                    detail={
+                                        summary.overdue_count > 0
+                                            ? `⚠️ ${summary.overdue_count} scaduti`
+                                            : 'Crediti − debiti'
+                                    }
+                                    valueClassName={clsx(
                                         summary.total_credits - summary.total_debts >= 0
-                                            ? 'bg-linear-to-br from-blue-500 to-emerald-600'
-                                            : 'bg-linear-to-br from-amber-500 to-orange-600'
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-amber-600 dark:text-amber-400',
                                     )}
-                                >
-                                    <h3 className="text-sm font-medium opacity-80">
-                                        Bilancio Netto
-                                    </h3>
-                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
-                                        {formatCurrency(
-                                            summary.total_credits - summary.total_debts
-                                        )}
-                                    </p>
-                                    <p className="mt-1 text-sm opacity-80">
-                                        {summary.overdue_count > 0 && (
-                                            <span className="font-semibold">
-                                                ⚠️ {summary.overdue_count} scaduti
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
-                            </IndexKpiStrip>
+                                    className="!p-3 sm:!p-4"
+                                />
+                            </div>
 
                             {/* Elementi Aperti */}
                             {openItems.length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                                    <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base dark:text-white">
                                         Aperti ({openItems.length})
                                     </h3>
-                                    <IndexCardGrid>
+                                    <IndexCardGrid className="gap-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-3">
                                         {openItems.map((item) => (
                                             <DebtCreditCard key={item.id} item={item} canModify={canModify} />
                                         ))}
@@ -277,10 +256,10 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                             {/* Elementi Chiusi */}
                             {closedItems.length > 0 && (
                                 <div>
-                                    <h3 className="mb-4 text-lg font-semibold text-gray-500 dark:text-gray-400">
+                                    <h3 className="mb-2 text-sm font-semibold text-gray-500 sm:mb-3 sm:text-base dark:text-gray-400">
                                         Chiusi ({closedItems.length})
                                     </h3>
-                                    <IndexCardGrid>
+                                    <IndexCardGrid className="gap-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-3">
                                         {closedItems.map((item) => (
                                             <DebtCreditCard key={item.id} item={item} canModify={canModify} />
                                         ))}

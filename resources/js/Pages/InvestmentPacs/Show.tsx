@@ -22,6 +22,7 @@ interface Pac {
     start_date: string;
     end_date: string | null;
     last_executed_at: string | null;
+    next_execution_date?: string | null;
     status: 'active' | 'paused';
     notes: string | null;
     fees: number | null;
@@ -177,6 +178,7 @@ export default function InvestmentPacShow({ pac, investments, stats }: ShowProps
                                 Importo periodico: {formatCurrency(pac.amount, pac.currency_code)}
                                 {pac.fees !== null ? ` · Commissioni ${formatCurrency(pac.fees, pac.currency_code)}/acquisto` : ''}
                                 {pac.last_executed_at ? ` · Ultimo acquisto ${formatDate(pac.last_executed_at)}` : ''}
+                                {pac.next_execution_date ? ` · Prossimo acquisto ${formatDate(pac.next_execution_date)}` : ''}
                             </p>
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                 Dal {formatDate(pac.start_date)}{pac.end_date ? ` al ${formatDate(pac.end_date)}` : ''}
