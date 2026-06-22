@@ -6,8 +6,6 @@ import LinkButton from '@/Components/LinkButton';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import InvestmentHubNav from '@/Components/InvestmentHubNav';
-import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
-import PlusIcon from '@/Components/Icons/PlusIcon';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import { Head, router } from '@inertiajs/react';
 import React from 'react';
@@ -88,15 +86,6 @@ export default function InvestmentPacIndex({ pacs }: { pacs: Pac[] }) {
                     icon={<span className="text-sm leading-none">📈</span>}
                     description="Versamenti ricorrenti su ETF, fondi e altri strumenti. Ogni esecuzione genera un movimento nello storico investimenti."
                 />
-                <IndexPageMobileToolbar>
-                    <LinkButton
-                        href={route('investment-pacs.create')}
-                        icon={<PlusIcon />}
-                        size="sm"
-                    >
-                        Nuovo PAC
-                    </LinkButton>
-                </IndexPageMobileToolbar>
 
                 {pacs.length === 0 ? (
                     <IndexEmptyList

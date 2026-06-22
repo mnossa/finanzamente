@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexInfoBanner from '@/Components/Index/IndexInfoBanner';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
@@ -135,11 +135,6 @@ export default function Index({ refunds }: IndexProps) {
                     icon={<span className="text-sm leading-none">💸</span>}
                     description="Traccia i rimborsi ricevuti e il loro impatto sulle spese originarie."
                 />
-                <IndexPageMobileToolbar>
-                    <LinkButton href={route('refunds.create')} icon={<PlusIcon />} size="sm">
-                        Nuovo Rimborso
-                    </LinkButton>
-                </IndexPageMobileToolbar>
                 <IndexInfoBanner
                     title="Cosa sono i rimborsi?"
                     description="I rimborsi ti permettono di tracciare quando ricevi indietro soldi per una spesa già effettuata. Ad esempio: resi di prodotti, rimborsi assicurativi, o restituzione di depositi."

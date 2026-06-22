@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions, IndexPageMobileToolbar, MobileCreateLinkButton } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
@@ -132,9 +132,9 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
                     <LinkButton href={route('recurrence-detection.index')} variant="secondary" size="sm">
                         🔍 Rilevate
                     </LinkButton>
-                    <LinkButton href={route('recurring-transactions.create')} icon={<PlusIcon />} size="sm">
+                    <MobileCreateLinkButton href={route('recurring-transactions.create')} icon={<PlusIcon />} size="sm">
                         Nuova
-                    </LinkButton>
+                    </MobileCreateLinkButton>
                 </IndexPageMobileToolbar>
 
                 <IndexKpiStrip>

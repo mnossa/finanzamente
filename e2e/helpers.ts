@@ -17,6 +17,13 @@ export function primaryFormSubmitLocator(page: Page): Locator {
 }
 
 /**
+ * FAB centrale nella bottom nav mobile (link create).
+ */
+export function mobileFabLinkLocator(page: Page): Locator {
+    return page.locator('nav[aria-label="Navigazione rapida"] a.rounded-full');
+}
+
+/**
  * Credenziali utente E2E (configurabili tramite variabili d'ambiente).
  * Corrispondono all'utente creato da E2ESeeder.
  */

@@ -1,5 +1,8 @@
-import { ReactNode } from 'react';
+import { Children, ReactNode } from 'react';
 import clsx from 'clsx';
+import LinkButton from '@/Components/LinkButton';
+import { isHrefCoveredByMobileFab } from '@/utils/mobilePrimaryFab';
+import type { ComponentProps } from 'react';
 
 /**
  * Raggruppa le azioni dell’header su desktop; `PageHeader` nasconde già tutto il blocco `actions` sotto `lg`.
@@ -74,9 +77,26 @@ export const mobileLegendClass = clsx(
 export const mobileKpiGridClass = mobileKpiPanelClass;
 
 /**
+ * LinkButton create: nascosto su mobile se il FAB centrale punta allo stesso href.
+ */
+export function MobileCreateLinkButton(props: ComponentProps<typeof LinkButton>): ReactNode {
+    const href = typeof props.href === 'string' ? props.href : '';
+    if (href && isHrefCoveredByMobileFab(href)) {
+        return null;
+    }
+
+    return <LinkButton {...props} />;
+}
+
+function hasVisibleToolbarChildren(children: ReactNode): boolean {
+    return Children.toArray(children).length > 0;
+}
+
+/**
  * CTA secondarie solo su viewport < lg, sopra il contenuto principale.
  * Default: una riga con larghezza uguale (Importa/Esporta affiancati).
  * Non usare `w-full` sui figli — il layout è gestito dal container.
+ * Si nasconde se tutti i figli sono null (es. solo create coperto dal FAB).
  */
 export function IndexPageMobileToolbar({
     children,
@@ -88,6 +108,10 @@ export function IndexPageMobileToolbar({
     /** false = flex-wrap libero (CTA di lunghezze diverse) */
     equalWidth?: boolean;
 }): ReactNode {
+    if (!hasVisibleToolbarChildren(children)) {
+        return null;
+    }
+
     return (
         <div
             className={clsx(

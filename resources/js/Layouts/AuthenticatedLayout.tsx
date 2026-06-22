@@ -981,7 +981,7 @@ export default function Authenticated({
                     <PlanAlertBanner />
 
                     {/* Scrollable Content */}
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-2 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:p-8 lg:pb-8">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-2 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:p-8 lg:pb-8">
                         <div className="mx-auto min-w-0 max-w-7xl">
                             {children}
                         </div>
@@ -1021,17 +1021,17 @@ function MobileBottomNav({
 
     return (
         <nav
-            className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border-t border-slate-200 dark:border-slate-700"
+            className="lg:hidden fixed bottom-0 inset-x-0 z-40 overflow-visible bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border-t border-slate-200 dark:border-slate-700"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             aria-label="Navigazione rapida"
         >
-            <div className="flex items-end justify-around h-[3.75rem] px-1">
+            <div className="flex h-16 items-center justify-around px-1">
                 {/* Dashboard */}
                 <Link
                     href={route('dashboard')}
                     onClick={() => nav.bottomBar('home')}
                     className={clsx(
-                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
+                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors',
                         isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Home"
@@ -1045,7 +1045,7 @@ function MobileBottomNav({
                     href={route('transactions.index')}
                     onClick={() => nav.bottomBar('movimenti')}
                     className={clsx(
-                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
+                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors',
                         isCashflow ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Transazioni"
@@ -1061,10 +1061,10 @@ function MobileBottomNav({
                             type="submit"
                             form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
                             onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                            className="flex h-12 w-12 shrink-0 -mt-3 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
                             aria-label={primaryFab.ariaLabel}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                                 <polyline points="17 21 17 13 7 13 7 21" />
                                 <polyline points="7 3 7 8 15 8" />
@@ -1074,17 +1074,17 @@ function MobileBottomNav({
                         <Link
                             href={primaryFab.href}
                             onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className="flex items-center justify-center w-14 h-14 -mt-5 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                            className="flex h-12 w-12 shrink-0 -mt-3 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
                             aria-label={primaryFab.ariaLabel}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M5 12h14" /><path d="M12 5v14" />
                             </svg>
                         </Link>
                     )
                 ) : (
                     <div
-                        className="flex w-14 h-14 shrink-0 -mt-5 items-center justify-center"
+                        className="flex h-12 w-12 shrink-0 -mt-3 items-center justify-center"
                         aria-hidden="true"
                     />
                 )}
@@ -1094,7 +1094,7 @@ function MobileBottomNav({
                     href={route('accounts.index')}
                     onClick={() => nav.bottomBar('conti')}
                     className={clsx(
-                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 transition-colors',
+                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors',
                         isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
                     )}
                     aria-label="Conti"
@@ -1106,7 +1106,7 @@ function MobileBottomNav({
                 {/* Altro / Menu */}
                 <button
                     onClick={onMenuOpen}
-                    className="flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-slate-700 transition-colors dark:text-slate-200"
+                    className="flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 text-slate-700 transition-colors dark:text-slate-200"
                     aria-label="Altro"
                 >
                     <span aria-hidden="true"><Icons.Menu /></span>

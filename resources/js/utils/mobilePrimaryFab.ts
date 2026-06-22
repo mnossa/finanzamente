@@ -279,3 +279,30 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
         defaultFab()
     );
 }
+
+/** Normalizza pathname per confronto href (ignora query/hash, trailing slash). */
+export function normalizeMobileFabPath(href: string): string {
+    if (typeof window === 'undefined') {
+        return href.replace(/\/$/, '') || '/';
+    }
+
+    try {
+        const url = href.startsWith('http') ? new URL(href) : new URL(href, window.location.origin);
+        const path = url.pathname.replace(/\/$/, '') || '/';
+        return path;
+    } catch {
+        return href.replace(/\/$/, '') || '/';
+    }
+}
+
+/**
+ * True se l'href coincide con l'azione link del FAB mobile corrente (create ridondante in toolbar).
+ */
+export function isHrefCoveredByMobileFab(href: string): boolean {
+    const fab = resolveMobilePrimaryFab();
+    if (!fab || fab.mode !== 'link') {
+        return false;
+    }
+
+    return normalizeMobileFabPath(href) === normalizeMobileFabPath(fab.href);
+}

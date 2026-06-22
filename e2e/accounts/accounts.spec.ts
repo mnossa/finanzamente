@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { visibleHrefLocator, primaryFormSubmitLocator } from '../helpers';
+import { visibleHrefLocator, primaryFormSubmitLocator, mobileFabLinkLocator } from '../helpers';
 
 /**
  * Test E2E — Conti
@@ -60,6 +60,13 @@ test.describe('Conti', () => {
         await expect(
             page.getByText(nomeConto).or(page.locator('[class*="rose"]').filter({ hasText: /limit/i }).first())
         ).toBeVisible({ timeout: 15_000 });
+    });
+
+    test('su mobile il create è sul FAB, non nella toolbar del corpo', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/conti');
+        await expect(mobileFabLinkLocator(page)).toHaveAttribute('href', /\/conti\/crea/);
+        await expect(page.locator('div.mb-3.lg\\:hidden a[href*="/conti/crea"]')).toHaveCount(0);
     });
 
     test('submit senza nome rimane sulla pagina di creazione', async ({ page }) => {

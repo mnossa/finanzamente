@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import CashflowHubNav from '@/Components/CashflowHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import LinkButton from '@/Components/LinkButton';
@@ -127,11 +127,6 @@ export default function Index({
 
             <PageContent maxWidth="7xl">
                     <CashflowHubNav active="accounts" />
-                    <IndexPageMobileToolbar>
-                        <LinkButton href={route('accounts.create')} icon={<PlusIcon />} size="sm">
-                            Nuovo Conto
-                        </LinkButton>
-                    </IndexPageMobileToolbar>
                     <IndexIntroSection
                         label="Panoramica conti"
                         icon={<span className="text-sm leading-none">🏦</span>}

@@ -8,7 +8,7 @@ import IndexFiltersPanel from '@/Components/Index/IndexFiltersPanel';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
 import InterHouseholdTransferListRow from '@/Components/InterHouseholdTransfers/InterHouseholdTransferListRow';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import { Head, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -141,12 +141,6 @@ export default function Index({ transfers, filters }: IndexProps) {
                     icon={<span className="text-sm leading-none">🏠</span>}
                     description="Supervisiona movimenti tra household con stato e direzione sempre chiari."
                 />
-                <IndexPageMobileToolbar>
-                    <LinkButton href={route('inter-household-transfers.create')} size="sm">
-                        <PlusIcon className="mr-2 h-4 w-4" />
-                        Nuovo Trasferimento
-                    </LinkButton>
-                </IndexPageMobileToolbar>
 
                 <IndexFiltersPanel
                     defaultOpen={hasFilters}

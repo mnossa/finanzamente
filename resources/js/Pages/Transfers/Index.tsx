@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import CashflowHubNav from '@/Components/CashflowHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
@@ -114,11 +114,6 @@ export default function Index({ transfers }: IndexProps) {
                     icon={<span className="text-sm leading-none">🔄</span>}
                     description="Sposta fondi tra conti con tracciamento completo importi, valute e commissioni."
                 />
-                <IndexPageMobileToolbar>
-                    <LinkButton href={route('transfers.create')} icon={<PlusIcon />} size="sm">
-                        Nuovo Trasferimento
-                    </LinkButton>
-                </IndexPageMobileToolbar>
                 <IndexListCard
                     isEmpty={isEmpty}
                     empty={
