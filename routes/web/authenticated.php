@@ -27,6 +27,7 @@ use App\Http\Controllers\InvestmentController;
 use App\Http\Controllers\InvestmentImportController;
 use App\Http\Controllers\InvestmentPacController;
 use App\Http\Controllers\LifestyleScoreController;
+use App\Http\Controllers\MobileBottomNavPreferenceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\PatrimonioController;
@@ -148,11 +149,11 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::patch('/utente/preferenze/tema', [ThemePreferenceController::class, 'update'])->name('user.preferences.theme');
     Route::patch('/utente/preferenze/saldi', [BalancePrivacyPreferenceController::class, 'update'])->name('user.preferences.hide_balances');
     Route::patch('/utente/preferenze/notifiche', [NotificationPreferenceController::class, 'update'])->name('user.preferences.notifications');
+    Route::patch('/utente/preferenze/nav-mobile', [MobileBottomNavPreferenceController::class, 'update'])->name('user.preferences.mobile_bottom_nav');
 
     // Modifica impostazioni quiz di profilazione dal profilo
     Route::get('/profilo/impostazioni-quiz', [ProfileQuizController::class, 'edit'])->name('profile.quiz-settings.edit');
     Route::patch('/profilo/impostazioni-quiz', [ProfileQuizController::class, 'update'])->name('profile.quiz-settings.update');
-    Route::post('/profilo/tracciamento-entrate/attiva', [ProfileQuizController::class, 'toggleRevenueTracking'])->name('profile.revenue-tracking.toggle');
 
     // Gestione Household (dettagli, modifica, membri) - gestisce permessi internamente
     Route::get('/nuclei/{household}', [HouseholdController::class, 'show'])->name('households.show');

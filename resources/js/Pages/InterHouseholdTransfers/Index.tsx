@@ -119,7 +119,7 @@ export default function Index({ transfers, filters }: IndexProps) {
             header={
                 <PageHeader
                     title="Trasferimenti tra Households"
-                    mobileTitle="Trasf. HH"
+                    mobileTitle="Tra nuclei"
                     backLink={route('transactions.index')}
                     actions={
                         <IndexPageHeaderActions>

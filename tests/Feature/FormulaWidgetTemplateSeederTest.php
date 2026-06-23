@@ -21,7 +21,7 @@ class FormulaWidgetTemplateSeederTest extends TestCase
         $this->seed(FormulaWidgetTemplateSeeder::class);
         $secondCount = FormulaWidget::query()->where('is_official_template', true)->count();
 
-        $this->assertSame(11, $firstCount);
+        $this->assertSame(10, $firstCount);
         $this->assertSame($firstCount, $secondCount);
     }
 }

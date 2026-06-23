@@ -164,21 +164,4 @@ return [
             'formula_string' => '(([period_income] - [period_expenses]) / [period_income]) * 100',
         ],
     ],
-    [
-        'template_slug' => 'official.fatturato_annuo',
-        'name' => 'Fatturato annuo',
-        'display_type' => 'progress',
-        'period_preset' => 'calendar_ytd',
-        'default_size' => 'lg',
-        'chart_config' => [
-            'value_code' => 'annual_revenue',
-            'threshold_code' => 'revenue_threshold',
-        ],
-        'variable' => [
-            'code' => 'fatturato_annuo',
-            'name' => 'Fatturato annuo',
-            'type' => 'formula',
-            'formula_string' => '[annual_revenue]',
-        ],
-    ],
 ];

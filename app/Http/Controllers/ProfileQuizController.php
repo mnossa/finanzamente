@@ -116,8 +116,6 @@ class ProfileQuizController extends Controller
             'has_vat' => 'required|boolean',
             'family_status' => 'required|string|in:single,couple,family',
             'tracks_investments' => 'required|boolean',
-            'revenue_threshold' => 'nullable|numeric|min:1|max:10000000',
-            'revenue_tracking_enabled' => 'nullable|boolean',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
             'inps_rate' => 'nullable|numeric|min:0|max:100',
         ]);
@@ -132,11 +130,8 @@ class ProfileQuizController extends Controller
                 'has_vat' => $validated['has_vat'],
                 'family_status' => $validated['family_status'],
                 'tracks_investments' => $validated['tracks_investments'],
-                'revenue_threshold' => $validated['revenue_threshold'] ?? ($currentSettings['revenue_threshold'] ?? 85000),
-                'revenue_tracking_enabled' => $validated['revenue_tracking_enabled'] ?? ($currentSettings['revenue_tracking_enabled'] ?? true),
                 'tax_rate' => $validated['tax_rate'] ?? ($currentSettings['tax_rate'] ?? 15),
                 'inps_rate' => $validated['inps_rate'] ?? ($currentSettings['inps_rate'] ?? 26.23),
-                'revenue_notified_levels' => $currentSettings['revenue_notified_levels'] ?? [],
                 'completed_at' => $currentSettings['completed_at'] ?? now()->toISOString(),
                 'updated_at' => now()->toISOString(),
             ],
@@ -144,18 +139,5 @@ class ProfileQuizController extends Controller
 
         return redirect()->route('profile.edit')
             ->with('success', 'Impostazioni di profilazione aggiornate con successo.');
-    }
-
-    /**
-     * Abilita o disabilita il monitoraggio del fatturato annuo.
-     */
-    public function toggleRevenueTracking(Request $request)
-    {
-        $user = $request->user();
-        $settings = $user->profile_settings ?? [];
-        $settings['revenue_tracking_enabled'] = ! ($settings['revenue_tracking_enabled'] ?? true);
-        $user->update(['profile_settings' => $settings]);
-
-        return back();
     }
 }

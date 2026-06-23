@@ -306,7 +306,7 @@ class FormulaWidgetHttpTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('FormulaWidgets/Marketplace')
-                ->has('officialTemplates', 11));
+                ->has('officialTemplates', 10));
 
         $this->actingAs($this->user)
             ->post(route('formula-marketplace.install-template', 'official.saldo_liquidita'))

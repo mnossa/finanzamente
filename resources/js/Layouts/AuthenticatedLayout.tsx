@@ -14,7 +14,14 @@ import UmamiAnalytics from '@/Components/UmamiAnalytics';
 import OfflineGate from '@/Components/OfflineGate';
 import PwaInstallBanner from '@/Components/PwaInstallBanner';
 import axios from 'axios';
+import HubPageTransition from '@/Components/HubPageTransition';
+import { useMobileBottomNavSlots } from '@/hooks/useMobileBottomNav';
+import { renderHubTabIcon } from '@/utils/hubTabIcons';
+import type { MobileBottomNavDestination } from '@/config/mobileBottomNav';
 import { FM_MOBILE_PRIMARY_FORM_ID, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
+
+const MOBILE_FAB_BUTTON_CLASSES =
+    'relative z-50 flex h-14 w-14 shrink-0 -mt-7 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white active:scale-95 transition-transform dark:border-slate-800';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
 type UINotification = AppNotification & { action_url?: string | null; severity?: 'info' | 'warning' | 'critical' };
@@ -983,7 +990,9 @@ export default function Authenticated({
                     {/* Scrollable Content */}
                     <main className="flex-1 overflow-x-hidden overflow-y-auto p-2 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:p-8 lg:pb-8">
                         <div className="mx-auto min-w-0 max-w-7xl">
-                            {children}
+                            <HubPageTransition>
+                                {children}
+                            </HubPageTransition>
                         </div>
                     </main>
                 </div>
@@ -1009,15 +1018,24 @@ function MobileBottomNav({
     ) => boolean;
     onMenuOpen: () => void;
 }) {
-    const isDashboard = isRouteActive('dashboard');
-    const isCashflow = isRouteActive(
-        'transactions.index',
-        undefined,
-        undefined,
-        ['accounts.*', 'transactions.*', 'transfers.*', 'inter-household-transfers.*'],
-    );
-    const isAccounts = isRouteActive('accounts.*');
+    const slots = useMobileBottomNavSlots();
     const primaryFab = resolveMobilePrimaryFab();
+
+    const isDestinationActive = (destination: MobileBottomNavDestination): boolean => {
+        if (destination.routeMatchPatterns?.length) {
+            return isRouteActive(
+                destination.routeMatch,
+                undefined,
+                undefined,
+                destination.routeMatchPatterns,
+            );
+        }
+
+        return isRouteActive(destination.routeMatch);
+    };
+
+    const leftSlots = slots.slice(0, 2);
+    const rightSlot = slots[2];
 
     return (
         <nav
@@ -1026,42 +1044,33 @@ function MobileBottomNav({
             aria-label="Navigazione rapida"
         >
             <div className="flex h-16 items-center justify-around px-1">
-                {/* Dashboard */}
-                <Link
-                    href={route('dashboard')}
-                    onClick={() => nav.bottomBar('home')}
-                    className={clsx(
-                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors',
-                        isDashboard ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
-                    )}
-                    aria-label="Home"
-                >
-                    <span aria-hidden="true"><Icons.Dashboard /></span>
-                    <span className="text-xs font-medium leading-none" aria-hidden="true">Home</span>
-                </Link>
+                {leftSlots.map((destination) => (
+                    <Link
+                        key={destination.id}
+                        href={route(destination.routeName)}
+                        onClick={() => nav.bottomBar(destination.id)}
+                        className={clsx(
+                            'flex min-h-12 min-w-14 max-w-[5.5rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 transition-colors',
+                            isDestinationActive(destination)
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-slate-700 dark:text-slate-200',
+                        )}
+                        aria-label={destination.ariaLabel}
+                    >
+                        <span aria-hidden="true">{renderHubTabIcon(destination.icon)}</span>
+                        <span className="w-full truncate text-center text-[11px] font-medium leading-none sm:text-xs" aria-hidden="true">
+                            {destination.label}
+                        </span>
+                    </Link>
+                ))}
 
-                {/* Transazioni */}
-                <Link
-                    href={route('transactions.index')}
-                    onClick={() => nav.bottomBar('movimenti')}
-                    className={clsx(
-                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors',
-                        isCashflow ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
-                    )}
-                    aria-label="Transazioni"
-                >
-                    <span aria-hidden="true"><Icons.ArrowLeftRight /></span>
-                    <span className="text-xs font-medium leading-none" aria-hidden="true">Transazioni</span>
-                </Link>
-
-                {/* FAB — nascosto dove non c'è un'azione primaria sensata (es. simulazioni) */}
                 {primaryFab ? (
                     primaryFab.mode === 'submit' ? (
                         <button
                             type="submit"
                             form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
                             onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className="flex h-12 w-12 shrink-0 -mt-3 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                            className={MOBILE_FAB_BUTTON_CLASSES}
                             aria-label={primaryFab.ariaLabel}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1074,7 +1083,7 @@ function MobileBottomNav({
                         <Link
                             href={primaryFab.href}
                             onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className="flex h-12 w-12 shrink-0 -mt-3 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 active:scale-95 transition-transform"
+                            className={MOBILE_FAB_BUTTON_CLASSES}
                             aria-label={primaryFab.ariaLabel}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1083,27 +1092,29 @@ function MobileBottomNav({
                         </Link>
                     )
                 ) : (
-                    <div
-                        className="flex h-12 w-12 shrink-0 -mt-3 items-center justify-center"
-                        aria-hidden="true"
-                    />
+                    <div className="flex h-14 w-14 shrink-0 -mt-7 items-center justify-center" aria-hidden="true" />
                 )}
 
-                {/* Conti */}
-                <Link
-                    href={route('accounts.index')}
-                    onClick={() => nav.bottomBar('conti')}
-                    className={clsx(
-                        'flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 transition-colors',
-                        isAccounts ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'
-                    )}
-                    aria-label="Conti"
-                >
-                    <span aria-hidden="true"><Icons.Wallet /></span>
-                    <span className="text-xs font-medium leading-none" aria-hidden="true">Conti</span>
-                </Link>
+                {rightSlot && (
+                    <Link
+                        key={rightSlot.id}
+                        href={route(rightSlot.routeName)}
+                        onClick={() => nav.bottomBar(rightSlot.id)}
+                        className={clsx(
+                            'flex min-h-12 min-w-14 max-w-[5.5rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 transition-colors',
+                            isDestinationActive(rightSlot)
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-slate-700 dark:text-slate-200',
+                        )}
+                        aria-label={rightSlot.ariaLabel}
+                    >
+                        <span aria-hidden="true">{renderHubTabIcon(rightSlot.icon)}</span>
+                        <span className="w-full truncate text-center text-[11px] font-medium leading-none sm:text-xs" aria-hidden="true">
+                            {rightSlot.label}
+                        </span>
+                    </Link>
+                )}
 
-                {/* Altro / Menu */}
                 <button
                     onClick={onMenuOpen}
                     className="flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 text-slate-700 transition-colors dark:text-slate-200"

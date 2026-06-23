@@ -118,16 +118,6 @@ return [
             'resolver' => 'period_stats',
             'field' => 'net',
         ],
-        'annual_revenue' => [
-            'label' => 'Fatturato annuo',
-            'requires_period' => true,
-            'resolver' => 'annual_revenue',
-        ],
-        'revenue_threshold' => [
-            'label' => 'Soglia regime forfettario',
-            'requires_period' => false,
-            'resolver' => 'revenue_threshold',
-        ],
         'expense_needs' => [
             'label' => 'Spese necessità',
             'requires_period' => true,
@@ -297,8 +287,6 @@ return [
         'period_income' => '[period_income]',
         'period_expenses' => '[period_expenses] / [days_elapsed_in_month]',
         'period_net' => '[period_income] - [period_expenses]',
-        'annual_revenue' => '[annual_revenue] / [revenue_threshold] * 100',
-        'revenue_threshold' => '[annual_revenue] / [revenue_threshold] * 100',
         'expense_needs' => '[expense_needs] / [period_expenses] * 100',
         'expense_wants' => '[expense_wants]',
         'expense_investments' => '[expense_investments]',
@@ -314,11 +302,11 @@ return [
         'quarter' => '[period_income] / [quarter]',
         'week_of_year' => '[week_of_year]',
         'days_in_month' => '[period_expenses] / [days_elapsed_in_month] * [days_in_month]',
-        'days_in_year' => '[annual_revenue] / [days_elapsed_in_year] * [days_in_year]',
+        'days_in_year' => '[period_income] / [days_elapsed_in_year] * [days_in_year]',
         'days_elapsed_in_month' => '[period_expenses] / [days_elapsed_in_month]',
         'days_remaining_in_month' => '[period_expenses] / [days_elapsed_in_month] * [days_remaining_in_month]',
-        'days_elapsed_in_year' => '[annual_revenue] / [days_elapsed_in_year]',
-        'days_remaining_in_year' => '[annual_revenue] / [days_elapsed_in_year] * [days_remaining_in_year]',
+        'days_elapsed_in_year' => '[period_income] / [days_elapsed_in_year]',
+        'days_remaining_in_year' => '[period_income] / [days_elapsed_in_year] * [days_remaining_in_year]',
         'days_in_period' => '[period_net] / [days_in_period]',
     ],
 
@@ -366,7 +354,7 @@ return [
         'progress' => [
             'label' => 'Avanzamento',
             'description' => 'Barra di progresso verso una soglia.',
-            'guide' => 'Scegli valore attuale e soglia tra le variabili di sistema (es. fatturato vs limite forfettario).',
+            'guide' => 'Scegli valore attuale e soglia tra le variabili di sistema (es. entrate vs obiettivo).',
         ],
     ],
 
@@ -411,5 +399,6 @@ return [
     'retired_official_template_slugs' => [
         'official.distribuzione_spese',
         'official.lifestyle_score',
+        'official.fatturato_annuo',
     ],
 ];

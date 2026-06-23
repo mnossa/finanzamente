@@ -1,19 +1,18 @@
 import type { SectionHubTab } from '@/Components/SectionHubNav';
-import { getAdjacentHubTabHref, isHubIndexRoute } from '@/utils/sectionHubNav';
-import { router, usePage } from '@inertiajs/react';
+import {
+    getAdjacentHubTabHref,
+    isHubIndexRoute,
+    prefersReducedHubMotion,
+    visitHubTab,
+    type HubNavDirection,
+} from '@/utils/sectionHubNav';
+import { usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import { useEffect, useRef } from 'react';
 
 const MIN_SWIPE_DISTANCE_PX = 60;
 const MAX_VERTICAL_DRIFT_RATIO = 0.75;
-
-function prefersReducedMotion(): boolean {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
+const AXIS_LOCK_THRESHOLD_PX = 10;
 
 function isMobileViewport(): boolean {
     if (typeof window === 'undefined') {
@@ -58,10 +57,11 @@ export function useHubSwipeNavigation({
     const { plan } = usePage<PageProps>().props;
     const isProPlan = plan?.current === 'pro';
     const touchStart = useRef<{ x: number; y: number } | null>(null);
+    const gestureAxis = useRef<'horizontal' | 'vertical' | null>(null);
     const navigating = useRef(false);
 
     useEffect(() => {
-        if (!enableSwipe || prefersReducedMotion() || !isMobileViewport()) {
+        if (!enableSwipe || prefersReducedHubMotion() || !isMobileViewport()) {
             return;
         }
 
@@ -71,6 +71,8 @@ export function useHubSwipeNavigation({
         }
 
         const onTouchStart = (event: TouchEvent) => {
+            gestureAxis.current = null;
+
             if (event.touches.length !== 1 || shouldIgnoreSwipeTarget(event.target)) {
                 touchStart.current = null;
                 return;
@@ -80,9 +82,38 @@ export function useHubSwipeNavigation({
             touchStart.current = { x: touch.clientX, y: touch.clientY };
         };
 
+        const onTouchMove = (event: TouchEvent) => {
+            if (!touchStart.current || event.touches.length !== 1) {
+                return;
+            }
+
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - touchStart.current.x;
+            const deltaY = touch.clientY - touchStart.current.y;
+
+            if (gestureAxis.current === null) {
+                if (Math.abs(deltaX) < AXIS_LOCK_THRESHOLD_PX && Math.abs(deltaY) < AXIS_LOCK_THRESHOLD_PX) {
+                    return;
+                }
+
+                gestureAxis.current = Math.abs(deltaY) > Math.abs(deltaX) ? 'vertical' : 'horizontal';
+            }
+
+            if (gestureAxis.current === 'vertical') {
+                return;
+            }
+        };
+
         const onTouchEnd = (event: TouchEvent) => {
+            if (gestureAxis.current === 'vertical') {
+                touchStart.current = null;
+                gestureAxis.current = null;
+                return;
+            }
+
             if (!touchStart.current || navigating.current || event.changedTouches.length !== 1) {
                 touchStart.current = null;
+                gestureAxis.current = null;
                 return;
             }
 
@@ -90,6 +121,7 @@ export function useHubSwipeNavigation({
             const deltaX = touch.clientX - touchStart.current.x;
             const deltaY = touch.clientY - touchStart.current.y;
             touchStart.current = null;
+            gestureAxis.current = null;
 
             if (Math.abs(deltaX) < MIN_SWIPE_DISTANCE_PX) {
                 return;
@@ -99,7 +131,7 @@ export function useHubSwipeNavigation({
                 return;
             }
 
-            const direction = deltaX < 0 ? 'next' : 'prev';
+            const direction: HubNavDirection = deltaX < 0 ? 'next' : 'prev';
             const href = getAdjacentHubTabHref(tabs, activeId, direction, isProPlan);
 
             if (!href) {
@@ -107,19 +139,18 @@ export function useHubSwipeNavigation({
             }
 
             navigating.current = true;
-            router.visit(href, {
-                preserveScroll: false,
-                onFinish: () => {
-                    navigating.current = false;
-                },
+            visitHubTab(href, direction, () => {
+                navigating.current = false;
             });
         };
 
         document.addEventListener('touchstart', onTouchStart, { passive: true });
+        document.addEventListener('touchmove', onTouchMove, { passive: true });
         document.addEventListener('touchend', onTouchEnd, { passive: true });
 
         return () => {
             document.removeEventListener('touchstart', onTouchStart);
+            document.removeEventListener('touchmove', onTouchMove);
             document.removeEventListener('touchend', onTouchEnd);
         };
     }, [tabs, activeId, enableSwipe, isProPlan]);

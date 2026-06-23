@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Account;
-use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -73,8 +72,6 @@ class SystemVariableResolver
             'investment_purchases' => $this->investmentLedgerService
                 ->unsyncedPurchasesInPeriod($user, $startDate, $endDate)['amount'],
             'period_stats' => $this->resolvePeriodStatsField($user, $startDate, $endDate, $meta['field']),
-            'annual_revenue' => $this->resolveAnnualRevenue($user, $startDate, $endDate),
-            'revenue_threshold' => $this->resolveRevenueThreshold($user),
             'expense_distribution' => $this->resolveExpenseDistributionField($user, $startDate, $endDate, $meta['field']),
             'linked_investments_at' => $this->investmentLedgerService->linkedInvestedValueAt($user, $endDate),
             'investment_pac_metrics' => $this->resolvePacMetricField($user, $endDate, $meta['field']),
@@ -202,32 +199,6 @@ class SystemVariableResolver
         $stats = $this->dashboardPeriodStatsService->calculate($user, $start, $end);
 
         return (float) ($stats[$field] ?? 0.0);
-    }
-
-    private function resolveAnnualRevenue(User $user, Carbon $start, Carbon $end): float
-    {
-        if ($user->user_type !== 'partita_iva') {
-            return 0.0;
-        }
-
-        $householdId = $user->active_household_id;
-
-        if ($householdId === null) {
-            return 0.0;
-        }
-
-        return (float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
-            ->where('user_id', $user->id)
-            ->where('amount', '>', 0)
-            ->whereBetween('date', [$start, $end])
-            ->sum('amount');
-    }
-
-    private function resolveRevenueThreshold(User $user): float
-    {
-        $settings = $user->profile_settings ?? [];
-
-        return (float) ($settings['revenue_threshold'] ?? 85000);
     }
 
     private function resolveExpenseDistributionField(User $user, Carbon $start, Carbon $end, string $field): float

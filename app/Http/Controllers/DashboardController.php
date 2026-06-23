@@ -22,7 +22,6 @@ use App\Services\InvestmentLedgerService;
 use App\Services\ModuleAccessService;
 use App\Services\PacProjectionService;
 use App\Services\PortfolioSnapshotService;
-use App\Services\RevenueNotificationService;
 use App\Services\UpcomingCashflowService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -228,7 +227,6 @@ class DashboardController extends Controller
             'activeBudgets' => $activeBudgets,
             'openDebtsCredits' => $openDebtsCredits,
             'debtsCreditsSummary' => $debtsCreditsSummary,
-            'annualRevenueData' => $this->getAnnualRevenueData($user),
             'taxThermometerData' => $this->getTaxThermometerData($user),
             'dashboardLayout' => $dashboardLayout,
             'formulaWidgetPayloads' => $formulaWidgetPayloads,
@@ -341,68 +339,6 @@ class DashboardController extends Controller
             'gross_income' => $grossIncome,
             'tax_rate' => (float) ($settings['tax_rate'] ?? 15),
             'inps_rate' => (float) ($settings['inps_rate'] ?? 26.23),
-        ];
-    }
-
-    /**
-     * Calcola il fatturato annuo e controlla le notifiche di soglia.
-     */
-    private function getAnnualRevenueData(User $user): array
-    {
-        // Il widget fatturato è visibile solo agli utenti con Partita IVA
-        if ($user->user_type !== 'partita_iva') {
-            return [
-                'visible' => false,
-                'has_vat' => false,
-                'revenue_tracking_enabled' => false,
-                'annual_revenue' => 0,
-                'revenue_threshold' => 85000,
-                'revenue_percentage' => 0,
-            ];
-        }
-
-        $settings = $user->profile_settings ?? [];
-        $trackingEnabled = $settings['revenue_tracking_enabled'] ?? true;
-        $threshold = (float) ($settings['revenue_threshold'] ?? 85000);
-
-        if (! $trackingEnabled) {
-            return [
-                'visible' => true,
-                'has_vat' => true,
-                'revenue_tracking_enabled' => false,
-                'annual_revenue' => 0,
-                'revenue_threshold' => $threshold,
-                'revenue_percentage' => 0,
-            ];
-        }
-
-        $year = Carbon::now()->year;
-        $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfDay();
-        $endOfYear = Carbon::createFromDate($year, 12, 31)->endOfDay();
-        $householdId = $user->active_household_id;
-
-        $annualRevenue = (float) Transaction::whereHas('account', function ($q) use ($householdId) {
-            $q->where('household_id', $householdId);
-        })
-            ->where('user_id', $user->id)
-            ->where('amount', '>', 0)
-            ->whereBetween('date', [$startOfYear, $endOfYear])
-            ->sum('amount');
-
-        $percentage = $threshold > 0
-            ? round(($annualRevenue / $threshold) * 100, 1)
-            : 0;
-
-        // Controlla e crea notifiche se necessario
-        (new RevenueNotificationService)->checkAndNotify($user, $annualRevenue, $threshold);
-
-        return [
-            'visible' => true,
-            'has_vat' => true,
-            'revenue_tracking_enabled' => true,
-            'annual_revenue' => $annualRevenue,
-            'revenue_threshold' => $threshold,
-            'revenue_percentage' => $percentage,
         ];
     }
 

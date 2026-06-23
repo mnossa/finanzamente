@@ -3,13 +3,21 @@ import SectionHubNav, { type SectionHubTab } from '@/Components/SectionHubNav';
 type HubTab = 'budgets' | 'debts' | 'goals' | 'tax-deductions';
 
 const TABS: SectionHubTab[] = [
-    { id: 'budgets', label: 'Budget', routeName: 'budgets.index', moduleId: 'budgets' },
-    { id: 'debts', label: 'Debiti/Crediti', mobileLabel: 'Debiti', routeName: 'debts-credits.index', moduleId: 'debts_credits' },
-    { id: 'goals', label: 'Obiettivi', routeName: 'financial-goals.index', moduleId: 'financial_goals' },
+    { id: 'budgets', label: 'Budget', icon: 'PiggyBank', routeName: 'budgets.index', moduleId: 'budgets' },
+    {
+        id: 'debts',
+        label: 'Debiti/Crediti',
+        mobileLabel: 'Debiti',
+        icon: 'HandCoins',
+        routeName: 'debts-credits.index',
+        moduleId: 'debts_credits',
+    },
+    { id: 'goals', label: 'Obiettivi', icon: 'Target', routeName: 'financial-goals.index', moduleId: 'financial_goals' },
     {
         id: 'tax-deductions',
         label: 'Spese detraibili',
         mobileLabel: 'Detraibili',
+        icon: 'Receipt',
         routeName: 'tax-deductions.index',
         requiresPro: true,
         moduleId: 'tax_refund_730',

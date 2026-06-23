@@ -1,3 +1,4 @@
+import { consumeHubNavSkipOverlay } from '@/utils/sectionHubNav';
 import { router } from '@inertiajs/react';
 import { useEffect, useState, type ReactNode } from 'react';
 
@@ -9,7 +10,13 @@ export default function NavigationBlockingOverlay({ children }: { children: Reac
     const [isNavigating, setIsNavigating] = useState(false);
 
     useEffect(() => {
-        const removeStart = router.on('start', () => setIsNavigating(true));
+        const removeStart = router.on('start', () => {
+            if (consumeHubNavSkipOverlay()) {
+                return;
+            }
+
+            setIsNavigating(true);
+        });
         const removeFinish = router.on('finish', () => setIsNavigating(false));
         const removeCancel = router.on('cancel', () => setIsNavigating(false));
 

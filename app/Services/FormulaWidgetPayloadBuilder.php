@@ -69,8 +69,8 @@ class FormulaWidgetPayloadBuilder
             FormulaWidget::DISPLAY_PROGRESS => [
                 'type' => 'progress',
                 'name' => $widget->name,
-                'value' => $defaults['annual_revenue'] ?? 42000.0,
-                'threshold' => 85000.0,
+                'value' => $defaults['period_income'] ?? 2800.0,
+                'threshold' => $defaults['period_expenses'] ?? 1950.0,
                 'percentage' => 49.4,
                 'periodLabel' => 'Anteprima demo',
             ],
@@ -333,8 +333,8 @@ class FormulaWidgetPayloadBuilder
      */
     private function buildProgress(FormulaWidget $widget, User $user, array $period, array $chartConfig): array
     {
-        $valueCode = $chartConfig['value_code'] ?? 'annual_revenue';
-        $thresholdCode = $chartConfig['threshold_code'] ?? 'revenue_threshold';
+        $valueCode = $chartConfig['value_code'] ?? 'period_income';
+        $thresholdCode = $chartConfig['threshold_code'] ?? 'period_expenses';
 
         $value = $this->formulaResolverService->resolveCode($user, $valueCode, $period['start'], $period['end']);
         $threshold = $this->formulaResolverService->resolveCode($user, $thresholdCode, $period['start'], $period['end']);

@@ -1,4 +1,10 @@
 import type { SectionHubTab } from '@/Components/SectionHubNav';
+import { router } from '@inertiajs/react';
+
+export type HubNavDirection = 'next' | 'prev';
+
+const HUB_NAV_DIRECTION_KEY = 'fm-hub-nav-direction';
+const HUB_NAV_SKIP_OVERLAY_KEY = 'fm-hub-nav-skip-overlay';
 
 /** Rotte index degli hub — swipe abilitato solo su queste. */
 export const HUB_INDEX_ROUTE_NAMES = new Set([
@@ -65,4 +71,92 @@ export function getAdjacentHubTabHref(
     }
 
     return resolveSectionHubTabHref(target, isProPlan);
+}
+
+export function prefersReducedHubMotion(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+export function setHubNavDirection(direction: HubNavDirection): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    sessionStorage.setItem(HUB_NAV_DIRECTION_KEY, direction);
+}
+
+export function markHubNavVisit(): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    sessionStorage.setItem(HUB_NAV_SKIP_OVERLAY_KEY, '1');
+}
+
+export function consumeHubNavSkipOverlay(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    const shouldSkip = sessionStorage.getItem(HUB_NAV_SKIP_OVERLAY_KEY) === '1';
+    sessionStorage.removeItem(HUB_NAV_SKIP_OVERLAY_KEY);
+
+    return shouldSkip;
+}
+
+export function consumeHubNavDirection(): HubNavDirection | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    const direction = sessionStorage.getItem(HUB_NAV_DIRECTION_KEY);
+
+    sessionStorage.removeItem(HUB_NAV_DIRECTION_KEY);
+
+    if (direction === 'next' || direction === 'prev') {
+        return direction;
+    }
+
+    return null;
+}
+
+export function clearHubNavDirection(): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    sessionStorage.removeItem(HUB_NAV_DIRECTION_KEY);
+}
+
+export function resolveHubNavDirection(
+    tabs: SectionHubTab[],
+    fromId: string,
+    toId: string,
+): HubNavDirection {
+    const visible = getVisibleHubTabs(tabs);
+    const fromIndex = visible.findIndex((tab) => tab.id === fromId);
+    const toIndex = visible.findIndex((tab) => tab.id === toId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+        return 'next';
+    }
+
+    return toIndex > fromIndex ? 'next' : 'prev';
+}
+
+export function visitHubTab(href: string, direction: HubNavDirection, onComplete?: () => void): void {
+    setHubNavDirection(direction);
+    markHubNavVisit();
+
+    router.visit(href, {
+        preserveScroll: false,
+        onFinish: () => {
+            clearHubNavDirection();
+            onComplete?.();
+        },
+    });
 }

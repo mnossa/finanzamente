@@ -12,12 +12,13 @@ test.describe('Hub pianificazione', () => {
         await expect(page.locator('div.mb-3.lg\\:hidden a[href*="/debiti-crediti/crea"]')).toHaveCount(0);
     });
 
-    test('hub nav usa tab con underline (tab attivo evidenziato)', async ({ page }) => {
+    test('hub nav evidenzia il tab attivo con indicatore animato', async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/debiti-crediti');
-        const activeTab = page.getByRole('navigation', { name: 'Pianificazione e risparmio' }).getByRole('link', { name: /debiti/i });
+        const hubNav = page.getByRole('navigation', { name: 'Pianificazione e risparmio' });
+        const activeTab = hubNav.getByRole('link', { name: /debiti/i });
         await expect(activeTab).toHaveAttribute('aria-current', 'page');
-        await expect(activeTab).toHaveClass(/border-emerald/);
+        await expect(hubNav.getByTestId('hub-tab-indicator')).toBeVisible();
     });
 
     test('swipe orizzontale su mobile naviga al tab hub adiacente', async ({ page }) => {
