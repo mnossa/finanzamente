@@ -324,12 +324,18 @@ class TransactionController extends Controller
 
         $filterQueryKeys = ['account_id', 'category_id', 'type', 'from', 'to', 'is_tax_deductible', 'tag_id', 'description', 'description_regex', 'amount_min', 'amount_max', 'currency_code'];
 
+        $today = Carbon::today();
+        $showUpcoming = ! $request->filled('from') && ! $request->filled('to') && ! $request->filled('type');
+
+        if ($showUpcoming) {
+            $query->whereDate('date', '<=', $today);
+        }
+
         $summaryQuery = clone $query;
         $summaryIncome = (float) (clone $summaryQuery)->where('transactions.amount', '>', 0)->sum('transactions.amount');
         $summaryExpenses = (float) abs((float) (clone $summaryQuery)->where('transactions.amount', '<', 0)->sum('transactions.amount'));
         $summaryCount = (int) (clone $summaryQuery)->count();
 
-        $today = Carbon::today();
         $householdAccounts = Account::query()
             ->where('household_id', $householdId)
             ->where('active', true)
@@ -443,7 +449,6 @@ class TransactionController extends Controller
 
         $accountFilter = $request->filled('account_id') ? (int) $request->account_id : null;
         $upcomingService = app(UpcomingCashflowService::class);
-        $showUpcoming = ! $request->filled('from') && ! $request->filled('to') && ! $request->filled('type');
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,

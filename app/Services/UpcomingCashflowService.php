@@ -32,6 +32,8 @@ class UpcomingCashflowService
 
         $today = Carbon::today();
         $horizonEnd = $today->copy()->addDays($horizonDays);
+        $scheduledRecurringDates = $this->scheduledRecurringDatesById($user, $today, $horizonEnd, $accountId);
+        $scheduledPacMonths = $this->scheduledPacMonthsById($user, $today, $horizonEnd, $accountId);
         $movements = [];
 
         $recurringQuery = RecurringTransaction::query()
@@ -59,6 +61,12 @@ class UpcomingCashflowService
                 continue;
             }
 
+            $scheduledDates = $scheduledRecurringDates[$recurring->id] ?? [];
+
+            if (in_array($nextDue->format('Y-m-d'), $scheduledDates, true)) {
+                continue;
+            }
+
             $movements[] = $this->mapRecurringVirtualRow($recurring, $nextDue);
         }
 
@@ -75,6 +83,12 @@ class UpcomingCashflowService
             $nextExecution = $this->investmentPacService->calculateNextExecutionDate($pac);
 
             if ($nextExecution === null || $nextExecution->lte($today) || $nextExecution->gt($horizonEnd)) {
+                continue;
+            }
+
+            $scheduledMonths = $scheduledPacMonths[$pac->id] ?? [];
+
+            if (in_array($nextExecution->format('Y-m'), $scheduledMonths, true)) {
                 continue;
             }
 
@@ -227,6 +241,86 @@ class UpcomingCashflowService
     public static function virtualPacId(int $pacId): int
     {
         return -(self::PAC_VIRTUAL_ID_OFFSET + $pacId);
+    }
+
+    /**
+     * @return array<int, list<string>>
+     */
+    private function scheduledRecurringDatesById(
+        User $user,
+        Carbon $today,
+        Carbon $horizonEnd,
+        ?int $accountId,
+    ): array {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [];
+        }
+
+        $query = Transaction::query()
+            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->whereNotNull('recurring_transaction_id')
+            ->whereDate('date', '>', $today)
+            ->whereDate('date', '<=', $horizonEnd);
+
+        if ($accountId !== null) {
+            $query->where('account_id', $accountId);
+        }
+
+        $grouped = [];
+
+        foreach ($query->get(['recurring_transaction_id', 'date']) as $transaction) {
+            $recurringId = (int) $transaction->recurring_transaction_id;
+            $grouped[$recurringId] ??= [];
+            $grouped[$recurringId][] = $transaction->date->format('Y-m-d');
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @return array<int, list<string>>
+     */
+    private function scheduledPacMonthsById(
+        User $user,
+        Carbon $today,
+        Carbon $horizonEnd,
+        ?int $accountId,
+    ): array {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [];
+        }
+
+        $query = Transaction::query()
+            ->with('investment:id,investment_pac_id')
+            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->whereHas('investment', fn ($q) => $q->whereNotNull('investment_pac_id'))
+            ->whereDate('date', '>', $today)
+            ->whereDate('date', '<=', $horizonEnd);
+
+        if ($accountId !== null) {
+            $query->where('account_id', $accountId);
+        }
+
+        $grouped = [];
+
+        foreach ($query->get() as $transaction) {
+            $pacId = (int) ($transaction->investment?->investment_pac_id ?? 0);
+
+            if ($pacId <= 0) {
+                continue;
+            }
+
+            $grouped[$pacId] ??= [];
+            $grouped[$pacId][] = $transaction->date->format('Y-m');
+        }
+
+        return $grouped;
     }
 
     /**

@@ -18,10 +18,16 @@ import HubPageTransition from '@/Components/HubPageTransition';
 import { useMobileBottomNavSlots } from '@/hooks/useMobileBottomNav';
 import { renderHubTabIcon } from '@/utils/hubTabIcons';
 import type { MobileBottomNavDestination } from '@/config/mobileBottomNav';
-import { FM_MOBILE_PRIMARY_FORM_ID, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
+import { FM_MOBILE_PRIMARY_FORM_ID, dispatchMobileFabAction, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 
 const MOBILE_FAB_BUTTON_CLASSES =
     'relative z-50 flex h-14 w-14 shrink-0 -mt-7 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white active:scale-95 transition-transform dark:border-slate-800';
+
+const MOBILE_FAB_INACTIVE_CLASSES =
+    'relative z-50 flex h-14 w-14 shrink-0 -mt-7 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-slate-400 dark:border-slate-800 dark:bg-slate-700/80 dark:text-slate-500 pointer-events-none';
+
+const MOBILE_BOTTOM_NAV_TAB_CLASSES =
+    'flex min-h-12 min-w-0 max-w-[4.75rem] flex-1 flex-col items-center justify-end gap-0.5 rounded-xl px-1 py-1 transition-colors';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
 type UINotification = AppNotification & { action_url?: string | null; severity?: 'info' | 'warning' | 'critical' };
@@ -1006,6 +1012,142 @@ export default function Authenticated({
     );
 }
 
+function MobileBottomNavTab({
+    label,
+    isActive,
+    className,
+    children,
+    ...props
+}: React.ComponentPropsWithoutRef<'button'> & {
+    label: string;
+    isActive?: boolean;
+    children: React.ReactNode;
+}) {
+    return (
+        <button
+            type="button"
+            {...props}
+            className={clsx(
+                MOBILE_BOTTOM_NAV_TAB_CLASSES,
+                isActive
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-700 dark:text-slate-200',
+                className,
+            )}
+        >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden="true">
+                {children}
+            </span>
+            <span className="w-full truncate text-center text-[10px] font-medium leading-none">
+                {label}
+            </span>
+        </button>
+    );
+}
+
+function MobileBottomNavDestinationLink({
+    destination,
+    isActive,
+    onNavigate,
+}: {
+    destination: MobileBottomNavDestination;
+    isActive: boolean;
+    onNavigate: () => void;
+}) {
+    return (
+        <Link
+            href={route(destination.routeName)}
+            onClick={onNavigate}
+            className={clsx(
+                MOBILE_BOTTOM_NAV_TAB_CLASSES,
+                isActive
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-700 dark:text-slate-200',
+            )}
+            aria-label={destination.ariaLabel}
+            aria-current={isActive ? 'page' : undefined}
+        >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden="true">
+                {renderHubTabIcon(destination.icon)}
+            </span>
+            <span className="w-full truncate text-center text-[10px] font-medium leading-none" aria-hidden="true">
+                {destination.label}
+            </span>
+        </Link>
+    );
+}
+
+function MobileBottomNavAltroButton({ onClick }: { onClick: () => void }) {
+    return (
+        <MobileBottomNavTab label="Altro" onClick={onClick} aria-label="Altro">
+            <Icons.Menu />
+        </MobileBottomNavTab>
+    );
+}
+
+function MobileBottomNavFabPlusIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12h14" /><path d="M12 5v14" />
+        </svg>
+    );
+}
+
+function MobileBottomNavFabSlot({ primaryFab }: { primaryFab: ReturnType<typeof resolveMobilePrimaryFab> }) {
+    if (!primaryFab) {
+        return (
+            <div className={MOBILE_FAB_INACTIVE_CLASSES} aria-hidden="true">
+                <MobileBottomNavFabPlusIcon />
+            </div>
+        );
+    }
+
+    if (primaryFab.mode === 'action') {
+        return (
+            <button
+                type="button"
+                onClick={() => {
+                    nav.mobileFab(primaryFab.analyticsSection);
+                    dispatchMobileFabAction(primaryFab.actionId);
+                }}
+                className={MOBILE_FAB_BUTTON_CLASSES}
+                aria-label={primaryFab.ariaLabel}
+            >
+                <MobileBottomNavFabPlusIcon />
+            </button>
+        );
+    }
+
+    if (primaryFab.mode === 'submit') {
+        return (
+            <button
+                type="submit"
+                form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
+                onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
+                className={MOBILE_FAB_BUTTON_CLASSES}
+                aria-label={primaryFab.ariaLabel}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                </svg>
+            </button>
+        );
+    }
+
+    return (
+        <Link
+            href={primaryFab.href}
+            onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
+            className={MOBILE_FAB_BUTTON_CLASSES}
+            aria-label={primaryFab.ariaLabel}
+        >
+            <MobileBottomNavFabPlusIcon />
+        </Link>
+    );
+}
+
 function MobileBottomNav({
     isRouteActive,
     onMenuOpen,
@@ -1043,86 +1185,32 @@ function MobileBottomNav({
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             aria-label="Navigazione rapida"
         >
-            <div className="flex h-16 items-center justify-around px-1">
-                {leftSlots.map((destination) => (
-                    <Link
-                        key={destination.id}
-                        href={route(destination.routeName)}
-                        onClick={() => nav.bottomBar(destination.id)}
-                        className={clsx(
-                            'flex min-h-12 min-w-14 max-w-[5.5rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 transition-colors',
-                            isDestinationActive(destination)
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-slate-700 dark:text-slate-200',
-                        )}
-                        aria-label={destination.ariaLabel}
-                    >
-                        <span aria-hidden="true">{renderHubTabIcon(destination.icon)}</span>
-                        <span className="w-full truncate text-center text-[11px] font-medium leading-none sm:text-xs" aria-hidden="true">
-                            {destination.label}
-                        </span>
-                    </Link>
-                ))}
+            <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-end px-1">
+                <div className="flex items-end justify-evenly">
+                    {leftSlots.map((destination) => (
+                        <MobileBottomNavDestinationLink
+                            key={destination.id}
+                            destination={destination}
+                            isActive={isDestinationActive(destination)}
+                            onNavigate={() => nav.bottomBar(destination.id)}
+                        />
+                    ))}
+                </div>
 
-                {primaryFab ? (
-                    primaryFab.mode === 'submit' ? (
-                        <button
-                            type="submit"
-                            form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
-                            onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className={MOBILE_FAB_BUTTON_CLASSES}
-                            aria-label={primaryFab.ariaLabel}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                                <polyline points="17 21 17 13 7 13 7 21" />
-                                <polyline points="7 3 7 8 15 8" />
-                            </svg>
-                        </button>
-                    ) : (
-                        <Link
-                            href={primaryFab.href}
-                            onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                            className={MOBILE_FAB_BUTTON_CLASSES}
-                            aria-label={primaryFab.ariaLabel}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M5 12h14" /><path d="M12 5v14" />
-                            </svg>
-                        </Link>
-                    )
-                ) : (
-                    <div className="flex h-14 w-14 shrink-0 -mt-7 items-center justify-center" aria-hidden="true" />
-                )}
+                <div className="flex shrink-0 items-center justify-center px-1">
+                    <MobileBottomNavFabSlot primaryFab={primaryFab} />
+                </div>
 
-                {rightSlot && (
-                    <Link
-                        key={rightSlot.id}
-                        href={route(rightSlot.routeName)}
-                        onClick={() => nav.bottomBar(rightSlot.id)}
-                        className={clsx(
-                            'flex min-h-12 min-w-14 max-w-[5.5rem] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 transition-colors',
-                            isDestinationActive(rightSlot)
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-slate-700 dark:text-slate-200',
-                        )}
-                        aria-label={rightSlot.ariaLabel}
-                    >
-                        <span aria-hidden="true">{renderHubTabIcon(rightSlot.icon)}</span>
-                        <span className="w-full truncate text-center text-[11px] font-medium leading-none sm:text-xs" aria-hidden="true">
-                            {rightSlot.label}
-                        </span>
-                    </Link>
-                )}
-
-                <button
-                    onClick={onMenuOpen}
-                    className="flex min-h-12 min-w-14 flex-col items-center justify-center gap-1 rounded-xl py-1 text-slate-700 transition-colors dark:text-slate-200"
-                    aria-label="Altro"
-                >
-                    <span aria-hidden="true"><Icons.Menu /></span>
-                    <span className="text-xs font-medium leading-none" aria-hidden="true">Altro</span>
-                </button>
+                <div className="flex items-end justify-evenly">
+                    {rightSlot && (
+                        <MobileBottomNavDestinationLink
+                            destination={rightSlot}
+                            isActive={isDestinationActive(rightSlot)}
+                            onNavigate={() => nav.bottomBar(rightSlot.id)}
+                        />
+                    )}
+                    <MobileBottomNavAltroButton onClick={onMenuOpen} />
+                </div>
             </div>
         </nav>
     );

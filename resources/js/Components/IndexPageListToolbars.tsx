@@ -1,7 +1,7 @@
 import { Children, ReactNode } from 'react';
 import clsx from 'clsx';
 import LinkButton from '@/Components/LinkButton';
-import { isHrefCoveredByMobileFab } from '@/utils/mobilePrimaryFab';
+import { isHrefCoveredByMobileFab, isMobileFabActionCovered } from '@/utils/mobilePrimaryFab';
 import type { ComponentProps } from 'react';
 
 /**
@@ -86,6 +86,28 @@ export function MobileCreateLinkButton(props: ComponentProps<typeof LinkButton>)
     }
 
     return <LinkButton {...props} />;
+}
+
+/**
+ * Pulsante create inline: nascosto su mobile se il FAB centrale esegue la stessa azione.
+ */
+export function MobileCreateActionButton({
+    actionId,
+    children,
+    className,
+    ...props
+}: ComponentProps<'button'> & {
+    actionId: string;
+}): ReactNode {
+    if (isMobileFabActionCovered(actionId)) {
+        return null;
+    }
+
+    return (
+        <button type="button" className={className} {...props}>
+            {children}
+        </button>
+    );
 }
 
 function hasVisibleToolbarChildren(children: ReactNode): boolean {

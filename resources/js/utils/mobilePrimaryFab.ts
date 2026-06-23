@@ -6,6 +6,10 @@
  */
 export const FM_MOBILE_PRIMARY_FORM_ID = 'fm-mobile-primary-form';
 
+export const MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW = 'investment-analyses-new';
+
+export const FM_MOBILE_FAB_ACTION_EVENT = 'fm-mobile-fab-action';
+
 export type MobilePrimaryFab =
     | {
           mode: 'link';
@@ -20,6 +24,12 @@ export type MobilePrimaryFab =
           analyticsSection: string;
           /** Attributo HTML `form`; default {@link FM_MOBILE_PRIMARY_FORM_ID} */
           formId?: string;
+      }
+    | {
+          mode: 'action';
+          ariaLabel: string;
+          analyticsSection: string;
+          actionId: string;
       };
 
 const defaultFab = (): MobilePrimaryFab => ({
@@ -141,7 +151,6 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
         'tax-deductions.*',
         'lifestyle-score.*',
         'asset-allocation.*',
-        'investment-analyses.*',
         'telegram.link.*',
         'bank-import-layouts.*',
     ] as const;
@@ -240,6 +249,12 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
             ariaLabel: 'Nuovo asset',
             analyticsSection: 'investment_assets',
         }) ??
+        when(['investment-analyses.index'], {
+            mode: 'action',
+            ariaLabel: 'Nuova analisi',
+            analyticsSection: 'investment_analyses',
+            actionId: MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW,
+        }) ??
         when(['inbox.index'], {
             mode: 'link',
             href: route('transactions.create'),
@@ -278,6 +293,25 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
         }) ??
         defaultFab()
     );
+}
+
+export function dispatchMobileFabAction(actionId: string): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent(FM_MOBILE_FAB_ACTION_EVENT, {
+        detail: { actionId },
+    }));
+}
+
+/**
+ * True se il FAB mobile corrente esegue l'azione inline indicata (toolbar create ridondante su mobile).
+ */
+export function isMobileFabActionCovered(actionId: string): boolean {
+    const fab = resolveMobilePrimaryFab();
+
+    return fab?.mode === 'action' && fab.actionId === actionId;
 }
 
 /** Normalizza pathname per confronto href (ignora query/hash, trailing slash). */

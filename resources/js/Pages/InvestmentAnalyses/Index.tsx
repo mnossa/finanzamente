@@ -2,13 +2,15 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions, IndexPageMobileToolbar, MobileCreateActionButton } from '@/Components/IndexPageListToolbars';
 import EmptyState from '@/Components/EmptyState';
 import { Head, router } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import InvestmentHubNav from '@/Components/InvestmentHubNav';
+import { useMobileFabAction } from '@/hooks/useMobileFabAction';
+import { MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW } from '@/utils/mobilePrimaryFab';
 
 // ─── Tipi ────────────────────────────────────────────────────────────────────
 
@@ -789,6 +791,10 @@ function AnalysisCard({
 export default function Index({ analyses }: IndexProps) {
     const [showWizard, setShowWizard] = useState(false);
 
+    const openWizard = () => setShowWizard(true);
+
+    useMobileFabAction(MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW, openWizard);
+
     const handleDelete = (id: number) => {
         router.delete(route('investment-analyses.destroy', id), {
             preserveScroll: true,
@@ -808,7 +814,7 @@ export default function Index({ analyses }: IndexProps) {
                         <IndexPageHeaderActions>
                             <button
                                 type="button"
-                                onClick={() => setShowWizard(true)}
+                                onClick={openWizard}
                                 className="btn btn-primary"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
@@ -826,16 +832,16 @@ export default function Index({ analyses }: IndexProps) {
             <PageContent>
                 <InvestmentHubNav active="analyses" />
                 <IndexPageMobileToolbar>
-                    <button
-                        type="button"
-                        onClick={() => setShowWizard(true)}
+                    <MobileCreateActionButton
+                        actionId={MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW}
+                        onClick={openWizard}
                         className="btn btn-primary justify-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
                             <path d="M5 12h14" /><path d="M12 5v14" />
                         </svg>
                         Nuova analisi
-                    </button>
+                    </MobileCreateActionButton>
                 </IndexPageMobileToolbar>
                 {analyses.length === 0 ? (
                     <EmptyState
@@ -844,12 +850,13 @@ export default function Index({ analyses }: IndexProps) {
                         description="Crea la tua prima analisi per calcolare il risparmio e l'ammortamento di un investimento come un impianto fotovoltaico, un cappotto termico o un'auto elettrica."
                         showCreateButton={false}
                     >
-                        <button
-                            onClick={() => setShowWizard(true)}
+                        <MobileCreateActionButton
+                            actionId={MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW}
+                            onClick={openWizard}
                             className="btn btn-primary mt-4"
                         >
                             Crea la prima analisi
-                        </button>
+                        </MobileCreateActionButton>
                     </EmptyState>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
