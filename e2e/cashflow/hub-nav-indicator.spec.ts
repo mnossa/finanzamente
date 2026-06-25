@@ -26,14 +26,7 @@ async function expectIndicatorAlignedWithActiveTab(page: import('@playwright/tes
 test.describe('Hub conti e movimenti', () => {
     test.use({ viewport: { width: 400, height: 838 } });
 
-    test('indicatore allineato su sessione rapida (4° tab)', async ({ page }) => {
-        await page.goto('/transazioni/sessione-rapida');
-
-        await expect(page.getByRole('navigation', { name: 'Conti e movimenti' })).toBeVisible();
-        await expectIndicatorAlignedWithActiveTab(page, 'Conti e movimenti');
-    });
-
-    test('indicatore allineato su tra nuclei (5° tab)', async ({ page }) => {
+    test('indicatore allineato su tra nuclei (4° tab)', async ({ page }) => {
         await page.goto('/trasferimenti-tra-nuclei');
 
         await expect(page.getByRole('navigation', { name: 'Conti e movimenti' })).toBeVisible();

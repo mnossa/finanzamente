@@ -28,7 +28,6 @@ $guidedEntityFlags = [
 return array_merge(
     [
         'guided_create_forms' => $guidedCreateForms,
-        'quick_session_enabled' => filter_var(env('FEATURE_QUICK_SESSION_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
     ],
     array_fill_keys($guidedEntityFlags, $guidedCreateForms),
 );

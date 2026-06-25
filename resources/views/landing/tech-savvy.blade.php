@@ -66,7 +66,7 @@
                 <div class="text-center p-4">
                     <div class="text-3xl mb-3" aria-hidden="true">⚡</div>
                     <h3 class="text-base font-semibold text-surface-900 mb-1">Inserimento lampo nell'app</h3>
-                    <p class="text-sm text-surface-600">Sessione rapida per più transazioni di fila. Alternativa al bot per chi preferisce l'interfaccia.</p>
+                    <p class="text-sm text-surface-600">Chip categorie frequenti nel form Nuova transazione. Alternativa al bot per chi preferisce l'interfaccia.</p>
                 </div>
             </div>
         </div>

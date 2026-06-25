@@ -571,7 +571,6 @@ export default function Dashboard({
                 const compact = size === 'sm';
                 const actionItems = [
                     { href: route('transactions.create'), icon: <PlusIcon size={24} />, label: 'Nuova transazione' },
-                    { href: route('transactions.quick-session'), icon: '⚡', label: 'Sessione rapida' },
                     { href: route('transfers.create'), icon: '🔄', label: 'Trasferimento' },
                     { href: route('accounts.create'), icon: '🏦', label: 'Nuovo conto' },
                     { href: route('categories.create'), icon: '🏷️', label: 'Nuova categoria' },

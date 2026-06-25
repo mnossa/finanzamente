@@ -22,6 +22,7 @@ import { useFxPreview } from '@/hooks/useFxPreview';
 import { useFormTimer } from '@/hooks/useFormTimer';
 import { tx } from '@/utils/analytics';
 import SplitPaymentSection, { SplitLine } from '@/Components/SplitPaymentSection';
+import TransactionQuickChips, { type QuickChip } from '@/Components/TransactionQuickChips';
 import { useState, useEffect, useRef } from 'react';
 
 interface Category {
@@ -67,9 +68,19 @@ interface CreateProps {
     debtsCredits: DebtCredit[];
     currencies: Currency[];
     userDefaultCurrency: string;
+    quickChips: QuickChip[];
 }
 
-export default function Create({ accounts, categories, defaultAccountId, defaultDebtCreditId, debtsCredits, currencies, userDefaultCurrency }: CreateProps) {
+export default function Create({
+    accounts,
+    categories,
+    defaultAccountId,
+    defaultDebtCreditId,
+    debtsCredits,
+    currencies,
+    userDefaultCurrency,
+    quickChips = [],
+}: CreateProps) {
     const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
 
     if (isGuidedCreateEnabled(features) && accounts.length > 0 && categories.length > 0) {
@@ -87,6 +98,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
                         accounts={accounts}
                         categories={categories}
                         defaultAccountId={defaultAccountId}
+                        quickChips={quickChips}
                     />
                 </PageContent>
             </AuthenticatedLayout>
@@ -94,6 +106,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
     }
 
     const today = new Date().toISOString().split('T')[0];
+    const amountRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, transform } = useForm({
         account_id: defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : ''),
@@ -196,6 +209,16 @@ export default function Create({ accounts, categories, defaultAccountId, default
             : formData.account_id,
     }));
 
+    const handleQuickChipSelect = (chip: QuickChip) => {
+        setData((prev) => ({
+            ...prev,
+            category_id: String(chip.category_id),
+            date: today,
+            ...(!splitEnabled ? { account_id: String(chip.account_id) } : {}),
+        }));
+        setTimeout(() => amountRef.current?.focus(), 50);
+    };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('transactions.store'), {
@@ -269,6 +292,12 @@ export default function Create({ accounts, categories, defaultAccountId, default
                             </div>
                         ) : (
                             <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
+                                <TransactionQuickChips
+                                    chips={quickChips}
+                                    selectedCategoryId={data.category_id}
+                                    onSelect={handleQuickChipSelect}
+                                />
+
                                 {/* Importo e Data — in cima, visibili subito */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
@@ -283,6 +312,7 @@ export default function Create({ accounts, categories, defaultAccountId, default
                                                 {isExpense ? '−' : '+'}
                                             </span>
                                             <TextInput
+                                                ref={amountRef}
                                                 id="amount"
                                                 type="number"
                                                 step="0.01"

@@ -70,9 +70,6 @@ export const tx = {
 
     deleted: () => trackEvent('transaction.deleted'),
 
-    quickSessionCompleted: (count: number) =>
-        trackEvent('transaction.quick_session.completed', { count }),
-
     importStarted: () => trackEvent('transaction.import.started'),
 
     importCompleted: (rows: number) =>

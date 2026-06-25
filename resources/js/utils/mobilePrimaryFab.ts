@@ -1,6 +1,6 @@
 /**
  * FAB centrale (bottom nav mobile): destinazione primaria in base alla rotta corrente.
- * Su form di creazione/modifica e sessione rapida diventa submit verso il form con id
+ * Su form di creazione/modifica diventa submit verso il form con id
  * {@link FM_MOBILE_PRIMARY_FORM_ID}.
  * Tenere allineato con i test PHP che verificano Route::has sui nomi usati.
  */
@@ -97,14 +97,6 @@ function isExcludedFromMobileSubmitFab(current: string): boolean {
 function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
     if (isExcludedFromMobileSubmitFab(current)) {
         return null;
-    }
-
-    if (current === 'transactions.quick-session') {
-        return {
-            mode: 'submit',
-            ariaLabel: 'Salva transazione',
-            analyticsSection: 'transactions_quick_session_save',
-        };
     }
 
     if (isInvestmentPacCreatePage()) {

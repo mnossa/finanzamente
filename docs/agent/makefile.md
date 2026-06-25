@@ -68,5 +68,9 @@ Comandi artisan **solo local/development/testing** (bloccati su production/stagi
 | `make fix-perms` | Fix file permissions |
 | `make demo-data` | Demo users/data |
 | `make ci` | Full CI gate locally |
+| `make magazine-write` | Prompt interattivo per articolo magazine → `tmp/magazine-write.prompt` |
+| `make magazine-write topic="..." category=...` | Prompt diretto (brief già compilato) |
+| `make magazine-prompt` | Alias di `magazine-write` |
+| `make magazine-demo` | Seed articoli demo per categoria (solo locale) |
 
 See `Makefile` for deploy, telegram, python-services, and other targets.

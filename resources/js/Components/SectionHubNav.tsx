@@ -16,7 +16,7 @@ export type SectionHubTab = {
     mobileLabel?: string;
     icon?: HubTabIconId;
     routeName: string;
-    /** Nasconde il tab (es. sessione rapida disabilitata) */
+    /** Nasconde il tab */
     hidden?: boolean;
     requiresPro?: boolean;
     moduleId?: string;

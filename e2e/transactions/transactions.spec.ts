@@ -197,4 +197,18 @@ test.describe('Transazioni', () => {
         await expect(desktopRows.getByLabel('Generata da ricorrenza', { exact: true })).toBeVisible();
         await expect(desktopRows.getByLabel('Generata da PAC', { exact: true })).toBeVisible();
     });
+
+    test('le chip categorie frequenti precompilano conto e focalizzano importo', async ({ page }) => {
+        await page.goto('/transazioni/crea');
+
+        const chipsSection = page.getByText('Categorie frequenti');
+        await expect(chipsSection).toBeVisible({ timeout: 15_000 });
+
+        const firstChip = page.locator('[data-testid^="quick-chip-"]').first();
+        await expect(firstChip).toBeVisible();
+        await firstChip.click();
+
+        await expect(page.locator('#account_id')).not.toHaveValue('');
+        await expect(page.locator('#amount')).toBeFocused();
+    });
 });

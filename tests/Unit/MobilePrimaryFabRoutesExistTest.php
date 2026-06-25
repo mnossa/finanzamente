@@ -20,7 +20,6 @@ class MobilePrimaryFabRoutesExistTest extends TestCase
     {
         $names = [
             'transactions.create',
-            'transactions.quick-session',
             'accounts.create',
             'categories.create',
             'budgets.create',

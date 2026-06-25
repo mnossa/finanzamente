@@ -629,9 +629,6 @@ export default function Authenticated({
             .map(section => ({
                 ...section,
                 items: section.items.filter(item => {
-                    if (item.href === 'transactions.quick-session' && features.quick_session_enabled === false) {
-                        return false;
-                    }
                     // Le voci Pro sono sempre visibili (badge + redirect)
                     if (item.requiresPro) return true;
                     // Le voci senza moduleId sono sempre visibili

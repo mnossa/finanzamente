@@ -7,6 +7,7 @@ import TagAutocomplete from '@/Components/TagAutocomplete';
 import TextInput from '@/Components/TextInput';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import SplitPaymentSection, { type SplitLine } from '@/Components/SplitPaymentSection';
+import TransactionQuickChips, { type QuickChip } from '@/Components/TransactionQuickChips';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
@@ -36,6 +37,7 @@ interface Props {
     accounts: Account[];
     categories: Category[];
     defaultAccountId?: string;
+    quickChips?: QuickChip[];
 }
 
 const STEP_COUNT = 8;
@@ -47,7 +49,12 @@ function formatItalianDate(dateStr: string): string {
     return formatDate(dateStr.includes('T') ? dateStr : `${dateStr}T12:00:00`);
 }
 
-export default function TransactionCreateGuided({ accounts, categories, defaultAccountId }: Props) {
+export default function TransactionCreateGuided({
+    accounts,
+    categories,
+    defaultAccountId,
+    quickChips = [],
+}: Props) {
     const today = new Date().toISOString().split('T')[0];
     const [step, setStep] = useState(0);
     const [txType, setTxType] = useState<'income' | 'expense'>('expense');
@@ -168,6 +175,20 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
 
     const goBack = () => setStep((s) => Math.max(0, s - 1));
 
+    const handleQuickChipSelect = (chip: QuickChip) => {
+        setTxType(chip.type);
+        setData((prev) => ({
+            ...prev,
+            category_id: String(chip.category_id),
+            account_id: String(chip.account_id),
+            date: today,
+            ...(chip.type === 'income'
+                ? { is_tax_deductible: false, tax_deduction_type: '' }
+                : {}),
+        }));
+        setStep(1);
+    };
+
     const submit = () => {
         post(route('transactions.store'));
     };
@@ -207,7 +228,8 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
                     subtitle={stepMeta.subtitle}
                 >
                     {step === 0 && (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
                             {(['expense', 'income'] as const).map((type) => (
                                 <button
                                     key={type}
@@ -231,6 +253,13 @@ export default function TransactionCreateGuided({ accounts, categories, defaultA
                                     <p className="mt-2 font-medium">{type === 'income' ? 'Entrata' : 'Uscita'}</p>
                                 </button>
                             ))}
+                            </div>
+
+                            <TransactionQuickChips
+                                chips={quickChips}
+                                selectedCategoryId={data.category_id}
+                                onSelect={handleQuickChipSelect}
+                            />
                         </div>
                     )}
 

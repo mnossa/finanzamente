@@ -15,7 +15,6 @@ export const HUB_INDEX_ROUTE_NAMES = new Set([
     'transactions.index',
     'accounts.index',
     'transfers.index',
-    'transactions.quick-session',
     'inter-household-transfers.index',
     'investments.index',
     'investment-pacs.index',

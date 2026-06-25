@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import SectionHubNav, { type SectionHubTab } from '@/Components/SectionHubNav';
 
-type HubTab = 'transactions' | 'accounts' | 'transfers' | 'quick-session' | 'inter-household';
+type HubTab = 'transactions' | 'accounts' | 'transfers' | 'inter-household';
 
 const BASE_TABS: SectionHubTab[] = [
     {
@@ -27,12 +27,6 @@ const BASE_TABS: SectionHubTab[] = [
         moduleId: 'transfers',
     },
     {
-        id: 'quick-session',
-        label: 'Sessione rapida',
-        icon: 'Zap',
-        routeName: 'transactions.quick-session',
-    },
-    {
         id: 'inter-household',
         label: 'Tra nuclei',
         icon: 'Home',
@@ -43,12 +37,5 @@ const BASE_TABS: SectionHubTab[] = [
 ];
 
 export default function CashflowHubNav({ active }: { active: HubTab }) {
-    const features = (usePage().props as { features?: Record<string, boolean> }).features ?? {};
-    const tabs = BASE_TABS.map((tab) =>
-        tab.id === 'quick-session'
-            ? { ...tab, hidden: features.quick_session_enabled === false }
-            : tab,
-    );
-
-    return <SectionHubNav tabs={tabs} active={active} ariaLabel="Conti e movimenti" />;
+    return <SectionHubNav tabs={BASE_TABS} active={active} ariaLabel="Conti e movimenti" />;
 }

@@ -11,7 +11,7 @@ CI_APP_WAIT_TIMEOUT ?= 300
 CI_APP_WAIT_INTERVAL ?= 5
 export LOCAL_UID LOCAL_GID
 
-.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate formula-widgets-release fresh seed mysql-root db-pull-prod db-import-local db-anonymize test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed e2e-wait-healthy playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
+.PHONY: up down restart logs ps dev build build-check frontend-ci bash app node fix-perms migrate formula-widgets-release fresh seed mysql-root db-pull-prod db-import-local db-anonymize test test-ci pint-check pint-fix ci test-auth test-households test-households-feature test-households-unit clear-cache demo-data demo-reset merge-to-staging merge-staging-to-main rebase-staging-from-main composer-install npm-install prune-logs scheduler-logs queue-logs set-telegram-webhook get-telegram-webhook telegram-diagnose ngrok ngrok-url ngrok-logs prune-cursor-branches prune-renovate-branches e2e-seed e2e-wait-healthy playwright playwright-prelaunch playwright-waitlist playwright-ui playwright-report set-plan waitlist-check magazine-demo magazine-write magazine-prompt composer-update python-services-build python-services-logs python-services-shell python-services-pyright-deps linker-build linker-logs linker-shell linker-pyright-deps link-suggestions prod-local deploy-dry-run
 
 up:
 	@echo "[+] Avvio stack con UID=$(LOCAL_UID) GID=$(LOCAL_GID)";
@@ -506,6 +506,53 @@ magazine-demo:
 	@echo [+] Popolamento magazine con articoli demo 5-6 per categoria...
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:seed --class=MagazineArticleDemoSeeder --force
 	@echo [+] Articoli demo magazine generati.
+
+# Genera il prompt per scrivere un articolo magazine con Cursor Agent.
+#
+# Senza parametri → modalità interattiva: l'agente pone domande, poi scrive.
+#   make magazine-write
+#
+# Con brief già pronto → modalità diretta (salta le domande):
+#   make magazine-write topic="Pensione a 30 anni" category=Pensione
+#   make magazine-write topic="PAC e ETF" category=Investimenti angle="Da dove iniziare con 50€"
+magazine-write:
+	@mkdir -p tmp
+	@OUT="$(or $(output),tmp/magazine-write.prompt)"; \
+	if [ "$(output)" = "-" ]; then \
+		if [ -n "$(topic)" ] && [ -n "$(category)" ]; then \
+			CMD="./scripts/magazine-generate-prompt.sh --topic \"$(topic)\" --category \"$(category)\""; \
+			[ -n "$(angle)" ] && CMD="$$CMD --angle \"$(angle)\""; \
+			[ -n "$(length)" ] && CMD="$$CMD --length \"$(length)\""; \
+			[ -n "$(links)" ] && CMD="$$CMD --links \"$(links)\""; \
+			[ -n "$(notes)" ] && CMD="$$CMD --notes \"$(notes)\""; \
+			[ "$(no-db)" = "1" ] && CMD="$$CMD --no-db"; \
+			eval $$CMD; \
+		else \
+			CMD="./scripts/magazine-generate-prompt.sh --interactive"; \
+			[ "$(no-db)" = "1" ] && CMD="$$CMD --no-db"; \
+			eval $$CMD; \
+		fi; \
+	else \
+		if [ -n "$(topic)" ] && [ -n "$(category)" ]; then \
+			CMD="./scripts/magazine-generate-prompt.sh --topic \"$(topic)\" --category \"$(category)\""; \
+			[ -n "$(angle)" ] && CMD="$$CMD --angle \"$(angle)\""; \
+			[ -n "$(length)" ] && CMD="$$CMD --length \"$(length)\""; \
+			[ -n "$(links)" ] && CMD="$$CMD --links \"$(links)\""; \
+			[ -n "$(notes)" ] && CMD="$$CMD --notes \"$(notes)\""; \
+			[ "$(no-db)" = "1" ] && CMD="$$CMD --no-db"; \
+		else \
+			CMD="./scripts/magazine-generate-prompt.sh --interactive"; \
+			[ "$(no-db)" = "1" ] && CMD="$$CMD --no-db"; \
+		fi; \
+		eval "$$CMD --output \"$$OUT\""; \
+		echo "[+] Prompt salvato in: $$OUT"; \
+		echo "[+] Apri Cursor Agent e incolla il contenuto del file (o scrivi: segui il prompt in $$OUT)"; \
+		echo "[+] L'agente ti farà domande per comporre il brief, poi scriverà l'articolo."; \
+		echo "[+] Dopo la revisione, pubblica da /admin/magazine/crea"; \
+	fi
+
+# Alias retrocompatibile
+magazine-prompt: magazine-write
 
 # ---------- Servizi Python ausiliari (FastAPI: magazine, cohort, …) ----------
 

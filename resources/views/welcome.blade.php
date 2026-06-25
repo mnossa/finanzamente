@@ -81,7 +81,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Inserimento lampo</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Sessione rapida per inserire più transazioni di fila in pochi secondi. Perfetta per registrare la spesa del supermercato o le uscite del weekend.
+                        Chip delle categorie più usate e form rapido: scegli la categoria, inserisci l'importo e salvi in pochi secondi.
                     </p>
                 </div>
 
@@ -346,7 +346,7 @@
                     <div>
                         <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Registra e analizza</h3>
                         <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                            Usa la sessione rapida per inserire le spese quotidiane in secondi. La dashboard ti mostrerà subito trend, budget consumati e la tua situazione patrimoniale complessiva.
+                            Registra le spese quotidiane con le categorie frequenti e la dashboard ti mostrerà subito trend, budget consumati e la tua situazione patrimoniale complessiva.
                         </p>
                     </div>
                 </div>

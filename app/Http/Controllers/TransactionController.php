@@ -14,6 +14,7 @@ use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
+use App\Services\TransactionQuickChipService;
 use App\Services\TransactionSplitService;
 use App\Services\UpcomingCashflowService;
 use App\Support\TransactionDescriptionFilter;
@@ -45,7 +46,10 @@ class TransactionController extends Controller
         'page',
     ];
 
-    public function __construct(private CurrencyConverter $currency) {}
+    public function __construct(
+        private CurrencyConverter $currency,
+        private TransactionQuickChipService $quickChips,
+    ) {}
 
     /**
      * Normalizza i parametri di query per redirect verso `transactions.index`
@@ -529,6 +533,7 @@ class TransactionController extends Controller
             'userDefaultCurrency' => $user->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
             'defaultAccountId' => $request->query('account_id'),
             'defaultDebtCreditId' => $request->query('debt_credit_id'),
+            'quickChips' => $this->quickChips->forUser($user),
         ]);
     }
 
@@ -589,132 +594,6 @@ class TransactionController extends Controller
             'rate' => (float) $conversion['amount'],
             'source' => $from === $to ? 'identity' : 'exchange_rates',
         ]);
-    }
-
-    /**
-     * Mostra la Sessione Rapida per l'inserimento batch di transazioni.
-     *
-     * Questa vista permette di inserire rapidamente più transazioni consecutive
-     * senza dover navigare avanti e indietro.
-     */
-    public function quickSession(Request $request): Response
-    {
-        $user = Auth::user();
-        $householdId = $user->active_household_id;
-
-        $accounts = Account::where('household_id', $householdId)
-            ->where('active', true)
-            ->where(function ($q) use ($user) {
-                $q->where('is_private', false)
-                    ->orWhere('owner_user_id', $user->id);
-            })
-            ->orderBy('name')
-            ->get(['id', 'name', 'currency_code']);
-
-        $categories = Category::where(function ($q) use ($householdId) {
-            $q->where('household_id', $householdId)
-                ->orWhereNull('household_id');
-        })
-            ->orderBy('type')
-            ->orderBy('name')
-            ->get(['id', 'name', 'type', 'color', 'icon']);
-
-        // Recupera le ultime transazioni aggiunte nella sessione corrente
-        $sessionIds = $request->session()->get('quick_session_ids', []);
-        $sessionTransactions = [];
-        if (! empty($sessionIds)) {
-            $sessionTransactions = Transaction::with(['category:id,name,color,icon,type', 'account:id,name,currency_code'])
-                ->whereIn('id', $sessionIds)
-                ->orderByDesc('created_at')
-                ->get()
-                ->map(fn ($t) => [
-                    'id' => $t->id,
-                    'amount' => (float) $t->amount,
-                    'date' => $t->date->format('Y-m-d'),
-                    'description' => $t->description,
-                    'category' => $t->category ? [
-                        'id' => $t->category->id,
-                        'name' => $t->category->name,
-                        'color' => $t->category->color,
-                        'icon' => $t->category->icon,
-                        'type' => $t->category->type,
-                    ] : null,
-                    'account' => [
-                        'id' => $t->account->id,
-                        'name' => $t->account->name,
-                        'currency_code' => $t->account->currency_code,
-                    ],
-                ]);
-        }
-
-        return Inertia::render('Transactions/QuickSession', [
-            'accounts' => $accounts,
-            'categories' => $categories,
-            'sessionTransactions' => $sessionTransactions,
-            'defaultAccountId' => $request->query('account_id'),
-            'currencies' => $this->currencyOptions(),
-            'userDefaultCurrency' => $user->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
-        ]);
-    }
-
-    /**
-     * Salva una transazione durante una Sessione Rapida.
-     * Traccia l'ID in sessione per mostrare la lista delle transazioni aggiunte.
-     */
-    public function quickStore(StoreTransactionRequest $request): RedirectResponse
-    {
-        $user = Auth::user();
-        $validated = $request->validated();
-
-        $category = Category::find($validated['category_id']);
-        $amount = abs($validated['amount']);
-        if ($category && $category->type === 'expense') {
-            $amount = -$amount;
-        }
-
-        $account = Account::find($validated['account_id']);
-
-        $currencyFields = $this->applyCurrencyFields(
-            $validated,
-            $account,
-            Carbon::parse($validated['date']),
-            $amount,
-        );
-
-        $transaction = Transaction::create([
-            'user_id' => $user->id,
-            'account_id' => $validated['account_id'],
-            'category_id' => $validated['category_id'],
-            'amount' => $amount,
-            'date' => $validated['date'],
-            'description' => $validated['description'] ?? null,
-            'is_private' => $validated['is_private'] ?? false,
-            ...$currencyFields,
-        ]);
-
-        $account->current_balance += $amount;
-        $account->save();
-
-        // Traccia l'ID nella sessione per mostrarlo nella lista
-        $sessionIds = $request->session()->get('quick_session_ids', []);
-        $sessionIds[] = $transaction->id;
-        $request->session()->put('quick_session_ids', $sessionIds);
-
-        return redirect()
-            ->route('transactions.quick-session')
-            ->with('success', 'Transazione aggiunta.');
-    }
-
-    /**
-     * Azzera la lista delle transazioni della sessione rapida corrente.
-     */
-    public function clearQuickSession(Request $request): RedirectResponse
-    {
-        $request->session()->forget('quick_session_ids');
-
-        return redirect()
-            ->route('transactions.quick-session')
-            ->with('success', 'Sessione terminata.');
     }
 
     /**
