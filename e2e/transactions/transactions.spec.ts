@@ -198,17 +198,22 @@ test.describe('Transazioni', () => {
         await expect(desktopRows.getByLabel('Generata da PAC', { exact: true })).toBeVisible();
     });
 
-    test('le chip categorie frequenti precompilano conto e focalizzano importo', async ({ page }) => {
+    test('le chip categorie frequenti aprono il percorso rapido importo-salva', async ({ page }) => {
         await page.goto('/transazioni/crea');
 
-        const chipsSection = page.getByText('Categorie frequenti');
+        const chipsSection = page.getByRole('heading', { name: 'Inserimento rapido' });
         await expect(chipsSection).toBeVisible({ timeout: 15_000 });
 
         const firstChip = page.locator('[data-testid^="quick-chip-"]').first();
         await expect(firstChip).toBeVisible();
         await firstChip.click();
 
-        await expect(page.locator('#account_id')).not.toHaveValue('');
         await expect(page.locator('#amount')).toBeFocused();
+        await expect(page.getByRole('button', { name: 'Modifica dettagli' })).toBeVisible();
+        await expect(page.locator('#account_id')).toHaveCount(0);
+        await expect(page.getByLabel('Categoria')).toHaveCount(0);
+
+        await page.locator('#amount').fill('12.34');
+        await expect(page.getByRole('button', { name: 'Salva Transazione' })).toBeEnabled();
     });
 });

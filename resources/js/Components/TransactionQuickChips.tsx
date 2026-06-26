@@ -27,13 +27,31 @@ export default function TransactionQuickChips({
     }
 
     return (
-        <div className={className}>
-            <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-                Categorie frequenti
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+        <section
+            className={clsx(
+                'rounded-2xl border border-emerald-200/70 bg-linear-to-b from-emerald-50/80 to-white p-4 dark:border-emerald-800/60 dark:from-emerald-900/20 dark:to-gray-800',
+                className,
+            )}
+            aria-label="Inserimento rapido"
+        >
+            <div className="mb-3 flex items-center gap-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-base leading-none">
+                    ⚡
+                </span>
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Inserimento rapido
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Tocca una categoria: importo e via.
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {chips.map((chip) => {
                     const isSelected = selectedCategoryId === String(chip.category_id);
+                    const accent = chip.color ?? undefined;
 
                     return (
                         <button
@@ -42,18 +60,29 @@ export default function TransactionQuickChips({
                             data-testid={`quick-chip-${chip.category_id}`}
                             onClick={() => onSelect(chip)}
                             className={clsx(
-                                'inline-flex max-w-[9rem] shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                'flex min-h-19 flex-col items-center justify-center gap-1.5 rounded-xl border bg-white px-2 py-3 text-center transition-all active:scale-[0.97] dark:bg-gray-800',
                                 isSelected
-                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
-                                    : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-emerald-700',
+                                    ? 'border-emerald-500 ring-2 ring-emerald-500/40 dark:border-emerald-400'
+                                    : 'border-gray-200 hover:border-emerald-300 hover:shadow-sm dark:border-gray-600 dark:hover:border-emerald-700',
                             )}
                         >
-                            {chip.icon && <span className="shrink-0 text-base leading-none">{chip.icon}</span>}
-                            <span className="truncate">{chip.label}</span>
+                            <span
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg leading-none"
+                                style={
+                                    accent
+                                        ? { backgroundColor: `${accent}22`, color: accent }
+                                        : undefined
+                                }
+                            >
+                                {chip.icon ?? (chip.type === 'income' ? '📥' : '📤')}
+                            </span>
+                            <span className="line-clamp-2 w-full text-xs font-medium leading-tight text-gray-800 dark:text-gray-100">
+                                {chip.label}
+                            </span>
                         </button>
                     );
                 })}
             </div>
-        </div>
+        </section>
     );
 }

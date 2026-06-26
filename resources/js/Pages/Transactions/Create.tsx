@@ -173,6 +173,8 @@ export default function Create({
         : debtsCredits;
 
     const [selectedTagsList, setSelectedTagsList] = useState<Tag[]>([]);
+    const [quickChipSelection, setQuickChipSelection] = useState<QuickChip | null>(null);
+    const quickMode = quickChipSelection !== null && !splitEnabled;
 
     const handleTagAdd = (tag: Tag) => {
         const normalized = { ...tag, name: tag.name.toUpperCase() };
@@ -210,6 +212,7 @@ export default function Create({
     }));
 
     const handleQuickChipSelect = (chip: QuickChip) => {
+        setQuickChipSelection(splitEnabled ? null : chip);
         setData((prev) => ({
             ...prev,
             category_id: String(chip.category_id),
@@ -298,8 +301,18 @@ export default function Create({
                                     onSelect={handleQuickChipSelect}
                                 />
 
+                                {quickChips.length > 0 && !quickMode && (
+                                    <div className="flex items-center gap-3" aria-hidden="true">
+                                        <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                                        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                                            oppure inserisci a mano
+                                        </span>
+                                        <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                                    </div>
+                                )}
+
                                 {/* Importo e Data — in cima, visibili subito */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className={clsx('grid gap-3', quickMode ? 'grid-cols-1' : 'grid-cols-2')}>
                                     <div>
                                         <InputLabel htmlFor="amount" value="Importo" />
                                         <div className="relative mt-1">
@@ -327,7 +340,7 @@ export default function Create({
                                         <InputError message={errors.amount} className="mt-1" />
                                     </div>
 
-                                    <div>
+                                    {!quickMode && <div>
                                         <InputLabel htmlFor="date" value="Data" />
                                         <TextInput
                                             id="date"
@@ -338,40 +351,70 @@ export default function Create({
                                             required
                                         />
                                         <InputError message={errors.date} className="mt-1" />
-                                    </div>
+                                    </div>}
                                 </div>
 
+                                {quickMode && (
+                                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-100">
+                                        <p className="font-medium">
+                                            {selectedCategory?.icon ? `${selectedCategory.icon} ` : ''}
+                                            {selectedCategory?.name ?? quickChipSelection.label}
+                                        </p>
+                                        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-200">
+                                            {selectedAccount?.name ?? 'Conto selezionato'} · Oggi
+                                        </p>
+                                        <button
+                                            type="button"
+                                            className="mt-2 text-xs font-medium text-emerald-800 underline underline-offset-2 dark:text-emerald-100"
+                                            onClick={() => setQuickChipSelection(null)}
+                                        >
+                                            Modifica dettagli
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Categoria */}
-                                <div>
+                                {!quickMode && <div>
                                     <InputLabel htmlFor="category_id" value="Categoria" />
                                     <CategoryPicker
                                         categories={categories}
                                         value={data.category_id}
-                                        onChange={(categoryId) => setData('category_id', categoryId)}
+                                        onChange={(categoryId) => {
+                                            setQuickChipSelection(null);
+                                            setData('category_id', categoryId);
+                                        }}
                                         error={errors.category_id}
                                         className="mt-1"
                                     />
-                                </div>
+                                </div>}
 
-                                <SplitPaymentSection
+                                {!quickMode && <SplitPaymentSection
                                     enabled={splitEnabled}
-                                    onToggle={setSplitEnabled}
+                                    onToggle={(enabled) => {
+                                        if (enabled) {
+                                            setQuickChipSelection(null);
+                                        }
+                                        setSplitEnabled(enabled);
+                                    }}
                                     accounts={accounts}
                                     splits={splits}
                                     onSplitsChange={setSplits}
                                     totalAmount={data.amount}
                                     errors={errors as Record<string, string>}
-                                />
+                                />}
 
                                 {/* Conto */}
-                                {!splitEnabled && (
+                                {!quickMode && !splitEnabled && (
                                 <div>
                                     <InputLabel htmlFor="account_id" value="Conto" />
                                     <select
                                         id="account_id"
                                         className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                         value={data.account_id}
-                                        onChange={(e) => setData('account_id', e.target.value)}
+                                        onChange={(e) => {
+                                            setQuickChipSelection(null);
+                                            setData('account_id', e.target.value);
+                                        }}
                                         required
                                     >
                                         <option value="">Seleziona un conto</option>
@@ -386,7 +429,7 @@ export default function Create({
                                 )}
 
                                 {/* Descrizione */}
-                                <div>
+                                {!quickMode && <div>
                                     <InputLabel htmlFor="description" value="Descrizione (opzionale)" />
                                     <textarea
                                         id="description"
@@ -397,10 +440,10 @@ export default function Create({
                                         placeholder="es. Spesa al supermercato"
                                     />
                                     <InputError message={errors.description} className="mt-1" />
-                                </div>
+                                </div>}
 
                                 {/* Opzioni extra — collassabili su mobile */}
-                                <details className="group rounded-xl border border-gray-200 dark:border-gray-700" onToggle={(e) => {
+                                {!quickMode && <details className="group rounded-xl border border-gray-200 dark:border-gray-700" onToggle={(e) => {
                                     if ((e.target as HTMLDetailsElement).open && !optionsTracked.current) {
                                         optionsTracked.current = true;
                                         tx.optionsOpened();
@@ -561,10 +604,10 @@ export default function Create({
                                             </div>
                                         )}
                                     </div>
-                                </details>
+                                </details>}
 
                                 {/* Detrazione Fiscale (solo per spese) */}
-                                {isExpense && (
+                                {isExpense && !quickMode && (
                                     <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/20">
                                         <label className="flex cursor-pointer items-center gap-3 px-4 py-3">
                                             <input
@@ -654,7 +697,7 @@ export default function Create({
                                     >
                                         Annulla
                                     </Link>
-                                    <PrimaryButton disabled={processing || !data.category_id} className="flex-1 sm:flex-none justify-center">
+                                    <PrimaryButton disabled={processing || !data.category_id || !data.amount} className="flex-1 sm:flex-none justify-center">
                                         {processing ? 'Salvataggio...' : 'Salva Transazione'}
                                     </PrimaryButton>
                                 </FormActionsBar>

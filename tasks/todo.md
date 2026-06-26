@@ -34,3 +34,21 @@ Piano derivato da `tasks/financial-consistency-plan.md` (fasi 1–6 già impleme
 - Coerenza finanziaria: già coperta da `FinancialConsistencyTest` (942 test PHPUnit verdi).
 - Navigazione: hub tab per 4 macro-sezioni; sidebar da ~15 voci a 7 (+ Panoramica 3).
 - E2E aggiornati per menu compatto e scroll mobile.
+
+# Inserimento rapido transazioni — riduzione tocchi
+
+## Piano
+- [x] Wizard guidato: chip frequente apre percorso breve con tipo/categoria/conto/data già impostati.
+- [x] Wizard guidato: dopo importo, CTA salva senza passare da data/conto/categoria/opzioni.
+- [x] Form classico: chip scelta mostra riepilogo compatto e comprime campi già precompilati.
+- [x] Redesign `TransactionQuickChips`: sezione hero (⚡) con griglia di card, non più lista orizzontale.
+- [x] Separatore "oppure inserisci a mano" tra chip e campi manuali (classico + guidato).
+- [x] E2E: chip → importo lascia pronti conto/categoria e rende disponibile il salvataggio.
+- [x] Verifica: `make test` (verde), `make pint-check` (verde), `make playwright` (239 passed; chip test verde dopo rebuild).
+
+## Review
+- Tocchi ridotti: percorso rapido = chip → importo → salva (3), contro flusso completo a 8 step.
+- Chip non più scambiabili per sottoselezione del tipo: ora card in sezione dedicata sopra la scelta manuale.
+- Guidato: `quickFlow` salta gli step intermedi; "Indietro" dal passo importo torna alla scelta.
+- Classico: `quickMode` comprime categoria/conto/data/opzioni in riepilogo con "Modifica dettagli".
+- FAB mobile: aggiunto `id` form al guidato per submit dal pulsante centrale.

@@ -8,6 +8,7 @@ import TextInput from '@/Components/TextInput';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import SplitPaymentSection, { type SplitLine } from '@/Components/SplitPaymentSection';
 import TransactionQuickChips, { type QuickChip } from '@/Components/TransactionQuickChips';
+import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
@@ -41,6 +42,7 @@ interface Props {
 }
 
 const STEP_COUNT = 8;
+const QUICK_STEP_COUNT = 2;
 
 function formatItalianDate(dateStr: string): string {
     if (!dateStr) {
@@ -57,6 +59,7 @@ export default function TransactionCreateGuided({
 }: Props) {
     const today = new Date().toISOString().split('T')[0];
     const [step, setStep] = useState(0);
+    const [quickFlow, setQuickFlow] = useState(false);
     const [txType, setTxType] = useState<'income' | 'expense'>('expense');
     const [selectedTagsList, setSelectedTagsList] = useState<Tag[]>([]);
 
@@ -108,6 +111,7 @@ export default function TransactionCreateGuided({
     const selectedAccount = accounts.find((a) => String(a.id) === data.account_id);
     const selectedCategory = categories.find((c) => String(c.id) === data.category_id);
     const isExpense = txType === 'expense';
+    const isQuickFinalStep = quickFlow && step === 1;
 
     const handleTagAdd = (tag: Tag) => {
         const normalized = { ...tag, name: tag.name.toUpperCase() };
@@ -173,9 +177,18 @@ export default function TransactionCreateGuided({
         }
     };
 
-    const goBack = () => setStep((s) => Math.max(0, s - 1));
+    const goBack = () => {
+        if (quickFlow && step === 1) {
+            setQuickFlow(false);
+            setStep(0);
+            return;
+        }
+
+        setStep((s) => Math.max(0, s - 1));
+    };
 
     const handleQuickChipSelect = (chip: QuickChip) => {
+        setQuickFlow(true);
         setTxType(chip.type);
         setData((prev) => ({
             ...prev,
@@ -197,7 +210,12 @@ export default function TransactionCreateGuided({
 
     const stepMeta = [
         { title: 'Che tipo di movimento?', subtitle: 'Entrata o uscita di denaro.' },
-        { title: 'Quanto?', subtitle: "Inserisci l'importo in euro." },
+        quickFlow
+            ? {
+                  title: txType === 'income' ? 'Quanto hai incassato?' : 'Quanto hai speso?',
+                  subtitle: 'Categoria, conto e data sono già pronti.',
+              }
+            : { title: 'Quanto?', subtitle: "Inserisci l'importo in euro." },
         { title: 'Quando?', subtitle: 'Data del movimento.' },
         { title: 'Su quale conto?', subtitle: "Il conto interessato dall'operazione." },
         { title: 'In quale categoria?', subtitle: `Solo categorie di ${txType === 'income' ? 'entrata' : 'uscita'}.` },
@@ -206,15 +224,16 @@ export default function TransactionCreateGuided({
         { title: 'Tutto pronto?', subtitle: 'Controlla e conferma.' },
     ][step];
 
-    const wizardSteps = Array.from({ length: STEP_COUNT }, () => ({}));
+    const wizardSteps = Array.from({ length: quickFlow ? QUICK_STEP_COUNT : STEP_COUNT }, () => ({}));
 
     return (
         <>
             <Head title="Nuova transazione" />
             <form
+                id={FM_MOBILE_PRIMARY_FORM_ID}
                 onSubmit={(e) => {
                     e.preventDefault();
-                    if (step === STEP_COUNT - 1) {
+                    if (isQuickFinalStep || step === STEP_COUNT - 1) {
                         submit();
                     } else {
                         goNext();
@@ -228,7 +247,23 @@ export default function TransactionCreateGuided({
                     subtitle={stepMeta.subtitle}
                 >
                     {step === 0 && (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
+                            <TransactionQuickChips
+                                chips={quickChips}
+                                selectedCategoryId={data.category_id}
+                                onSelect={handleQuickChipSelect}
+                            />
+
+                            {quickChips.length > 0 && (
+                                <div className="flex items-center gap-3" aria-hidden="true">
+                                    <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                                    <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                                        oppure inserisci a mano
+                                    </span>
+                                    <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-3">
                             {(['expense', 'income'] as const).map((type) => (
                                 <button
@@ -254,17 +289,11 @@ export default function TransactionCreateGuided({
                                 </button>
                             ))}
                             </div>
-
-                            <TransactionQuickChips
-                                chips={quickChips}
-                                selectedCategoryId={data.category_id}
-                                onSelect={handleQuickChipSelect}
-                            />
                         </div>
                     )}
 
                     {step === 1 && (
-                        <div>
+                        <div className="space-y-4">
                             <InputLabel htmlFor="amount" value="Importo (€)" />
                             <TextInput
                                 id="amount"
@@ -278,6 +307,17 @@ export default function TransactionCreateGuided({
                                 autoFocus
                             />
                             <InputError message={errors.amount} className="mt-2" />
+                            {quickFlow && (
+                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-100">
+                                    <p className="font-medium">
+                                        {selectedCategory?.icon ? `${selectedCategory.icon} ` : ''}
+                                        {selectedCategory?.name ?? 'Categoria frequente'}
+                                    </p>
+                                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-200">
+                                        {selectedAccount?.name ?? 'Conto selezionato'} · Oggi
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -525,7 +565,7 @@ export default function TransactionCreateGuided({
                             </Link>
                         )}
                         <div className="flex gap-2">
-                            {step === 6 && (
+                            {step === 6 && !quickFlow && (
                                 <button
                                     type="button"
                                     onClick={() => setStep((s) => s + 1)}
@@ -535,7 +575,7 @@ export default function TransactionCreateGuided({
                                 </button>
                             )}
                             <PrimaryButton type="submit" disabled={!canNext() || processing}>
-                                {step === STEP_COUNT - 1
+                                {isQuickFinalStep || step === STEP_COUNT - 1
                                     ? processing
                                         ? 'Salvataggio...'
                                         : 'Salva'
