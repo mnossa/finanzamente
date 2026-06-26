@@ -159,10 +159,10 @@ function BarView({
     const isDark = useChartDarkMode();
     const isCompact = useCompactChart();
     const chartHeight = isCompact ? CHART_HEIGHT_MOBILE : CHART_HEIGHT_DESKTOP;
-    const data = payload.categories.map((cat) => ({
+    const data = payload.categories.map((cat, index) => ({
         label: cat.label,
         value: cat.value,
-        fill: cat.color ?? DEFAULT_COLORS[0],
+        fill: cat.color ?? DEFAULT_COLORS[index % DEFAULT_COLORS.length],
     }));
 
     if (!data.length) {
@@ -206,8 +206,16 @@ function BarView({
                             />
                         </>
                     )}
-                    <Tooltip content={<ChartTooltip />} />
-                    <Bar dataKey="value" name="Valore" radius={[4, 4, 0, 0]} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.15)' }} />
+                    <Bar
+                        dataKey="value"
+                        name="Valore"
+                        radius={horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]}
+                    >
+                        {data.map((entry) => (
+                            <Cell key={entry.label} fill={entry.fill} />
+                        ))}
+                    </Bar>
                 </BarChart>
             </ResponsiveContainer>
         </div>

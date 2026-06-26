@@ -1,31 +1,36 @@
-import FormulaStringInput, { type FormulaSuggestion } from '@/Components/FormulaWidgets/FormulaStringInput';
+import FinancialVariableBuilder, {
+    type FinancialVariableDraft,
+} from '@/Components/FormulaWidgets/FinancialVariableBuilder';
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
 import axios from 'axios';
-import { FormEventHandler, useEffect, useMemo, useState } from 'react';
+import { FormEventHandler, useEffect, useState } from 'react';
 import type { FinancialVariableSummary, SystemVariableMeta } from '@/types/formulaWidget';
-import { systemVariableToFormulaSuggestion } from '@/utils/formulaVariableHints';
 
 interface CreateFinancialVariableModalProps {
     open: boolean;
     systemVariables: SystemVariableMeta[];
+    userVariables?: FinancialVariableSummary[];
     onClose: () => void;
     onCreated: (variable: FinancialVariableSummary) => void;
 }
 
+const EMPTY_DRAFT: FinancialVariableDraft = {
+    name: '',
+    code: '',
+    type: 'formula',
+    formula_string: '[period_net]',
+    static_value: '',
+};
+
 export default function CreateFinancialVariableModal({
     open,
     systemVariables,
+    userVariables = [],
     onClose,
     onCreated,
 }: CreateFinancialVariableModalProps) {
-    const [name, setName] = useState('');
-    const [code, setCode] = useState('');
-    const [type, setType] = useState<'formula' | 'static'>('formula');
-    const [formulaString, setFormulaString] = useState('[household_balance]');
-    const [staticValue, setStaticValue] = useState('');
+    const [draft, setDraft] = useState<FinancialVariableDraft>(EMPTY_DRAFT);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -34,22 +39,9 @@ export default function CreateFinancialVariableModal({
             return;
         }
 
-        setName('');
-        setCode('');
-        setType('formula');
-        setFormulaString('[household_balance]');
-        setStaticValue('');
+        setDraft(EMPTY_DRAFT);
         setErrors({});
     }, [open]);
-
-    const formulaSuggestions = useMemo<FormulaSuggestion[]>(
-        () => systemVariables.map(systemVariableToFormulaSuggestion),
-        [systemVariables],
-    );
-
-    const insertToken = (token: string) => {
-        setFormulaString((current) => `${current}${current.endsWith(']') || current === '' ? '' : ' '}[${token}]`);
-    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -60,11 +52,11 @@ export default function CreateFinancialVariableModal({
             .post(
                 route('formula-variables.store'),
                 {
-                    name,
-                    code: code || undefined,
-                    type,
-                    formula_string: type === 'formula' ? formulaString : undefined,
-                    static_value: type === 'static' ? staticValue : undefined,
+                    name: draft.name,
+                    code: draft.code || undefined,
+                    type: draft.type,
+                    formula_string: draft.type === 'formula' ? draft.formula_string : undefined,
+                    static_value: draft.type === 'static' ? draft.static_value : undefined,
                     is_public: false,
                 },
                 { headers: { Accept: 'application/json' } },
@@ -100,96 +92,21 @@ export default function CreateFinancialVariableModal({
                 aria-label="Chiudi"
                 onClick={onClose}
             />
-            <div className="relative z-10 w-full max-w-lg rounded-xl bg-white p-5 shadow-xl dark:bg-gray-800">
+            <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl dark:bg-gray-800">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Crea variabile personalizzata</h2>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    La variabile sarà selezionata automaticamente nel widget.
+                    Esplora scenari, componi la formula con drag &amp; drop o scrivila in modalità avanzata.
                 </p>
 
                 <form onSubmit={submit} className="mt-4 space-y-4">
-                    <div>
-                        <InputLabel htmlFor="modal-var-name" value="Nome" />
-                        <TextInput
-                            id="modal-var-name"
-                            className="mt-1 block w-full"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                        />
-                        <InputError message={errors.name} className="mt-1" />
-                    </div>
-
-                    <div>
-                        <InputLabel htmlFor="modal-var-code" value="Codice (opzionale)" />
-                        <TextInput
-                            id="modal-var-code"
-                            className="mt-1 block w-full font-mono"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            placeholder="es. risparmio_mensile"
-                        />
-                        <InputError message={errors.code} className="mt-1" />
-                    </div>
-
-                    <div>
-                        <InputLabel htmlFor="modal-var-type" value="Tipo" />
-                        <select
-                            id="modal-var-type"
-                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-900"
-                            value={type}
-                            onChange={(e) => setType(e.target.value as 'formula' | 'static')}
-                        >
-                            <option value="formula">Formula</option>
-                            <option value="static">Valore statico</option>
-                        </select>
-                    </div>
-
-                    {type === 'formula' ? (
-                        <div>
-                            <InputLabel htmlFor="modal-var-formula" value="Formula" />
-                            <div className="mt-1">
-                                <FormulaStringInput
-                                    id="modal-var-formula"
-                                    value={formulaString}
-                                    onChange={setFormulaString}
-                                    suggestions={formulaSuggestions}
-                                    required
-                                    placeholder="es. [period_income] - [period_expenses]"
-                                />
-                            </div>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Digita <span className="font-mono">[</span> per l&apos;autocomplete. Frecce + Invio/Tab per selezionare.
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                {systemVariables.slice(0, 8).map((variable) => (
-                                    <button
-                                        key={variable.code}
-                                        type="button"
-                                        title={variable.example ? `Es. ${variable.example}` : variable.label}
-                                        onClick={() => insertToken(variable.code)}
-                                        className="rounded-full bg-surface-100 px-2 py-0.5 font-mono text-xs text-gray-700 hover:bg-primary-100 hover:text-primary-800 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-primary-900/40"
-                                    >
-                                        [{variable.code}]
-                                    </button>
-                                ))}
-                            </div>
-                            <InputError message={errors.formula_string} className="mt-1" />
-                        </div>
-                    ) : (
-                        <div>
-                            <InputLabel htmlFor="modal-var-static" value="Valore" />
-                            <TextInput
-                                id="modal-var-static"
-                                type="number"
-                                step="0.01"
-                                className="mt-1 block w-full"
-                                value={staticValue}
-                                onChange={(e) => setStaticValue(e.target.value)}
-                                required
-                            />
-                            <InputError message={errors.static_value} className="mt-1" />
-                        </div>
-                    )}
+                    <FinancialVariableBuilder
+                        draft={draft}
+                        onChange={setDraft}
+                        systemVariables={systemVariables}
+                        userVariables={userVariables}
+                        errors={errors}
+                        idPrefix="modal-var"
+                    />
 
                     <InputError message={errors.form} className="mt-1" />
 

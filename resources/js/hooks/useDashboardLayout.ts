@@ -21,6 +21,8 @@ interface UseDashboardLayoutReturn {
     cancelEditing: () => void;
     toggleWidgetVisibility: (id: WidgetId) => void;
     setWidgetSize: (id: WidgetId, size: WidgetSize) => void;
+    setWidgetRuntimeParam: (id: WidgetId, key: string, value: string) => void;
+    persistWidgetRuntimeParam: (id: WidgetId, key: string, value: string) => Promise<void>;
     moveWidget: (oldIndex: number, newIndex: number) => void;
     saveLayout: () => Promise<void>;
     hideWidgetsAndSave: (widgetIds: WidgetId[]) => Promise<void>;
@@ -92,6 +94,59 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
             widgets: prev.widgets.map((w) => (w.id === id ? { ...w, size } : w)),
         }));
     }, []);
+
+    /** Aggiorna un parametro runtime del widget (es. conto selezionato). */
+    const setWidgetRuntimeParam = useCallback((id: WidgetId, key: string, value: string) => {
+        setConfig((prev) => ({
+            widgets: prev.widgets.map((widget) => {
+                if (widget.id !== id) {
+                    return widget;
+                }
+
+                return {
+                    ...widget,
+                    runtime_params: {
+                        ...(widget.runtime_params ?? {}),
+                        [key]: value,
+                    },
+                };
+            }),
+        }));
+    }, []);
+
+    /** Aggiorna e salva subito un parametro runtime del widget. */
+    const persistWidgetRuntimeParam = useCallback(async (id: WidgetId, key: string, value: string): Promise<void> => {
+        const nextWidgets = sortedWidgets.map((widget) => {
+            if (widget.id !== id) {
+                return widget;
+            }
+
+            return {
+                ...widget,
+                runtime_params: {
+                    ...(widget.runtime_params ?? {}),
+                    [key]: value,
+                },
+            };
+        }).map((widget, index) => ({
+            ...widget,
+            position: index,
+        }));
+
+        setConfig({ widgets: nextWidgets });
+        setSaveError(null);
+
+        try {
+            await axios.post(route('dashboard.layout.store'), { config: { widgets: nextWidgets } });
+        } catch (error) {
+            const errors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
+            const msg = errors
+                ? Object.values(errors)[0]?.[0] ?? 'Errore durante il salvataggio del layout.'
+                : 'Errore durante il salvataggio del layout.';
+            setSaveError(msg);
+            throw new Error(msg);
+        }
+    }, [sortedWidgets]);
 
     /**
      * Sposta un widget dalla posizione `oldIndex` alla posizione `newIndex`
@@ -206,6 +261,8 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
         cancelEditing,
         toggleWidgetVisibility,
         setWidgetSize,
+        setWidgetRuntimeParam,
+        persistWidgetRuntimeParam,
         moveWidget,
         saveLayout,
         hideWidgetsAndSave,

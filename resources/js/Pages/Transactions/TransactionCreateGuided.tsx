@@ -34,10 +34,24 @@ interface Tag {
     color: string | null;
 }
 
+interface DebtCreditPrefill {
+    debt_credit_id: string;
+    transaction_type: 'income' | 'expense';
+    category_id: string;
+    amount: string;
+    description: string;
+    account_id: string;
+    date: string;
+    original_currency_code: string;
+    counterparty: string;
+    type_label: string;
+}
+
 interface Props {
     accounts: Account[];
     categories: Category[];
     defaultAccountId?: string;
+    debtCreditPrefill?: DebtCreditPrefill | null;
     quickChips?: QuickChip[];
 }
 
@@ -55,17 +69,20 @@ export default function TransactionCreateGuided({
     accounts,
     categories,
     defaultAccountId,
+    debtCreditPrefill = null,
     quickChips = [],
 }: Props) {
     const today = new Date().toISOString().split('T')[0];
-    const [step, setStep] = useState(0);
+    const hasDebtPrefill = debtCreditPrefill !== null;
+    const initialAccountId = debtCreditPrefill?.account_id || defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : '');
+    const [step, setStep] = useState(hasDebtPrefill ? 1 : 0);
     const [quickFlow, setQuickFlow] = useState(false);
-    const [txType, setTxType] = useState<'income' | 'expense'>('expense');
+    const [txType, setTxType] = useState<'income' | 'expense'>(debtCreditPrefill?.transaction_type ?? 'expense');
     const [selectedTagsList, setSelectedTagsList] = useState<Tag[]>([]);
 
     const [splitEnabled, setSplitEnabled] = useState(false);
     const [splits, setSplits] = useState<SplitLine[]>(() => [
-        { account_id: defaultAccountId || (accounts[0] ? String(accounts[0].id) : ''), amount: '' },
+        { account_id: initialAccountId, amount: debtCreditPrefill?.amount || '' },
         {
             account_id: accounts[1] ? String(accounts[1].id) : (accounts[0] ? String(accounts[0].id) : ''),
             amount: '',
@@ -73,11 +90,11 @@ export default function TransactionCreateGuided({
     ]);
 
     const { data, setData, post, processing, errors, transform } = useForm({
-        account_id: defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : ''),
-        category_id: '',
-        amount: '',
-        date: today,
-        description: '',
+        account_id: initialAccountId,
+        category_id: debtCreditPrefill?.category_id || '',
+        amount: debtCreditPrefill?.amount || '',
+        date: debtCreditPrefill?.date || today,
+        description: debtCreditPrefill?.description || '',
         is_private: false,
         is_tax_deductible: false,
         tax_deduction_rate: '19',
@@ -85,9 +102,9 @@ export default function TransactionCreateGuided({
         tax_year: new Date().getFullYear(),
         tag_ids: [] as number[],
         new_tag_names: [] as string[],
-        debt_credit_id: '',
+        debt_credit_id: debtCreditPrefill?.debt_credit_id || '',
         original_amount: '',
-        original_currency_code: '',
+        original_currency_code: debtCreditPrefill?.original_currency_code || '',
         manual_rate: '',
         splits: [] as Array<{ account_id: number; amount: string }>,
     });
@@ -229,6 +246,12 @@ export default function TransactionCreateGuided({
     return (
         <>
             <Head title="Nuova transazione" />
+            {hasDebtPrefill && debtCreditPrefill ? (
+                <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900 dark:border-purple-700 dark:bg-purple-900/20 dark:text-purple-100">
+                    Stai registrando un {debtCreditPrefill.type_label.toLowerCase()} per{' '}
+                    <strong>{debtCreditPrefill.counterparty}</strong>. I campi sono precompilati, ma puoi modificarli.
+                </div>
+            ) : null}
             <form
                 id={FM_MOBILE_PRIMARY_FORM_ID}
                 onSubmit={(e) => {

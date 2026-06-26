@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\FinancialGoal;
+use App\Models\FinancialVariable;
 use App\Models\Household;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
@@ -180,6 +181,17 @@ class E2ESeeder extends Seeder
                 'status' => 'in_progress',
                 'icon' => '✈️',
                 'color' => '#10b981',
+            ]
+        );
+
+        // Metrica a formula per i test dei widget a formula (anteprima + controlli avanzati)
+        FinancialVariable::firstOrCreate(
+            ['user_id' => $user->id, 'code' => 'e2e_bilancio_periodo'],
+            [
+                'name' => 'Bilancio Periodo E2E',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => '[period_net]',
+                'is_public' => false,
             ]
         );
 

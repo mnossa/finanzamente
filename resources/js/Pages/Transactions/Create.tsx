@@ -60,11 +60,25 @@ interface Currency {
     symbol: string | null;
 }
 
+interface DebtCreditPrefill {
+    debt_credit_id: string;
+    transaction_type: 'income' | 'expense';
+    category_id: string;
+    amount: string;
+    description: string;
+    account_id: string;
+    date: string;
+    original_currency_code: string;
+    counterparty: string;
+    type_label: string;
+}
+
 interface CreateProps {
     accounts: Account[];
     categories: Category[];
     defaultAccountId?: string;
     defaultDebtCreditId?: string;
+    debtCreditPrefill?: DebtCreditPrefill | null;
     debtsCredits: DebtCredit[];
     currencies: Currency[];
     userDefaultCurrency: string;
@@ -76,6 +90,7 @@ export default function Create({
     categories,
     defaultAccountId,
     defaultDebtCreditId,
+    debtCreditPrefill = null,
     debtsCredits,
     currencies,
     userDefaultCurrency,
@@ -98,6 +113,7 @@ export default function Create({
                         accounts={accounts}
                         categories={categories}
                         defaultAccountId={defaultAccountId}
+                        debtCreditPrefill={debtCreditPrefill}
                         quickChips={quickChips}
                     />
                 </PageContent>
@@ -107,13 +123,14 @@ export default function Create({
 
     const today = new Date().toISOString().split('T')[0];
     const amountRef = useRef<HTMLInputElement>(null);
+    const prefillAccountId = debtCreditPrefill?.account_id || defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : '');
 
     const { data, setData, post, processing, errors, transform } = useForm({
-        account_id: defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : ''),
-        category_id: '',
-        amount: '',
-        date: today,
-        description: '',
+        account_id: prefillAccountId,
+        category_id: debtCreditPrefill?.category_id || '',
+        amount: debtCreditPrefill?.amount || '',
+        date: debtCreditPrefill?.date || today,
+        description: debtCreditPrefill?.description || '',
         is_private: false,
         is_tax_deductible: false,
         tax_deduction_rate: '19',
@@ -121,22 +138,28 @@ export default function Create({
         tax_year: new Date().getFullYear(),
         tag_ids: [] as number[],
         new_tag_names: [] as string[],
-        debt_credit_id: defaultDebtCreditId || '',
+        debt_credit_id: debtCreditPrefill?.debt_credit_id || defaultDebtCreditId || '',
         original_amount: '',
-        original_currency_code: '',
+        original_currency_code: debtCreditPrefill?.original_currency_code || '',
         manual_rate: '',
         splits: [] as SplitLine[],
     });
 
     const [splitEnabled, setSplitEnabled] = useState(false);
     const [splits, setSplits] = useState<SplitLine[]>(() => [
-        { account_id: defaultAccountId || (accounts[0] ? String(accounts[0].id) : ''), amount: '' },
+        { account_id: prefillAccountId, amount: debtCreditPrefill?.amount || '' },
         {
             account_id: accounts[1] ? String(accounts[1].id) : (accounts[0] ? String(accounts[0].id) : ''),
             amount: '',
         },
     ]);
-    const [showFx, setShowFx] = useState(false);
+    const [showFx, setShowFx] = useState(
+        () => Boolean(
+            debtCreditPrefill?.original_currency_code
+            && accounts.find((account) => String(account.id) === prefillAccountId)?.currency_code
+            && debtCreditPrefill.original_currency_code !== accounts.find((account) => String(account.id) === prefillAccountId)?.currency_code,
+        ),
+    );
     const { getElapsedSeconds } = useFormTimer();
     const submitted = useRef(false);
     const fxTracked = useRef(false);

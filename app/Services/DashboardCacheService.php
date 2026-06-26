@@ -35,10 +35,14 @@ class DashboardCacheService
      * @param  callable(): T  $builder
      * @return T
      */
-    public function rememberFormulaPayloads(User $user, array $widgetIds, callable $builder): mixed
-    {
+    public function rememberFormulaPayloads(
+        User $user,
+        array $widgetIds,
+        callable $builder,
+        string $runtimeParamsKey = '',
+    ): mixed {
         return Cache::remember(
-            $this->formulaCacheKey($user, $widgetIds),
+            $this->formulaCacheKey($user, $widgetIds, $runtimeParamsKey),
             self::TTL_SECONDS,
             $builder,
         );
@@ -74,18 +78,21 @@ class DashboardCacheService
     /**
      * @param  list<int>  $widgetIds
      */
-    private function formulaCacheKey(User $user, array $widgetIds): string
+    private function formulaCacheKey(User $user, array $widgetIds, string $runtimeParamsKey = ''): string
     {
         $version = $this->dashboardDataVersionService->resolveForUser($user);
         $sortedIds = $widgetIds;
         sort($sortedIds);
 
+        $paramsSuffix = $runtimeParamsKey !== '' ? ':'.md5($runtimeParamsKey) : '';
+
         return sprintf(
-            'dashboard:%d:%d:%s:formula:%s',
+            'dashboard:%d:%d:%s:formula:%s%s',
             $user->id,
             $user->active_household_id ?? 0,
             $version,
             md5(implode(',', $sortedIds)),
+            $paramsSuffix,
         );
     }
 

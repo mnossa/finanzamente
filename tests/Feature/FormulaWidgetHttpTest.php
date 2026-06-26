@@ -376,6 +376,51 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
+    public function preview_accepts_runtime_params_for_account_filter(): void
+    {
+        $accountA = Account::factory()->for($this->household)->for($this->user, 'owner')->create([
+            'name' => 'Conto A',
+        ]);
+
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[period_net]')->create();
+
+        $allAccountsResponse = $this->actingAs($this->user)
+            ->postJson(route('formula-widgets.preview'), [
+                'financial_variable_id' => $variable->id,
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => [
+                    'format' => 'currency',
+                    'parameters' => [
+                        ['key' => 'account_id', 'type' => 'account', 'label' => 'Conto', 'default' => 'all'],
+                    ],
+                ],
+                'runtime_params' => ['account_id' => 'all'],
+            ])
+            ->assertOk()
+            ->assertJsonStructure(['payload' => ['parameters', 'value']]);
+
+        $accountAResponse = $this->actingAs($this->user)
+            ->postJson(route('formula-widgets.preview'), [
+                'financial_variable_id' => $variable->id,
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => [
+                    'format' => 'currency',
+                    'parameters' => [
+                        ['key' => 'account_id', 'type' => 'account', 'label' => 'Conto', 'default' => 'all'],
+                    ],
+                ],
+                'runtime_params' => ['account_id' => (string) $accountA->id],
+            ])
+            ->assertOk()
+            ->assertJsonStructure(['payload' => ['parameters', 'value']]);
+
+        $this->assertSame('all', $allAccountsResponse->json('payload.parameters.0.value'));
+        $this->assertSame((string) $accountA->id, $accountAResponse->json('payload.parameters.0.value'));
+    }
+
+    #[Test]
     public function preview_returns_validation_errors_for_incomplete_config(): void
     {
         $variable = FinancialVariable::factory()->for($this->user)->formula('[period_income]')->create();

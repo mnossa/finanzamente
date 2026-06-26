@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PlusIcon from '@/Components/Icons/PlusIcon';
+import PencilIcon from '@/Components/Icons/PencilIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -12,6 +13,7 @@ import { useModules } from '@/hooks/useModules';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import FormulaWidgetSkeleton from '@/Components/FormulaWidgets/FormulaWidgetSkeleton';
 import FormulaKpiWidget from '@/Components/FormulaWidgets/FormulaKpiWidget';
+import CustomFormulaWidget from '@/Components/FormulaWidgets/CustomFormulaWidget';
 import FormulaWidgetTypeBadge from '@/Components/FormulaWidgets/FormulaWidgetTypeBadge';
 import DeferredMount from '@/Components/Dashboard/DeferredMount';
 import DashboardWidgetGridStatic from '@/Components/Dashboard/DashboardWidgetGridStatic';
@@ -310,6 +312,19 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
     );
 }
 
+function formulaWidgetEditAction(numericId: string, widgetName: string) {
+    return (
+        <Link
+            href={route('formula-widgets.edit', numericId)}
+            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-gray-800 dark:hover:text-primary-400"
+            aria-label={`Modifica ${widgetName}`}
+            title="Modifica widget"
+        >
+            <PencilIcon className="h-4 w-4" size={16} />
+        </Link>
+    );
+}
+
 export default function Dashboard({
     accounts,
     recentTransactions,
@@ -327,6 +342,7 @@ export default function Dashboard({
     const { isModuleEnabled, isModuleLocked } = useModules();
 
     const {
+        config,
         sortedWidgets,
         isEditing,
         isSaving,
@@ -335,14 +351,16 @@ export default function Dashboard({
         cancelEditing,
         toggleWidgetVisibility,
         setWidgetSize,
+        setWidgetRuntimeParam,
+        persistWidgetRuntimeParam,
         moveWidget,
         saveLayout,
         hideWidgetsAndSave,
         resetLayout,
     } = useDashboardLayout(dashboardLayout);
 
-    const { payloads: formulaWidgetPayloads, error: formulaWidgetsError } =
-        useDashboardFormulaPayloads(dashboardLayout, initialFormulaWidgetPayloads, formulaWidgetDataVersion);
+    const { payloads: formulaWidgetPayloads, pendingWidgetIds: formulaWidgetPendingIds, error: formulaWidgetsError } =
+        useDashboardFormulaPayloads(config, initialFormulaWidgetPayloads, formulaWidgetDataVersion);
 
     const {
         data: deferredWidgets,
@@ -380,11 +398,20 @@ export default function Dashboard({
         }
     }
 
+    async function handleFormulaWidgetParameterChange(widgetId: WidgetId, key: string, value: string): Promise<void> {
+        try {
+            await persistWidgetRuntimeParam(widgetId, key, value);
+        } catch {
+            // saveError già impostato dall'hook
+        }
+    }
+
     function renderFormulaWidget(widgetId: WidgetId, editing: boolean): ReactNode {
         const numericId = parseFormulaWidgetNumericId(widgetId);
         if (!numericId) return null;
 
         const payload = formulaWidgetPayloads[numericId];
+        const isRefreshing = formulaWidgetPendingIds.has(String(numericId));
         if (!payload) {
             const meta = formulaWidgetMeta[numericId];
             const label = meta?.name ?? 'Widget a formula';
@@ -414,6 +441,7 @@ export default function Dashboard({
             }
 
             const meta = formulaWidgetMeta[numericId];
+            const headerActions = !editing ? formulaWidgetEditAction(numericId, payload.name) : undefined;
 
             return (
                 <DashboardWidgetShell
@@ -421,13 +449,23 @@ export default function Dashboard({
                     subtitle={payload.periodLabel}
                     titleBadge={formulaWidgetTitleBadge(meta)}
                     bodyClassName={widgetListBodyClass}
+                    headerActions={headerActions}
                 >
-                    <FormulaKpiWidget payload={payload} embedded />
+                    <CustomFormulaWidget
+                        payload={payload}
+                        embedded
+                        onParameterChange={(key, value) => {
+                            void handleFormulaWidgetParameterChange(widgetId, key, value);
+                        }}
+                        parameterControlsDisabled={isSaving}
+                        refreshing={isRefreshing}
+                    />
                 </DashboardWidgetShell>
             );
         }
 
         const meta = formulaWidgetMeta[numericId];
+        const headerActions = !editing ? formulaWidgetEditAction(numericId, payload.name) : undefined;
 
         return (
             <DeferredMount fallback={formulaWidgetSkeleton(payload.name, meta)} scheduleIdle>
@@ -436,10 +474,17 @@ export default function Dashboard({
                     subtitle={payload.periodLabel}
                     titleBadge={formulaWidgetTitleBadge(meta)}
                     bodyClassName={widgetListBodyClass}
+                    headerActions={headerActions}
                 >
-                    <Suspense fallback={formulaWidgetSkeleton(payload.name, meta)}>
-                        <FormulaChartWidget payload={payload} embedded />
-                    </Suspense>
+                    <CustomFormulaWidget
+                        payload={payload}
+                        embedded
+                        onParameterChange={(key, value) => {
+                            void handleFormulaWidgetParameterChange(widgetId, key, value);
+                        }}
+                        parameterControlsDisabled={isSaving}
+                        refreshing={isRefreshing}
+                    />
                 </DashboardWidgetShell>
             </DeferredMount>
         );

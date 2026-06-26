@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PreviewFormulaWidgetRequest;
 use App\Http\Requests\StoreFormulaWidgetRequest;
 use App\Http\Requests\UpdateFormulaWidgetRequest;
+use App\Models\Account;
 use App\Models\FinancialVariable;
 use App\Models\FormulaWidget;
 use App\Models\User;
@@ -61,11 +62,14 @@ class FormulaWidgetController extends Controller
             ->get()
             ->map(fn (FinancialVariable $v) => FinancialVariableController::formatVariable($v));
 
+        $accounts = $this->accountOptionsForUser($user);
+
         return Inertia::render('FormulaWidgets/Create', [
             'variables' => $variables,
             'systemVariables' => $available['system'],
             'chartTypes' => config('financial_variables.chart_types', []),
             'periodPresets' => config('financial_variables.period_presets', []),
+            'accounts' => $accounts,
         ]);
     }
 
@@ -160,6 +164,7 @@ class FormulaWidgetController extends Controller
             'systemVariables' => $available['system'],
             'chartTypes' => config('financial_variables.chart_types', []),
             'periodPresets' => config('financial_variables.period_presets', []),
+            'accounts' => $this->accountOptionsForUser($user),
             'editingWidget' => self::formatWidget($formulaWidget),
         ]);
     }
@@ -278,6 +283,31 @@ class FormulaWidgetController extends Controller
     private function generateShareToken(): string
     {
         return 'w_'.Str::lower(Str::random(10));
+    }
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    private function accountOptionsForUser(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [];
+        }
+
+        return Account::query()
+            ->where('household_id', $householdId)
+            ->where('active', true)
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Account $account) => [
+                'id' => $account->id,
+                'name' => $account->name,
+            ])
+            ->values()
+            ->all();
     }
 
     private function redirectOwnDuplicate(

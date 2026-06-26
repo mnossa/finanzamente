@@ -41,8 +41,10 @@ class FormulaWidgetPreviewService
         ]);
         $widget->setRelation('financialVariable', $variable);
 
+        $runtimeOverrides = $input['runtime_params'] ?? [];
+
         try {
-            $payload = $this->payloadBuilder->build($widget, $user);
+            $payload = $this->payloadBuilder->build($widget, $user, $runtimeOverrides);
         } catch (ValidationException $e) {
             throw $e;
         } catch (\InvalidArgumentException $e) {

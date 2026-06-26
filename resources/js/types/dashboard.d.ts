@@ -31,6 +31,8 @@ export interface WidgetConfig {
     visible: boolean;
     position: number;
     size: WidgetSize;
+    /** Parametri runtime selezionati dall'utente in dashboard (es. conto). */
+    runtime_params?: Record<string, string>;
 }
 
 /** Configurazione completa del layout dashboard. */

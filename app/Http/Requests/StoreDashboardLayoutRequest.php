@@ -30,6 +30,8 @@ class StoreDashboardLayoutRequest extends FormRequest
             'config.widgets.*.visible' => ['required', 'boolean'],
             'config.widgets.*.position' => ['required', 'integer', 'min:0'],
             'config.widgets.*.size' => ['required', 'string', 'in:sm,md,lg,xl'],
+            'config.widgets.*.runtime_params' => ['sometimes', 'array'],
+            'config.widgets.*.runtime_params.*' => ['nullable', 'string', 'max:64'],
         ];
     }
 

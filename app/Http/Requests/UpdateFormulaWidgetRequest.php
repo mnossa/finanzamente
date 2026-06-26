@@ -45,6 +45,8 @@ class UpdateFormulaWidgetRequest extends FormRequest
                     (string) $this->input('display_type'),
                     $this->input('period_preset'),
                     $this->input('chart_config'),
+                    null,
+                    (bool) $this->boolean('is_public'),
                 );
             } catch (ValidationException $e) {
                 foreach ($e->errors() as $field => $messages) {

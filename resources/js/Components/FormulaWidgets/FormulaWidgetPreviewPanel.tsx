@@ -10,6 +10,10 @@ interface FormulaWidgetPreviewPanelProps {
     errors: string[];
     title?: string;
     className?: string;
+    onParameterChange?: (key: string, value: string) => void;
+    isRefreshing?: boolean;
+    isFetching?: boolean;
+    hasRuntimeParameters?: boolean;
 }
 
 export default function FormulaWidgetPreviewPanel({
@@ -18,9 +22,13 @@ export default function FormulaWidgetPreviewPanel({
     errors,
     title = 'Anteprima',
     className,
+    onParameterChange,
+    isRefreshing = false,
+    isFetching = false,
+    hasRuntimeParameters = false,
 }: FormulaWidgetPreviewPanelProps) {
     const subtitle =
-        status === 'loading'
+        isRefreshing
             ? 'Aggiornamento in corso…'
             : status === 'success' && payload
               ? payload.periodLabel
@@ -35,13 +43,19 @@ export default function FormulaWidgetPreviewPanel({
         >
             <h2 className="mb-3 text-base font-semibold text-gray-900 dark:text-white">{title}</h2>
 
+            {hasRuntimeParameters && status !== 'idle' && (
+                <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                    Usa i controlli sotto l&apos;anteprima per provare conto e periodo come in dashboard.
+                </p>
+            )}
+
             {status === 'idle' && (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                     Scegli variabile, tipo di grafico e periodo: l&apos;anteprima si aggiorna in tempo reale con i tuoi dati.
                 </p>
             )}
 
-            {status === 'loading' && (
+            {isFetching && !payload && (
                 <div className="space-y-3" aria-live="polite" aria-busy="true">
                     <div className="h-8 w-2/3 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
                     <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
@@ -63,13 +77,19 @@ export default function FormulaWidgetPreviewPanel({
                 </div>
             )}
 
-            {status === 'success' && payload && (
+            {payload && (status === 'success' || isRefreshing) && (
                 <DashboardWidgetShell
                     title={payload.name}
                     subtitle={subtitle}
                     bodyClassName={dashboardWidgetListBodyClass}
                 >
-                    <CustomFormulaWidget payload={payload} embedded />
+                    <CustomFormulaWidget
+                        payload={payload}
+                        embedded
+                        onParameterChange={onParameterChange}
+                        parameterControlsDisabled={isRefreshing}
+                        refreshing={isRefreshing}
+                    />
                 </DashboardWidgetShell>
             )}
         </div>

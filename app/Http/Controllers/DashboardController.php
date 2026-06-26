@@ -276,7 +276,13 @@ class DashboardController extends Controller
         }
 
         $requestedIds = $this->resolveRequestedFormulaWidgetIds($request, $widgetIds);
-        $etag = $this->buildFormulaWidgetPayloadsEtag($dataVersion, $widgetIds);
+        $requestParamOverrides = $this->parseRequestRuntimeParams($request);
+        $runtimeParamsByWidgetId = $this->mergeRuntimeParamsForWidgets(
+            $dashboardLayout,
+            $requestParamOverrides,
+            $requestedIds,
+        );
+        $etag = $this->buildFormulaWidgetPayloadsEtag($dataVersion, $widgetIds, $runtimeParamsByWidgetId);
         $isFullPayloadRequest = $requestedIds === $widgetIds;
 
         if ($isFullPayloadRequest && $request->header('If-None-Match') === $etag) {
@@ -292,7 +298,13 @@ class DashboardController extends Controller
                 'payloads' => $this->dashboardCacheService->rememberFormulaPayloads(
                     $user,
                     $requestedIds,
-                    fn () => $this->buildFormulaWidgetPayloads($user, $dashboardLayout, $requestedIds),
+                    fn () => $this->buildFormulaWidgetPayloadsWithRuntime(
+                        $user,
+                        $dashboardLayout,
+                        $requestedIds,
+                        $runtimeParamsByWidgetId,
+                    ),
+                    $this->runtimeParamsCacheKey($runtimeParamsByWidgetId, $requestedIds),
                 ),
                 'dataVersion' => $dataVersion,
             ])
@@ -552,7 +564,72 @@ class DashboardController extends Controller
             }
         }
 
-        return $this->formulaWidgetPayloadBuilder->buildMany($orderedWidgets, $user);
+        return $this->formulaWidgetPayloadBuilder->buildMany(
+            $orderedWidgets,
+            $user,
+            $this->extractRuntimeParamsByWidgetId($dashboardLayout),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboardLayout
+     * @return array<int, array<string, string>>
+     */
+    private function extractRuntimeParamsByWidgetId(array $dashboardLayout): array
+    {
+        $map = [];
+
+        foreach ($dashboardLayout['widgets'] ?? [] as $entry) {
+            if (! preg_match('/^formula_widget_(\d+)$/', (string) ($entry['id'] ?? ''), $matches)) {
+                continue;
+            }
+
+            $params = $entry['runtime_params'] ?? [];
+            if (! is_array($params) || $params === []) {
+                continue;
+            }
+
+            $normalized = [];
+            foreach ($params as $key => $value) {
+                if (! is_string($key) || $key === '') {
+                    continue;
+                }
+
+                $normalized[$key] = is_scalar($value) ? (string) $value : '';
+            }
+
+            if ($normalized !== []) {
+                $map[(int) $matches[1]] = $normalized;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  array<string, mixed>  $dashboardLayout
+     * @param  array<int, array<string, string>>  $requestOverrides
+     * @return array<int, array<string, string>>
+     */
+    private function mergeRuntimeParamsForWidgets(
+        array $dashboardLayout,
+        array $requestOverrides,
+        array $widgetIds,
+    ): array {
+        $merged = $this->extractRuntimeParamsByWidgetId($dashboardLayout);
+
+        foreach ($widgetIds as $widgetId) {
+            if (! isset($requestOverrides[$widgetId]) || ! is_array($requestOverrides[$widgetId])) {
+                continue;
+            }
+
+            $merged[$widgetId] = array_merge(
+                $merged[$widgetId] ?? [],
+                array_map(static fn ($value) => is_scalar($value) ? (string) $value : '', $requestOverrides[$widgetId]),
+            );
+        }
+
+        return $merged;
     }
 
     /**
@@ -587,13 +664,116 @@ class DashboardController extends Controller
     }
 
     /**
-     * @param  list<int>  $layoutWidgetIds
+     * @param  list<int>  $widgetIds
+     * @param  array<int, array<string, string>>  $runtimeParamsByWidgetId
      */
-    private function buildFormulaWidgetPayloadsEtag(string $dataVersion, array $layoutWidgetIds): string
-    {
-        $source = $dataVersion.'|'.implode(',', $layoutWidgetIds);
+    private function buildFormulaWidgetPayloadsWithRuntime(
+        User $user,
+        array $dashboardLayout,
+        array $widgetIds,
+        array $runtimeParamsByWidgetId,
+    ): array {
+        if ($widgetIds === []) {
+            return [];
+        }
+
+        $widgetsById = FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', $widgetIds)
+            ->get()
+            ->keyBy('id');
+
+        $orderedWidgets = [];
+        foreach ($widgetIds as $widgetId) {
+            $widget = $widgetsById->get($widgetId);
+            if ($widget !== null) {
+                $orderedWidgets[] = $widget;
+            }
+        }
+
+        $filteredRuntimeParams = array_intersect_key(
+            $runtimeParamsByWidgetId,
+            array_flip($widgetIds),
+        );
+
+        return $this->formulaWidgetPayloadBuilder->buildMany(
+            $orderedWidgets,
+            $user,
+            $filteredRuntimeParams,
+        );
+    }
+
+    /**
+     * @param  list<int>  $layoutWidgetIds
+     * @param  array<int, array<string, string>>  $runtimeParamsByWidgetId
+     */
+    private function buildFormulaWidgetPayloadsEtag(
+        string $dataVersion,
+        array $layoutWidgetIds,
+        array $runtimeParamsByWidgetId = [],
+    ): string {
+        $runtimeKey = $this->runtimeParamsCacheKey($runtimeParamsByWidgetId, $layoutWidgetIds);
+        $source = $dataVersion.'|'.implode(',', $layoutWidgetIds).'|'.$runtimeKey;
 
         return '"'.md5($source).'"';
+    }
+
+    /**
+     * @param  array<int, array<string, string>>  $runtimeParamsByWidgetId
+     * @param  list<int>  $widgetIds
+     */
+    private function runtimeParamsCacheKey(array $runtimeParamsByWidgetId, array $widgetIds): string
+    {
+        $parts = [];
+        foreach ($widgetIds as $widgetId) {
+            $params = $runtimeParamsByWidgetId[$widgetId] ?? [];
+            if ($params === []) {
+                continue;
+            }
+
+            ksort($params);
+            $encoded = [];
+            foreach ($params as $key => $value) {
+                $encoded[] = $key.'='.$value;
+            }
+
+            $parts[] = $widgetId.':'.implode(',', $encoded);
+        }
+
+        return implode(';', $parts);
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function parseRequestRuntimeParams(Request $request): array
+    {
+        $raw = $request->query('params');
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $parsed = [];
+        foreach ($raw as $widgetId => $params) {
+            if (! ctype_digit((string) $widgetId) || ! is_array($params)) {
+                continue;
+            }
+
+            $normalized = [];
+            foreach ($params as $key => $value) {
+                if (! is_string($key) || $key === '' || ! is_scalar($value)) {
+                    continue;
+                }
+
+                $normalized[$key] = (string) $value;
+            }
+
+            if ($normalized !== []) {
+                $parsed[(int) $widgetId] = $normalized;
+            }
+        }
+
+        return $parsed;
     }
 
     /**
@@ -629,7 +809,11 @@ class DashboardController extends Controller
             return [];
         }
 
-        return $this->formulaWidgetPayloadBuilder->buildMany($lightWidgets->values()->all(), $user);
+        return $this->formulaWidgetPayloadBuilder->buildMany(
+            $lightWidgets->values()->all(),
+            $user,
+            $this->extractRuntimeParamsByWidgetId($dashboardLayout),
+        );
     }
 
     /**

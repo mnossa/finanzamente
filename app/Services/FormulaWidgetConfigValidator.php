@@ -11,13 +11,19 @@ class FormulaWidgetConfigValidator
     public function __construct(
         private readonly FormulaTokenParser $tokenParser,
         private readonly SystemVariableResolver $systemVariableResolver,
+        private readonly FormulaWidgetParameterService $parameterService,
     ) {}
 
     /**
      * @param  array<string, mixed>|null  $chartConfig
      */
-    public function validate(string $displayType, ?string $periodPreset, ?array $chartConfig, ?string $formulaString = null): void
-    {
+    public function validate(
+        string $displayType,
+        ?string $periodPreset,
+        ?array $chartConfig,
+        ?string $formulaString = null,
+        bool $isPublic = false,
+    ): void {
         if (! in_array($displayType, FormulaWidget::displayTypes(), true)) {
             throw ValidationException::withMessages([
                 'display_type' => 'Il tipo di visualizzazione non è valido.',
@@ -52,6 +58,8 @@ class FormulaWidgetConfigValidator
             FormulaWidget::DISPLAY_PROGRESS => $this->validateProgressConfig($chartConfig ?? []),
             default => null,
         };
+
+        $this->parameterService->validateChartConfig($chartConfig, $isPublic);
 
         if ($formulaString !== null) {
             foreach ($this->tokenParser->extract($formulaString) as $code) {

@@ -1,7 +1,11 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { FormulaWidgetPayload } from '@/types/formulaWidget';
-import { formulaWidgetRequiresPeriod } from '@/utils/formulaWidgetForm';
+import {
+    chartConfigHasRuntimeParameters,
+    extractRuntimeParamDefaultsFromChartConfig,
+    formulaWidgetRequiresPeriod,
+} from '@/utils/formulaWidgetForm';
 
 export interface FormulaWidgetPreviewInput {
     name: string;
@@ -40,16 +44,38 @@ function flattenValidationErrors(errors: unknown): string[] {
 }
 
 export function useFormulaWidgetPreview(input: FormulaWidgetPreviewInput) {
-    const debouncedInput = useDebounce(input, 400);
+    const parameterDefaults = useMemo(
+        () => extractRuntimeParamDefaultsFromChartConfig(input.chart_config),
+        [input.chart_config],
+    );
+    const parameterDefaultsKey = useMemo(() => JSON.stringify(parameterDefaults), [parameterDefaults]);
+
+    const [runtimeParams, setRuntimeParams] = useState<Record<string, string>>(parameterDefaults);
+
+    useEffect(() => {
+        setRuntimeParams(parameterDefaults);
+    }, [parameterDefaultsKey, parameterDefaults]);
+
+    const previewRequest = useMemo(
+        () => ({
+            ...input,
+            runtime_params: runtimeParams,
+        }),
+        [input, runtimeParams],
+    );
+
+    const debouncedInput = useDebounce(previewRequest, 400);
     const [status, setStatus] = useState<FormulaWidgetPreviewStatus>('idle');
     const [payload, setPayload] = useState<FormulaWidgetPayload | null>(null);
     const [errors, setErrors] = useState<string[]>([]);
+    const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         if (!debouncedInput.financial_variable_id) {
             setStatus('idle');
             setPayload(null);
             setErrors([]);
+            setIsFetching(false);
 
             return;
         }
@@ -58,12 +84,13 @@ export function useFormulaWidgetPreview(input: FormulaWidgetPreviewInput) {
             setStatus('error');
             setPayload(null);
             setErrors(['Seleziona un periodo per vedere l\'anteprima.']);
+            setIsFetching(false);
 
             return;
         }
 
         const controller = new AbortController();
-        setStatus('loading');
+        setIsFetching(true);
 
         axios
             .post(
@@ -74,6 +101,7 @@ export function useFormulaWidgetPreview(input: FormulaWidgetPreviewInput) {
                     display_type: debouncedInput.display_type,
                     period_preset: debouncedInput.period_preset || null,
                     chart_config: debouncedInput.chart_config,
+                    runtime_params: debouncedInput.runtime_params,
                 },
                 { signal: controller.signal },
             )
@@ -90,10 +118,33 @@ export function useFormulaWidgetPreview(input: FormulaWidgetPreviewInput) {
                 setPayload(null);
                 setErrors(flattenValidationErrors(error?.response?.data?.errors));
                 setStatus('error');
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setIsFetching(false);
+                }
             });
 
         return () => controller.abort();
     }, [debouncedInput]);
 
-    return { status, payload, errors };
+    const handleParameterChange = useCallback((key: string, value: string) => {
+        setRuntimeParams((current) => ({
+            ...current,
+            [key]: value,
+        }));
+    }, []);
+
+    const isRefreshing = isFetching && payload !== null;
+    const hasRuntimeParameters = chartConfigHasRuntimeParameters(input.chart_config);
+
+    return {
+        status,
+        payload,
+        errors,
+        onParameterChange: hasRuntimeParameters ? handleParameterChange : undefined,
+        isRefreshing,
+        isFetching,
+        hasRuntimeParameters,
+    };
 }

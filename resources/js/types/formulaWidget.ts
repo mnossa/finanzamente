@@ -22,6 +22,40 @@ export interface FormulaChartSeriesEntry {
     color?: string;
 }
 
+export type FormulaWidgetParameterType = 'account' | 'period_nav';
+
+export interface FormulaWidgetParameterOption {
+    value: string;
+    label: string;
+}
+
+export interface FormulaWidgetParameterDefinition {
+    key: string;
+    type: FormulaWidgetParameterType;
+    label: string;
+    default?: string;
+}
+
+export interface FormulaWidgetRuntimeParameter extends FormulaWidgetParameterDefinition {
+    value: string;
+    options: FormulaWidgetParameterOption[];
+    /** period_nav: etichetta del periodo correntemente selezionato (es. "Maggio 2026"). */
+    display_label?: string;
+    /** period_nav: offset minimo selezionabile (verso il passato, valore negativo). */
+    min?: number;
+    /** period_nav: offset massimo selezionabile (0 = periodo corrente). */
+    max?: number;
+}
+
+export interface FormulaWidgetChartConfig {
+    show_delta?: boolean;
+    format?: string;
+    value_code?: string;
+    threshold_code?: string;
+    parameters?: FormulaWidgetParameterDefinition[];
+    series?: FormulaChartSeriesEntry[];
+}
+
 export type FormulaDeltaPolarity = 'higher_is_better' | 'lower_is_better';
 
 export interface FormulaWidgetKpiPayload {
@@ -38,6 +72,7 @@ export interface FormulaWidgetKpiPayload {
     investedLinked?: number;
     patrimonioTotal?: number;
     accountsCount?: number;
+    parameters?: FormulaWidgetRuntimeParameter[];
 }
 
 export interface FormulaWidgetProgressPayload {
@@ -47,6 +82,7 @@ export interface FormulaWidgetProgressPayload {
     threshold: number;
     percentage: number;
     periodLabel: string;
+    parameters?: FormulaWidgetRuntimeParameter[];
 }
 
 export interface FormulaWidgetLinePayload {
@@ -56,6 +92,7 @@ export interface FormulaWidgetLinePayload {
     points: Array<{ label: string; value: number }>;
     series: FormulaChartSeriesEntry[];
     periodLabel: string;
+    parameters?: FormulaWidgetRuntimeParameter[];
 }
 
 export interface FormulaWidgetBarPayload {
@@ -63,6 +100,7 @@ export interface FormulaWidgetBarPayload {
     name: string;
     categories: FormulaWidgetCategorySlice[];
     periodLabel: string;
+    parameters?: FormulaWidgetRuntimeParameter[];
 }
 
 export interface FormulaWidgetStackedBarPayload {
@@ -71,6 +109,7 @@ export interface FormulaWidgetStackedBarPayload {
     points: Array<{ label: string; series: Record<string, number> }>;
     series: FormulaChartSeriesEntry[];
     periodLabel: string;
+    parameters?: FormulaWidgetRuntimeParameter[];
 }
 
 export type FormulaWidgetPayload =

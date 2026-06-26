@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\User;
+use App\Support\FormulaWidgetRuntimeContext;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -46,8 +47,13 @@ class SystemVariableResolver
         return $variables;
     }
 
-    public function resolve(User $user, string $code, Carbon $startDate, Carbon $endDate): float
-    {
+    public function resolve(
+        User $user,
+        string $code,
+        Carbon $startDate,
+        Carbon $endDate,
+        ?FormulaWidgetRuntimeContext $context = null,
+    ): float {
         $meta = $this->allVariableDefinitions()[$code] ?? null;
 
         if ($meta === null) {
@@ -71,7 +77,7 @@ class SystemVariableResolver
             'portfolio_snapshot_at' => $this->resolvePortfolioFieldAt($user, $endDate, $meta['field']),
             'investment_purchases' => $this->investmentLedgerService
                 ->unsyncedPurchasesInPeriod($user, $startDate, $endDate)['amount'],
-            'period_stats' => $this->resolvePeriodStatsField($user, $startDate, $endDate, $meta['field']),
+            'period_stats' => $this->resolvePeriodStatsField($user, $startDate, $endDate, $meta['field'], $context),
             'expense_distribution' => $this->resolveExpenseDistributionField($user, $startDate, $endDate, $meta['field']),
             'linked_investments_at' => $this->investmentLedgerService->linkedInvestedValueAt($user, $endDate),
             'investment_pac_metrics' => $this->resolvePacMetricField($user, $endDate, $meta['field']),
@@ -82,8 +88,12 @@ class SystemVariableResolver
         };
     }
 
-    public function resolveForSeries(User $user, string $code, Carbon $bucketEnd): float
-    {
+    public function resolveForSeries(
+        User $user,
+        string $code,
+        Carbon $bucketEnd,
+        ?FormulaWidgetRuntimeContext $context = null,
+    ): float {
         $meta = $this->allVariableDefinitions()[$code] ?? null;
 
         if ($meta === null) {
@@ -119,12 +129,12 @@ class SystemVariableResolver
                 return $this->resolvePacMetricAt($user, $bucketEnd, $code);
             }
 
-            return $this->resolve($user, $code, $bucketEnd->copy()->startOfDay(), $bucketEnd);
+            return $this->resolve($user, $code, $bucketEnd->copy()->startOfDay(), $bucketEnd, $context);
         }
 
         $bucketStart = $bucketEnd->copy()->startOfMonth()->startOfDay();
 
-        return $this->resolve($user, $code, $bucketStart, $bucketEnd);
+        return $this->resolve($user, $code, $bucketStart, $bucketEnd, $context);
     }
 
     private function resolveFinancialMetricsField(User $user, Carbon $start, Carbon $end, string $field): float
@@ -194,9 +204,15 @@ class SystemVariableResolver
         return round($total, 2);
     }
 
-    private function resolvePeriodStatsField(User $user, Carbon $start, Carbon $end, string $field): float
-    {
-        $stats = $this->dashboardPeriodStatsService->calculate($user, $start, $end);
+    private function resolvePeriodStatsField(
+        User $user,
+        Carbon $start,
+        Carbon $end,
+        string $field,
+        ?FormulaWidgetRuntimeContext $context = null,
+    ): float {
+        $accountId = $context?->accountId;
+        $stats = $this->dashboardPeriodStatsService->calculate($user, $start, $end, $accountId);
 
         return (float) ($stats[$field] ?? 0.0);
     }

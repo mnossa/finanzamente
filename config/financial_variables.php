@@ -113,7 +113,7 @@ return [
             'field' => 'expenses',
         ],
         'period_net' => [
-            'label' => 'Saldo periodo',
+            'label' => 'Bilancio conto (saldo periodo)',
             'requires_period' => true,
             'resolver' => 'period_stats',
             'field' => 'net',

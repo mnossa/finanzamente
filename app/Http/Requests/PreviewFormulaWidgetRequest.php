@@ -29,6 +29,8 @@ class PreviewFormulaWidgetRequest extends FormRequest
             'display_type' => ['required', Rule::in(FormulaWidget::displayTypes())],
             'period_preset' => ['nullable', 'string', 'max:32'],
             'chart_config' => ['nullable', 'array'],
+            'runtime_params' => ['sometimes', 'array'],
+            'runtime_params.*' => ['nullable', 'string', 'max:64'],
         ];
     }
 

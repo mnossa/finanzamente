@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FinancialVariable;
 use App\Models\User;
 use App\Support\FormulaTokenParser;
+use App\Support\FormulaWidgetRuntimeContext;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -17,8 +18,13 @@ class FormulaResolverService
         private readonly FormulaSyntaxValidator $syntaxValidator,
     ) {}
 
-    public function evaluate(User $user, string $formulaString, Carbon $startDate, Carbon $endDate): float
-    {
+    public function evaluate(
+        User $user,
+        string $formulaString,
+        Carbon $startDate,
+        Carbon $endDate,
+        ?FormulaWidgetRuntimeContext $context = null,
+    ): float {
         $tokens = $this->tokenParser->extract($formulaString);
 
         if ($tokens === []) {
@@ -29,7 +35,7 @@ class FormulaResolverService
 
         $resolved = [];
         foreach ($tokens as $code) {
-            $resolved[$code] = $this->resolveCode($user, $code, $startDate, $endDate);
+            $resolved[$code] = $this->resolveCode($user, $code, $startDate, $endDate, 0, [], $context);
         }
 
         $expression = $this->tokenParser->substitute($formulaString, $resolved);
@@ -44,6 +50,7 @@ class FormulaResolverService
         Carbon $endDate,
         int $depth = 0,
         array $resolvingStack = [],
+        ?FormulaWidgetRuntimeContext $context = null,
     ): float {
         if (in_array($code, $resolvingStack, true)) {
             throw ValidationException::withMessages([
@@ -59,7 +66,7 @@ class FormulaResolverService
         }
 
         if ($this->systemVariableResolver->isSystemCode($code)) {
-            return $this->systemVariableResolver->resolve($user, $code, $startDate, $endDate);
+            return $this->systemVariableResolver->resolve($user, $code, $startDate, $endDate, $context);
         }
 
         $variable = FinancialVariable::query()
@@ -82,7 +89,7 @@ class FormulaResolverService
         $resolved = [];
 
         foreach ($tokens as $token) {
-            $resolved[$token] = $this->resolveCode($user, $token, $startDate, $endDate, $depth + 1, $stack);
+            $resolved[$token] = $this->resolveCode($user, $token, $startDate, $endDate, $depth + 1, $stack, $context);
         }
 
         $expression = $this->tokenParser->substitute((string) $variable->formula_string, $resolved);
@@ -99,6 +106,7 @@ class FormulaResolverService
         Carbon $rangeStart,
         Carbon $rangeEnd,
         ?FormulaPeriodResolver $periodResolver = null,
+        ?FormulaWidgetRuntimeContext $context = null,
     ): array {
         $periodResolver ??= app(FormulaPeriodResolver::class);
         $buckets = $periodResolver->monthBuckets($rangeStart, $rangeEnd);
@@ -106,8 +114,8 @@ class FormulaResolverService
 
         foreach ($buckets as $bucket) {
             $value = $this->isDirectCode($formulaOrCode)
-                ? $this->systemVariableResolver->resolveForSeries($user, $formulaOrCode, $bucket['end'])
-                : $this->evaluate($user, $formulaOrCode, $bucket['start'], $bucket['end']);
+                ? $this->systemVariableResolver->resolveForSeries($user, $formulaOrCode, $bucket['end'], $context)
+                : $this->evaluate($user, $formulaOrCode, $bucket['start'], $bucket['end'], $context);
 
             $series[] = [
                 'label' => $bucket['label'],
@@ -122,12 +130,17 @@ class FormulaResolverService
      * @param  array<int, string>  $codes
      * @return array<string, float>
      */
-    public function evaluateCodesForPeriod(User $user, array $codes, Carbon $startDate, Carbon $endDate): array
-    {
+    public function evaluateCodesForPeriod(
+        User $user,
+        array $codes,
+        Carbon $startDate,
+        Carbon $endDate,
+        ?FormulaWidgetRuntimeContext $context = null,
+    ): array {
         $values = [];
 
         foreach ($codes as $code) {
-            $values[$code] = round($this->resolveCode($user, $code, $startDate, $endDate), 2);
+            $values[$code] = round($this->resolveCode($user, $code, $startDate, $endDate, 0, [], $context), 2);
         }
 
         return $values;

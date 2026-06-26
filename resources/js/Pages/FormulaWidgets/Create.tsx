@@ -9,13 +9,13 @@ import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import CreateFinancialVariableModal from '@/Components/FormulaWidgets/CreateFinancialVariableModal';
 import DuplicateFormulaWidgetNotice from '@/Components/FormulaWidgets/DuplicateFormulaWidgetNotice';
-import FormulaWidgetCreateGuide from '@/Components/FormulaWidgets/FormulaWidgetCreateGuide';
 import FormulaWidgetPreviewPanel from '@/Components/FormulaWidgets/FormulaWidgetPreviewPanel';
 import { useFormulaWidgetPreview } from '@/hooks/useFormulaWidgetPreview';
 import {
     formulaWidgetRequiresPeriod,
     formulaWidgetUsesSeries,
 } from '@/utils/formulaWidgetForm';
+import type { AccountOption } from '@/utils/formulaWidgetPresets';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useMemo, useState } from 'react';
@@ -33,6 +33,7 @@ interface CreateProps {
     systemVariables: SystemVariableMeta[];
     chartTypes: Record<string, ChartTypeMeta>;
     periodPresets: Record<string, { label: string }>;
+    accounts?: AccountOption[];
     editingWidget?: FormulaWidgetSummary | null;
 }
 
@@ -49,9 +50,13 @@ interface CreateWidgetForm {
         format: string;
         value_code: string;
         threshold_code: string;
-        series: Array<{ code: string; label?: string }>;
+        parameters?: Array<{ key: string; type: string; label: string; default?: string }>;
+        series: Array<{ code: string; label?: string; color?: string }>;
     };
 }
+
+type RuntimeParameter = NonNullable<CreateWidgetForm['chart_config']['parameters']>[number];
+type WidgetRecipeId = 'single_value' | 'trend' | 'comparison' | 'goal';
 
 const DEFAULT_CHART_CONFIG: CreateWidgetForm['chart_config'] = {
     show_delta: false,
@@ -63,6 +68,63 @@ const DEFAULT_CHART_CONFIG: CreateWidgetForm['chart_config'] = {
         { code: 'total_investments', label: 'Investimenti' },
     ],
 };
+
+const ACCOUNT_PARAMETER: RuntimeParameter = {
+    key: 'account_id',
+    type: 'account',
+    label: 'Conto',
+    default: 'all',
+};
+
+const PERIOD_NAV_PARAMETER: RuntimeParameter = {
+    key: 'period_offset',
+    type: 'period_nav',
+    label: 'Mese',
+    default: '0',
+};
+
+const ACCOUNT_PERIOD_SERIES: CreateWidgetForm['chart_config']['series'] = [
+    { code: 'period_income', label: 'Incassato', color: '#10b981' },
+    { code: 'period_expenses', label: 'Speso', color: '#f97316' },
+    { code: 'period_net', label: 'Risparmiato', color: '#3b82f6' },
+];
+
+const WIDGET_RECIPES: Array<{
+    id: WidgetRecipeId;
+    title: string;
+    description: string;
+    suggestedName: string;
+    recommendedDisplayType: string;
+}> = [
+    {
+        id: 'single_value',
+        title: 'Valore chiave',
+        description: 'Un numero importante: saldo, bilancio conto, risparmio, patrimonio.',
+        suggestedName: 'Valore chiave',
+        recommendedDisplayType: 'kpi',
+    },
+    {
+        id: 'trend',
+        title: 'Andamento nel tempo',
+        description: 'Capire se una metrica cresce, cala o resta stabile mese per mese.',
+        suggestedName: 'Andamento',
+        recommendedDisplayType: 'area',
+    },
+    {
+        id: 'comparison',
+        title: 'Confronto metriche',
+        description: 'Confrontare incassato, speso e risparmiato o altre serie affiancate.',
+        suggestedName: 'Confronto metriche',
+        recommendedDisplayType: 'bar',
+    },
+    {
+        id: 'goal',
+        title: 'Obiettivo / soglia',
+        description: 'Monitorare quanto sei vicino a una soglia o a un target.',
+        suggestedName: 'Avanzamento obiettivo',
+        recommendedDisplayType: 'progress',
+    },
+];
 
 function buildInitialForm(
     variables: FinancialVariableSummary[],
@@ -88,10 +150,54 @@ function buildInitialForm(
                 ? chartConfig.series.map((entry) => ({
                     code: String((entry as { code?: string }).code ?? ''),
                     label: (entry as { label?: string }).label,
+                    color: (entry as { color?: string }).color,
                 }))
                 : DEFAULT_CHART_CONFIG.series,
+            parameters: Array.isArray(chartConfig.parameters)
+                ? chartConfig.parameters.map((entry) => ({
+                    key: String((entry as { key?: string }).key ?? ''),
+                    type: String((entry as { type?: string }).type ?? 'account'),
+                    label: String((entry as { label?: string }).label ?? 'Conto'),
+                    default: (entry as { default?: string }).default,
+                }))
+                : undefined,
         },
     };
+}
+
+function hasRuntimeParameter(parameters: CreateWidgetForm['chart_config']['parameters'], key: string): boolean {
+    return (parameters ?? []).some((parameter) => parameter.key === key);
+}
+
+function upsertRuntimeParameter(
+    parameters: CreateWidgetForm['chart_config']['parameters'],
+    nextParameter: RuntimeParameter,
+): RuntimeParameter[] {
+    const current = parameters ?? [];
+    const index = current.findIndex((parameter) => parameter.key === nextParameter.key);
+
+    if (index === -1) {
+        return [...current, nextParameter];
+    }
+
+    return current.map((parameter, parameterIndex) =>
+        parameterIndex === index ? { ...parameter, ...nextParameter } : parameter,
+    );
+}
+
+function removeRuntimeParameter(
+    parameters: CreateWidgetForm['chart_config']['parameters'],
+    key: string,
+): RuntimeParameter[] | undefined {
+    const filtered = (parameters ?? []).filter((parameter) => parameter.key !== key);
+
+    return filtered.length > 0 ? filtered : undefined;
+}
+
+function defaultAccountFromParameters(parameters?: CreateWidgetForm['chart_config']['parameters']): string {
+    const accountParameter = (parameters ?? []).find((parameter) => parameter.key === 'account_id');
+
+    return String(accountParameter?.default ?? 'all');
 }
 
 export default function Create({
@@ -99,6 +205,7 @@ export default function Create({
     systemVariables,
     chartTypes,
     periodPresets,
+    accounts = [],
     editingWidget = null,
 }: CreateProps) {
     const isEditing = editingWidget !== null;
@@ -106,14 +213,19 @@ export default function Create({
     const [localVariables, setLocalVariables] = useState(variables);
     const [variableModalOpen, setVariableModalOpen] = useState(false);
     const [duplicateDismissed, setDuplicateDismissed] = useState(false);
+    const [advancedOpen, setAdvancedOpen] = useState(isEditing);
+    const [activeRecipe, setActiveRecipe] = useState<WidgetRecipeId>('single_value');
+    const [defaultAccountId, setDefaultAccountId] = useState(() =>
+        defaultAccountFromParameters(editingWidget?.chart_config?.parameters as CreateWidgetForm['chart_config']['parameters']),
+    );
 
     const duplicateWidget = flash?.duplicateWidget;
     const duplicateMarketplaceWidget = flash?.duplicateMarketplaceWidget;
     const showOwnDuplicateNotice = duplicateWidget != null && !duplicateDismissed;
     const showMarketplaceDuplicateNotice = duplicateMarketplaceWidget != null && !duplicateDismissed;
 
-    const { data, setData, post, put, processing, errors } = useForm<CreateWidgetForm>(
-        () => buildInitialForm(variables, editingWidget),
+    const { data, setData, post, put, processing, errors } = useForm<CreateWidgetForm>(() =>
+        buildInitialForm(variables, editingWidget),
     );
 
     const requiresPeriod = formulaWidgetRequiresPeriod(data.display_type, data.chart_config);
@@ -131,12 +243,89 @@ export default function Create({
         [data.name, data.financial_variable_id, data.display_type, data.period_preset, data.chart_config],
     );
 
-    const { status: previewStatus, payload: previewPayload, errors: previewErrors } =
+    const { status: previewStatus, payload: previewPayload, errors: previewErrors, onParameterChange: previewParameterChange, isRefreshing: previewRefreshing, isFetching: previewFetching, hasRuntimeParameters: previewHasRuntimeParameters } =
         useFormulaWidgetPreview(previewInput);
 
     const handleVariableCreated = (variable: FinancialVariableSummary) => {
         setLocalVariables((current) => [...current, variable].sort((a, b) => a.name.localeCompare(b.name, 'it')));
         setData('financial_variable_id', variable.id);
+    };
+
+    const setRuntimeParameterEnabled = (parameter: RuntimeParameter, enabled: boolean) => {
+        setData((current) => ({
+            ...current,
+            chart_config: {
+                ...current.chart_config,
+                parameters: enabled
+                    ? upsertRuntimeParameter(current.chart_config.parameters, parameter)
+                    : removeRuntimeParameter(current.chart_config.parameters, parameter.key),
+            },
+        }));
+    };
+
+    const setAccountDefault = (accountId: string) => {
+        setDefaultAccountId(accountId);
+        setData((current) => ({
+            ...current,
+            chart_config: {
+                ...current.chart_config,
+                parameters: upsertRuntimeParameter(current.chart_config.parameters, {
+                    ...ACCOUNT_PARAMETER,
+                    default: accountId,
+                }),
+            },
+        }));
+    };
+
+    const accountSelectorEnabled = hasRuntimeParameter(data.chart_config.parameters, 'account_id');
+    const periodNavigationEnabled = hasRuntimeParameter(data.chart_config.parameters, 'period_offset');
+
+    const applyRecipe = (recipeId: WidgetRecipeId) => {
+        setActiveRecipe(recipeId);
+
+        const selectedRecipe = WIDGET_RECIPES.find((recipe) => recipe.id === recipeId);
+        if (!selectedRecipe) {
+            return;
+        }
+
+        setData((current) => {
+            const next: CreateWidgetForm = {
+                ...current,
+                name: current.name || selectedRecipe.suggestedName,
+                display_type: selectedRecipe.recommendedDisplayType,
+                period_preset: current.period_preset || 'current_month',
+                chart_config: {
+                    ...current.chart_config,
+                    show_delta: recipeId === 'single_value',
+                    format: 'currency',
+                },
+            };
+
+            if (recipeId === 'trend') {
+                next.period_preset = current.period_preset || 'calendar_ytd';
+            }
+
+            if (recipeId === 'comparison') {
+                next.chart_config = {
+                    ...next.chart_config,
+                    series: ACCOUNT_PERIOD_SERIES,
+                    parameters: upsertRuntimeParameter(
+                        upsertRuntimeParameter(next.chart_config.parameters, ACCOUNT_PARAMETER),
+                        PERIOD_NAV_PARAMETER,
+                    ),
+                };
+            }
+
+            if (recipeId === 'goal') {
+                next.chart_config = {
+                    ...next.chart_config,
+                    value_code: 'period_net',
+                    threshold_code: 'period_income',
+                };
+            }
+
+            return next;
+        });
     };
 
     const submit: FormEventHandler = (e) => {
@@ -182,54 +371,85 @@ export default function Create({
 
                 <div className={clsx('grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] xl:grid-cols-[minmax(0,1fr)_24rem]')}>
                     <form onSubmit={submit} className="space-y-6">
-                        <FormulaWidgetCreateGuide
-                            displayType={data.display_type}
-                            chartTypes={chartTypes}
-                            systemVariables={systemVariables}
-                        />
+                        <SectionCard>
+                            <div className="mb-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                                    1. Obiettivo
+                                </p>
+                                <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
+                                    Cosa vuoi vedere in dashboard?
+                                </h2>
+                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                    Parti dal risultato desiderato. Finanzamente imposta grafico e opzioni consigliate.
+                                </p>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {WIDGET_RECIPES.map((recipe) => (
+                                    <button
+                                        key={recipe.id}
+                                        type="button"
+                                        onClick={() => applyRecipe(recipe.id)}
+                                        className={clsx(
+                                            'rounded-xl border-2 p-4 text-left transition-colors',
+                                            activeRecipe === recipe.id
+                                                ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
+                                                : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
+                                        )}
+                                    >
+                                        <span className="block font-medium text-gray-900 dark:text-white">{recipe.title}</span>
+                                        <span className="mt-1 block text-sm text-gray-600 dark:text-gray-400">
+                                            {recipe.description}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </SectionCard>
 
                         <SectionCard>
-                            <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Informazioni base</h2>
+                            <div className="mb-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                                    2. Dati
+                                </p>
+                                <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
+                                    Scegli metrica e periodo
+                                </h2>
+                            </div>
                             <div className="space-y-4">
                                 <div>
-                                    <InputLabel htmlFor="name" value="Nome widget" />
-                                    <TextInput
-                                        id="name"
-                                        className="mt-1 block w-full"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        required
-                                    />
-                                    <InputError message={errors.name} className="mt-1" />
-                                </div>
-
-                                <div>
-                                    <div className="flex items-center justify-between gap-2">
-                                        <InputLabel htmlFor="financial_variable_id" value="Variabile collegata" />
-                                        <button
-                                            type="button"
-                                            onClick={() => setVariableModalOpen(true)}
-                                            className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
-                                        >
-                                            + Crea variabile personalizzata
-                                        </button>
-                                    </div>
-                                    {localVariables.length === 0 ? (
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                            Nessuna variabile ancora.{' '}
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <InputLabel htmlFor="financial_variable_id" value="Metrica da mostrare" />
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <Link
+                                                href={route('formula-variables.index')}
+                                                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+                                            >
+                                                Gestisci metriche
+                                            </Link>
                                             <button
                                                 type="button"
                                                 onClick={() => setVariableModalOpen(true)}
-                                                className="font-medium text-primary-600 hover:underline"
+                                                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
                                             >
-                                                Creane una ora
-                                            </button>{' '}
-                                            oppure installa un template dalla{' '}
-                                            <Link href={route('formula-marketplace.index')} className="font-medium text-primary-600 hover:underline">
-                                                galleria
-                                            </Link>
-                                            .
-                                        </p>
+                                                + Nuova metrica
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {localVariables.length === 0 ? (
+                                        <div className="mt-2 rounded-xl border border-dashed border-primary-300 bg-primary-50/70 p-4 text-sm dark:border-primary-800 dark:bg-primary-950/20">
+                                            <p className="font-medium text-primary-900 dark:text-primary-100">
+                                                Prima crea una metrica.
+                                            </p>
+                                            <p className="mt-1 text-gray-600 dark:text-gray-400">
+                                                Puoi scegliere scenari pronti come «Bilancio conto» oppure comporre una formula.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setVariableModalOpen(true)}
+                                                className="mt-3 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                                            >
+                                                Crea metrica guidata
+                                            </button>
+                                        </div>
                                     ) : (
                                         <select
                                             id="financial_variable_id"
@@ -239,21 +459,67 @@ export default function Create({
                                         >
                                             {localVariables.map((variable) => (
                                                 <option key={variable.id} value={variable.id}>
-                                                    {variable.name} ({variable.code})
+                                                    {variable.name}
                                                 </option>
                                             ))}
                                         </select>
                                     )}
                                     {selectedVariable?.formula_string && (
-                                        <p className="mt-1 font-mono text-xs text-gray-500 dark:text-gray-400">
-                                            {selectedVariable.formula_string}
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Formula: <span className="font-mono">{selectedVariable.formula_string}</span>
                                         </p>
                                     )}
                                     <InputError message={errors.financial_variable_id} className="mt-1" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="display_type" value="Tipo visualizzazione" />
+                                    <InputLabel htmlFor="period_preset" value={requiresPeriod ? 'Periodo *' : 'Periodo'} />
+                                    <select
+                                        id="period_preset"
+                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
+                                        value={data.period_preset}
+                                        onChange={(e) => setData('period_preset', e.target.value)}
+                                    >
+                                        <option value="">Ad oggi / istantaneo</option>
+                                        {Object.entries(periodPresets).map(([key, meta]) => (
+                                            <option key={key} value={key}>
+                                                {meta.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        Usa “Mese corrente” per spese/incassi, “Anno corrente” o “Storico completo” per trend.
+                                    </p>
+                                    <InputError message={errors.period_preset} className="mt-1" />
+                                </div>
+                            </div>
+                        </SectionCard>
+
+                        <SectionCard>
+                            <div className="mb-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                                    3. Aspetto
+                                </p>
+                                <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
+                                    Dai un nome e scegli visualizzazione
+                                </h2>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <InputLabel htmlFor="name" value="Nome widget" />
+                                    <TextInput
+                                        id="name"
+                                        className="mt-1 block w-full"
+                                        value={data.name}
+                                        onChange={(e) => setData('name', e.target.value)}
+                                        placeholder={selectedVariable?.name ?? 'Es. Bilancio conto'}
+                                        required
+                                    />
+                                    <InputError message={errors.name} className="mt-1" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="display_type" value="Vista" />
                                     <select
                                         id="display_type"
                                         className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
@@ -271,28 +537,83 @@ export default function Create({
                                     </p>
                                     <InputError message={errors.display_type} className="mt-1" />
                                 </div>
-
-                                <div>
-                                    <InputLabel htmlFor="period_preset" value={requiresPeriod ? 'Periodo *' : 'Periodo (opzionale)'} />
-                                    <select
-                                        id="period_preset"
-                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800"
-                                        value={data.period_preset}
-                                        onChange={(e) => setData('period_preset', e.target.value)}
-                                    >
-                                        <option value="">Ad oggi / istantaneo</option>
-                                        {Object.entries(periodPresets).map(([key, meta]) => (
-                                            <option key={key} value={key}>
-                                                {meta.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={errors.period_preset} className="mt-1" />
-                                </div>
                             </div>
                         </SectionCard>
 
-                        {data.display_type === 'kpi' && (
+                        <SectionCard>
+                            <button
+                                type="button"
+                                className="flex w-full items-start justify-between gap-4 text-left"
+                                onClick={() => setAdvancedOpen((open) => !open)}
+                                aria-expanded={advancedOpen}
+                            >
+                                <span>
+                                    <span className="block text-base font-semibold text-gray-900 dark:text-white">
+                                        Opzioni avanzate
+                                    </span>
+                                    <span className="mt-1 block text-sm text-gray-600 dark:text-gray-400">
+                                        Serie multiple, filtri conto/mese in dashboard, soglie KPI e codici tecnici.
+                                    </span>
+                                </span>
+                                <span className="rounded-full border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
+                                    {advancedOpen ? 'Nascondi' : 'Apri'}
+                                </span>
+                            </button>
+                        </SectionCard>
+
+                        {advancedOpen && (
+                            <SectionCard>
+                                <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Controlli in dashboard</h2>
+                                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                                    Permetti di cambiare conto o mese direttamente dal widget, senza duplicarlo.
+                                </p>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1"
+                                            checked={accountSelectorEnabled}
+                                            onChange={(e) => setRuntimeParameterEnabled(ACCOUNT_PARAMETER, e.target.checked)}
+                                        />
+                                        <span>
+                                            <span className="block font-medium text-gray-900 dark:text-white">Conto selezionabile</span>
+                                            <span className="text-gray-600 dark:text-gray-400">Dropdown nel widget per filtrare per conto.</span>
+                                        </span>
+                                    </label>
+                                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1"
+                                            checked={periodNavigationEnabled}
+                                            onChange={(e) => setRuntimeParameterEnabled(PERIOD_NAV_PARAMETER, e.target.checked)}
+                                        />
+                                        <span>
+                                            <span className="block font-medium text-gray-900 dark:text-white">Mese scorrevole</span>
+                                            <span className="text-gray-600 dark:text-gray-400">Frecce per navigare i mesi precedenti.</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                {accountSelectorEnabled && (
+                                    <div className="mt-4">
+                                        <InputLabel value="Conto predefinito" />
+                                        <select
+                                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                                            value={defaultAccountId}
+                                            onChange={(e) => setAccountDefault(e.target.value)}
+                                        >
+                                            <option value="all">Tutti i conti</option>
+                                            {accounts.map((account) => (
+                                                <option key={account.id} value={String(account.id)}>
+                                                    {account.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </SectionCard>
+                        )}
+
+                        {advancedOpen && data.display_type === 'kpi' && (
                             <SectionCard>
                                 <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Opzioni KPI</h2>
                                 <div className="space-y-3">
@@ -323,7 +644,7 @@ export default function Create({
                             </SectionCard>
                         )}
 
-                        {data.display_type === 'progress' && (
+                        {advancedOpen && data.display_type === 'progress' && (
                             <SectionCard>
                                 <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Soglia avanzamento</h2>
                                 <div className="grid gap-4 sm:grid-cols-2">
@@ -363,38 +684,84 @@ export default function Create({
                             </SectionCard>
                         )}
 
-                        {usesSeries && (
+                        {advancedOpen && usesSeries && (
                             <SectionCard>
-                                <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Serie del grafico</h2>
+                                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                    <h2 className="text-base font-semibold text-gray-900 dark:text-white">Serie del grafico</h2>
+                                    <button
+                                        type="button"
+                                        className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+                                        onClick={() =>
+                                            setData('chart_config', {
+                                                ...data.chart_config,
+                                                series: ACCOUNT_PERIOD_SERIES,
+                                            })
+                                        }
+                                    >
+                                        Usa serie bilancio conto
+                                    </button>
+                                </div>
                                 <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
-                                    Scegli almeno due variabili di sistema da confrontare nel periodo selezionato.
+                                    Per un riepilogo incassato/speso/risparmiato: grafico a barre, periodo «Mese corrente», serie sotto e filtri conto/mese in avanzato.
                                 </p>
                                 <div className="space-y-3">
-                                    {[0, 1].map((index) => (
-                                        <div key={index}>
-                                            <InputLabel value={`Serie ${index + 1}`} />
-                                            <select
-                                                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
-                                                value={String((data.chart_config.series as Array<{ code: string }>)?.[index]?.code ?? '')}
-                                                onChange={(e) => {
-                                                    const series = [...((data.chart_config.series as Array<{ code: string; label?: string }>) ?? [])];
-                                                    const selected = systemVariables.find((v) => v.code === e.target.value);
-                                                    series[index] = {
-                                                        code: e.target.value,
-                                                        label: selected?.label ?? e.target.value,
-                                                    };
-                                                    setData('chart_config', { ...data.chart_config, series });
-                                                }}
-                                            >
-                                                {systemVariables.map((variable) => (
-                                                    <option key={variable.code} value={variable.code}>
-                                                        {variable.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    ))}
+                                    {(data.chart_config.series.length > 0 ? data.chart_config.series : [{ code: '' }]).map(
+                                        (entry, index) => (
+                                            <div key={index} className="flex items-end gap-2">
+                                                <div className="flex-1">
+                                                    <InputLabel value={`Serie ${index + 1}`} />
+                                                    <select
+                                                        className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                                                        value={entry.code}
+                                                        onChange={(e) => {
+                                                            const series = [...data.chart_config.series];
+                                                            const selected = systemVariables.find((v) => v.code === e.target.value);
+                                                            series[index] = {
+                                                                code: e.target.value,
+                                                                label: selected?.label ?? e.target.value,
+                                                                color: series[index]?.color,
+                                                            };
+                                                            setData('chart_config', { ...data.chart_config, series });
+                                                        }}
+                                                    >
+                                                        <option value="">—</option>
+                                                        {systemVariables.map((variable) => (
+                                                            <option key={variable.code} value={variable.code}>
+                                                                {variable.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                {data.chart_config.series.length > 2 && (
+                                                    <button
+                                                        type="button"
+                                                        className="mb-1 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                        onClick={() => {
+                                                            const series = data.chart_config.series.filter((_, i) => i !== index);
+                                                            setData('chart_config', { ...data.chart_config, series });
+                                                        }}
+                                                    >
+                                                        Rimuovi
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ),
+                                    )}
                                 </div>
+                                {data.chart_config.series.length < 6 && (
+                                    <button
+                                        type="button"
+                                        className="mt-3 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+                                        onClick={() =>
+                                            setData('chart_config', {
+                                                ...data.chart_config,
+                                                series: [...data.chart_config.series, { code: '', label: '' }],
+                                            })
+                                        }
+                                    >
+                                        + Aggiungi serie
+                                    </button>
+                                )}
                                 <InputError message={errors.chart_config} className="mt-2" />
                             </SectionCard>
                         )}
@@ -441,6 +808,10 @@ export default function Create({
                         status={previewStatus}
                         payload={previewPayload}
                         errors={previewErrors}
+                        onParameterChange={previewParameterChange}
+                        isRefreshing={previewRefreshing}
+                        isFetching={previewFetching}
+                        hasRuntimeParameters={previewHasRuntimeParameters}
                         className="lg:self-start"
                     />
                 </div>
@@ -449,6 +820,7 @@ export default function Create({
             <CreateFinancialVariableModal
                 open={variableModalOpen}
                 systemVariables={systemVariables}
+                userVariables={localVariables}
                 onClose={() => setVariableModalOpen(false)}
                 onCreated={handleVariableCreated}
             />

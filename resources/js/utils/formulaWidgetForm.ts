@@ -1,5 +1,32 @@
 export interface FormulaChartConfigLike {
     show_delta?: boolean;
+    parameters?: Array<{ key: string; type: string; label: string; default?: string }>;
+}
+
+export function extractRuntimeParamDefaultsFromChartConfig(
+    chartConfig: FormulaChartConfigLike | Record<string, unknown>,
+): Record<string, string> {
+    const parameters = chartConfig?.parameters;
+
+    if (!Array.isArray(parameters)) {
+        return {};
+    }
+
+    const defaults: Record<string, string> = {};
+
+    for (const parameter of parameters) {
+        if (!parameter || typeof parameter !== 'object' || typeof parameter.key !== 'string') {
+            continue;
+        }
+
+        defaults[parameter.key] = parameter.default !== undefined ? String(parameter.default) : '';
+    }
+
+    return defaults;
+}
+
+export function chartConfigHasRuntimeParameters(chartConfig: FormulaChartConfigLike | Record<string, unknown>): boolean {
+    return Object.keys(extractRuntimeParamDefaultsFromChartConfig(chartConfig)).length > 0;
 }
 
 const SERIES_DISPLAY_TYPES = new Set([

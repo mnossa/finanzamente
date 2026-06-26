@@ -11,7 +11,7 @@ class DashboardPeriodStatsService
     /**
      * @return array{income: float, expenses: float, net: float, transaction_count: int}
      */
-    public function calculate(User $user, Carbon $startDate, Carbon $endDate): array
+    public function calculate(User $user, Carbon $startDate, Carbon $endDate, ?int $accountId = null): array
     {
         $householdId = $user->active_household_id;
 
@@ -29,9 +29,17 @@ class DashboardPeriodStatsService
             $effectiveEnd = Carbon::today();
         }
 
-        $query = Transaction::whereHas('account', function ($query) use ($householdId) {
+        $query = Transaction::whereHas('account', function ($query) use ($householdId, $user, $accountId) {
             $query->where('household_id', $householdId)
                 ->where('active', true);
+
+            if ($accountId !== null) {
+                $query->where('id', $accountId)
+                    ->where(function ($q) use ($user) {
+                        $q->where('is_private', false)
+                            ->orWhere('owner_user_id', $user->id);
+                    });
+            }
         })
             ->where(function ($query) use ($user) {
                 $query->where('is_private', false)
@@ -39,6 +47,10 @@ class DashboardPeriodStatsService
             })
             ->whereBetween('date', [$startDate, $effectiveEnd])
             ->whereNull('transfer_id');
+
+        if ($accountId !== null) {
+            $query->where('account_id', $accountId);
+        }
 
         $income = (float) (clone $query)->where('amount', '>', 0)->sum('amount');
         $expenses = (float) abs((clone $query)->where('amount', '<', 0)->sum('amount'));

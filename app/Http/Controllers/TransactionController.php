@@ -14,6 +14,7 @@ use App\Models\Transaction;
 use App\Models\TransactionImport;
 use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
+use App\Services\DebtCreditTransactionPrefillService;
 use App\Services\TransactionQuickChipService;
 use App\Services\TransactionSplitService;
 use App\Services\UpcomingCashflowService;
@@ -524,6 +525,12 @@ class TransactionController extends Controller
                 ];
             });
 
+        $debtCreditPrefill = null;
+        if ($request->filled('debt_credit_id')) {
+            $debtCreditPrefill = app(DebtCreditTransactionPrefillService::class)
+                ->build($user, (int) $request->query('debt_credit_id'));
+        }
+
         return Inertia::render('Transactions/Create', [
             'accounts' => $accounts,
             'categories' => $categories,
@@ -533,6 +540,7 @@ class TransactionController extends Controller
             'userDefaultCurrency' => $user->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
             'defaultAccountId' => $request->query('account_id'),
             'defaultDebtCreditId' => $request->query('debt_credit_id'),
+            'debtCreditPrefill' => $debtCreditPrefill,
             'quickChips' => $this->quickChips->forUser($user),
         ]);
     }

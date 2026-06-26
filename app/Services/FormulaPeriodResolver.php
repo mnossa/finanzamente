@@ -42,6 +42,37 @@ class FormulaPeriodResolver
     }
 
     /**
+     * Risolve il periodo applicando uno scostamento in mesi (offset <= 0 = passato).
+     * Consente di scorrere i mesi mantenendo la granularità del preset.
+     *
+     * @return array{start: Carbon, end: Carbon, label: string}
+     */
+    public function resolveWithOffset(string $preset, User $user, int $offset): array
+    {
+        $base = $this->resolve($preset, $user);
+
+        if ($offset === 0) {
+            return $base;
+        }
+
+        if ($preset === 'current_month') {
+            $target = Carbon::now()->startOfMonth()->addMonths($offset);
+
+            return $this->normalize(
+                $target->copy()->startOfMonth()->startOfDay(),
+                $target->copy()->endOfMonth()->endOfDay(),
+                ucfirst($target->translatedFormat('F Y')),
+            );
+        }
+
+        return $this->normalize(
+            $base['start']->copy()->addMonths($offset),
+            $base['end']->copy()->addMonths($offset),
+            $base['label'],
+        );
+    }
+
+    /**
      * @return array{start: Carbon, end: Carbon, label: string}
      */
     public function resolveExplicit(Carbon $startDate, Carbon $endDate, ?string $label = null): array

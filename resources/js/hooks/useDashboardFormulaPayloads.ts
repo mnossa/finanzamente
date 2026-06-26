@@ -22,6 +22,45 @@ function visibleFormulaWidgetIds(layout: DashboardLayoutConfig): string[] {
         .filter((id): id is string => id !== null);
 }
 
+function runtimeParamsByWidgetId(layout: DashboardLayoutConfig): Record<string, Record<string, string>> {
+    const map: Record<string, Record<string, string>> = {};
+
+    for (const widget of layout.widgets ?? []) {
+        if (!widget.visible || !isFormulaWidgetId(widget.id)) {
+            continue;
+        }
+
+        const numericId = parseFormulaWidgetNumericId(widget.id);
+        if (!numericId || !widget.runtime_params || Object.keys(widget.runtime_params).length === 0) {
+            continue;
+        }
+
+        map[numericId] = widget.runtime_params;
+    }
+
+    return map;
+}
+
+function runtimeParamsCacheSuffix(paramsByWidgetId: Record<string, Record<string, string>>, widgetIds: string[]): string {
+    const parts: string[] = [];
+
+    for (const widgetId of widgetIds) {
+        const params = paramsByWidgetId[widgetId];
+        if (!params) {
+            continue;
+        }
+
+        const encoded = Object.entries(params)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, value]) => `${key}=${value}`)
+            .join(',');
+
+        parts.push(`${widgetId}:${encoded}`);
+    }
+
+    return parts.join(';');
+}
+
 function hasMissingPayloads(widgetIds: string[], payloads: Record<string, FormulaWidgetPayload>): boolean {
     return widgetIds.some((id) => payloads[id] === undefined);
 }
@@ -60,6 +99,7 @@ function extractDataVersion(
 
 async function fetchFormulaWidgetPayloads(
     widgetIds: string[],
+    runtimeParams: Record<string, Record<string, string>>,
     etag: string | null,
     signal: AbortSignal,
     useConditionalRequest: boolean,
@@ -75,7 +115,14 @@ async function fetchFormulaWidgetPayloads(
     }
 
     const response = await axios.get<{ payloads: Record<string, FormulaWidgetPayload>; dataVersion?: string }>(
-        route('dashboard.formula-widget-payloads', { ids: widgetIds.join(',') }),
+        route('dashboard.formula-widget-payloads', {
+            ids: widgetIds.join(','),
+            params: Object.fromEntries(
+                widgetIds
+                    .filter((widgetId) => runtimeParams[widgetId])
+                    .map((widgetId) => [widgetId, runtimeParams[widgetId]]),
+            ),
+        }),
         {
             signal,
             headers,
@@ -129,13 +176,19 @@ export function useDashboardFormulaPayloads(
 
     const widgetIds = useMemo(() => visibleFormulaWidgetIds(dashboardLayout), [dashboardLayout.widgets]);
     const widgetIdsKey = widgetIds.join(',');
+    const runtimeParams = useMemo(() => runtimeParamsByWidgetId(dashboardLayout), [dashboardLayout.widgets]);
+    const runtimeParamsKey = useMemo(
+        () => runtimeParamsCacheSuffix(runtimeParams, widgetIds),
+        [runtimeParams, widgetIds],
+    );
+    const fetchCacheKey = widgetIdsKey === '' ? '' : `${widgetIdsKey}|${runtimeParamsKey}`;
 
     const cachedEntry = useMemo(() => {
         if (widgetIdsKey === '') {
             return null;
         }
 
-        const entry = readFormulaWidgetPayloadCache(householdId, widgetIdsKey);
+        const entry = readFormulaWidgetPayloadCache(householdId, fetchCacheKey);
         if (entry === null) {
             return null;
         }
@@ -147,7 +200,7 @@ export function useDashboardFormulaPayloads(
         }
 
         return entry;
-    }, [householdId, widgetIdsKey, dataVersion]);
+    }, [householdId, fetchCacheKey, dataVersion]);
 
     const bootstrapPayloads = useMemo(
         () => mergePayloadSources(initialPayloads, cachedEntry?.payloads ?? {}),
@@ -158,10 +211,13 @@ export function useDashboardFormulaPayloads(
     const [loading, setLoading] = useState(
         () => widgetIds.length > 0 && hasMissingPayloads(widgetIds, bootstrapPayloads),
     );
+    const [pendingWidgetIds, setPendingWidgetIds] = useState<Set<string>>(() => new Set());
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        setPayloads(bootstrapPayloads);
+        // Mantiene i payload già caricati (anche stale) mentre cambia il cache key
+        // per i parametri runtime: evita che il widget si svuoti durante il refetch.
+        setPayloads((prev) => ({ ...prev, ...bootstrapPayloads }));
     }, [bootstrapPayloads]);
 
     useEffect(() => {
@@ -202,12 +258,17 @@ export function useDashboardFormulaPayloads(
                 return;
             }
 
+            if (!cancelled) {
+                setPendingWidgetIds(new Set(pendingIds));
+            }
+
             let currentEtag = cachedEntry?.etag ?? null;
             let currentDataVersion = cachedEntry?.dataVersion ?? dataVersion;
 
             try {
                 const result = await fetchFormulaWidgetPayloads(
                     pendingIds,
+                    runtimeParams,
                     currentEtag,
                     controller.signal,
                     pendingIds.length === widgetIds.length
@@ -221,7 +282,7 @@ export function useDashboardFormulaPayloads(
 
                     const missingAfter304 = pendingIds.filter((id) => mergedPayloads[id] === undefined);
                     if (missingAfter304.length > 0) {
-                        const retry = await fetchFormulaWidgetPayloads(missingAfter304, null, controller.signal, false);
+                        const retry = await fetchFormulaWidgetPayloads(missingAfter304, runtimeParams, null, controller.signal, false);
                         mergedPayloads = { ...mergedPayloads, ...retry.payloads };
                         if (retry.etag) {
                             currentEtag = retry.etag;
@@ -247,7 +308,7 @@ export function useDashboardFormulaPayloads(
                 setPayloads({ ...mergedPayloads });
                 writeFormulaWidgetPayloadCache(
                     householdId,
-                    widgetIdsKey,
+                    fetchCacheKey,
                     mergedPayloads,
                     currentEtag,
                     currentDataVersion,
@@ -272,6 +333,7 @@ export function useDashboardFormulaPayloads(
             .finally(() => {
                 if (!cancelled) {
                     setLoading(false);
+                    setPendingWidgetIds(new Set());
                 }
             });
 
@@ -279,7 +341,7 @@ export function useDashboardFormulaPayloads(
             cancelled = true;
             controller.abort();
         };
-    }, [widgetIdsKey, householdId, dataVersion]);
+    }, [widgetIdsKey, runtimeParamsKey, householdId, dataVersion, bootstrapPayloads, initialPayloads, cachedEntry, runtimeParams]);
 
-    return { payloads, loading, error, cacheTtlMs: FORMULA_WIDGET_PAYLOAD_CACHE_TTL_MS };
+    return { payloads, loading, pendingWidgetIds, error, cacheTtlMs: FORMULA_WIDGET_PAYLOAD_CACHE_TTL_MS };
 }
