@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import type { PageProps } from '@/types';
 import type { DashboardLayoutConfig } from '@/types/dashboard';
@@ -41,6 +41,18 @@ function runtimeParamsByWidgetId(layout: DashboardLayoutConfig): Record<string, 
     return map;
 }
 
+/** Firma stabile dei parametri runtime di un singolo widget (ordine-indipendente). */
+function widgetParamsSignature(params?: Record<string, string>): string {
+    if (!params) {
+        return '';
+    }
+
+    return Object.entries(params)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key}=${value}`)
+        .join(',');
+}
+
 function runtimeParamsCacheSuffix(paramsByWidgetId: Record<string, Record<string, string>>, widgetIds: string[]): string {
     const parts: string[] = [];
 
@@ -50,26 +62,14 @@ function runtimeParamsCacheSuffix(paramsByWidgetId: Record<string, Record<string
             continue;
         }
 
-        const encoded = Object.entries(params)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, value]) => `${key}=${value}`)
-            .join(',');
-
-        parts.push(`${widgetId}:${encoded}`);
+        parts.push(`${widgetId}:${widgetParamsSignature(params)}`);
     }
 
     return parts.join(';');
 }
 
-function hasMissingPayloads(widgetIds: string[], payloads: Record<string, FormulaWidgetPayload>): boolean {
-    return widgetIds.some((id) => payloads[id] === undefined);
-}
-
-function mergePayloadSources(
-    initialPayloads: Record<string, FormulaWidgetPayload>,
-    cachedPayloads: Record<string, FormulaWidgetPayload>,
-): Record<string, FormulaWidgetPayload> {
-    return { ...cachedPayloads, ...initialPayloads };
+function widgetStoreKey(widgetId: string, signature: string): string {
+    return `${widgetId}|${signature}`;
 }
 
 function extractEtag(headers: Record<string, unknown>): string | null {
@@ -95,6 +95,19 @@ function extractDataVersion(
     }
 
     return null;
+}
+
+function samePayloadMap(
+    a: Record<string, FormulaWidgetPayload>,
+    b: Record<string, FormulaWidgetPayload>,
+): boolean {
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) {
+        return false;
+    }
+
+    return keysA.every((key) => a[key] === b[key]);
 }
 
 async function fetchFormulaWidgetPayloads(
@@ -147,22 +160,11 @@ async function fetchFormulaWidgetPayloads(
     };
 }
 
-function mergeFetchedPayloads(
-    mergedPayloads: Record<string, FormulaWidgetPayload>,
-    widgetId: string,
-    result: Awaited<ReturnType<typeof fetchFormulaWidgetPayloads>>,
-    cachedEntry: ReturnType<typeof readFormulaWidgetPayloadCache>,
-): Record<string, FormulaWidgetPayload> {
-    if (!result.notModified) {
-        return { ...mergedPayloads, ...result.payloads };
-    }
-
-    const cachedPayload = cachedEntry?.payloads[widgetId];
-    if (cachedPayload !== undefined) {
-        return { ...mergedPayloads, [widgetId]: cachedPayload };
-    }
-
-    return mergedPayloads;
+interface WidgetPayloadStore {
+    householdId: number | null;
+    dataVersion: string | null;
+    etag: string | null;
+    map: Record<string, FormulaWidgetPayload>;
 }
 
 export function useDashboardFormulaPayloads(
@@ -177,6 +179,16 @@ export function useDashboardFormulaPayloads(
     const widgetIds = useMemo(() => visibleFormulaWidgetIds(dashboardLayout), [dashboardLayout.widgets]);
     const widgetIdsKey = widgetIds.join(',');
     const runtimeParams = useMemo(() => runtimeParamsByWidgetId(dashboardLayout), [dashboardLayout.widgets]);
+
+    const signatureByWidgetId = useMemo(() => {
+        const map: Record<string, string> = {};
+        for (const id of widgetIds) {
+            map[id] = widgetParamsSignature(runtimeParams[id]);
+        }
+
+        return map;
+    }, [runtimeParams, widgetIdsKey]);
+
     const runtimeParamsKey = useMemo(
         () => runtimeParamsCacheSuffix(runtimeParams, widgetIds),
         [runtimeParams, widgetIds],
@@ -202,134 +214,186 @@ export function useDashboardFormulaPayloads(
         return entry;
     }, [householdId, fetchCacheKey, dataVersion]);
 
-    const bootstrapPayloads = useMemo(
-        () => mergePayloadSources(initialPayloads, cachedEntry?.payloads ?? {}),
-        [initialPayloads, cachedEntry],
-    );
+    // Store per-widget in-sessione: chiave `${widgetId}|${firmaParametri}`.
+    // Permette di NON ricalcolare i widget il cui filtro non è cambiato quando
+    // l'utente filtra un singolo widget.
+    const storeRef = useRef<WidgetPayloadStore>({
+        householdId,
+        dataVersion,
+        etag: cachedEntry?.etag ?? null,
+        map: {},
+    });
 
-    const [payloads, setPayloads] = useState<Record<string, FormulaWidgetPayload>>(bootstrapPayloads);
+    if (storeRef.current.householdId !== householdId || storeRef.current.dataVersion !== dataVersion) {
+        storeRef.current = { householdId, dataVersion, etag: null, map: {} };
+    }
+
+    // Seed dei payload iniziali (server-side) una sola volta, con le firme al mount.
+    const mountSignaturesRef = useRef<Record<string, string> | null>(null);
+    if (mountSignaturesRef.current === null) {
+        mountSignaturesRef.current = signatureByWidgetId;
+    }
+    const initialSeededRef = useRef(false);
+    if (!initialSeededRef.current && Object.keys(initialPayloads).length > 0) {
+        for (const id of Object.keys(initialPayloads)) {
+            const key = widgetStoreKey(id, mountSignaturesRef.current[id] ?? '');
+            if (storeRef.current.map[key] === undefined) {
+                storeRef.current.map[key] = initialPayloads[id];
+            }
+        }
+        initialSeededRef.current = true;
+    }
+
+    const [payloads, setPayloads] = useState<Record<string, FormulaWidgetPayload>>(() => ({
+        ...(cachedEntry?.payloads ?? {}),
+        ...initialPayloads,
+    }));
+    const payloadsRef = useRef(payloads);
+    useEffect(() => {
+        payloadsRef.current = payloads;
+    });
+
+    const resolveFromStore = (): Record<string, FormulaWidgetPayload> => {
+        const out: Record<string, FormulaWidgetPayload> = {};
+        for (const id of widgetIds) {
+            const fromStore = storeRef.current.map[widgetStoreKey(id, signatureByWidgetId[id] ?? '')];
+            if (fromStore !== undefined) {
+                out[id] = fromStore;
+            } else if (payloadsRef.current[id] !== undefined) {
+                // Placeholder stale: evita che il widget si svuoti durante il refetch.
+                out[id] = payloadsRef.current[id];
+            }
+        }
+
+        return out;
+    };
+
     const [loading, setLoading] = useState(
-        () => widgetIds.length > 0 && hasMissingPayloads(widgetIds, bootstrapPayloads),
+        () => widgetIds.length > 0 && widgetIds.some((id) => initialPayloads[id] === undefined && (cachedEntry?.payloads[id]) === undefined),
     );
     const [pendingWidgetIds, setPendingWidgetIds] = useState<Set<string>>(() => new Set());
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Mantiene i payload già caricati (anche stale) mentre cambia il cache key
-        // per i parametri runtime: evita che il widget si svuoti durante il refetch.
-        setPayloads((prev) => ({ ...prev, ...bootstrapPayloads }));
-    }, [bootstrapPayloads]);
-
-    useEffect(() => {
         if (widgetIds.length === 0) {
             setLoading(false);
+            setError(null);
+            setPendingWidgetIds(new Set());
+
+            return;
+        }
+
+        // Seed dallo storage cross-sessione (solo se fresco): i payload sono già
+        // relativi alle firme correnti perché la chiave include i parametri runtime.
+        if (cachedEntry !== null && isFormulaWidgetPayloadCacheFresh(cachedEntry)) {
+            for (const id of Object.keys(cachedEntry.payloads)) {
+                const key = widgetStoreKey(id, signatureByWidgetId[id] ?? '');
+                if (storeRef.current.map[key] === undefined) {
+                    storeRef.current.map[key] = cachedEntry.payloads[id];
+                }
+            }
+            if (storeRef.current.etag === null && cachedEntry.etag) {
+                storeRef.current.etag = cachedEntry.etag;
+            }
+        }
+
+        const pendingIds = widgetIds.filter(
+            (id) => storeRef.current.map[widgetStoreKey(id, signatureByWidgetId[id] ?? '')] === undefined,
+        );
+
+        const resolved = resolveFromStore();
+        setPayloads((prev) => (samePayloadMap(prev, resolved) ? prev : resolved));
+
+        if (pendingIds.length === 0) {
+            setLoading(false);
+            setPendingWidgetIds(new Set());
             setError(null);
 
             return;
         }
 
-        const cacheComplete = cachedEntry !== null && !hasMissingPayloads(widgetIds, cachedEntry.payloads);
-        const cacheFresh = cachedEntry !== null && isFormulaWidgetPayloadCacheFresh(cachedEntry);
-        const shouldRefreshStaleCache = cacheComplete && !cacheFresh;
-
-        if (cacheComplete && cacheFresh) {
-            setLoading(false);
-
-            return;
-        }
-
-        if (!shouldRefreshStaleCache && !hasMissingPayloads(widgetIds, bootstrapPayloads)) {
-            setLoading(false);
-        } else {
-            setLoading(true);
-        }
+        const anyWithoutPlaceholder = pendingIds.some((id) => resolved[id] === undefined);
+        setLoading(anyWithoutPlaceholder);
 
         const controller = new AbortController();
         let cancelled = false;
 
-        async function loadBatch(): Promise<void> {
-            let mergedPayloads = shouldRefreshStaleCache ? { ...initialPayloads } : { ...bootstrapPayloads };
-
-            const pendingIds = shouldRefreshStaleCache
-                ? widgetIds
-                : widgetIds.filter((id) => mergedPayloads[id] === undefined);
-
-            if (pendingIds.length === 0) {
-                return;
-            }
-
+        async function loadPending(): Promise<void> {
             if (!cancelled) {
                 setPendingWidgetIds(new Set(pendingIds));
             }
 
-            let currentEtag = cachedEntry?.etag ?? null;
-            let currentDataVersion = cachedEntry?.dataVersion ?? dataVersion;
+            const useConditionalRequest =
+                storeRef.current.etag !== null
+                && pendingIds.length === widgetIds.length
+                && pendingIds.every((id, index) => id === widgetIds[index]);
 
-            try {
-                const result = await fetchFormulaWidgetPayloads(
-                    pendingIds,
-                    runtimeParams,
-                    currentEtag,
-                    controller.signal,
-                    pendingIds.length === widgetIds.length
-                        && pendingIds.every((id, index) => id === widgetIds[index]),
-                );
+            const result = await fetchFormulaWidgetPayloads(
+                pendingIds,
+                runtimeParams,
+                storeRef.current.etag,
+                controller.signal,
+                useConditionalRequest,
+            );
 
-                if (result.notModified) {
-                    for (const widgetId of pendingIds) {
-                        mergedPayloads = mergeFetchedPayloads(mergedPayloads, widgetId, result, cachedEntry);
-                    }
+            let fetched: Record<string, FormulaWidgetPayload> = result.payloads;
 
-                    const missingAfter304 = pendingIds.filter((id) => mergedPayloads[id] === undefined);
-                    if (missingAfter304.length > 0) {
-                        const retry = await fetchFormulaWidgetPayloads(missingAfter304, runtimeParams, null, controller.signal, false);
-                        mergedPayloads = { ...mergedPayloads, ...retry.payloads };
-                        if (retry.etag) {
-                            currentEtag = retry.etag;
-                        }
-                        if (retry.dataVersion) {
-                            currentDataVersion = retry.dataVersion;
-                        }
-                    }
-                } else {
-                    mergedPayloads = { ...mergedPayloads, ...result.payloads };
-                    if (result.etag) {
-                        currentEtag = result.etag;
-                    }
-                    if (result.dataVersion) {
-                        currentDataVersion = result.dataVersion;
+            if (result.notModified) {
+                fetched = {};
+                for (const id of pendingIds) {
+                    const cachedPayload = cachedEntry?.payloads[id];
+                    if (cachedPayload !== undefined) {
+                        fetched[id] = cachedPayload;
                     }
                 }
 
-                if (cancelled) {
-                    return;
+                const missing = pendingIds.filter((id) => fetched[id] === undefined);
+                if (missing.length > 0) {
+                    const retry = await fetchFormulaWidgetPayloads(missing, runtimeParams, null, controller.signal, false);
+                    fetched = { ...fetched, ...retry.payloads };
+                    if (retry.etag) {
+                        storeRef.current.etag = retry.etag;
+                    }
                 }
+            } else if (result.etag) {
+                storeRef.current.etag = result.etag;
+            }
 
-                setPayloads({ ...mergedPayloads });
-                writeFormulaWidgetPayloadCache(
-                    householdId,
-                    fetchCacheKey,
-                    mergedPayloads,
-                    currentEtag,
-                    currentDataVersion,
-                );
-                setError(null);
-            } catch (err) {
+            if (cancelled) {
+                return;
+            }
+
+            for (const id of Object.keys(fetched)) {
+                storeRef.current.map[widgetStoreKey(id, signatureByWidgetId[id] ?? '')] = fetched[id];
+            }
+
+            const merged = resolveFromStore();
+            setPayloads(merged);
+            writeFormulaWidgetPayloadCache(
+                householdId,
+                fetchCacheKey,
+                merged,
+                storeRef.current.etag,
+                dataVersion,
+            );
+            setError(null);
+        }
+
+        loadPending()
+            .catch((err) => {
                 if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') {
                     return;
                 }
 
-                if (cacheComplete) {
+                if (!anyWithoutPlaceholder) {
+                    // Mostriamo comunque i dati stale: errore silenzioso.
                     setError(null);
 
                     return;
                 }
 
                 setError('Non sono riuscito a caricare i widget a formula. Riprova tra poco.');
-            }
-        }
-
-        loadBatch()
+            })
             .finally(() => {
                 if (!cancelled) {
                     setLoading(false);
@@ -341,7 +405,7 @@ export function useDashboardFormulaPayloads(
             cancelled = true;
             controller.abort();
         };
-    }, [widgetIdsKey, runtimeParamsKey, householdId, dataVersion, bootstrapPayloads, initialPayloads, cachedEntry, runtimeParams]);
+    }, [widgetIdsKey, runtimeParamsKey, householdId, dataVersion, fetchCacheKey, signatureByWidgetId, runtimeParams, cachedEntry]);
 
     return { payloads, loading, pendingWidgetIds, error, cacheTtlMs: FORMULA_WIDGET_PAYLOAD_CACHE_TTL_MS };
 }

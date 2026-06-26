@@ -4,8 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Account;
 use App\Models\Category;
+use App\Models\DashboardLayout;
 use App\Models\FinancialGoal;
 use App\Models\FinancialVariable;
+use App\Models\FormulaWidget;
 use App\Models\Household;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
@@ -185,13 +187,51 @@ class E2ESeeder extends Seeder
         );
 
         // Metrica a formula per i test dei widget a formula (anteprima + controlli avanzati)
-        FinancialVariable::firstOrCreate(
+        $balanceVariable = FinancialVariable::firstOrCreate(
             ['user_id' => $user->id, 'code' => 'e2e_bilancio_periodo'],
             [
                 'name' => 'Bilancio Periodo E2E',
                 'type' => FinancialVariable::TYPE_FORMULA,
                 'formula_string' => '[period_net]',
                 'is_public' => false,
+            ]
+        );
+
+        // Due widget KPI con selettore conto, fissati in dashboard: servono al test
+        // E2E che verifica il ricalcolo del SOLO widget filtrato (no refetch globale).
+        $accountParameter = [
+            ['key' => 'account_id', 'type' => 'account', 'label' => 'Conto', 'default' => 'all'],
+        ];
+
+        $widgetA = FormulaWidget::firstOrCreate(
+            ['user_id' => $user->id, 'name' => 'Widget Conto A E2E'],
+            [
+                'financial_variable_id' => $balanceVariable->id,
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => ['format' => 'currency', 'parameters' => $accountParameter],
+            ]
+        );
+
+        $widgetB = FormulaWidget::firstOrCreate(
+            ['user_id' => $user->id, 'name' => 'Widget Conto B E2E'],
+            [
+                'financial_variable_id' => $balanceVariable->id,
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => ['format' => 'currency', 'parameters' => $accountParameter],
+            ]
+        );
+
+        DashboardLayout::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'config' => [
+                    'widgets' => [
+                        ['id' => "formula_widget_{$widgetA->id}", 'visible' => true, 'position' => 0, 'size' => 'md'],
+                        ['id' => "formula_widget_{$widgetB->id}", 'visible' => true, 'position' => 1, 'size' => 'md'],
+                    ],
+                ],
             ]
         );
 
