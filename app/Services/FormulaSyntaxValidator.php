@@ -10,17 +10,21 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 /**
  * Validates formula syntax before persistence or evaluation.
- * No eval(): only numeric expressions via Symfony ExpressionLanguage after token substitution.
+ * Supports IF/WHEN, comparators and numeric helpers via Symfony ExpressionLanguage.
  */
 class FormulaSyntaxValidator
 {
     private ExpressionLanguage $expressionLanguage;
+
+    /** @var list<string> */
+    private const ALLOWED_FUNCTIONS = ['IF', 'WHEN', 'ABS', 'MIN', 'MAX', 'ROUND'];
 
     public function __construct(
         private readonly FormulaTokenParser $tokenParser,
         private readonly SystemVariableResolver $systemVariableResolver,
     ) {
         $this->expressionLanguage = new ExpressionLanguage;
+        $this->registerFunctions();
     }
 
     public function validate(User $user, string $formulaString, ?int $editingVariableId = null, ?string $variableCode = null): void
@@ -45,9 +49,9 @@ class FormulaSyntaxValidator
             ]);
         }
 
-        if (! preg_match('~^[0-9+\-*/().\s\[\]a-z_]+$~i', $formula)) {
+        if (! preg_match('~^[0-9+\-*/().\s\[\]a-z_,><=!?A-Z]+$~i', $formula)) {
             throw ValidationException::withMessages([
-                'formula_string' => 'La formula contiene caratteri non consentiti. Usa variabili [codice], numeri e operatori + − × ÷ ( ).',
+                'formula_string' => 'La formula contiene caratteri non consentiti. Usa variabili [codice], numeri, operatori e funzioni IF/WHEN.',
             ]);
         }
 
@@ -121,20 +125,22 @@ class FormulaSyntaxValidator
             ]);
         }
 
-        if (! preg_match('~^[0-9+\-*/().\s]+$~', $expression)) {
+        $normalized = $this->normalizeExpression($expression);
+
+        if (! preg_match('~^[0-9+\-*/().\s,><=!?A-Za-z_]+$~', $normalized)) {
             throw ValidationException::withMessages([
                 'formula_string' => 'La formula contiene caratteri non consentiti.',
             ]);
         }
 
-        if (strlen($expression) > 4000) {
+        if (strlen($normalized) > 4000) {
             throw ValidationException::withMessages([
                 'formula_string' => 'L\'espressione risultante è troppo complessa.',
             ]);
         }
 
         try {
-            $result = $this->expressionLanguage->evaluate($expression, []);
+            $result = $this->expressionLanguage->evaluate($normalized, []);
         } catch (\Throwable) {
             throw ValidationException::withMessages([
                 'formula_string' => 'La formula non è valida o non può essere calcolata.',
@@ -148,6 +154,53 @@ class FormulaSyntaxValidator
         }
 
         return round((float) $result, 2);
+    }
+
+    private function normalizeExpression(string $expression): string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($expression)) ?? $expression;
+
+        // WHEN(cond, val) -> IF(cond, val, 0)
+        $normalized = preg_replace_callback(
+            '/\bWHEN\s*\(/i',
+            fn () => 'IF(',
+            $normalized,
+        ) ?? $normalized;
+
+        return $normalized;
+    }
+
+    private function registerFunctions(): void
+    {
+        $this->expressionLanguage->register('IF', function ($arguments, $condition, $then, $else = 0) {
+            return [$condition, $then, $else];
+        }, function ($arguments, $condition, $then, $else = 0) {
+            return $condition ? (float) $then : (float) $else;
+        });
+
+        $this->expressionLanguage->register('ABS', function ($arguments, $value) {
+            return [$value];
+        }, function ($arguments, $value) {
+            return abs((float) $value);
+        });
+
+        $this->expressionLanguage->register('MIN', function ($arguments, $a, $b) {
+            return [$a, $b];
+        }, function ($arguments, $a, $b) {
+            return min((float) $a, (float) $b);
+        });
+
+        $this->expressionLanguage->register('MAX', function ($arguments, $a, $b) {
+            return [$a, $b];
+        }, function ($arguments, $a, $b) {
+            return max((float) $a, (float) $b);
+        });
+
+        $this->expressionLanguage->register('ROUND', function ($arguments, $value, $precision = 0) {
+            return [$value, $precision];
+        }, function ($arguments, $value, $precision = 0) {
+            return round((float) $value, (int) $precision);
+        });
     }
 
     private function resolveOwnCode(User $user, ?int $editingVariableId, ?string $variableCode): ?string

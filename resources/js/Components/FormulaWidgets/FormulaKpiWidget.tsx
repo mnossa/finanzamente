@@ -11,9 +11,13 @@ interface FormulaKpiWidgetProps {
     className?: string;
 }
 
-function formatValue(value: number, format: 'currency' | 'percent'): string {
+function formatValue(value: number, format: 'currency' | 'percent' | 'number'): string {
     if (format === 'percent') {
         return `${value.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+    }
+
+    if (format === 'number') {
+        return value.toLocaleString('it-IT', { maximumFractionDigits: 0 });
     }
 
     return formatCurrency(value);

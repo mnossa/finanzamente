@@ -38,13 +38,18 @@ test.describe('Dashboard — filtro singolo widget a formula', () => {
         await page.waitForTimeout(1500);
         payloadRequests.length = 0;
 
-        // Cambia il conto sul PRIMO widget (Widget Conto A)
+        // Cambia il conto sul PRIMO widget (Widget Conto A) su un valore diverso da quello attuale
         const firstSelect = accountSelects.first();
         const optionValues = await firstSelect.locator('option').evaluateAll((opts) =>
             (opts as HTMLOptionElement[]).map((o) => o.value),
         );
-        const targetValue = optionValues.find((v) => v !== 'all') ?? optionValues[1];
-        await firstSelect.selectOption(targetValue);
+        const currentValue = await firstSelect.inputValue();
+        const targetValue =
+            optionValues.find((v) => v !== 'all' && v !== currentValue)
+            ?? optionValues.find((v) => v !== 'all')
+            ?? optionValues[1];
+        expect(targetValue).toBeTruthy();
+        await firstSelect.selectOption(targetValue!);
 
         // Attende la richiesta di refetch generata dal cambio filtro
         await expect.poll(() => payloadRequests.length, { timeout: 15000 }).toBeGreaterThan(0);

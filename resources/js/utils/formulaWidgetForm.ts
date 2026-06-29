@@ -40,7 +40,10 @@ const SERIES_DISPLAY_TYPES = new Set([
 const LINKED_VARIABLE_CHART_TYPES = new Set(['line', 'area']);
 
 export function formulaWidgetRequiresPeriod(displayType: string, chartConfig: FormulaChartConfigLike): boolean {
+    const hasMetricQuery = Boolean((chartConfig as { metric_query?: unknown }).metric_query);
+
     return (
+        hasMetricQuery ||
         ['line', 'area', 'stacked_bar', 'progress'].includes(displayType) ||
         (displayType === 'kpi' && Boolean(chartConfig.show_delta))
     );
@@ -54,7 +57,7 @@ export function formulaWidgetUsesLinkedVariableSeries(displayType: string): bool
     return LINKED_VARIABLE_CHART_TYPES.has(displayType);
 }
 
-/** Consente solo caratteri ammessi nelle formule backend (no eval, no stringhe arbitrarie). */
+/** Consente caratteri ammessi nelle formule backend (incl. IF/WHEN e comparatori). */
 export function sanitizeFormulaString(value: string): string {
-    return value.replace(/[^0-9+\-*/().\s\[\]a-z_]/gi, '');
+    return value.replace(/[^0-9+\-*/().\s\[\]a-z_,><=!?A-Z]/gi, '');
 }

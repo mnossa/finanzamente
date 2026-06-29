@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Models\Account;
+use App\Models\Category;
+use App\Models\Currency;
+use App\Models\DebtCredit;
+use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
@@ -17,7 +21,18 @@ class FormulaWidgetParameterService
     public const PERIOD_NAV_MAX_OFFSET = 0;
 
     /** @var list<string> */
-    public const SUPPORTED_TYPES = ['account', self::PERIOD_NAV_TYPE];
+    public const SUPPORTED_TYPES = [
+        'account',
+        self::PERIOD_NAV_TYPE,
+        'tag',
+        'category',
+        'currency',
+        'debt_credit',
+        'transaction_type',
+    ];
+
+    /** @var list<string> */
+    private const PERSONALIZED_TYPES = ['account', 'tag', 'category', 'debt_credit'];
 
     /**
      * @param  array<string, mixed>|null  $chartConfig
@@ -124,9 +139,11 @@ class FormulaWidgetParameterService
             return $definition['default'];
         }
 
-        return $definition['type'] === self::PERIOD_NAV_TYPE
-            ? (string) self::PERIOD_NAV_MAX_OFFSET
-            : self::ACCOUNT_ALL;
+        return match ($definition['type']) {
+            self::PERIOD_NAV_TYPE => (string) self::PERIOD_NAV_MAX_OFFSET,
+            'category' => 'none',
+            default => self::ACCOUNT_ALL,
+        };
     }
 
     /**
@@ -135,9 +152,9 @@ class FormulaWidgetParameterService
     public function validateChartConfig(?array $chartConfig, bool $isPublic = false): void
     {
         foreach ($this->parameterDefinitions($chartConfig) as $definition) {
-            if ($isPublic && $definition['type'] === 'account') {
+            if ($isPublic && in_array($definition['type'], self::PERSONALIZED_TYPES, true)) {
                 throw ValidationException::withMessages([
-                    'chart_config' => 'I widget pubblici non possono includere filtri per conto specifico.',
+                    'chart_config' => 'I widget pubblici non possono includere filtri personalizzati (conto, tag, categoria, debito).',
                 ]);
             }
         }
@@ -151,6 +168,11 @@ class FormulaWidgetParameterService
     {
         return match ($definition['type']) {
             'account' => $this->accountOptions($user),
+            'tag' => $this->tagOptions($user),
+            'category' => $this->categoryOptions($user),
+            'currency' => $this->currencyOptions(),
+            'debt_credit' => $this->debtCreditOptions($user),
+            'transaction_type' => $this->transactionTypeOptions(),
             default => [],
         };
     }
@@ -190,6 +212,131 @@ class FormulaWidgetParameterService
     }
 
     /**
+     * @return list<array{value: string, label: string}>
+     */
+    public function tagOptions(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [['value' => self::ACCOUNT_ALL, 'label' => 'Tutti i tag']];
+        }
+
+        $tags = Tag::query()
+            ->forUser($user->id, $householdId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $options = [['value' => self::ACCOUNT_ALL, 'label' => 'Tutti i tag']];
+
+        foreach ($tags as $tag) {
+            $options[] = ['value' => (string) $tag->id, 'label' => $tag->name];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public function categoryOptions(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [
+                ['value' => 'none', 'label' => 'Nessuna'],
+                ['value' => self::ACCOUNT_ALL, 'label' => 'Tutte le categorie'],
+            ];
+        }
+
+        $categories = Category::query()
+            ->forHousehold($householdId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type']);
+
+        $options = [
+            ['value' => 'none', 'label' => 'Nessuna'],
+            ['value' => self::ACCOUNT_ALL, 'label' => 'Tutte le categorie'],
+        ];
+
+        foreach ($categories as $category) {
+            $options[] = [
+                'value' => (string) $category->id,
+                'label' => $category->name.' ('.($category->type === 'income' ? 'entrata' : 'uscita').')',
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public function currencyOptions(): array
+    {
+        $currencies = Currency::query()->orderBy('code')->get(['code', 'name', 'symbol']);
+
+        $options = [['value' => self::ACCOUNT_ALL, 'label' => 'Tutte le valute']];
+
+        foreach ($currencies as $currency) {
+            $options[] = [
+                'value' => $currency->code,
+                'label' => "{$currency->name} ({$currency->symbol})",
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public function debtCreditOptions(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [['value' => self::ACCOUNT_ALL, 'label' => 'Tutti']];
+        }
+
+        $records = DebtCredit::query()
+            ->where('household_id', $householdId)
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('counterparty')
+            ->get(['id', 'counterparty', 'type']);
+
+        $options = [['value' => self::ACCOUNT_ALL, 'label' => 'Tutti']];
+
+        foreach ($records as $record) {
+            $typeLabel = $record->type === 'debt' ? 'Debito' : 'Credito';
+            $options[] = [
+                'value' => (string) $record->id,
+                'label' => "{$record->counterparty} ({$typeLabel})",
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public function transactionTypeOptions(): array
+    {
+        $types = config('metric_queries.transaction_types', []);
+
+        $options = [];
+
+        foreach ($types as $value => $label) {
+            $options[] = ['value' => $value, 'label' => $label];
+        }
+
+        return $options;
+    }
+
+    /**
      * @param  array{key: string, type: string, label: string, default?: string}  $definition
      */
     private function normalizeValue(User $user, array $definition, mixed $raw): string
@@ -203,27 +350,13 @@ class FormulaWidgetParameterService
             return (string) $offset;
         }
 
-        if ($definition['type'] === 'account') {
-            if ($value === self::ACCOUNT_ALL || $value === '') {
-                return self::ACCOUNT_ALL;
-            }
+        $options = $this->buildOptions($user, $definition);
+        $allowed = collect($options)->pluck('value');
 
-            if (! ctype_digit($value)) {
-                return (string) ($definition['default'] ?? self::ACCOUNT_ALL);
-            }
-
-            $accountId = (int) $value;
-            $allowed = collect($this->accountOptions($user))
-                ->pluck('value')
-                ->contains((string) $accountId);
-
-            if (! $allowed) {
-                return (string) ($definition['default'] ?? self::ACCOUNT_ALL);
-            }
-
-            return (string) $accountId;
+        if ($allowed->contains($value)) {
+            return $value;
         }
 
-        return $value;
+        return $this->defaultValue($definition);
     }
 }

@@ -3,13 +3,17 @@
 namespace App\Support;
 
 /**
- * Contesto di risoluzione per widget a formula (filtri runtime come conto).
+ * Contesto di risoluzione per widget a formula (filtri runtime).
  */
 class FormulaWidgetRuntimeContext
 {
+    /**
+     * @param  array<string, string|int|null>  $parameters
+     */
     public function __construct(
         public readonly ?int $accountId = null,
         public readonly int $periodOffset = 0,
+        public readonly array $parameters = [],
     ) {}
 
     /**
@@ -25,7 +29,7 @@ class FormulaWidgetRuntimeContext
         $offsetRaw = $resolvedParameters['period_offset'] ?? 0;
         $periodOffset = is_numeric($offsetRaw) ? (int) $offsetRaw : 0;
 
-        return new self($accountId, $periodOffset);
+        return new self($accountId, $periodOffset, $resolvedParameters);
     }
 
     public function hasAccountFilter(): bool
@@ -36,5 +40,27 @@ class FormulaWidgetRuntimeContext
     public function hasPeriodOffset(): bool
     {
         return $this->periodOffset !== 0;
+    }
+
+    public function getParameter(string $key): ?string
+    {
+        $value = $this->parameters[$key] ?? null;
+
+        if ($value === null) {
+            return null;
+        }
+
+        return (string) $value;
+    }
+
+    public function getIntParameter(string $key): ?int
+    {
+        $value = $this->getParameter($key);
+
+        if ($value === null || $value === 'all' || $value === 'none' || ! ctype_digit($value)) {
+            return null;
+        }
+
+        return (int) $value;
     }
 }

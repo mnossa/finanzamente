@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\FormulaWidget;
 use App\Models\User;
+use App\Services\FormulaWidgets\MetricQueryService;
 use App\Support\FormulaWidgetRuntimeContext;
 use Carbon\Carbon;
 
@@ -17,6 +18,7 @@ class FormulaWidgetPayloadBuilder
         private readonly AccountBalanceService $accountBalanceService,
         private readonly PortfolioSnapshotService $portfolioSnapshotService,
         private readonly FormulaWidgetParameterService $parameterService,
+        private readonly MetricQueryService $metricQueryService,
     ) {}
 
     /**
@@ -172,6 +174,10 @@ class FormulaWidgetPayloadBuilder
             return $this->buildBalanceSummaryKpi($widget, $user, $period);
         }
 
+        if ($this->metricQueryService->hasMetricQuery($chartConfig)) {
+            return $this->buildMetricKpi($widget, $user, $period, $chartConfig, $context);
+        }
+
         $value = $this->formulaResolverService->evaluate(
             $user,
             $this->wrapAsFormula($formula),
@@ -257,6 +263,27 @@ class FormulaWidgetPayloadBuilder
         array $chartConfig,
         FormulaWidgetRuntimeContext $context,
     ): array {
+        if ($this->metricQueryService->hasMetricQuery($chartConfig)) {
+            $resolvedParams = $context->parameters;
+            $points = $this->metricQueryService->evaluateMonthlySeries(
+                $user,
+                $chartConfig['metric_query'] ?? null,
+                $period['start'],
+                $period['end'],
+                $resolvedParams,
+                $context,
+            );
+
+            return [
+                'type' => $widget->display_type === FormulaWidget::DISPLAY_AREA ? 'area' : 'line',
+                'name' => $widget->name,
+                'variant' => $widget->display_type,
+                'points' => $points,
+                'series' => $chartConfig['series'] ?? [],
+                'periodLabel' => $period['label'],
+            ];
+        }
+
         $formula = (string) $variable->formula_string;
         $code = $this->tokenParserExtractSingleCode($formula);
         $points = $code !== null
@@ -488,5 +515,43 @@ class FormulaWidgetPayloadBuilder
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $chartConfig
+     * @param  array{start: Carbon, end: Carbon, label: string}  $period
+     * @return array<string, mixed>
+     */
+    private function buildMetricKpi(
+        FormulaWidget $widget,
+        User $user,
+        array $period,
+        array $chartConfig,
+        FormulaWidgetRuntimeContext $context,
+    ): array {
+        $value = $this->metricQueryService->evaluate(
+            $user,
+            $chartConfig['metric_query'] ?? null,
+            $period['start'],
+            $period['end'],
+            $context->parameters,
+            $context,
+        );
+
+        $format = $chartConfig['format'] ?? 'number';
+        $measure = (string) (($chartConfig['metric_query']['measure'] ?? ''));
+
+        if ($format === 'currency' && $measure === 'count') {
+            $format = 'number';
+        }
+
+        return [
+            'type' => 'kpi',
+            'name' => $widget->name,
+            'value' => $value,
+            'periodLabel' => $period['label'],
+            'delta' => null,
+            'format' => $format,
+        ];
     }
 }

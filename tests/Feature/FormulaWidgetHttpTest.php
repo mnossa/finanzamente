@@ -796,4 +796,49 @@ class FormulaWidgetHttpTest extends TestCase
                 ->missing("formulaWidgetPayloads.{$excludedChart->id}")
             );
     }
+
+    #[Test]
+    public function preview_and_store_support_metric_query_widget(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[period_net]')->create();
+
+        $chartConfig = [
+            'format' => 'number',
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'count',
+                'amount_field' => 'amount_base',
+                'filters' => [
+                    ['field' => 'transaction_type', 'operator' => 'eq', 'value' => 'expense'],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-widgets.preview'), [
+                'financial_variable_id' => $variable->id,
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => $chartConfig,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.type', 'kpi');
+
+        $this->actingAs($this->user)
+            ->post(route('formula-widgets.store'), [
+                'name' => 'Conteggio spese',
+                'financial_variable_id' => $variable->id,
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => $chartConfig,
+                'default_size' => 'md',
+                'pin_to_dashboard' => false,
+            ])
+            ->assertRedirect(route('formula-widgets.index'));
+
+        $this->assertDatabaseHas('formula_widgets', [
+            'user_id' => $this->user->id,
+            'name' => 'Conteggio spese',
+        ]);
+    }
 }

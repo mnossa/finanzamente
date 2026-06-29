@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import clsx from 'clsx';
 import FormulaKpiWidget from '@/Components/FormulaWidgets/FormulaKpiWidget';
 import FormulaWidgetParameterControls from '@/Components/FormulaWidgets/FormulaWidgetParameterControls';
+import { FORMULA_CHART_RESERVED_H } from '@/utils/formulaWidgetSkeletonClass';
 import type { FormulaWidgetPayload } from '@/types/formulaWidget';
 
 const FormulaChartWidget = lazy(() => import('@/Components/FormulaWidgets/FormulaChartWidget'));
@@ -18,7 +19,7 @@ interface CustomFormulaWidgetProps {
 function ChartSkeleton() {
     return (
         <div
-            className="min-h-[12.5rem] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800 sm:min-h-[16rem]"
+            className={clsx('animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800', FORMULA_CHART_RESERVED_H)}
             aria-hidden="true"
         />
     );
@@ -71,7 +72,7 @@ export default function CustomFormulaWidget({
     return (
         <div className={clsx('h-full w-full', className)}>
             {parameterControls}
-            <div className="relative">
+            <div className={clsx('relative w-full shrink-0', FORMULA_CHART_RESERVED_H)}>
                 {refreshing && <RefreshingOverlay />}
                 <Suspense fallback={<ChartSkeleton />}>
                     <FormulaChartWidget payload={payload} embedded={embedded} />

@@ -26,18 +26,18 @@ test.describe('Widget a formula — controlli avanzati in anteprima', () => {
         await page.getByRole('checkbox', { name: /Conto selezionabile/i }).check();
         await page.getByRole('checkbox', { name: /Mese scorrevole/i }).check();
 
-        // Pannello anteprima
-        const preview = page.getByRole('region', { name: /Anteprima/i }).or(
-            page.locator('text=Anteprima').first(),
-        );
+        // Pannello anteprima (evita il select "Conto predefinito" nelle opzioni avanzate)
+        const preview = page.locator('div').filter({
+            has: page.getByRole('heading', { name: 'Anteprima', exact: true }),
+        }).last();
 
-        // Il dropdown conto compare nell'anteprima (aria-label "Conto")
-        const accountSelect = page.getByLabel('Conto', { exact: true });
+        // Il dropdown conto compare nell'anteprima (label dal parametro runtime)
+        const accountSelect = preview.getByLabel('Conto selezionabile', { exact: true });
         await expect(accountSelect).toBeVisible({ timeout: 15000 });
 
-        // I controlli di navigazione mese compaiono
-        const prevMonth = page.getByRole('button', { name: 'Mese precedente' });
-        const nextMonth = page.getByRole('button', { name: 'Mese successivo' });
+        // I controlli di navigazione mese compaiono nell'anteprima
+        const prevMonth = preview.getByRole('button', { name: 'Mese precedente' });
+        const nextMonth = preview.getByRole('button', { name: 'Mese successivo' });
         await expect(prevMonth).toBeVisible();
         await expect(nextMonth).toBeVisible();
 

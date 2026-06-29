@@ -10,6 +10,9 @@ import TextInput from '@/Components/TextInput';
 import CreateFinancialVariableModal from '@/Components/FormulaWidgets/CreateFinancialVariableModal';
 import DuplicateFormulaWidgetNotice from '@/Components/FormulaWidgets/DuplicateFormulaWidgetNotice';
 import FormulaWidgetPreviewPanel from '@/Components/FormulaWidgets/FormulaWidgetPreviewPanel';
+import FormulaWidgetCreateGuide from '@/Components/FormulaWidgets/FormulaWidgetCreateGuide';
+import MetricQueryBuilder from '@/Components/FormulaWidgets/MetricQueryBuilder';
+import RuntimeParameterPicker from '@/Components/FormulaWidgets/RuntimeParameterPicker';
 import { useFormulaWidgetPreview } from '@/hooks/useFormulaWidgetPreview';
 import {
     formulaWidgetRequiresPeriod,
@@ -19,7 +22,9 @@ import type { AccountOption } from '@/utils/formulaWidgetPresets';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import clsx from 'clsx';
 import { FormEventHandler, useMemo, useState } from 'react';
-import type { FinancialVariableSummary, FormulaWidgetSummary, SystemVariableMeta } from '@/types/formulaWidget';
+import type { FinancialVariableSummary, FormulaWidgetChartConfig, FormulaWidgetParameterType, FormulaWidgetSummary, MetricQueryDefinition, SystemVariableMeta } from '@/types/formulaWidget';
+import type { MetricQueryConfig } from '@/utils/metricQueryForm';
+import { METRIC_QUERY_PRESETS, syncRuntimeParametersFromMetricQuery } from '@/utils/metricQueryForm';
 import type { PageProps } from '@/types';
 
 interface ChartTypeMeta {
@@ -28,12 +33,28 @@ interface ChartTypeMeta {
     guide?: string;
 }
 
+interface TagOption {
+    id: number;
+    name: string;
+}
+
+interface CategoryOption {
+    id: number;
+    name: string;
+    type: string;
+}
+
 interface CreateProps {
     variables: FinancialVariableSummary[];
     systemVariables: SystemVariableMeta[];
     chartTypes: Record<string, ChartTypeMeta>;
     periodPresets: Record<string, { label: string }>;
     accounts?: AccountOption[];
+    tags?: TagOption[];
+    categories?: CategoryOption[];
+    currencies?: Array<{ code: string; name: string; symbol: string }>;
+    debtsCredits?: Array<{ id: number; counterparty: string; type: string }>;
+    metricQueryConfig?: MetricQueryConfig;
     editingWidget?: FormulaWidgetSummary | null;
 }
 
@@ -45,14 +66,7 @@ interface CreateWidgetForm {
     default_size: string;
     is_public: boolean;
     pin_to_dashboard: boolean;
-    chart_config: {
-        show_delta: boolean;
-        format: string;
-        value_code: string;
-        threshold_code: string;
-        parameters?: Array<{ key: string; type: string; label: string; default?: string }>;
-        series: Array<{ code: string; label?: string; color?: string }>;
-    };
+    chart_config: FormulaWidgetChartConfig;
 }
 
 type RuntimeParameter = NonNullable<CreateWidgetForm['chart_config']['parameters']>[number];
@@ -156,11 +170,12 @@ function buildInitialForm(
             parameters: Array.isArray(chartConfig.parameters)
                 ? chartConfig.parameters.map((entry) => ({
                     key: String((entry as { key?: string }).key ?? ''),
-                    type: String((entry as { type?: string }).type ?? 'account'),
+                    type: String((entry as { type?: string }).type ?? 'account') as FormulaWidgetParameterType,
                     label: String((entry as { label?: string }).label ?? 'Conto'),
                     default: (entry as { default?: string }).default,
                 }))
                 : undefined,
+            metric_query: (chartConfig.metric_query as MetricQueryDefinition | undefined) ?? undefined,
         },
     };
 }
@@ -206,6 +221,7 @@ export default function Create({
     chartTypes,
     periodPresets,
     accounts = [],
+    metricQueryConfig,
     editingWidget = null,
 }: CreateProps) {
     const isEditing = editingWidget !== null;
@@ -238,7 +254,7 @@ export default function Create({
             financial_variable_id: data.financial_variable_id,
             display_type: data.display_type,
             period_preset: data.period_preset,
-            chart_config: data.chart_config,
+            chart_config: data.chart_config as Record<string, unknown>,
         }),
         [data.name, data.financial_variable_id, data.display_type, data.period_preset, data.chart_config],
     );
@@ -279,6 +295,42 @@ export default function Create({
 
     const accountSelectorEnabled = hasRuntimeParameter(data.chart_config.parameters, 'account_id');
     const periodNavigationEnabled = hasRuntimeParameter(data.chart_config.parameters, 'period_offset');
+
+    const applyMetricPreset = (presetId: string) => {
+        const preset = METRIC_QUERY_PRESETS.find((entry) => entry.id === presetId);
+
+        if (!preset) {
+            return;
+        }
+
+        setData((current) => ({
+            ...current,
+            name: current.name || preset.suggestedName,
+            display_type: preset.displayType,
+            period_preset: current.period_preset || 'current_month',
+            chart_config: {
+                ...current.chart_config,
+                format: preset.format,
+                metric_query: preset.metricQuery,
+                parameters: syncRuntimeParametersFromMetricQuery(
+                    preset.metricQuery,
+                    current.chart_config.parameters,
+                ),
+            },
+        }));
+        setAdvancedOpen(true);
+    };
+
+    const setMetricQuery = (metricQuery: MetricQueryDefinition | undefined) => {
+        setData((current) => ({
+            ...current,
+            chart_config: {
+                ...current.chart_config,
+                metric_query: metricQuery,
+                parameters: syncRuntimeParametersFromMetricQuery(metricQuery, current.chart_config.parameters),
+            },
+        }));
+    };
 
     const applyRecipe = (recipeId: WidgetRecipeId) => {
         setActiveRecipe(recipeId);
@@ -498,6 +550,41 @@ export default function Create({
                         <SectionCard>
                             <div className="mb-4">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                                    2b. Query dinamica (opzionale)
+                                </p>
+                                <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
+                                    Filtra transazioni, tag e categorie
+                                </h2>
+                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                    Crea metriche avanzate senza scrivere SQL. I filtri segnati come runtime sono modificabili in dashboard.
+                                </p>
+                            </div>
+
+                            <div className="mb-4 flex flex-wrap gap-2">
+                                {METRIC_QUERY_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset.id}
+                                        type="button"
+                                        className="rounded-full border border-primary-200 px-3 py-1 text-xs font-medium text-primary-800 hover:bg-primary-50 dark:border-primary-800 dark:text-primary-100 dark:hover:bg-primary-950/40"
+                                        onClick={() => applyMetricPreset(preset.id)}
+                                    >
+                                        {preset.title}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {metricQueryConfig ? (
+                                <MetricQueryBuilder
+                                    value={data.chart_config.metric_query}
+                                    config={metricQueryConfig}
+                                    onChange={setMetricQuery}
+                                />
+                            ) : null}
+                        </SectionCard>
+
+                        <SectionCard>
+                            <div className="mb-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
                                     3. Aspetto
                                 </p>
                                 <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
@@ -565,34 +652,12 @@ export default function Create({
                             <SectionCard>
                                 <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">Controlli in dashboard</h2>
                                 <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                                    Permetti di cambiare conto o mese direttamente dal widget, senza duplicarlo.
+                                    Permetti di cambiare filtri direttamente dal widget, senza duplicarlo.
                                 </p>
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
-                                        <input
-                                            type="checkbox"
-                                            className="mt-1"
-                                            checked={accountSelectorEnabled}
-                                            onChange={(e) => setRuntimeParameterEnabled(ACCOUNT_PARAMETER, e.target.checked)}
-                                        />
-                                        <span>
-                                            <span className="block font-medium text-gray-900 dark:text-white">Conto selezionabile</span>
-                                            <span className="text-gray-600 dark:text-gray-400">Dropdown nel widget per filtrare per conto.</span>
-                                        </span>
-                                    </label>
-                                    <label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
-                                        <input
-                                            type="checkbox"
-                                            className="mt-1"
-                                            checked={periodNavigationEnabled}
-                                            onChange={(e) => setRuntimeParameterEnabled(PERIOD_NAV_PARAMETER, e.target.checked)}
-                                        />
-                                        <span>
-                                            <span className="block font-medium text-gray-900 dark:text-white">Mese scorrevole</span>
-                                            <span className="text-gray-600 dark:text-gray-400">Frecce per navigare i mesi precedenti.</span>
-                                        </span>
-                                    </label>
-                                </div>
+                                <RuntimeParameterPicker
+                                    parameters={data.chart_config.parameters}
+                                    onToggle={(parameter, enabled) => setRuntimeParameterEnabled(parameter, enabled)}
+                                />
                                 {accountSelectorEnabled && (
                                     <div className="mt-4">
                                         <InputLabel value="Conto predefinito" />
@@ -638,6 +703,7 @@ export default function Create({
                                         >
                                             <option value="currency">Valuta (€)</option>
                                             <option value="percent">Percentuale</option>
+                                            <option value="number">Numero</option>
                                         </select>
                                     </div>
                                 </div>
@@ -705,7 +771,7 @@ export default function Create({
                                     Per un riepilogo incassato/speso/risparmiato: grafico a barre, periodo «Mese corrente», serie sotto e filtri conto/mese in avanzato.
                                 </p>
                                 <div className="space-y-3">
-                                    {(data.chart_config.series.length > 0 ? data.chart_config.series : [{ code: '' }]).map(
+                                    {((data.chart_config.series ?? []).length > 0 ? data.chart_config.series ?? [] : [{ code: '' }]).map(
                                         (entry, index) => (
                                             <div key={index} className="flex items-end gap-2">
                                                 <div className="flex-1">
@@ -714,7 +780,7 @@ export default function Create({
                                                         className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
                                                         value={entry.code}
                                                         onChange={(e) => {
-                                                            const series = [...data.chart_config.series];
+                                                            const series = [...(data.chart_config.series ?? [])];
                                                             const selected = systemVariables.find((v) => v.code === e.target.value);
                                                             series[index] = {
                                                                 code: e.target.value,
@@ -732,12 +798,12 @@ export default function Create({
                                                         ))}
                                                     </select>
                                                 </div>
-                                                {data.chart_config.series.length > 2 && (
+                                                {(data.chart_config.series ?? []).length > 2 && (
                                                     <button
                                                         type="button"
                                                         className="mb-1 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                                                         onClick={() => {
-                                                            const series = data.chart_config.series.filter((_, i) => i !== index);
+                                                            const series = (data.chart_config.series ?? []).filter((_, i) => i !== index);
                                                             setData('chart_config', { ...data.chart_config, series });
                                                         }}
                                                     >
@@ -748,14 +814,14 @@ export default function Create({
                                         ),
                                     )}
                                 </div>
-                                {data.chart_config.series.length < 6 && (
+                                {(data.chart_config.series ?? []).length < 6 && (
                                     <button
                                         type="button"
                                         className="mt-3 text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
                                         onClick={() =>
                                             setData('chart_config', {
                                                 ...data.chart_config,
-                                                series: [...data.chart_config.series, { code: '', label: '' }],
+                                                series: [...(data.chart_config.series ?? []), { code: '', label: '' }],
                                             })
                                         }
                                     >
@@ -804,6 +870,14 @@ export default function Create({
                         </FormActionsBar>
                     </form>
 
+                    <FormulaWidgetCreateGuide
+                        displayType={data.display_type}
+                        chartTypes={chartTypes}
+                        systemVariables={systemVariables}
+                        metricQueryConfig={metricQueryConfig}
+                        hasMetricQuery={Boolean(data.chart_config.metric_query)}
+                        className="mb-4"
+                    />
                     <FormulaWidgetPreviewPanel
                         status={previewStatus}
                         payload={previewPayload}

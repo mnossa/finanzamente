@@ -174,4 +174,49 @@ class FormulaWidgetDuplicateServiceTest extends TestCase
         $this->assertNotNull($equivalent);
         $this->assertSame($publicWidget->id, $equivalent->id);
     }
+
+    #[Test]
+    public function does_not_flag_duplicate_when_metric_query_differs(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[period_net]')->create();
+
+        FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create([
+                'display_type' => 'kpi',
+                'period_preset' => 'current_month',
+                'chart_config' => [
+                    'format' => 'number',
+                    'metric_query' => [
+                        'datasource' => 'transactions',
+                        'measure' => 'count',
+                        'amount_field' => 'amount_base',
+                        'filters' => [
+                            ['field' => 'tag', 'operator' => 'in', 'runtime_key' => 'tag_selected'],
+                        ],
+                    ],
+                ],
+            ]);
+
+        $duplicate = $this->service->findDuplicateByVariableId(
+            $this->user,
+            $variable->id,
+            'kpi',
+            'current_month',
+            [
+                'format' => 'currency',
+                'metric_query' => [
+                    'datasource' => 'transactions',
+                    'measure' => 'sum_abs',
+                    'amount_field' => 'amount_base',
+                    'filters' => [
+                        ['field' => 'tag', 'operator' => 'in', 'runtime_key' => 'tag_selected'],
+                    ],
+                ],
+            ],
+        );
+
+        $this->assertNull($duplicate);
+    }
 }

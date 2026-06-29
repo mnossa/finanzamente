@@ -1,4 +1,5 @@
 import FormulaStringInput, { type FormulaSuggestion } from '@/Components/FormulaWidgets/FormulaStringInput';
+import AdvancedFormulaPanel from '@/Components/FormulaWidgets/AdvancedFormulaPanel';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
@@ -438,26 +439,15 @@ export default function FinancialVariableBuilder({
                     )}
 
                     {tab === 'advanced' && (
-                        <div>
-                            <InputLabel htmlFor={`${idPrefix}-formula`} value="Formula" />
-                            <div className="mt-1">
-                                <FormulaStringInput
-                                    id={`${idPrefix}-formula`}
-                                    value={draft.formula_string}
-                                    onChange={(value) => {
-                                        setComposerSynced(false);
-                                        updateDraft({ formula_string: value });
-                                    }}
-                                    suggestions={formulaSuggestions}
-                                    required
-                                    placeholder="es. [period_income] - [period_expenses]"
-                                />
-                            </div>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Digita <span className="font-mono">[</span> per l&apos;autocomplete. Per il bilancio conto usa{' '}
-                                <span className="font-mono">[period_net]</span> e attiva il filtro conto nel widget.
-                            </p>
-                        </div>
+                        <AdvancedFormulaPanel
+                            formula={draft.formula_string}
+                            onChange={(value) => {
+                                setComposerSynced(false);
+                                updateDraft({ formula_string: value });
+                            }}
+                            suggestions={formulaSuggestions}
+                            errors={errors}
+                        />
                     )}
 
                     <InputError message={errors.formula_string} className="mt-1" />

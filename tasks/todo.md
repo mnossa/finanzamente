@@ -52,3 +52,21 @@ Piano derivato da `tasks/financial-consistency-plan.md` (fasi 1–6 già impleme
 - Guidato: `quickFlow` salta gli step intermedi; "Indietro" dal passo importo torna alla scelta.
 - Classico: `quickMode` comprime categoria/conto/data/opzioni in riepilogo con "Modifica dettagli".
 - FAB mobile: aggiunto `id` form al guidato per submit dal pulsante centrale.
+
+# Widget metriche dinamiche (MR1 + MR2)
+
+## Piano
+- [x] Contratto `chart_config.metric_query` + config `metric_queries.php`
+- [x] Motore backend: `MetricQueryService`, builder transazioni/debiti, validazione, indici DB
+- [x] Formula engine: `IF`, `WHEN`, comparatori, `ABS`/`MIN`/`MAX`/`ROUND`
+- [x] Runtime params: tag, categoria, valuta, debito/credito, tipo transazione
+- [x] UI: `MetricQueryBuilder`, `MetricFilterRow`, `RuntimeParameterPicker`, `AdvancedFormulaPanel`
+- [x] Preview/dashboard/cache compatibili con nuovi parametri
+- [x] Guida in-app + scenari preset + E2E
+- [x] `make test` (961), `make pint-check`, E2E formula-widgets (15/15)
+
+## Review
+- Widget legacy con sola `financial_variable` invariati; `metric_query` bypassa formula per KPI/linea/area.
+- Aggregazioni default `amount_base` (EUR normalizzato); privacy allineata alla dashboard.
+- Duplicate detection estesa a `metric_query` + `parameters` nel fingerprint KPI.
+- E2E: preset tag, filtri runtime in anteprima, scenario IF, controlli avanzati, refetch singolo widget.

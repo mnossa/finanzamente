@@ -1,6 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PlusIcon from '@/Components/Icons/PlusIcon';
-import PencilIcon from '@/Components/Icons/PencilIcon';
 import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
@@ -11,10 +10,7 @@ import PageContent from '@/Components/PageContent';
 import { LockedModuleCard } from '@/Components/ModuleAccess';
 import { useModules } from '@/hooks/useModules';
 import { DashboardLayoutConfig, WidgetId, WidgetSize } from '@/types/dashboard';
-import FormulaWidgetSkeleton from '@/Components/FormulaWidgets/FormulaWidgetSkeleton';
-import FormulaKpiWidget from '@/Components/FormulaWidgets/FormulaKpiWidget';
-import CustomFormulaWidget from '@/Components/FormulaWidgets/CustomFormulaWidget';
-import FormulaWidgetTypeBadge from '@/Components/FormulaWidgets/FormulaWidgetTypeBadge';
+import FormulaDashboardWidget from '@/Components/FormulaWidgets/FormulaDashboardWidget';
 import DeferredMount from '@/Components/Dashboard/DeferredMount';
 import DashboardWidgetGridStatic from '@/Components/Dashboard/DashboardWidgetGridStatic';
 import DashboardEditGridLoader from '@/Components/Dashboard/DashboardEditGridLoader';
@@ -43,32 +39,12 @@ const LifestyleWidget = lazy(() => import('@/Components/LifestyleWidget'));
 const ExpenseTreemap = lazy(() => import('@/Components/Charts/ExpenseTreemap'));
 const ExpenseDistributionWidget = lazy(() => import('@/Components/ExpenseDistributionWidget'));
 const PacProjectionChart = lazy(() => import('@/Components/Charts/PacProjectionChart'));
-const FormulaChartWidget = lazy(() => import('@/Components/FormulaWidgets/FormulaChartWidget'));
 
 function WidgetChartSkeleton({ className }: { className?: string }) {
     return (
         <div
             className={clsx('min-h-[12rem] animate-pulse rounded-lg bg-gray-100 dark:bg-gray-700/50', className)}
             aria-hidden
-        />
-    );
-}
-
-function isFormulaKpiOrProgressPayload(
-    payload: FormulaWidgetPayload,
-): payload is Extract<FormulaWidgetPayload, { type: 'kpi' }> | Extract<FormulaWidgetPayload, { type: 'progress' }> {
-    return payload.type === 'kpi' || payload.type === 'progress';
-}
-
-function formulaWidgetSkeleton(
-    title: string,
-    meta?: FormulaWidgetMeta,
-): ReactNode {
-    return (
-        <FormulaWidgetSkeleton
-            title={title}
-            displayType={meta?.display_type}
-            variant={meta?.variant}
         />
     );
 }
@@ -174,14 +150,6 @@ interface DashboardProps {
     formulaWidgetMeta: Record<string, FormulaWidgetMeta>;
     formulaWidgetDataVersion?: string | null;
     importShareToken?: string | null;
-}
-
-function formulaWidgetTitleBadge(meta?: FormulaWidgetMeta): ReactNode {
-    if (!meta?.display_type) {
-        return undefined;
-    }
-
-    return <FormulaWidgetTypeBadge displayType={meta.display_type} />;
 }
 
 function getAccountTypeLabel(type: string): string {
@@ -312,19 +280,6 @@ function DebtCreditRow({ item }: { item: OpenDebtCredit }) {
     );
 }
 
-function formulaWidgetEditAction(numericId: string, widgetName: string) {
-    return (
-        <Link
-            href={route('formula-widgets.edit', numericId)}
-            className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-gray-800 dark:hover:text-primary-400"
-            aria-label={`Modifica ${widgetName}`}
-            title="Modifica widget"
-        >
-            <PencilIcon className="h-4 w-4" size={16} />
-        </Link>
-    );
-}
-
 export default function Dashboard({
     accounts,
     recentTransactions,
@@ -406,93 +361,23 @@ export default function Dashboard({
         }
     }
 
-    function renderFormulaWidget(widgetId: WidgetId, editing: boolean): ReactNode {
-        const numericId = parseFormulaWidgetNumericId(widgetId);
-        if (!numericId) return null;
-
-        const payload = formulaWidgetPayloads[numericId];
-        const isRefreshing = formulaWidgetPendingIds.has(String(numericId));
-        if (!payload) {
-            const meta = formulaWidgetMeta[numericId];
-            const label = meta?.name ?? 'Widget a formula';
-
-            if (!editing) {
-                return (
-                    <FormulaWidgetSkeleton
-                        title={label}
-                        displayType={meta?.display_type}
-                        variant={meta?.variant}
-                    />
-                );
-            }
-
-            return (
-                <DashboardWidgetShell title={label} titleBadge={formulaWidgetTitleBadge(meta)} bodyClassName={widgetListBodyClass}>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Anteprima non disponibile. Salva il layout o ricarica la pagina se il widget è stato rimosso.
-                    </p>
-                </DashboardWidgetShell>
-            );
-        }
-
-        if (isFormulaKpiOrProgressPayload(payload)) {
-            if (payload.type === 'kpi' && payload.variant === 'balance_summary') {
-                return <FormulaKpiWidget payload={payload} embedded />;
-            }
-
-            const meta = formulaWidgetMeta[numericId];
-            const headerActions = !editing ? formulaWidgetEditAction(numericId, payload.name) : undefined;
-
-            return (
-                <DashboardWidgetShell
-                    title={payload.name}
-                    subtitle={payload.periodLabel}
-                    titleBadge={formulaWidgetTitleBadge(meta)}
-                    bodyClassName={widgetListBodyClass}
-                    headerActions={headerActions}
-                >
-                    <CustomFormulaWidget
-                        payload={payload}
-                        embedded
-                        onParameterChange={(key, value) => {
-                            void handleFormulaWidgetParameterChange(widgetId, key, value);
-                        }}
-                        parameterControlsDisabled={isSaving}
-                        refreshing={isRefreshing}
-                    />
-                </DashboardWidgetShell>
-            );
-        }
-
-        const meta = formulaWidgetMeta[numericId];
-        const headerActions = !editing ? formulaWidgetEditAction(numericId, payload.name) : undefined;
-
-        return (
-            <DeferredMount fallback={formulaWidgetSkeleton(payload.name, meta)} scheduleIdle>
-                <DashboardWidgetShell
-                    title={payload.name}
-                    subtitle={payload.periodLabel}
-                    titleBadge={formulaWidgetTitleBadge(meta)}
-                    bodyClassName={widgetListBodyClass}
-                    headerActions={headerActions}
-                >
-                    <CustomFormulaWidget
-                        payload={payload}
-                        embedded
-                        onParameterChange={(key, value) => {
-                            void handleFormulaWidgetParameterChange(widgetId, key, value);
-                        }}
-                        parameterControlsDisabled={isSaving}
-                        refreshing={isRefreshing}
-                    />
-                </DashboardWidgetShell>
-            </DeferredMount>
-        );
-    }
-
     function renderWidgetContent(widgetId: WidgetId, size: string): ReactNode {
         if (isFormulaWidgetId(widgetId)) {
-            return renderFormulaWidget(widgetId, isEditing);
+            const numericId = parseFormulaWidgetNumericId(widgetId);
+
+            return (
+                <FormulaDashboardWidget
+                    widgetId={widgetId}
+                    editing={isEditing}
+                    payload={numericId ? formulaWidgetPayloads[numericId] : undefined}
+                    meta={numericId ? formulaWidgetMeta[numericId] : undefined}
+                    isRefreshing={numericId ? formulaWidgetPendingIds.has(String(numericId)) : false}
+                    parameterControlsDisabled={isSaving}
+                    onParameterChange={(key, value) => {
+                        void handleFormulaWidgetParameterChange(widgetId, key, value);
+                    }}
+                />
+            );
         }
 
         switch (widgetId) {

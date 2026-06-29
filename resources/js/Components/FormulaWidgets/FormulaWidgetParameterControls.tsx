@@ -8,7 +8,7 @@ interface FormulaWidgetParameterControlsProps {
     className?: string;
 }
 
-function AccountControl({
+function SelectControl({
     parameter,
     disabled,
     onChange,
@@ -104,7 +104,7 @@ export default function FormulaWidgetParameterControls({
                         onChange={onChange}
                     />
                 ) : (
-                    <AccountControl
+                    <SelectControl
                         key={parameter.key}
                         parameter={parameter}
                         disabled={disabled}

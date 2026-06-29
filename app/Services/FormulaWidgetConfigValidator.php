@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FormulaWidget;
+use App\Services\FormulaWidgets\MetricQueryValidator;
 use App\Support\FormulaTokenParser;
 use Illuminate\Validation\ValidationException;
 
@@ -59,7 +60,12 @@ class FormulaWidgetConfigValidator
             default => null,
         };
 
-        $this->parameterService->validateChartConfig($chartConfig, $isPublic);
+        app(FormulaWidgetParameterService::class)->validateChartConfig($chartConfig, $isPublic);
+
+        if ($chartConfig !== null) {
+            app(MetricQueryValidator::class)
+                ->validate($chartConfig['metric_query'] ?? null);
+        }
 
         if ($formulaString !== null) {
             foreach ($this->tokenParser->extract($formulaString) as $code) {

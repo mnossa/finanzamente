@@ -22,7 +22,14 @@ export interface FormulaChartSeriesEntry {
     color?: string;
 }
 
-export type FormulaWidgetParameterType = 'account' | 'period_nav';
+export type FormulaWidgetParameterType =
+    | 'account'
+    | 'period_nav'
+    | 'tag'
+    | 'category'
+    | 'currency'
+    | 'debt_credit'
+    | 'transaction_type';
 
 export interface FormulaWidgetParameterOption {
     value: string;
@@ -47,6 +54,20 @@ export interface FormulaWidgetRuntimeParameter extends FormulaWidgetParameterDef
     max?: number;
 }
 
+export interface MetricQueryFilter {
+    field: string;
+    operator: string;
+    value?: string | number | boolean | null;
+    runtime_key?: string | null;
+}
+
+export interface MetricQueryDefinition {
+    datasource: 'transactions' | 'debts_credits';
+    measure: string;
+    amount_field?: 'amount_base' | 'amount';
+    filters?: MetricQueryFilter[];
+}
+
 export interface FormulaWidgetChartConfig {
     show_delta?: boolean;
     format?: string;
@@ -54,6 +75,7 @@ export interface FormulaWidgetChartConfig {
     threshold_code?: string;
     parameters?: FormulaWidgetParameterDefinition[];
     series?: FormulaChartSeriesEntry[];
+    metric_query?: MetricQueryDefinition;
 }
 
 export type FormulaDeltaPolarity = 'higher_is_better' | 'lower_is_better';
@@ -66,7 +88,7 @@ export interface FormulaWidgetKpiPayload {
     delta: number | null;
     deltaPolarity?: FormulaDeltaPolarity;
     deltaComparisonLabel?: string | null;
-    format: 'currency' | 'percent';
+    format: 'currency' | 'percent' | 'number';
     variant?: 'balance_summary';
     invested?: number;
     investedLinked?: number;

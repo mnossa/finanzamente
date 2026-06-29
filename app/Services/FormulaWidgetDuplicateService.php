@@ -167,7 +167,9 @@ class FormulaWidgetDuplicateService
                 'show_delta' => (bool) ($chartConfig['show_delta'] ?? false),
                 'format' => (string) ($chartConfig['format'] ?? 'currency'),
                 'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
-            ], fn ($value) => $value !== null),
+                'metric_query' => $this->normalizeMetricQuery($chartConfig['metric_query'] ?? null),
+                'parameters' => $this->normalizeParameters($chartConfig['parameters'] ?? []),
+            ], fn ($value) => $value !== null && $value !== []),
             FormulaWidget::DISPLAY_PROGRESS => [
                 'value_code' => (string) ($chartConfig['value_code'] ?? ''),
                 'threshold_code' => (string) ($chartConfig['threshold_code'] ?? ''),
@@ -210,6 +212,102 @@ class FormulaWidgetDuplicateService
 
             $normalized[] = ['code' => $code];
         }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $metricQuery
+     * @return array<string, mixed>|null
+     */
+    private function normalizeMetricQuery(mixed $metricQuery): ?array
+    {
+        if (! is_array($metricQuery) || ! isset($metricQuery['datasource'], $metricQuery['measure'])) {
+            return null;
+        }
+
+        $filters = is_array($metricQuery['filters'] ?? null) ? $metricQuery['filters'] : [];
+        $normalizedFilters = [];
+
+        foreach ($filters as $filter) {
+            if (! is_array($filter)) {
+                continue;
+            }
+
+            $field = $filter['field'] ?? null;
+            $operator = $filter['operator'] ?? null;
+            if (! is_string($field) || $field === '' || ! is_string($operator) || $operator === '') {
+                continue;
+            }
+
+            $entry = [
+                'field' => $field,
+                'operator' => $operator,
+            ];
+
+            if (array_key_exists('value', $filter)) {
+                $entry['value'] = $filter['value'];
+            }
+
+            $runtimeKey = $filter['runtime_key'] ?? null;
+            if (is_string($runtimeKey) && $runtimeKey !== '') {
+                $entry['runtime_key'] = $runtimeKey;
+            }
+
+            $normalizedFilters[] = $entry;
+        }
+
+        usort($normalizedFilters, function (array $left, array $right): int {
+            return strcmp(
+                json_encode($left, JSON_THROW_ON_ERROR),
+                json_encode($right, JSON_THROW_ON_ERROR),
+            );
+        });
+
+        return [
+            'datasource' => (string) $metricQuery['datasource'],
+            'measure' => (string) $metricQuery['measure'],
+            'amount_field' => (string) ($metricQuery['amount_field'] ?? 'amount_base'),
+            'filters' => $normalizedFilters,
+        ];
+    }
+
+    /**
+     * @return list<array{key: string, type: string, default?: string}>
+     */
+    private function normalizeParameters(mixed $parameters): array
+    {
+        if (! is_array($parameters)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($parameters as $parameter) {
+            if (! is_array($parameter)) {
+                continue;
+            }
+
+            $key = $parameter['key'] ?? null;
+            $type = $parameter['type'] ?? null;
+            if (! is_string($key) || $key === '' || ! is_string($type) || $type === '') {
+                continue;
+            }
+
+            $entry = [
+                'key' => $key,
+                'type' => $type,
+            ];
+
+            $default = $parameter['default'] ?? null;
+            if (is_string($default) && $default !== '') {
+                $entry['default'] = $default;
+            }
+
+            $normalized[] = $entry;
+        }
+
+        usort($normalized, fn (array $left, array $right): int => strcmp($left['key'], $right['key']));
 
         return $normalized;
     }

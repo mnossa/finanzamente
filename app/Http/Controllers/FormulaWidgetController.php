@@ -6,8 +6,12 @@ use App\Http\Requests\PreviewFormulaWidgetRequest;
 use App\Http\Requests\StoreFormulaWidgetRequest;
 use App\Http\Requests\UpdateFormulaWidgetRequest;
 use App\Models\Account;
+use App\Models\Category;
+use App\Models\Currency;
+use App\Models\DebtCredit;
 use App\Models\FinancialVariable;
 use App\Models\FormulaWidget;
+use App\Models\Tag;
 use App\Models\User;
 use App\Services\FormulaResolverService;
 use App\Services\FormulaWidgetDashboardPinService;
@@ -70,6 +74,11 @@ class FormulaWidgetController extends Controller
             'chartTypes' => config('financial_variables.chart_types', []),
             'periodPresets' => config('financial_variables.period_presets', []),
             'accounts' => $accounts,
+            'tags' => $this->tagOptionsForUser($user),
+            'categories' => $this->categoryOptionsForUser($user),
+            'currencies' => $this->currencyOptions(),
+            'debtsCredits' => $this->debtCreditOptionsForUser($user),
+            'metricQueryConfig' => config('metric_queries'),
         ]);
     }
 
@@ -165,6 +174,11 @@ class FormulaWidgetController extends Controller
             'chartTypes' => config('financial_variables.chart_types', []),
             'periodPresets' => config('financial_variables.period_presets', []),
             'accounts' => $this->accountOptionsForUser($user),
+            'tags' => $this->tagOptionsForUser($user),
+            'categories' => $this->categoryOptionsForUser($user),
+            'currencies' => $this->currencyOptions(),
+            'debtsCredits' => $this->debtCreditOptionsForUser($user),
+            'metricQueryConfig' => config('metric_queries'),
             'editingWidget' => self::formatWidget($formulaWidget),
         ]);
     }
@@ -335,5 +349,92 @@ class FormulaWidgetController extends Controller
                 'duplicateMarketplaceWidget',
                 FormulaMarketplaceController::formatMarketplaceSuggestion($marketplaceWidget, $user->id),
             );
+    }
+
+    /**
+     * @return list<array{id: int, name: string}>
+     */
+    private function tagOptionsForUser(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [];
+        }
+
+        return Tag::query()
+            ->forUser($user->id, $householdId)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Tag $tag) => ['id' => $tag->id, 'name' => $tag->name])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, name: string, type: string}>
+     */
+    private function categoryOptionsForUser(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [];
+        }
+
+        return Category::query()
+            ->forHousehold($householdId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type'])
+            ->map(fn (Category $category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'type' => $category->type,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{code: string, name: string, symbol: string}>
+     */
+    private function currencyOptions(): array
+    {
+        return Currency::query()
+            ->orderBy('code')
+            ->get(['code', 'name', 'symbol'])
+            ->map(fn (Currency $currency) => [
+                'code' => $currency->code,
+                'name' => $currency->name,
+                'symbol' => $currency->symbol,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, counterparty: string, type: string}>
+     */
+    private function debtCreditOptionsForUser(User $user): array
+    {
+        $householdId = $user->active_household_id;
+
+        if ($householdId === null) {
+            return [];
+        }
+
+        return DebtCredit::query()
+            ->where('household_id', $householdId)
+            ->where('user_id', $user->id)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('counterparty')
+            ->get(['id', 'counterparty', 'type'])
+            ->map(fn (DebtCredit $dc) => [
+                'id' => $dc->id,
+                'counterparty' => $dc->counterparty,
+                'type' => $dc->type,
+            ])
+            ->values()
+            ->all();
     }
 }
