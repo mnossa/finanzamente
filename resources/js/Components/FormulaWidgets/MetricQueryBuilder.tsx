@@ -111,6 +111,7 @@ export default function MetricQueryBuilder({ value, config, onChange }: MetricQu
                         filter={filter}
                         availableFields={datasourceMeta?.filter_fields ?? []}
                         availableOperators={config.operators}
+                        transactionTypes={config.transaction_types}
                         onChange={(nextFilter) =>
                             setMetricQuery({
                                 filters: (metricQuery.filters ?? []).map((entry, entryIndex) =>

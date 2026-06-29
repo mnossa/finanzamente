@@ -59,6 +59,27 @@ test.describe('Formula widgets — metriche dinamiche', () => {
         await expect(page.getByText('Anteprima non disponibile')).toBeHidden();
     });
 
+    test('filtro tipo transazione non runtime mostra il selettore valore', async ({ page }) => {
+        await expect(page.getByRole('heading', { name: 'Filtra transazioni, tag e categorie' })).toBeVisible();
+
+        await page.getByRole('button', { name: '+ Aggiungi filtro' }).click();
+
+        const row = page.getByTestId('metric-filter-row').last();
+        await expect(row).toBeVisible();
+
+        // Campo → Tipo transazione
+        await row.getByRole('combobox').first().selectOption('transaction_type');
+
+        // Disattiva "Modificabile in dashboard" per impostare un valore fisso
+        await row.getByRole('checkbox').uncheck();
+
+        // Compare il selettore valore con l'opzione "Uscite"
+        const valueSelect = row.getByRole('combobox').nth(2);
+        await expect(valueSelect).toBeVisible();
+        await valueSelect.selectOption('expense');
+        await expect(valueSelect.locator('option:checked')).toHaveText('Uscite');
+    });
+
     test('scenario IF disponibile nella creazione variabile', async ({ page }) => {
         await page.getByRole('button', { name: '+ Nuova metrica' }).click();
         await expect(page.getByRole('heading', { name: 'Crea variabile personalizzata' })).toBeVisible();
