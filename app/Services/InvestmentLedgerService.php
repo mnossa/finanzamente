@@ -88,7 +88,7 @@ class InvestmentLedgerService
 
         $investments = Investment::query()
             ->where('household_id', $householdId)
-            ->where('buy_date', '<=', $date)
+            ->whereDate('buy_date', '<=', $date)
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->whereHas('transactions')
             ->where(function ($q) use ($date) {
