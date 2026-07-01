@@ -74,6 +74,8 @@ class InvestmentPacService
             $updatedCount++;
         }
 
+        $this->refreshLastExecutedAt($pac);
+
         return $updatedCount;
     }
 
@@ -114,7 +116,7 @@ class InvestmentPacService
 
     public function runDuePacs(?Carbon $today = null): int
     {
-        $date = ($today ?? Carbon::today())->copy();
+        $date = ($today ?? Carbon::today())->copy()->startOfDay();
         $count = 0;
 
         $pacs = InvestmentPac::where('status', 'active')
@@ -125,8 +127,13 @@ class InvestmentPacService
             ->get();
 
         foreach ($pacs as $pac) {
-            if ($this->runSinglePac($pac, $date) !== null) {
+            while (($dueDate = $this->calculateNextExecutionDate($pac, $date)) && $dueDate->lte($date)) {
+                if ($this->runSinglePac($pac, $dueDate) === null) {
+                    break;
+                }
+
                 $count++;
+                $pac->refresh();
             }
         }
 
@@ -171,9 +178,19 @@ class InvestmentPacService
 
         $this->investmentTransactionSyncService->syncPurchase($investment);
 
-        $pac->update(['last_executed_at' => $date->toDateString()]);
+        $this->refreshLastExecutedAt($pac);
 
         return $investment;
+    }
+
+    public function refreshLastExecutedAt(InvestmentPac $pac): void
+    {
+        $latestBuyDate = Investment::where('investment_pac_id', $pac->id)
+            ->max('buy_date');
+
+        $pac->update([
+            'last_executed_at' => $latestBuyDate,
+        ]);
     }
 
     public function calculateNextExecutionDate(InvestmentPac $pac, ?Carbon $today = null): ?Carbon

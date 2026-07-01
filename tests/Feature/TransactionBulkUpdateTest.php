@@ -122,4 +122,81 @@ class TransactionBulkUpdateTest extends TestCase
             $tx2->fresh()->tags()->pluck('tags.id')->all()
         );
     }
+
+    #[Test]
+    public function bulk_update_can_change_date_for_selected_transactions(): void
+    {
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $household->users()->attach($user->id, [
+            'role' => 'owner',
+            'permissions' => json_encode(['manage' => true]),
+        ]);
+        $user->update(['active_household_id' => $household->id]);
+
+        $account = Account::factory()->create([
+            'household_id' => $household->id,
+            'owner_user_id' => $user->id,
+        ]);
+
+        $tx1 = Transaction::factory()->create([
+            'account_id' => $account->id,
+            'user_id' => $user->id,
+            'amount' => -50,
+            'date' => '2026-03-01',
+        ]);
+
+        $tx2 = Transaction::factory()->create([
+            'account_id' => $account->id,
+            'user_id' => $user->id,
+            'amount' => -30,
+            'date' => '2026-03-01',
+        ]);
+
+        $response = $this->actingAs($user)->patch(route('transactions.bulk-update'), [
+            'ids' => [$tx1->id, $tx2->id],
+            'date' => '2026-05-15',
+        ]);
+
+        $response->assertRedirect(route('transactions.index'));
+        $this->assertSame('2026-05-15', $tx1->fresh()->date->format('Y-m-d'));
+        $this->assertSame('2026-05-15', $tx2->fresh()->date->format('Y-m-d'));
+    }
+
+    #[Test]
+    public function bulk_update_recalculates_tax_year_when_date_changes_for_deductible_transactions(): void
+    {
+        $user = User::factory()->create();
+        $household = Household::factory()->create(['owner_user_id' => $user->id]);
+        $household->users()->attach($user->id, [
+            'role' => 'owner',
+            'permissions' => json_encode(['manage' => true]),
+        ]);
+        $user->update(['active_household_id' => $household->id]);
+
+        $account = Account::factory()->create([
+            'household_id' => $household->id,
+            'owner_user_id' => $user->id,
+        ]);
+
+        $tx = Transaction::factory()->create([
+            'account_id' => $account->id,
+            'user_id' => $user->id,
+            'amount' => -50,
+            'date' => '2025-11-20',
+            'is_tax_deductible' => true,
+            'tax_deduction_rate' => 19,
+            'tax_deduction_type' => 'mediche',
+            'tax_year' => 2025,
+        ]);
+
+        $this->actingAs($user)->patch(route('transactions.bulk-update'), [
+            'ids' => [$tx->id],
+            'date' => '2026-02-10',
+        ])->assertRedirect(route('transactions.index'));
+
+        $tx->refresh();
+        $this->assertSame('2026-02-10', $tx->date->format('Y-m-d'));
+        $this->assertSame(2026, $tx->tax_year);
+    }
 }

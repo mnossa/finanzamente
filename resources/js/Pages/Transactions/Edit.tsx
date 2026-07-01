@@ -59,6 +59,13 @@ interface Transaction {
     currency_code?: string;
     original_amount?: number | null;
     original_currency_code?: string | null;
+    investment_id?: number | null;
+    is_investment?: boolean;
+    is_pac?: boolean;
+    pac_summary?: {
+        id: number;
+        asset_name: string | null;
+    } | null;
 }
 
 interface DebtCredit {
@@ -240,6 +247,41 @@ export default function Edit({
                                 <span className="text-lg shrink-0">🔄</span>
                                 <p className="text-xs text-amber-700 dark:text-amber-300">
                                     Fa parte di un trasferimento. Le modifiche verranno applicate anche alla transazione collegata.
+                                </p>
+                            </div>
+                        )}
+
+                        {transaction.is_pac && transaction.pac_summary && (
+                            <div className="rounded-lg border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900 dark:bg-sky-950/30">
+                                <p className="text-sm text-sky-900 dark:text-sky-200">
+                                    Transazione generata da un piano PAC
+                                    {transaction.pac_summary.asset_name ? ` (${transaction.pac_summary.asset_name})` : ''}.
+                                    {' '}
+                                    La modifica della data aggiorna anche il movimento d&apos;investimento collegato.
+                                    {' '}
+                                    <Link
+                                        href={route('investment-pacs.show', transaction.pac_summary.id)}
+                                        className="font-medium underline hover:text-sky-700 dark:hover:text-sky-100"
+                                    >
+                                        Apri il piano PAC
+                                    </Link>
+                                </p>
+                            </div>
+                        )}
+
+                        {transaction.is_investment && !transaction.is_pac && (
+                            <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/30">
+                                <p className="text-sm text-indigo-900 dark:text-indigo-200">
+                                    Transazione collegata a un investimento.
+                                    {' '}
+                                    La modifica della data aggiorna anche il movimento in Investimenti.
+                                    {' '}
+                                    <Link
+                                        href={route('investments.show', transaction.investment_id!)}
+                                        className="font-medium underline hover:text-indigo-700 dark:hover:text-indigo-100"
+                                    >
+                                        Gestisci la posizione
+                                    </Link>
                                 </p>
                             </div>
                         )}

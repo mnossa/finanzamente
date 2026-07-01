@@ -15,6 +15,7 @@ use App\Models\TransactionImport;
 use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
 use App\Services\DebtCreditTransactionPrefillService;
+use App\Services\InvestmentTransactionSyncService;
 use App\Services\TransactionQuickChipService;
 use App\Services\TransactionSplitService;
 use App\Services\UpcomingCashflowService;
@@ -854,6 +855,9 @@ class TransactionController extends Controller
                 'currency_code' => $transaction->currency_code,
                 'original_amount' => $transaction->original_amount !== null ? (float) $transaction->original_amount : null,
                 'original_currency_code' => $transaction->original_currency_code,
+                'investment_id' => $transaction->investment_id,
+                'is_investment' => $transaction->isInvestmentLedger(),
+                ...$this->transactionPacFields($transaction),
             ],
             'accounts' => $accounts,
             'categories' => $categories,
@@ -868,8 +872,11 @@ class TransactionController extends Controller
     /**
      * Aggiorna una transazione esistente.
      */
-    public function update(UpdateTransactionRequest $request, Transaction $transaction): RedirectResponse
-    {
+    public function update(
+        UpdateTransactionRequest $request,
+        Transaction $transaction,
+        InvestmentTransactionSyncService $investmentTransactionSyncService,
+    ): RedirectResponse {
         $this->authorizeTransaction($transaction);
 
         // Verifica se è parte di un trasferimento inter-household
@@ -887,6 +894,7 @@ class TransactionController extends Controller
         $validated = $request->validated();
         $oldAmount = (float) $transaction->amount;
         $oldAccountId = $transaction->account_id;
+        $oldDate = $transaction->date->format('Y-m-d');
 
         // Se la transazione è parte di un trasferimento, ci sono restrizioni
         $isTransfer = $transaction->transfer_id !== null;
@@ -990,6 +998,10 @@ class TransactionController extends Controller
             $newAccount->save();
         }
 
+        if ($oldDate !== $validated['date'] && $transaction->isInvestmentLedger()) {
+            $investmentTransactionSyncService->syncBuyDateFromTransaction($transaction->fresh());
+        }
+
         // Se la transazione è collegata a un debito/credito, torna alla sua pagina
         $updatedDebtCreditId = $validated['debt_credit_id'] ?? null;
         if ($updatedDebtCreditId) {
@@ -1009,7 +1021,7 @@ class TransactionController extends Controller
      * Aggiorna in massa i campi selezionati per più transazioni.
      * Solo i campi esplicitamente presenti nella richiesta vengono modificati.
      */
-    public function bulkUpdate(Request $request): RedirectResponse
+    public function bulkUpdate(Request $request, InvestmentTransactionSyncService $investmentTransactionSyncService): RedirectResponse
     {
         $user = Auth::user();
         $householdId = (int) $user->active_household_id;
@@ -1017,6 +1029,7 @@ class TransactionController extends Controller
         $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer',
+            'date' => 'sometimes|date',
             'category_id' => 'sometimes|nullable|integer|exists:categories,id',
             'is_private' => 'sometimes|boolean',
             'debt_credit_id' => [
@@ -1067,6 +1080,11 @@ class TransactionController extends Controller
             $fields['is_tax_deductible'] = $request->boolean('is_tax_deductible');
         }
 
+        $newDate = $request->has('date') ? $request->input('date') : null;
+        if ($newDate !== null) {
+            $fields['date'] = $newDate;
+        }
+
         $newAccountId = $request->has('account_id') ? (int) $request->input('account_id') : null;
 
         $hasTagSync = $request->has('tag_ids') || $request->has('new_tag_names');
@@ -1099,7 +1117,16 @@ class TransactionController extends Controller
             }
 
             $transaction->fill($fields);
+
+            if ($newDate !== null && $transaction->is_tax_deductible) {
+                $transaction->tax_year = Carbon::parse($newDate)->year;
+            }
+
             $transaction->save();
+
+            if ($newDate !== null && $transaction->isInvestmentLedger()) {
+                $investmentTransactionSyncService->syncBuyDateFromTransaction($transaction->fresh());
+            }
 
             if ($hasTagSync) {
                 $tagIds = $this->resolveTagIds(

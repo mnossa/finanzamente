@@ -71,6 +71,11 @@ interface Transaction {
     } | null;
     investment_id: number | null;
     is_investment: boolean;
+    is_pac?: boolean;
+    pac_summary?: {
+        id: number;
+        asset_name: string | null;
+    } | null;
 }
 
 interface PaginatedData<T> {
@@ -261,6 +266,7 @@ const REMOVE = '__remove__';
 type TriState = '__unchanged__' | 'true' | 'false';
 
 interface BulkEditState {
+    date: string;
     category_id: string;      // UNCHANGED | REMOVE | '<number>'
     is_private: TriState;
     debt_credit_id: string;   // UNCHANGED | REMOVE | '<number>'
@@ -271,6 +277,7 @@ interface BulkEditState {
 }
 
 const defaultBulkEdit: BulkEditState = {
+    date: UNCHANGED,
     category_id: UNCHANGED,
     is_private: UNCHANGED,
     debt_credit_id: UNCHANGED,
@@ -316,6 +323,7 @@ function TriStateButton({
 function BulkEditModal({
     open,
     count,
+    selectedPacCount,
     categories,
     accounts,
     debtCredits,
@@ -325,6 +333,7 @@ function BulkEditModal({
 }: {
     open: boolean;
     count: number;
+    selectedPacCount: number;
     categories: Category[];
     accounts: Array<{ id: number; name: string }>;
     debtCredits: DebtCredit[];
@@ -344,6 +353,7 @@ function BulkEditModal({
         setState((prev) => ({ ...prev, [key]: val }));
 
     const hasChanges =
+        state.date !== UNCHANGED ||
         state.category_id !== UNCHANGED ||
         state.is_private !== UNCHANGED ||
         state.debt_credit_id !== UNCHANGED ||
@@ -387,6 +397,38 @@ function BulkEditModal({
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         Solo i campi che modifichi verranno aggiornati. I campi su «—» rimarranno invariati per ogni transazione.
                     </p>
+
+                    {state.date !== UNCHANGED && selectedPacCount > 0 && (
+                        <div className="rounded-lg border border-sky-200 bg-sky-50/60 p-3 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200">
+                            {selectedPacCount === 1
+                                ? '1 transazione è generata da un piano PAC: la nuova data verrà sincronizzata con il movimento d\'investimento collegato.'
+                                : `${selectedPacCount} transazioni sono generate da piani PAC: la nuova data verrà sincronizzata con i movimenti d'investimento collegati.`}
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Data</label>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => set('date', UNCHANGED)}
+                                className={clsx(
+                                    'rounded-md border px-3 py-1.5 text-sm transition-colors',
+                                    state.date === UNCHANGED
+                                        ? 'border-emerald-600 bg-emerald-600 text-white'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300',
+                                )}
+                            >
+                                — Invariata —
+                            </button>
+                            <input
+                                type="date"
+                                value={state.date === UNCHANGED ? '' : state.date}
+                                onChange={(e) => set('date', e.target.value)}
+                                className="flex-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                            />
+                        </div>
+                    </div>
 
                     {/* Categoria */}
                     <div className="space-y-1">
@@ -671,6 +713,10 @@ export default function Index({
         (transaction) => selectedIds.has(transaction.id) && transaction.is_investment,
     ).length;
 
+    const selectedPacCount = transactions.data.filter(
+        (transaction) => selectedIds.has(transaction.id) && transaction.is_pac === true,
+    ).length;
+
     const handleBulkDelete = () => {
         if (selectedInvestmentCount > 0) {
             return;
@@ -701,6 +747,9 @@ export default function Index({
 
         if (state.category_id !== UNCHANGED) {
             payload.category_id = state.category_id === REMOVE ? null : Number(state.category_id);
+        }
+        if (state.date !== UNCHANGED) {
+            payload.date = state.date;
         }
         if (state.is_private !== UNCHANGED) {
             payload.is_private = state.is_private === 'true';
@@ -819,6 +868,7 @@ export default function Index({
             <BulkEditModal
                 open={bulkEditOpen}
                 count={selectedIds.size}
+                selectedPacCount={selectedPacCount}
                 categories={categories}
                 accounts={accounts}
                 debtCredits={debtCredits}

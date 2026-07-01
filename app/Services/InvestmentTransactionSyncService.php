@@ -4,10 +4,15 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Investment;
+use App\Models\InvestmentPac;
 use App\Models\Transaction;
 
 class InvestmentTransactionSyncService
 {
+    public function __construct(
+        private readonly InvestmentMetricsService $investmentMetricsService,
+    ) {}
+
     public function syncPurchase(Investment $investment): ?Transaction
     {
         if ($investment->account_id === null) {
@@ -101,6 +106,43 @@ class InvestmentTransactionSyncService
 
         if ($investment->isSold()) {
             $this->syncSale($investment);
+        }
+    }
+
+    public function syncBuyDateFromTransaction(Transaction $transaction): void
+    {
+        if ($transaction->investment_id === null || (float) $transaction->amount >= 0) {
+            return;
+        }
+
+        $investment = Investment::with('asset')->find($transaction->investment_id);
+        if ($investment === null) {
+            return;
+        }
+
+        $buyDate = $transaction->date->format('Y-m-d');
+        $payload = ['buy_date' => $buyDate];
+
+        if ($investment->asset?->symbol !== null) {
+            $lot = $this->investmentMetricsService->resolvePurchaseLot(
+                (float) $investment->total_buy_value,
+                $investment->asset->symbol,
+                $buyDate,
+            );
+
+            $payload['buy_price'] = $lot['buy_price'];
+            $payload['nav_at_buy'] = $lot['nav_at_buy'];
+            $payload['quantity'] = $lot['quantity'];
+        }
+
+        $investment->update($payload);
+
+        if ($investment->investment_pac_id !== null) {
+            $latestBuyDate = Investment::where('investment_pac_id', $investment->investment_pac_id)
+                ->max('buy_date');
+
+            InvestmentPac::where('id', $investment->investment_pac_id)
+                ->update(['last_executed_at' => $latestBuyDate]);
         }
     }
 

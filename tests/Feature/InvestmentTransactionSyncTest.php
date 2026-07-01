@@ -306,4 +306,165 @@ class InvestmentTransactionSyncTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    #[Test]
+    public function updating_pac_transaction_date_syncs_investment_and_pac_last_executed_at(): void
+    {
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-01-08',
+            'last_executed_at' => '2026-06-08',
+            'status' => 'active',
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'investment_pac_id' => $pac->id,
+            'quantity' => 1,
+            'buy_price' => 100,
+            'buy_date' => '2026-07-01',
+            'is_private' => false,
+        ]);
+
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+        $transaction = Transaction::where('investment_id', $investment->id)->firstOrFail();
+
+        $this->actingAs($this->user)->patch(route('transactions.update', $transaction), [
+            'account_id' => $this->account->id,
+            'category_id' => $transaction->category_id,
+            'amount' => 100,
+            'date' => '2026-07-08',
+            'description' => $transaction->description,
+            'is_private' => false,
+            'is_tax_deductible' => false,
+            'tag_ids' => [],
+            'new_tag_names' => [],
+        ])->assertRedirect(route('transactions.index'));
+
+        $investment->refresh();
+        $pac->refresh();
+        $transaction->refresh();
+
+        $this->assertSame('2026-07-08', $investment->buy_date->format('Y-m-d'));
+        $this->assertSame('2026-07-08', $transaction->date->format('Y-m-d'));
+        $this->assertSame('2026-07-08', $pac->last_executed_at->format('Y-m-d'));
+    }
+
+    #[Test]
+    public function updating_manual_investment_transaction_date_syncs_investment_buy_date(): void
+    {
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'quantity' => 1,
+            'buy_price' => 250,
+            'buy_date' => '2026-02-01',
+            'is_private' => false,
+        ]);
+
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+        $transaction = Transaction::where('investment_id', $investment->id)->firstOrFail();
+
+        $this->actingAs($this->user)->patch(route('transactions.update', $transaction), [
+            'account_id' => $this->account->id,
+            'category_id' => $transaction->category_id,
+            'amount' => 250,
+            'date' => '2026-02-15',
+            'description' => $transaction->description,
+            'is_private' => false,
+            'is_tax_deductible' => false,
+            'tag_ids' => [],
+            'new_tag_names' => [],
+        ])->assertRedirect(route('transactions.index'));
+
+        $this->assertSame('2026-02-15', $investment->fresh()->buy_date->format('Y-m-d'));
+    }
+
+    #[Test]
+    public function bulk_update_date_syncs_pac_linked_investment(): void
+    {
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'account_id' => $this->account->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 80,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-03-08',
+            'status' => 'active',
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'investment_pac_id' => $pac->id,
+            'quantity' => 1,
+            'buy_price' => 80,
+            'buy_date' => '2026-04-01',
+            'is_private' => false,
+        ]);
+
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+        $transaction = Transaction::where('investment_id', $investment->id)->firstOrFail();
+
+        $plainTx = Transaction::factory()->create([
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
+            'amount' => -20,
+            'date' => '2026-04-01',
+        ]);
+
+        $this->actingAs($this->user)->patch(route('transactions.bulk-update'), [
+            'ids' => [$transaction->id, $plainTx->id],
+            'date' => '2026-04-08',
+        ])->assertRedirect(route('transactions.index'));
+
+        $this->assertSame('2026-04-08', $investment->fresh()->buy_date->format('Y-m-d'));
+        $this->assertSame('2026-04-08', $plainTx->fresh()->date->format('Y-m-d'));
+        $this->assertSame('2026-04-08', $pac->fresh()->last_executed_at->format('Y-m-d'));
+    }
+
+    #[Test]
+    public function sync_buy_date_from_transaction_ignores_sale_ledger_rows(): void
+    {
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'quantity' => 1,
+            'buy_price' => 100,
+            'buy_date' => '2026-01-10',
+            'sell_price' => 120,
+            'sell_date' => '2026-06-10',
+            'is_private' => false,
+        ]);
+
+        app(InvestmentTransactionSyncService::class)->syncInvestment($investment);
+
+        $saleTransaction = Transaction::where('investment_id', $investment->id)
+            ->where('amount', '>', 0)
+            ->firstOrFail();
+        $saleTransaction->update(['date' => '2026-06-15']);
+
+        app(InvestmentTransactionSyncService::class)->syncBuyDateFromTransaction($saleTransaction->fresh());
+
+        $this->assertSame('2026-06-10', $investment->fresh()->sell_date->format('Y-m-d'));
+    }
 }

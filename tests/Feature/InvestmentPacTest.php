@@ -8,6 +8,7 @@ use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Models\InvestmentPac;
 use App\Models\User;
+use App\Services\InvestmentPacService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -48,6 +49,29 @@ class InvestmentPacTest extends TestCase
             'name' => 'iShares Core MSCI World',
             'currency_code' => 'EUR',
         ]);
+    }
+
+    /**
+     * @return array<int, Investment>
+     */
+    private function seedPacMonthlyInvestments(InvestmentPac $pac, int $fromMonth, int $toMonth, int $year = 2026): array
+    {
+        $investments = [];
+
+        for ($month = $fromMonth; $month <= $toMonth; $month++) {
+            $investments[] = Investment::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'asset_id' => $this->asset->id,
+                'investment_pac_id' => $pac->id,
+                'quantity' => 1,
+                'buy_price' => 100,
+                'buy_date' => sprintf('%04d-%02d-08', $year, $month),
+                'is_private' => false,
+            ]);
+        }
+
+        return $investments;
     }
 
     #[Test]
@@ -160,16 +184,32 @@ class InvestmentPacTest extends TestCase
             'status' => 'active',
         ]);
 
+        foreach (range(1, 13) as $monthOffset) {
+            $buyDate = Carbon::parse('2026-01-01')->addMonths($monthOffset - 1)->format('Y-m-d');
+            Investment::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'asset_id' => $this->asset->id,
+                'investment_pac_id' => $pac->id,
+                'quantity' => 1,
+                'buy_price' => 100,
+                'buy_date' => $buyDate,
+                'is_private' => false,
+            ]);
+        }
+        $pac->update(['last_executed_at' => '2027-01-01']);
+
         $this->artisan('investment-pacs:run')->assertSuccessful();
 
         $pac->refresh();
         $this->assertEquals(110.0, (float) $pac->amount);
-        $this->assertEquals('2027-02-15', $pac->last_inflation_adjusted_at->format('Y-m-d'));
-        $this->assertDatabaseCount('investments', 1);
+        $this->assertEquals('2027-02-01', $pac->last_inflation_adjusted_at->format('Y-m-d'));
+        $this->assertDatabaseCount('investments', 14);
         $this->assertDatabaseHas('investments', [
             'asset_id' => $this->asset->id,
             'buy_price' => 110,
             'investment_pac_id' => $pac->id,
+            'buy_date' => '2027-02-01 00:00:00',
         ]);
 
         Carbon::setTestNow();
@@ -462,6 +502,164 @@ class InvestmentPacTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('pac.next_execution_date', '2026-06-05')
             );
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function pac_cron_does_not_run_before_scheduled_day_of_month(): void
+    {
+        Carbon::setTestNow('2026-07-01');
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-01-08',
+            'status' => 'active',
+        ]);
+
+        $this->seedPacMonthlyInvestments($pac, 1, 6);
+        $pac->update(['last_executed_at' => '2026-06-08']);
+
+        $this->artisan('investment-pacs:run')->assertSuccessful();
+
+        $this->assertDatabaseMissing('investments', [
+            'investment_pac_id' => $pac->id,
+            'buy_date' => '2026-07-01 00:00:00',
+        ]);
+        $this->assertDatabaseMissing('investments', [
+            'investment_pac_id' => $pac->id,
+            'buy_date' => '2026-07-08 00:00:00',
+        ]);
+        $this->assertSame(6, Investment::where('investment_pac_id', $pac->id)->count());
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function pac_cron_runs_on_scheduled_day_of_month(): void
+    {
+        Carbon::setTestNow('2026-07-08');
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-01-08',
+            'status' => 'active',
+        ]);
+
+        $this->seedPacMonthlyInvestments($pac, 1, 6);
+        $pac->update(['last_executed_at' => '2026-06-08']);
+
+        $this->artisan('investment-pacs:run')->assertSuccessful();
+
+        $this->assertDatabaseHas('investments', [
+            'investment_pac_id' => $pac->id,
+            'buy_date' => '2026-07-08 00:00:00',
+            'buy_price' => 100,
+        ]);
+        $pac->refresh();
+        $this->assertEquals('2026-07-08', $pac->last_executed_at->format('Y-m-d'));
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function pac_cron_catch_up_runs_on_scheduled_day_when_past_due(): void
+    {
+        Carbon::setTestNow('2026-07-10');
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-01-08',
+            'status' => 'active',
+        ]);
+
+        $this->seedPacMonthlyInvestments($pac, 1, 6);
+        $pac->update(['last_executed_at' => '2026-06-08']);
+
+        $this->artisan('investment-pacs:run')->assertSuccessful();
+
+        $this->assertDatabaseHas('investments', [
+            'investment_pac_id' => $pac->id,
+            'buy_date' => '2026-07-08 00:00:00',
+        ]);
+        $this->assertSame(7, Investment::where('investment_pac_id', $pac->id)->count());
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function pac_realign_fixes_wrong_early_execution_date(): void
+    {
+        Carbon::setTestNow('2026-07-15');
+
+        $pac = InvestmentPac::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'investment_asset_id' => $this->asset->id,
+            'amount' => 100,
+            'adjust_for_inflation' => false,
+            'currency_code' => 'EUR',
+            'frequency' => 'monthly',
+            'start_date' => '2026-01-08',
+            'status' => 'active',
+        ]);
+
+        foreach (range(1, 6) as $month) {
+            Investment::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'asset_id' => $this->asset->id,
+                'investment_pac_id' => $pac->id,
+                'quantity' => 1,
+                'buy_price' => 100,
+                'buy_date' => sprintf('2026-%02d-08', $month),
+                'is_private' => false,
+            ]);
+        }
+
+        Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'asset_id' => $this->asset->id,
+            'investment_pac_id' => $pac->id,
+            'quantity' => 1,
+            'buy_price' => 100,
+            'buy_date' => '2026-07-01',
+            'is_private' => false,
+        ]);
+        $pac->update(['last_executed_at' => '2026-07-01']);
+
+        app(InvestmentPacService::class)->realignPacMovements($pac);
+
+        $this->assertDatabaseHas('investments', [
+            'investment_pac_id' => $pac->id,
+            'buy_date' => '2026-07-08 00:00:00',
+        ]);
+        $this->assertDatabaseMissing('investments', [
+            'investment_pac_id' => $pac->id,
+            'buy_date' => '2026-07-01 00:00:00',
+            'deleted_at' => null,
+        ]);
+        $pac->refresh();
+        $this->assertEquals('2026-07-08', $pac->last_executed_at->format('Y-m-d'));
 
         Carbon::setTestNow();
     }
