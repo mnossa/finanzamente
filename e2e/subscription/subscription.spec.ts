@@ -11,14 +11,12 @@ test.describe('Abbonamento', () => {
     });
 
     test('mostra informazioni sul piano corrente', async ({ page }) => {
-        // Testa la struttura: heading "piano attuale" presente
         await expect(page.getByRole('heading', { name: /piano attuale/i })).toBeVisible();
     });
 
     test('apre e salva form dati fatturazione', async ({ page }) => {
         await page.getByRole('button', { name: /modifica/i }).click();
 
-        // Campi strutturali del form fatturazione
         await expect(page.locator('input[name="billing_name"]')).toBeVisible();
         await expect(page.locator('input[name="billing_email"]')).toBeVisible();
 
@@ -62,7 +60,7 @@ test.describe('Abbonamento', () => {
         expect(webhookResponse.ok()).toBeTruthy();
 
         await page.goto('/profilo/abbonamento');
-        // Verifica funzionale: heading "gestione abbonamento" compare solo per abbonati attivi
         await expect(page.getByRole('heading', { name: /gestione abbonamento/i })).toBeVisible();
+        await expect(page.getByText('Metodo di pagamento', { exact: true })).toBeVisible();
     });
 });

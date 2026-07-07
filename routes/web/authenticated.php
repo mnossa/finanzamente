@@ -46,6 +46,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
+use App\Http\Controllers\TwoFactorAuthenticationController;
 use Illuminate\Support\Facades\Route;
 
 // Rotte che richiedono autenticazione ma NON household attiva
@@ -143,7 +144,17 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::post('/profilo/consensi/sync-analytics', [ProfileController::class, 'syncAnalyticsConsent'])->name('profile.consents.sync-analytics');
     Route::post('/profilo/consensi/revoca-opzionali', [ProfileController::class, 'revokeOptionalConsents'])->name('profile.consents.revoke-optional');
     Route::get('/profilo/consensi/export', [ProfileController::class, 'exportConsents'])->name('profile.consents.export');
+    Route::get('/profilo/export-dati', [ProfileController::class, 'exportData'])
+        ->middleware(['password.confirm', 'adv-throttle:3,10'])
+        ->name('profile.data.export');
     Route::delete('/profilo', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::middleware(['password.confirm'])->group(function () {
+        Route::get('/profilo/sicurezza/mfa/abilita', [TwoFactorAuthenticationController::class, 'enable'])->name('profile.two-factor.enable');
+        Route::post('/profilo/sicurezza/mfa/conferma', [TwoFactorAuthenticationController::class, 'confirm'])->name('profile.two-factor.confirm');
+        Route::post('/profilo/sicurezza/mfa/disabilita', [TwoFactorAuthenticationController::class, 'disable'])->name('profile.two-factor.disable');
+        Route::post('/profilo/sicurezza/mfa/codici-recupero', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('profile.two-factor.recovery-codes');
+    });
 
     // Preferenze tema utente
     Route::patch('/utente/preferenze/tema', [ThemePreferenceController::class, 'update'])->name('user.preferences.theme');

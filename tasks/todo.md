@@ -111,3 +111,19 @@ Piano derivato da `tasks/financial-consistency-plan.md` (fasi 1–6 già impleme
 - [x] WFI-99: aggiungere nuova tab simulazione in UI con grafico e metriche.
 - [x] Test: coprire nuovo payload simulazione + validazioni conto deposito.
 - [ ] Verifica completa: `make test`, `make pint-check`, `make playwright` (test + pint verdi; playwright bloccato da install browser/deps node: `oopBrowserDownload.js` mancante e `tsc: not found` nel container node).
+
+# WFI-10 — Gestione Profilo
+
+## Piano
+- [x] Fase 1: riepilogo metodo pagamento Mollie su pagina abbonamento
+- [x] Fase 2: card Condivisione e dati + export portabilità GDPR
+- [x] Fase 3: UX acquisto Pro nel profilo (catalogo feature)
+- [x] Fase 4: MFA TOTP universale (qualsiasi authenticator)
+- [x] Fase 5: `make test`, `make pint-check`, `make playwright` + docs
+
+## Review
+- Metodo pagamento: riepilogo da mandate Mollie su `/profilo/abbonamento`.
+- Condivisione: hub profilo + export JSON portabilità (`/profilo/export-dati`).
+- Acquisto Pro: catalogo feature in profilo, link a pagina abbonamento.
+- MFA: TOTP compatibile con qualsiasi app authenticator; challenge al login; recovery codes.
+- Jira WFI-10: checklist 8/8 DONE, stato **Completata** (lug 2026).

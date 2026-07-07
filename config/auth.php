@@ -114,4 +114,15 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | E2E Two-Factor Authentication
+    |--------------------------------------------------------------------------
+    |
+    | Quando false (default in E2E), il login non richiede challenge MFA anche se
+    | l'utente ha la 2FA attiva — mantiene verdi i test esistenti.
+    |
+    */
+    'e2e_two_factor_enabled' => env('E2E_TWO_FACTOR_ENABLED', false),
+
 ];

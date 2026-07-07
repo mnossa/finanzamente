@@ -7,6 +7,8 @@ use App\Models\Consent;
 use App\Models\Currency;
 use App\Services\BrevoMarketingService;
 use App\Services\ConsentService;
+use App\Services\PlanService;
+use App\Services\ProfileDataExportService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +23,9 @@ class ProfileController extends Controller
 {
     public function __construct(
         private readonly ConsentService $consentService,
-        private readonly BrevoMarketingService $brevoMarketingService
+        private readonly BrevoMarketingService $brevoMarketingService,
+        private readonly ProfileDataExportService $profileDataExportService,
+        private readonly PlanService $planService,
     ) {}
 
     /**
@@ -30,6 +34,7 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
+        $user->loadMissing(['activeHousehold', 'households']);
         $optionalPurposes = ['marketing_email', 'analytics_tracking'];
         $existing = Consent::query()
             ->where('user_id', $user->id)
@@ -47,9 +52,31 @@ class ProfileController extends Controller
             ->values()
             ->all();
 
+        $activeHousehold = $user->activeHousehold;
+        $proPlan = $this->planService->getPlansForFrontend()['pro'] ?? null;
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'successMessage' => session('success'),
+            'errorMessage' => session('error'),
+            'twoFactorEnabled' => $user->two_factor_confirmed_at !== null,
+            'twoFactorEnabledAt' => $user->two_factor_confirmed_at?->format('d/m/Y'),
+            'twoFactorRecoveryCodes' => session('two_factor_recovery_codes', []),
+            'sharing' => [
+                'households_count' => $user->households->count(),
+                'active_household' => $activeHousehold ? [
+                    'id' => $activeHousehold->id,
+                    'name' => $activeHousehold->name,
+                    'financial_management_type' => $activeHousehold->financial_management_type,
+                    'financial_management_label' => $activeHousehold->getFinancialManagementTypeLabel(),
+                    'url' => route('households.show', $activeHousehold),
+                ] : null,
+                'households_select_url' => route('households.select'),
+            ],
+            'proPlanFeatures' => $proPlan['features'] ?? [],
+            'currentPlan' => $user->plan,
+            'proEnabled' => $this->planService->isProEnabled(),
             'cohortProfileHelp' => __('cohort_insights.profile_help'),
             'cohortIncomeBands' => $incomeBands,
             'cohortMacroRegions' => $macroRegions,
@@ -132,6 +159,19 @@ class ProfileController extends Controller
         );
 
         return Redirect::route('profile.edit')->with('success', 'Preferenze privacy aggiornate.');
+    }
+
+    public function exportData(Request $request): StreamedResponse
+    {
+        $user = $request->user();
+        $payload = $this->profileDataExportService->buildExportPayload($user);
+        $filename = 'finanzamente-export-utente-'.$user->id.'-'.now()->format('Ymd-His').'.json';
+
+        return response()->streamDownload(function () use ($payload) {
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        }, $filename, [
+            'Content-Type' => 'application/json',
+        ]);
     }
 
     public function exportConsents(Request $request): StreamedResponse

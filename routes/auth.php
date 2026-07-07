@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\PlanSelectionController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,13 @@ Route::middleware('guest')->group(function () {
     Route::post('accedi', [AuthenticatedSessionController::class, 'store'])
         ->middleware(['adv-throttle:5,2'])
         ->name('login.store');
+
+    Route::get('verifica-2fa', [TwoFactorChallengeController::class, 'create'])
+        ->name('two-factor.login');
+
+    Route::post('verifica-2fa', [TwoFactorChallengeController::class, 'store'])
+        ->middleware(['adv-throttle:5,2'])
+        ->name('two-factor.login.store');
 
     Route::get('password-dimenticata', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');

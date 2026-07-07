@@ -43,6 +43,13 @@ interface SubscriptionData {
     billing_company: string | null;
 }
 
+interface PaymentMethodSummary {
+    method: string | null;
+    label: string | null;
+    last_digits: string | null;
+    display: string | null;
+}
+
 interface Props extends PageProps {
     subscription: SubscriptionData | null;
     currentPlan: string;
@@ -50,6 +57,7 @@ interface Props extends PageProps {
     proEnabled: boolean;
     waitlistEnabled: boolean;
     fromFeature?: string | null;
+    paymentMethodSummary?: PaymentMethodSummary | null;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -196,7 +204,7 @@ function BillingForm({ subscription }: { subscription: SubscriptionData | null }
     );
 }
 
-export default function Subscription({ subscription, currentPlan, plans, proEnabled, waitlistEnabled, fromFeature }: Props) {
+export default function Subscription({ subscription, currentPlan, plans, proEnabled, waitlistEnabled, fromFeature, paymentMethodSummary }: Props) {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [showBillingForm, setShowBillingForm] = useState(false);
     const [isAnnual, setIsAnnual] = useState(false);
@@ -394,8 +402,17 @@ export default function Subscription({ subscription, currentPlan, plans, proEnab
                             <div className="flex items-start justify-between p-4 rounded-lg border border-slate-200 dark:border-gray-700">
                                 <div>
                                     <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">Metodo di pagamento</p>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
-                                        Aggiorna la carta o il metodo di addebito tramite il portale sicuro Mollie.
+                                    {paymentMethodSummary?.display ? (
+                                        <p className="text-slate-700 dark:text-slate-300 text-sm mt-1 font-medium">
+                                            {paymentMethodSummary.display}
+                                        </p>
+                                    ) : (
+                                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                                            Metodo registrato tramite Mollie.
+                                        </p>
+                                    )}
+                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">
+                                        I dati carta non sono conservati da Finanzamente; vengono mostrati solo tramite Mollie.
                                     </p>
                                 </div>
                                 <button

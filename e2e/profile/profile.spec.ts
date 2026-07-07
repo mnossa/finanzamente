@@ -52,6 +52,17 @@ test.describe('Profilo utente', () => {
         await expect(page.locator('#macro_region')).toBeVisible();
     });
 
+    test('mostra la sezione condivisione e dati con link ai nuclei', async ({ page }) => {
+        await expect(page.getByRole('heading', { name: /condivisione e dati/i })).toBeVisible();
+        await expect(page.getByRole('link', { name: /gestisci nuclei/i })).toBeVisible();
+        await expect(page.getByRole('link', { name: /scarica export dati/i })).toBeVisible();
+    });
+
+    test('mostra la sezione autenticazione a due fattori', async ({ page }) => {
+        await expect(page.getByRole('heading', { name: /autenticazione a due fattori/i })).toBeVisible();
+        await expect(page.getByRole('link', { name: /abilita autenticazione a due fattori/i })).toBeVisible();
+    });
+
     test('il campo nome è precompilato', async ({ page }) => {
         const value = await page.locator('input[name="name"]').inputValue();
         expect(value.length).toBeGreaterThan(0);

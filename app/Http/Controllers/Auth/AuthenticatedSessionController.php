@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\HouseholdInvitationController;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\TwoFactorAuthenticationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,9 +36,18 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request, TwoFactorAuthenticationService $twoFactorService): RedirectResponse
     {
-        $request->authenticate();
+        $user = $request->validateCredentials();
+
+        if ($twoFactorService->hasConfirmedTwoFactor($user) && $this->shouldChallengeTwoFactor()) {
+            $request->session()->put('login.id', $user->id);
+            $request->session()->put('login.remember', $request->boolean('remember'));
+
+            return redirect()->route('two-factor.login');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
 
         $request->session()->regenerate();
 
@@ -45,6 +55,15 @@ class AuthenticatedSessionController extends Controller
         HouseholdInvitationController::processPendingInvitation(Auth::user());
 
         return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    private function shouldChallengeTwoFactor(): bool
+    {
+        if (! app()->environment('e2e')) {
+            return true;
+        }
+
+        return (bool) config('auth.e2e_two_factor_enabled', false);
     }
 
     /**

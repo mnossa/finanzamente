@@ -229,6 +229,12 @@ class SubscriptionController extends Controller
         $user = Auth::user();
         $subscription = $user->activeSubscription();
         $plans = $this->planService->getPlansForFrontend();
+        $paymentMethodSummary = null;
+
+        if ($subscription && $subscription->isActive() && $user->isPro()) {
+            $paymentMethodSummary = $this->mollieService->getPaymentMethodSummary($user, $subscription);
+        }
+
         $latestPendingSubscriptionId = app()->environment('e2e')
             ? optional(
                 $user->subscriptions()
@@ -263,6 +269,7 @@ class SubscriptionController extends Controller
             'plans' => $plans,
             'proEnabled' => $this->planService->isProEnabled(),
             'waitlistEnabled' => config('prelaunch.waitlist_enabled', false),
+            'paymentMethodSummary' => $paymentMethodSummary,
             'e2ePendingSubscriptionId' => $latestPendingSubscriptionId,
         ]);
     }

@@ -6,6 +6,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use Mollie\Api\MollieApiClient;
 use Mollie\Api\Resources\Customer;
+use Mollie\Api\Resources\Mandate;
 use Mollie\Api\Resources\Payment;
 
 class MollieService
@@ -206,6 +207,93 @@ class MollieService
     public function getPayment(string $paymentId): Payment
     {
         return $this->client()->payments->get($paymentId);
+    }
+
+    /**
+     * Riepilogo del metodo di pagamento attivo per un abbonamento Pro.
+     *
+     * @return array{method: string|null, label: string|null, last_digits: string|null, display: string|null}|null
+     */
+    public function getPaymentMethodSummary(User $user, Subscription $subscription): ?array
+    {
+        if (! $user->mollie_customer_id) {
+            return null;
+        }
+
+        try {
+            $customer = $this->client()->customers->get($user->mollie_customer_id);
+            $mandate = $this->resolveActiveMandate($customer, $subscription);
+
+            if (! $mandate) {
+                return null;
+            }
+
+            return $this->formatMandateSummary($mandate);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function resolveActiveMandate(Customer $customer, Subscription $subscription): ?Mandate
+    {
+        if ($subscription->mollie_mandate_id) {
+            try {
+                $mandate = $customer->getMandate($subscription->mollie_mandate_id);
+                if ($mandate->status === 'valid') {
+                    return $mandate;
+                }
+            } catch (\Throwable) {
+                // fallback su mandate validi del customer
+            }
+        }
+
+        $mandates = $customer->mandates();
+        foreach ($mandates as $mandate) {
+            if ($mandate->status === 'valid') {
+                return $mandate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{method: string|null, label: string|null, last_digits: string|null, display: string|null}
+     */
+    private function formatMandateSummary(Mandate $mandate): array
+    {
+        $method = $mandate->method ?? null;
+        $details = (array) ($mandate->details ?? []);
+        $label = null;
+        $lastDigits = null;
+
+        if ($method === 'creditcard') {
+            $label = $details['cardLabel'] ?? $details['card_label'] ?? 'Carta';
+            $lastDigits = $details['cardNumber'] ?? $details['card_number'] ?? null;
+            if (is_string($lastDigits) && strlen($lastDigits) > 4) {
+                $lastDigits = substr($lastDigits, -4);
+            }
+        } elseif ($method === 'directdebit') {
+            $label = 'Addebito diretto';
+            $lastDigits = $details['consumerAccount'] ?? $details['consumer_account'] ?? null;
+            if (is_string($lastDigits) && strlen($lastDigits) > 4) {
+                $lastDigits = substr($lastDigits, -4);
+            }
+        } elseif (is_string($method)) {
+            $label = ucfirst(str_replace('_', ' ', $method));
+        }
+
+        $display = $label;
+        if ($lastDigits) {
+            $display = trim(($label ?? 'Metodo').' •••• '.$lastDigits);
+        }
+
+        return [
+            'method' => $method,
+            'label' => $label,
+            'last_digits' => $lastDigits,
+            'display' => $display,
+        ];
     }
 
     private function buildPaymentDescription(Subscription $subscription, array $planConfig): string

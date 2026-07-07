@@ -9,6 +9,8 @@ import ProfileQuizSettingsCard from './Partials/ProfileQuizSettingsCard';
 import ConsentPreferencesForm from './Partials/ConsentPreferencesForm';
 import NotificationPreferencesForm from './Partials/NotificationPreferencesForm';
 import MobileBottomNavPreferencesForm from './Partials/MobileBottomNavPreferencesForm';
+import SharingAndDataCard from './Partials/SharingAndDataCard';
+import TwoFactorAuthenticationForm from './Partials/TwoFactorAuthenticationForm';
 import PageHeader from '@/Components/PageHeader';
 import SectionCard from '@/Components/SectionCard';
 
@@ -23,17 +25,36 @@ interface CohortSelectOption {
     label: string;
 }
 
+interface SharingHousehold {
+    id: number;
+    name: string;
+    financial_management_type: string;
+    financial_management_label: string;
+    url: string;
+}
+
 export default function Edit({
     mustVerifyEmail,
     status,
+    successMessage,
+    errorMessage,
     consents,
     currencies = [],
     cohortProfileHelp = '',
     cohortIncomeBands = [],
     cohortMacroRegions = [],
+    twoFactorEnabled = false,
+    twoFactorEnabledAt,
+    twoFactorRecoveryCodes = [],
+    sharing,
+    proPlanFeatures = [],
+    currentPlan = 'base',
+    proEnabled = true,
 }: PageProps<{
     mustVerifyEmail: boolean;
     status?: string;
+    successMessage?: string;
+    errorMessage?: string;
     consents: {
         marketing_email: boolean;
         analytics_tracking: boolean;
@@ -42,7 +63,20 @@ export default function Edit({
     cohortProfileHelp?: string;
     cohortIncomeBands?: CohortSelectOption[];
     cohortMacroRegions?: CohortSelectOption[];
+    twoFactorEnabled?: boolean;
+    twoFactorEnabledAt?: string | null;
+    twoFactorRecoveryCodes?: string[];
+    sharing: {
+        households_count: number;
+        active_household: SharingHousehold | null;
+        households_select_url: string;
+    };
+    proPlanFeatures?: string[];
+    currentPlan?: string;
+    proEnabled?: boolean;
 }>) {
+    const visibleProFeatures = proPlanFeatures.slice(0, 6);
+
     return (
         <AuthenticatedLayout
             header={<PageHeader title="Profilo" />}
@@ -58,6 +92,18 @@ export default function Edit({
                         Aggiorna i tuoi dati personali, gestisci le preferenze privacy e configura la profilazione per ricevere un&apos;esperienza su misura.
                     </p>
                 </section>
+
+                {successMessage && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+                        {successMessage}
+                    </div>
+                )}
+
+                {errorMessage && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+                        {errorMessage}
+                    </div>
+                )}
 
                 <div className="grid gap-5 lg:grid-cols-2">
                     <SectionCard>
@@ -77,6 +123,10 @@ export default function Edit({
                     </SectionCard>
 
                     <SectionCard className="lg:col-span-2">
+                        <SharingAndDataCard sharing={sharing} className="w-full" />
+                    </SectionCard>
+
+                    <SectionCard className="lg:col-span-2">
                         <ConsentPreferencesForm className="w-full" consents={consents} />
                     </SectionCard>
 
@@ -91,21 +141,44 @@ export default function Edit({
                     <SectionCard className="lg:col-span-2">
                         <div className="w-full">
                             <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                                Abbonamento e Fatturazione
+                                Abbonamento e funzionalità aggiuntive
                             </h2>
-                            <p className="mb-5 text-sm text-gray-600 dark:text-gray-300">
-                                Gestisci il tuo piano, il metodo di pagamento e i dati di fatturazione.
+                            <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
+                                {currentPlan === 'pro'
+                                    ? 'Hai il piano Pro attivo con accesso alle funzionalità avanzate.'
+                                    : 'Passa al piano Pro per sbloccare strumenti avanzati senza limiti su nuclei, investimenti e integrazioni.'}
                             </p>
-                            <Link
-                                href={route('profile.subscription')}
-                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-accent transition-all hover:bg-emerald-700 hover:shadow-accent-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                </svg>
-                                Gestisci abbonamento
-                            </Link>
+                            {currentPlan !== 'pro' && visibleProFeatures.length > 0 && (
+                                <ul className="mb-5 grid gap-2 sm:grid-cols-2">
+                                    {visibleProFeatures.map((feature) => (
+                                        <li key={feature} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <span className="mt-0.5 text-emerald-600">✓</span>
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {proEnabled && (
+                                <Link
+                                    href={route('profile.subscription')}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-accent transition-all hover:bg-emerald-700 hover:shadow-accent-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                    {currentPlan === 'pro' ? 'Gestisci abbonamento' : 'Scopri e acquista Pro'}
+                                </Link>
+                            )}
                         </div>
+                    </SectionCard>
+
+                    <SectionCard className="lg:col-span-2">
+                        <TwoFactorAuthenticationForm
+                            enabled={twoFactorEnabled}
+                            enabledAt={twoFactorEnabledAt}
+                            recoveryCodes={twoFactorRecoveryCodes}
+                            className="w-full"
+                        />
                     </SectionCard>
 
                     <SectionCard>

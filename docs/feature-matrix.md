@@ -58,8 +58,19 @@ Data ultimo aggiornamento: 2026-04-28
   - Test Unit/Feature: presenti (`WaitlistTest`).
   - Test E2E: presenti (modes + public flows).
 
-- `Consensi GDPR granulari` — **Roadmap**
-  - Backend: modello consensi dedicato non ancora introdotto.
-  - Frontend: UI dedicata non ancora introdotta.
-  - Test Unit/Feature: non presenti.
-  - Test E2E: non presenti.
+- `Consensi GDPR granulari` — **Attiva**
+  - Backend: modello consensi, export JSON, preferenze profilo.
+  - Frontend: UI consensi in profilo.
+  - Test Unit/Feature: presenti.
+  - Test E2E: presenti (`e2e/profile/profile.spec.ts`).
+
+- `MFA TOTP (autenticazione a due fattori)` — **Attiva**
+  - Backend: TOTP RFC 6238, recovery codes, challenge al login.
+  - Frontend: wizard profilo + pagina verifica login.
+  - Test Unit/Feature: `TwoFactorAuthenticationTest`.
+  - Test E2E: `e2e/auth/two-factor.spec.ts`.
+
+- `Export portabilità dati profilo` — **Attiva**
+  - Backend: `ProfileDataExportService`, rotta `/profilo/export-dati` con conferma password.
+  - Frontend: card Condivisione e dati nel profilo.
+  - Test Feature: `ProfileDataExportTest`.

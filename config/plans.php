@@ -84,7 +84,7 @@ return [
                 'Analisi investimenti',
                 'Integrazione Telegram',
                 'Trasferimenti tra household',
-                'Export PDF e XLS avanzati (prossimamente)',
+                'Export dati avanzati',
             ],
             'mollie_plan_id_monthly' => env('MOLLIE_PRO_PLAN_ID_MONTHLY'),
             'mollie_plan_id_annual' => env('MOLLIE_PRO_PLAN_ID_ANNUAL'),
