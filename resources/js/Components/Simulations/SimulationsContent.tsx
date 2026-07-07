@@ -9,6 +9,7 @@ import {
     type SimulationTabId,
     type SimulationTabStates,
     type StressTestTabState,
+    type HistoricalProjectionTabState,
 } from '@/utils/simulationTabState';
 import CardBox from '@/Components/CardBox';
 import clsx from 'clsx';
@@ -59,6 +60,23 @@ interface CrisisScenario {
     labels: string[];
 }
 
+interface HistoricalProjectionPoint {
+    month: string;
+    balance: number;
+}
+
+interface HistoricalProjectionData {
+    hasData: boolean;
+    monthsAnalyzed: number;
+    averageMonthlyIncome: number;
+    averageMonthlyExpenses: number;
+    averageMonthlyNet: number;
+    currentBalance: number;
+    projectedBalance12m: number;
+    projectedBalance24m: number;
+    points: HistoricalProjectionPoint[];
+}
+
 export interface SimulationsContentProps {
     presetScenarios: PresetScenario[];
     historicalData: HistoricalData;
@@ -67,6 +85,7 @@ export interface SimulationsContentProps {
     canSave?: boolean;
     savedScenarios?: SavedScenarioListItem[];
     pacActiveCount?: number;
+    historicalProjection?: HistoricalProjectionData;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1057,6 +1076,98 @@ function StressTestSimulator({
     );
 }
 
+function HistoricalProjectionSimulator({
+    historicalProjection,
+    state,
+    onStateChange,
+}: {
+    historicalProjection?: HistoricalProjectionData;
+    state: HistoricalProjectionTabState;
+    onStateChange: (patch: Partial<HistoricalProjectionTabState>) => void;
+}) {
+    const isDark = useChartDarkMode();
+
+    if (!historicalProjection?.hasData) {
+        return (
+            <CardBox>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Non ci sono ancora abbastanza transazioni per calcolare una proiezione.
+                    Inserisci qualche movimento e torna qui.
+                </p>
+            </CardBox>
+        );
+    }
+
+    const visiblePoints = historicalProjection.points.slice(0, Math.max(1, state.months));
+
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
+                <CardBox className="space-y-3">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">📚 Dati storici analizzati</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Ultimi {historicalProjection.monthsAnalyzed} mesi della tua household.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Entrate medie/mese</p>
+                            <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatEuro(historicalProjection.averageMonthlyIncome)}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Spese medie/mese</p>
+                            <p className="mt-1 text-lg font-bold text-rose-600 dark:text-rose-400">{formatEuro(historicalProjection.averageMonthlyExpenses)}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Saldo medio/mese</p>
+                            <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">{formatEuro(historicalProjection.averageMonthlyNet)}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Saldo attuale</p>
+                            <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{formatEuro(historicalProjection.currentBalance)}</p>
+                        </div>
+                    </div>
+                </CardBox>
+
+                <CardBox className="space-y-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">🔮 Proiezione futura</h3>
+                    <SliderField
+                        label="Orizzonte simulazione"
+                        value={state.months}
+                        min={6}
+                        max={24}
+                        step={1}
+                        onChange={(v) => onStateChange({ months: v })}
+                        format={(v) => `${v} mesi`}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Tra 12 mesi</p>
+                            <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{formatEuro(historicalProjection.projectedBalance12m)}</p>
+                        </div>
+                        <div className="rounded-xl bg-gray-50 p-4 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Tra 24 mesi</p>
+                            <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{formatEuro(historicalProjection.projectedBalance24m)}</p>
+                        </div>
+                    </div>
+                </CardBox>
+            </div>
+
+            <CardBox>
+                <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">📈 Andamento saldo previsto</h3>
+                <ResponsiveContainer width="99%" height={288}>
+                    <LineChart data={visiblePoints} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} />
+                        <XAxis dataKey="month" tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }} interval={Math.max(0, Math.floor(visiblePoints.length / 6))} />
+                        <YAxis width={72} tickFormatter={yAxisFormatter} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 11 }} />
+                        <Tooltip content={<SimTooltip colors={{ balance: '#3b82f6' }} />} />
+                        <Line type="monotone" dataKey="balance" name="Saldo previsto" stroke="#3b82f6" strokeWidth={2.5} dot={false} />
+                    </LineChart>
+                </ResponsiveContainer>
+            </CardBox>
+        </div>
+    );
+}
+
 // ─── Pagina principale ────────────────────────────────────────────────────────
 
 const TABS = [
@@ -1064,6 +1175,7 @@ const TABS = [
     { id: 'debt_vs_invest', label: 'Debito vs Investimento', icon: '⚖️' },
     { id: 'emergency', label: 'Fondo di Emergenza', icon: '🛡️' },
     { id: 'stress_test', label: 'Stress Test', icon: '💥' },
+    { id: 'historical_projection', label: 'Proiezione Storico', icon: '🧭' },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
@@ -1076,6 +1188,7 @@ export default function SimulationsContent({
     canSave = false,
     savedScenarios = [],
     pacActiveCount = 0,
+    historicalProjection,
 }: SimulationsContentProps) {
     const defaultCrisisId = crisisScenarios[0]?.id ?? '';
     const [activeTab, setActiveTab] = useState<TabId>('compound');
@@ -1200,6 +1313,13 @@ export default function SimulationsContent({
                         crisisScenarios={crisisScenarios}
                         state={tabStates.stress_test}
                         onStateChange={(patch) => patchTabState('stress_test', patch)}
+                    />
+                )}
+                {activeTab === 'historical_projection' && (
+                    <HistoricalProjectionSimulator
+                        historicalProjection={historicalProjection}
+                        state={tabStates.historical_projection}
+                        onStateChange={(patch) => patchTabState('historical_projection', patch)}
                     />
                 )}
 

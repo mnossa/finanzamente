@@ -34,6 +34,8 @@ class Account extends Model
         'other' => 'Altro',
     ];
 
+    public const SAVINGS_DEPOSIT_TYPE = 'savings_deposit';
+
     protected $fillable = [
         'household_id',
         'name',
@@ -44,6 +46,7 @@ class Account extends Model
         'active',
         'is_private',
         'owner_user_id',
+        'interest_rate',
     ];
 
     protected $casts = [
@@ -51,7 +54,26 @@ class Account extends Model
         'current_balance' => 'decimal:2',
         'active' => 'boolean',
         'is_private' => 'boolean',
+        'interest_rate' => 'decimal:2',
     ];
+
+    /**
+     * Tipi mostrati in UI (include alias "conto deposito" salvato come bank).
+     *
+     * @return array<string, string>
+     */
+    public static function uiTypes(): array
+    {
+        return [
+            ...self::TYPES,
+            self::SAVINGS_DEPOSIT_TYPE => 'Conto Deposito',
+        ];
+    }
+
+    public function isSavingsDeposit(): bool
+    {
+        return $this->type === 'bank' && $this->interest_rate !== null;
+    }
 
     public function household()
     {

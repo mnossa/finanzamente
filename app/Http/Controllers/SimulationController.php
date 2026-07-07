@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\InvestmentPac;
 use App\Models\SavedSimulationScenario;
+use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +33,7 @@ class SimulationController extends Controller
                 ...$sharedProps,
                 'canSave' => true,
                 'savedScenarios' => $this->savedScenariosForUser($request),
+                'historicalProjection' => $this->historicalProjectionForHousehold($householdId),
                 'pacActiveCount' => InvestmentPac::query()
                     ->where('household_id', $householdId)
                     ->where('status', 'active')
@@ -174,6 +179,81 @@ class SimulationController extends Controller
                     'Lug 03', 'Ago 03', 'Set 03', 'Ott 03', 'Nov 03', 'Dic 03',
                 ],
             ],
+        ];
+    }
+
+    /**
+     * Proiezione semplificata basata sul cashflow medio mensile storico.
+     *
+     * @return array<string, mixed>
+     */
+    private function historicalProjectionForHousehold(int $householdId): array
+    {
+        $fromDate = Carbon::now()->subMonths(12)->startOfMonth();
+        $monthExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', transactions.date)"
+            : "DATE_FORMAT(transactions.date, '%Y-%m')";
+
+        $monthly = Transaction::query()
+            ->join('accounts', 'accounts.id', '=', 'transactions.account_id')
+            ->where('accounts.household_id', $householdId)
+            ->whereDate('transactions.date', '>=', $fromDate->toDateString())
+            ->whereNull('transactions.transfer_id')
+            ->whereNull('transactions.inter_household_transfer_id')
+            ->whereNull('transactions.investment_id')
+            ->whereNull('transactions.deleted_at')
+            ->selectRaw("{$monthExpression} as month_key")
+            ->selectRaw('SUM(CASE WHEN transactions.amount_base > 0 THEN transactions.amount_base ELSE 0 END) as income')
+            ->selectRaw('SUM(CASE WHEN transactions.amount_base < 0 THEN ABS(transactions.amount_base) ELSE 0 END) as expenses')
+            ->selectRaw('SUM(transactions.amount_base) as net')
+            ->groupBy('month_key')
+            ->orderBy('month_key')
+            ->get();
+
+        if ($monthly->isEmpty()) {
+            return [
+                'hasData' => false,
+                'monthsAnalyzed' => 0,
+                'averageMonthlyIncome' => 0,
+                'averageMonthlyExpenses' => 0,
+                'averageMonthlyNet' => 0,
+                'currentBalance' => 0,
+                'projectedBalance12m' => 0,
+                'projectedBalance24m' => 0,
+                'points' => [],
+            ];
+        }
+
+        $monthsAnalyzed = $monthly->count();
+        $avgIncome = round((float) $monthly->avg('income'), 2);
+        $avgExpenses = round((float) $monthly->avg('expenses'), 2);
+        $avgNet = round((float) $monthly->avg('net'), 2);
+
+        $currentBalance = (float) Account::query()
+            ->where('household_id', $householdId)
+            ->sum('current_balance');
+
+        $points = [];
+        $balance = $currentBalance;
+        $cursor = Carbon::now()->startOfMonth();
+        for ($i = 1; $i <= 24; $i++) {
+            $balance += $avgNet;
+            $points[] = [
+                'month' => $cursor->copy()->addMonths($i)->format('M Y'),
+                'balance' => round($balance, 2),
+            ];
+        }
+
+        return [
+            'hasData' => true,
+            'monthsAnalyzed' => $monthsAnalyzed,
+            'averageMonthlyIncome' => $avgIncome,
+            'averageMonthlyExpenses' => $avgExpenses,
+            'averageMonthlyNet' => $avgNet,
+            'currentBalance' => round($currentBalance, 2),
+            'projectedBalance12m' => round($currentBalance + ($avgNet * 12), 2),
+            'projectedBalance24m' => round($currentBalance + ($avgNet * 24), 2),
+            'points' => $points,
         ];
     }
 }

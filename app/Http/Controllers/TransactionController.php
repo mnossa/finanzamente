@@ -16,7 +16,6 @@ use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
 use App\Services\DebtCreditTransactionPrefillService;
 use App\Services\InvestmentTransactionSyncService;
-use App\Services\TransactionQuickChipService;
 use App\Services\TransactionSplitService;
 use App\Services\UpcomingCashflowService;
 use App\Support\TransactionDescriptionFilter;
@@ -50,7 +49,6 @@ class TransactionController extends Controller
 
     public function __construct(
         private CurrencyConverter $currency,
-        private TransactionQuickChipService $quickChips,
     ) {}
 
     /**
@@ -542,7 +540,6 @@ class TransactionController extends Controller
             'defaultAccountId' => $request->query('account_id'),
             'defaultDebtCreditId' => $request->query('debt_credit_id'),
             'debtCreditPrefill' => $debtCreditPrefill,
-            'quickChips' => $this->quickChips->forUser($user),
         ]);
     }
 

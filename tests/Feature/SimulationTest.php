@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\Category;
 use App\Models\Household;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,6 +46,33 @@ class SimulationTest extends TestCase
     #[Test]
     public function authenticated_user_sees_authenticated_simulations_page(): void
     {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'currency_code' => 'EUR',
+            'current_balance' => 5000,
+        ]);
+        $category = Category::factory()->create(['household_id' => $this->household->id]);
+
+        Transaction::factory()->create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'amount' => 2000,
+            'amount_base' => 2000,
+            'currency_code' => 'EUR',
+            'date' => now()->subMonths(1),
+        ]);
+        Transaction::factory()->create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'category_id' => $category->id,
+            'amount' => -1200,
+            'amount_base' => -1200,
+            'currency_code' => 'EUR',
+            'date' => now()->subMonths(1),
+        ]);
+
         $this->withoutVite()
             ->actingAs($this->user)
             ->get(route('simulations.public'))
@@ -51,6 +81,8 @@ class SimulationTest extends TestCase
                 ->component('Simulations/Index')
                 ->where('canSave', true)
                 ->has('savedScenarios')
+                ->where('historicalProjection.hasData', true)
+                ->has('historicalProjection.points')
             );
     }
 

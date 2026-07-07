@@ -28,6 +28,7 @@ interface Account {
     name: string;
     type: string;
     initial_balance: number;
+    interest_rate: number | null;
     currency_code: string;
     active: boolean;
     is_private: boolean;
@@ -53,6 +54,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
         name: account.name,
         type: account.type,
         initial_balance: String(account.initial_balance),
+        interest_rate: account.interest_rate !== null ? String(account.interest_rate) : '',
         currency_code: account.currency_code,
         active: account.active,
         is_private: account.is_private,
@@ -142,7 +144,25 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                     <InputError message={errors.initial_balance} className="mt-2" />
                                 </div>
 
-                                <div>
+                                <div className={data.type === 'savings_deposit' ? 'sm:col-span-2' : ''}>
+                                    {data.type === 'savings_deposit' && (
+                                        <div className="mb-4">
+                                            <InputLabel htmlFor="interest_rate" value="Tasso di interesse annuo (%)" />
+                                            <TextInput
+                                                id="interest_rate"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                max="100"
+                                                className="mt-1 block w-full"
+                                                value={data.interest_rate}
+                                                onChange={(e) => setData('interest_rate', e.target.value)}
+                                                required={data.type === 'savings_deposit'}
+                                            />
+                                            <InputError message={errors.interest_rate} className="mt-2" />
+                                        </div>
+                                    )}
+
                                     <InputLabel htmlFor="currency_code" value="Valuta" />
                                     <select
                                         id="currency_code"

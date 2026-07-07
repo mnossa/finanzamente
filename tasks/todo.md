@@ -70,3 +70,27 @@ Piano derivato da `tasks/financial-consistency-plan.md` (fasi 1–6 già impleme
 - Aggregazioni default `amount_base` (EUR normalizzato); privacy allineata alla dashboard.
 - Duplicate detection estesa a `metric_query` + `parameters` nel fingerprint KPI.
 - E2E: preset tag, filtri runtime in anteprima, scenario IF, controlli avanzati, refetch singolo widget.
+
+# WFI-101 — rimozione inserimento rapido transazioni
+
+## Piano
+- [x] Rimuovere quick chips/quick flow dalle pagine `Transactions/Create` e `TransactionCreateGuided`.
+- [x] Rimuovere payload `quickChips` dal controller `transactions.create`.
+- [x] Eliminare servizio e test dedicati agli inserimenti rapidi.
+- [ ] Verifica completa: `make test`, `make pint-check`, `make playwright`.
+
+## Review
+- Inserimento rapido transazioni rimosso da form classico e guidato: resta solo flusso manuale.
+- Backend semplificato: `transactions.create` non espone più `quickChips`.
+- Pulizia tecnica completata: eliminati componente UI, service backend e test legacy quick chips.
+- Verifica parziale verde: `make test` e `make pint-check` passati; `make playwright` bloccato da errore ambiente Node (`npm ci` con `ENOTEMPTY` nel volume `node_modules`).
+
+# WFI-98 + WFI-99 — Conto deposito e simulazione storico
+
+## Piano
+- [x] WFI-98: aggiungere tipo conto `savings_deposit` con campo `interest_rate` lato DB/model/request.
+- [x] WFI-98: aggiornare create/edit conti (classico + guidato) mostrando il tasso solo per conto deposito.
+- [x] WFI-99: calcolare proiezione futura da storico transazioni household (entrate/spese medie mensili) nel controller simulazioni.
+- [x] WFI-99: aggiungere nuova tab simulazione in UI con grafico e metriche.
+- [x] Test: coprire nuovo payload simulazione + validazioni conto deposito.
+- [ ] Verifica completa: `make test`, `make pint-check`, `make playwright` (test + pint verdi; playwright bloccato da install browser/deps node: `oopBrowserDownload.js` mancante e `tsc: not found` nel container node).

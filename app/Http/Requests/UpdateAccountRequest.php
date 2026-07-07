@@ -9,6 +9,16 @@ use Illuminate\Validation\Rule;
 
 class UpdateAccountRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('type') === Account::SAVINGS_DEPOSIT_TYPE) {
+            $this->merge([
+                'type' => 'bank',
+                'is_savings_deposit' => true,
+            ]);
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -31,6 +41,13 @@ class UpdateAccountRequest extends FormRequest
             'currency_code' => ['sometimes', 'required', 'string', 'exists:currencies,code'],
             'active' => ['sometimes', 'boolean'],
             'is_private' => ['sometimes', 'boolean'],
+            'interest_rate' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+                Rule::requiredIf(fn () => (bool) $this->input('is_savings_deposit', false)),
+            ],
         ];
     }
 
@@ -52,6 +69,10 @@ class UpdateAccountRequest extends FormRequest
             'initial_balance.max' => 'Il saldo iniziale è troppo alto.',
             'currency_code.required' => 'La valuta è obbligatoria.',
             'currency_code.exists' => 'La valuta selezionata non è valida.',
+            'interest_rate.required' => 'Il tasso di interesse è obbligatorio per i conti deposito.',
+            'interest_rate.numeric' => 'Il tasso di interesse deve essere un numero.',
+            'interest_rate.min' => 'Il tasso di interesse non può essere negativo.',
+            'interest_rate.max' => 'Il tasso di interesse non può superare il 100%.',
         ];
     }
 }

@@ -1,4 +1,4 @@
-export type SimulationTabId = 'compound' | 'debt_vs_invest' | 'emergency' | 'stress_test';
+export type SimulationTabId = 'compound' | 'debt_vs_invest' | 'emergency' | 'stress_test' | 'historical_projection';
 
 export interface CompoundTabState {
     initialCapital: number;
@@ -30,11 +30,16 @@ export interface StressTestTabState {
     selectedCrisisId: string;
 }
 
+export interface HistoricalProjectionTabState {
+    months: number;
+}
+
 export type SimulationTabStates = {
     compound: CompoundTabState;
     debt_vs_invest: DebtVsInvestTabState;
     emergency: EmergencyTabState;
     stress_test: StressTestTabState;
+    historical_projection: HistoricalProjectionTabState;
 };
 
 export const DEFAULT_SIMULATION_TAB_STATES: SimulationTabStates = {
@@ -63,6 +68,9 @@ export const DEFAULT_SIMULATION_TAB_STATES: SimulationTabStates = {
         portfolioValue: 50000,
         equityPercent: 70,
         selectedCrisisId: '',
+    },
+    historical_projection: {
+        months: 24,
     },
 };
 
@@ -131,6 +139,12 @@ export function hydrateTabState<T extends SimulationTabId>(
                 ),
             } as SimulationTabStates[T];
         }
+        case 'historical_projection': {
+            const d = DEFAULT_SIMULATION_TAB_STATES.historical_projection;
+            return {
+                months: asNumber(payload.months, d.months),
+            } as SimulationTabStates[T];
+        }
         default:
             return createInitialTabStates(defaultCrisisId)[tab] as SimulationTabStates[T];
     }
@@ -152,6 +166,7 @@ export function createInitialTabStates(defaultCrisisId: string): SimulationTabSt
             ...DEFAULT_SIMULATION_TAB_STATES.stress_test,
             selectedCrisisId: defaultCrisisId,
         },
+        historical_projection: { ...DEFAULT_SIMULATION_TAB_STATES.historical_projection },
     };
 }
 
@@ -160,4 +175,5 @@ export const TAB_LABELS: Record<SimulationTabId, string> = {
     debt_vs_invest: 'Debito vs investimento',
     emergency: 'Fondo di emergenza',
     stress_test: 'Stress test',
+    historical_projection: 'Proiezione storico',
 };

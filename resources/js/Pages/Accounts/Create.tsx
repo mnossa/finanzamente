@@ -65,6 +65,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
         name: '',
         type: 'bank',
         initial_balance: '0',
+        interest_rate: '',
         currency_code: defaultCurrency,
         is_private: false,
     });
@@ -194,7 +195,30 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                     <InputError message={errors.initial_balance} className="mt-2" />
                                 </div>
 
-                                <div>
+                                <div className={data.type === 'savings_deposit' ? 'sm:col-span-2' : ''}>
+                                    {data.type === 'savings_deposit' && (
+                                        <div className="mb-4">
+                                            <InputLabel htmlFor="interest_rate" value="Tasso di interesse annuo (%)" />
+                                            <TextInput
+                                                id="interest_rate"
+                                                name="interest_rate"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                max="100"
+                                                className="mt-1 block w-full"
+                                                value={data.interest_rate}
+                                                onChange={(e) => setData('interest_rate', e.target.value)}
+                                                placeholder="es. 2.50"
+                                                required={data.type === 'savings_deposit'}
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Usato per la simulazione di crescita del conto deposito.
+                                            </p>
+                                            <InputError message={errors.interest_rate} className="mt-2" />
+                                        </div>
+                                    )}
+
                                     <InputLabel htmlFor="currency_code" value="Valuta" />
                                     <select
                                         id="currency_code"

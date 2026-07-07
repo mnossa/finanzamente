@@ -12,6 +12,7 @@ class SavedSimulationScenario extends Model
         'debt_vs_invest',
         'emergency',
         'stress_test',
+        'historical_projection',
     ];
 
     protected $fillable = [

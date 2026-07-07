@@ -8,7 +8,7 @@ import { useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState } from 'react';
 
-const STEPS = [{ label: 'Nome' }, { label: 'Tipo' }, { label: 'Saldo' }];
+const STEPS = [{ label: 'Nome' }, { label: 'Tipo' }, { label: 'Saldo' }, { label: 'Interesse' }];
 
 interface Props {
     accountTypes: Record<string, string>;
@@ -23,6 +23,7 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
         name: '',
         type: types[0]?.[0] ?? 'checking',
         initial_balance: '0',
+        interest_rate: '',
         currency_code: defaultCurrency,
         is_private: false,
     });
@@ -31,16 +32,20 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
         { title: 'Come si chiama il conto?', subtitle: 'Es. Conto corrente, Carta, Risparmi' },
         { title: 'Che tipo di conto è?', subtitle: 'Scegli l\'opzione più adatta.' },
         { title: 'Qual è il saldo iniziale?', subtitle: 'Puoi usare 0 se non sei sicuro.' },
+        { title: 'Tasso del conto deposito', subtitle: 'Solo se scegli conto deposito. Altrimenti puoi lasciare vuoto.' },
     ][step];
+    const shouldShowInterestStep = data.type === 'savings_deposit';
+    const lastStep = shouldShowInterestStep ? 3 : 2;
 
     return (
         <form
             onSubmit={(e) => {
                 e.preventDefault();
-                if (step < STEPS.length - 1) {
+                if (step < lastStep) {
                     if (step === 0 && !data.name.trim()) return;
                     setStep((s) => s + 1);
                 } else {
+                    if (shouldShowInterestStep && !data.interest_rate.trim()) return;
                     post(route('accounts.store'));
                 }
             }}
@@ -93,9 +98,32 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
                         <InputError message={errors.initial_balance} className="mt-2" />
                     </div>
                 )}
+                {step === 3 && shouldShowInterestStep && (
+                    <div>
+                        <InputLabel htmlFor="interest_rate" value="Tasso interesse annuo (%)" />
+                        <TextInput
+                            id="interest_rate"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            className="mt-1 block w-full"
+                            value={data.interest_rate}
+                            onChange={(e) => setData('interest_rate', e.target.value)}
+                            disabled={data.type !== 'savings_deposit'}
+                            required={data.type === 'savings_deposit'}
+                        />
+                        {data.type !== 'savings_deposit' && (
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Non necessario: il conto selezionato non e un conto deposito.
+                            </p>
+                        )}
+                        <InputError message={errors.interest_rate} className="mt-2" />
+                    </div>
+                )}
                 <div className="mt-8 flex justify-end">
                     <PrimaryButton type="submit" disabled={processing}>
-                        {step === STEPS.length - 1 ? (processing ? 'Salvataggio...' : 'Crea conto') : 'Avanti'}
+                        {step === lastStep ? (processing ? 'Salvataggio...' : 'Crea conto') : 'Avanti'}
                     </PrimaryButton>
                 </div>
             </GuidedFormWizard>

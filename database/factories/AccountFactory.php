@@ -31,6 +31,7 @@ class AccountFactory extends Factory
             'name' => $this->faker->randomElement(['Conto Principale', 'Carta Credito', 'Portafoglio', 'Risparmio']),
             'type' => $this->faker->randomElement(['bank', 'cash', 'card', 'broker', 'crypto', 'other']),
             'initial_balance' => $this->faker->randomFloat(2, 0, 10000),
+            'interest_rate' => null,
             'current_balance' => $this->faker->randomFloat(2, 0, 10000),
             'currency_code' => 'EUR',
             'active' => true,
@@ -46,7 +47,17 @@ class AccountFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'type' => 'bank',
+            'interest_rate' => null,
             'name' => $this->faker->randomElement(['Conto Corrente', 'Conto Principale', 'Conto Banca']),
+        ]);
+    }
+
+    public function savingsDeposit(float $interestRate = 2.5): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => 'bank',
+            'interest_rate' => $interestRate,
+            'name' => $this->faker->randomElement(['Conto Deposito', 'Deposito Vincolato']),
         ]);
     }
 

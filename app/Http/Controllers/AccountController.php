@@ -40,10 +40,13 @@ class AccountController extends Controller
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $account->type,
-                'type_label' => Account::TYPES[$account->type] ?? $account->type,
+                'type_label' => $account->isSavingsDeposit()
+                    ? Account::uiTypes()[Account::SAVINGS_DEPOSIT_TYPE]
+                    : (Account::TYPES[$account->type] ?? $account->type),
                 'initial_balance' => (float) $account->initial_balance,
                 'current_balance' => $this->accountBalanceService->computeBalance($account, $user),
                 'currency_code' => $account->currency_code,
+                'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
                 'owner' => $account->owner ? [
@@ -78,7 +81,7 @@ class AccountController extends Controller
         $maxAccounts = $user->isPro() ? null : config('plans.base_limits.max_accounts', 3);
 
         return Inertia::render('Accounts/Create', [
-            'accountTypes' => Account::TYPES,
+            'accountTypes' => Account::uiTypes(),
             'currencies' => $currencies,
             'defaultCurrency' => 'EUR',
             'accountsCount' => $accountsCount,
@@ -107,6 +110,9 @@ class AccountController extends Controller
         }
 
         $validated = $request->validated();
+        $validated['interest_rate'] = isset($validated['interest_rate']) && $validated['interest_rate'] !== ''
+            ? $validated['interest_rate']
+            : null;
 
         $account = new Account($validated);
         $account->household_id = $user->active_household_id;
@@ -154,10 +160,13 @@ class AccountController extends Controller
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $account->type,
-                'type_label' => Account::TYPES[$account->type] ?? $account->type,
+                'type_label' => $account->isSavingsDeposit()
+                    ? Account::uiTypes()[Account::SAVINGS_DEPOSIT_TYPE]
+                    : (Account::TYPES[$account->type] ?? $account->type),
                 'initial_balance' => (float) $account->initial_balance,
                 'current_balance' => (float) $account->current_balance,
                 'currency_code' => $account->currency_code,
+                'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
                 'created_at' => $account->created_at->format('d/m/Y'),
@@ -179,13 +188,14 @@ class AccountController extends Controller
             'account' => [
                 'id' => $account->id,
                 'name' => $account->name,
-                'type' => $account->type,
+                'type' => $account->isSavingsDeposit() ? Account::SAVINGS_DEPOSIT_TYPE : $account->type,
                 'initial_balance' => (float) $account->initial_balance,
                 'currency_code' => $account->currency_code,
+                'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
             ],
-            'accountTypes' => Account::TYPES,
+            'accountTypes' => Account::uiTypes(),
             'currencies' => $currencies,
         ]);
     }
@@ -199,6 +209,9 @@ class AccountController extends Controller
 
         $validated = $request->validated();
         $user = Auth::user();
+        $validated['interest_rate'] = isset($validated['interest_rate']) && $validated['interest_rate'] !== ''
+            ? $validated['interest_rate']
+            : null;
 
         // Se cambia il saldo iniziale, ricalcola il saldo corrente
         if (isset($validated['initial_balance']) && $validated['initial_balance'] != $account->initial_balance) {
