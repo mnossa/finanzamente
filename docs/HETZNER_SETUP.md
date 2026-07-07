@@ -53,7 +53,7 @@ GitHub Actions — Job deploy
 |---|---|---|
 | `finanzamente-app` | `mnossa/finanzamente:sha-*` | PHP-FPM + Nginx (supervisord) |
 | `finanzamente-scheduler` | `mnossa/finanzamente:sha-*` | Laravel scheduler (schedule:work) |
-| `finanzamente-db` | `mysql:8.0` | Database MySQL |
+| `finanzamente-db` | `mysql:9.6` | Database MySQL |
 
 ---
 

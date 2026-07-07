@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Transaction;
+use App\Support\DatabaseDialect;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class DashboardAnalyticsService
 {
@@ -28,9 +28,8 @@ class DashboardAnalyticsService
         $endDate = Carbon::now()->endOfDay();
         $startDate = $startDate ?? $this->netWorthSeriesService->resolveHistoryStartDate($householdId, $userId);
 
-        $isSqlite = DB::getDriverName() === 'sqlite';
-        $yearExpr = $isSqlite ? "CAST(strftime('%Y', date) AS INTEGER)" : 'YEAR(date)';
-        $monthExpr = $isSqlite ? "CAST(strftime('%m', date) AS INTEGER)" : 'MONTH(date)';
+        $yearExpr = DatabaseDialect::yearExpr('date');
+        $monthExpr = DatabaseDialect::monthExpr('date');
 
         $transactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))

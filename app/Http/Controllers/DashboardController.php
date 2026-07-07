@@ -23,12 +23,12 @@ use App\Services\ModuleAccessService;
 use App\Services\PacProjectionService;
 use App\Services\PortfolioSnapshotService;
 use App\Services\UpcomingCashflowService;
+use App\Support\DatabaseDialect;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -422,11 +422,7 @@ class DashboardController extends Controller
         }
 
         // ── Verifica mesi distinti con transazioni ───────────────────────────────
-        // Compatibile con MySQL (produzione) e SQLite (test in-memory)
-        $driver = DB::getDriverName();
-        $yearMonthExpr = $driver === 'sqlite'
-            ? "strftime('%Y-%m', date)"
-            : "DATE_FORMAT(date, '%Y-%m')";
+        $yearMonthExpr = DatabaseDialect::yearMonthExpr('date');
 
         $monthsWithData = (int) Transaction::whereHas(
             'account',

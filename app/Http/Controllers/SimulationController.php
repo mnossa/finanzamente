@@ -6,9 +6,9 @@ use App\Models\Account;
 use App\Models\InvestmentPac;
 use App\Models\SavedSimulationScenario;
 use App\Models\Transaction;
+use App\Support\DatabaseDialect;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -190,9 +190,7 @@ class SimulationController extends Controller
     private function historicalProjectionForHousehold(int $householdId): array
     {
         $fromDate = Carbon::now()->subMonths(12)->startOfMonth();
-        $monthExpression = DB::connection()->getDriverName() === 'sqlite'
-            ? "strftime('%Y-%m', transactions.date)"
-            : "DATE_FORMAT(transactions.date, '%Y-%m')";
+        $monthExpression = DatabaseDialect::yearMonthExpr('transactions.date');
 
         $monthly = Transaction::query()
             ->join('accounts', 'accounts.id', '=', 'transactions.account_id')

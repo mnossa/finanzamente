@@ -85,6 +85,23 @@ Piano derivato da `tasks/financial-consistency-plan.md` (fasi 1–6 già impleme
 - Pulizia tecnica completata: eliminati componente UI, service backend e test legacy quick chips.
 - Verifica parziale verde: `make test` e `make pint-check` passati; `make playwright` bloccato da errore ambiente Node (`npm ci` con `ENOTEMPTY` nel volume `node_modules`).
 
+# WFI-100 — Migrazione infrastruttura (valutazione MySQL → PostgreSQL)
+
+## Decisione
+- [x] **Opzione A**: restare su MySQL 9.6 (ADR `docs/adr/database-postgresql-evaluation.md`)
+
+## Deliverable
+- [x] ADR + runbook backup (`docs/runbooks/mysql-backup-restore.md`)
+- [x] Docs HETZNER_SETUP/DEPLOY allineati a MySQL 9.6
+- [x] `make db-backup-restore-test` verificato in locale
+- [x] `DatabaseDialect` (solo sqlite/mysql) + refactor SQL analytics/filtri
+- [x] Commento Jira WFI-100 con decisione (transizione Completato)
+- [x] Rimossi artefatti PostgreSQL (compose PG, CI, pdo_pgsql, runbook pgloader)
+
+## Review
+- Dashboard e Magazine condividono lo stesso DB MySQL.
+- Verifica: `make test`, `make pint-check`, `make db-backup-restore-test`.
+
 # WFI-98 + WFI-99 — Conto deposito e simulazione storico
 
 ## Piano

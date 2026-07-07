@@ -29,6 +29,7 @@ Always use `make` (never raw `docker compose` / host `npm`) for correct UID/GID.
 | `make db-import-local` | Import ultimo dump da `storage/backups/` nel DB locale |
 | `make db-import-local FILE=...` | Import dump specifico |
 | `make db-anonymize` | Anonimizza PII nel DB locale (dopo import prod) |
+| `make db-backup-restore-test` | Verifica dump/restore MySQL locale (WFI-100) |
 
 Comandi artisan **solo local/development/testing** (bloccati su production/staging se eseguiti a mano):
 - `transactions:delete-for-account` — usa `make` / `docker compose` **senza** `docker-compose.prod.yml`

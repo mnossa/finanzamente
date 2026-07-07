@@ -57,8 +57,9 @@ return new class extends Migration
     private function hasForeignKey(string $constraintName): bool
     {
         $connection = Schema::getConnection();
+        $driver = $connection->getDriverName();
 
-        if ($connection->getDriverName() === 'sqlite') {
+        if ($driver === 'sqlite') {
             return false;
         }
 

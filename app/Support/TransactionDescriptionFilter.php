@@ -27,10 +27,10 @@ class TransactionDescriptionFilter
     private static function applyTokens(Builder $query, string $description): void
     {
         $tokens = TransactionSearchTokens::fromQuery($description);
-        $driver = $query->getConnection()->getDriverName();
+        $connection = $query->getConnection();
 
         foreach ($tokens as $token) {
-            if ($driver === 'mysql') {
+            if (DatabaseDialect::supportsLikeEscape($connection)) {
                 $pattern = '%'.self::escapeLikeToken($token).'%';
                 $query->whereRaw('description LIKE ? ESCAPE ?', [$pattern, '\\']);
             } else {
@@ -48,15 +48,11 @@ class TransactionDescriptionFilter
             return;
         }
 
-        $driver = $query->getConnection()->getDriverName();
-
-        if ($driver === 'sqlite') {
-            $query->whereRaw('regexp(?, description) = 1', [$pattern]);
-
-            return;
-        }
-
-        $query->whereRaw('description REGEXP ?', [$pattern]);
+        $connection = $query->getConnection();
+        $query->whereRaw(
+            DatabaseDialect::columnRegexMatch('description', '?', $connection),
+            [$pattern]
+        );
     }
 
     private static function escapeLikeToken(string $token): string

@@ -200,6 +200,10 @@ db-import-local:
 db-anonymize:
 	LOCAL_UID=$(LOCAL_UID) LOCAL_GID=$(LOCAL_GID) docker compose exec app php artisan db:anonymize --force
 
+# Verifica dump/restore MySQL locale (richiede make up). Vedi docs/runbooks/mysql-backup-restore.md
+db-backup-restore-test:
+	bash ./scripts/db-backup-restore-test.sh
+
 # Reset password root MySQL (procedura guidata)
 reset-mysql-root-password-step:
 	@echo "[STEP 1] Stoppa il container MySQL principale:"

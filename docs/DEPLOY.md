@@ -314,14 +314,14 @@ finanzamente-vYYYYMMDD-xxxxxxx.tar.gz
 ## 6. Assunzioni e limiti
 
 - **Architettura**: il Raspberry Pi deve supportare Docker (ARM64 o ARMv7).
-  Le immagini Docker (`php:8.2-fpm`, `mysql:8.0`, `nginx:alpine`) devono essere
+  Le immagini Docker (`php:8.5-fpm`, `mysql:9.6`, `nginx:alpine`) devono essere
   disponibili per l'architettura in uso.
 
 - **Connessione internet**: il Raspberry Pi deve poter raggiungere `github.com`
   e `api.github.com` in uscita (porta 443). Non è necessaria accessibilità
   dall'esterno.
 
-- **Risorse**: MySQL 8.0 è esigente. Consigliato almeno **2 GB di RAM**
+- **Risorse**: MySQL 9.6 è esigente. Consigliato almeno **2 GB di RAM**
   (Raspberry Pi 4 o superiore). In alternativa, valutare MariaDB o SQLite.
 
 - **Persistenza dati**: il volume Docker `dbdata` persiste il database MySQL.
