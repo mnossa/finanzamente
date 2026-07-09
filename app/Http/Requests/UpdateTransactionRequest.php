@@ -2,14 +2,18 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesExpenseAccountEligibility;
 use App\Models\Account;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateTransactionRequest extends FormRequest
 {
+    use ValidatesExpenseAccountEligibility;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -23,6 +27,13 @@ class UpdateTransactionRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $this->validateExpenseAccountEligibility($validator);
+        });
+    }
+
     public function rules(): array
     {
         $user = Auth::user();
@@ -96,5 +107,10 @@ class UpdateTransactionRequest extends FormRequest
             'tax_year.max' => "L'anno fiscale non è valido.",
             'debt_credit_id.exists' => 'Il debito/credito selezionato non è valido o è stato già chiuso.',
         ];
+    }
+
+    protected function hasSplitPayment(): bool
+    {
+        return false;
     }
 }

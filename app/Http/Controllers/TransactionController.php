@@ -485,14 +485,7 @@ class TransactionController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $accounts = Account::where('household_id', $householdId)
-            ->where('active', true)
-            ->where(function ($q) use ($user) {
-                $q->where('is_private', false)
-                    ->orWhere('owner_user_id', $user->id);
-            })
-            ->orderBy('name')
-            ->get(['id', 'name', 'currency_code']);
+        $accounts = $this->accountOptionsForForms($user, $householdId);
 
         $categories = Category::where(function ($q) use ($householdId) {
             $q->where('household_id', $householdId)
@@ -780,14 +773,7 @@ class TransactionController extends Controller
         $user = Auth::user();
         $householdId = $user->active_household_id;
 
-        $accounts = Account::where('household_id', $householdId)
-            ->where('active', true)
-            ->where(function ($q) use ($user) {
-                $q->where('is_private', false)
-                    ->orWhere('owner_user_id', $user->id);
-            })
-            ->orderBy('name')
-            ->get(['id', 'name', 'currency_code']);
+        $accounts = $this->accountOptionsForForms($user, $householdId);
 
         $categories = Category::where(function ($q) use ($householdId) {
             $q->where('household_id', $householdId)
@@ -1355,5 +1341,23 @@ class TransactionController extends Controller
         }
 
         return array_values(array_unique($tagIds));
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, currency_code: string, is_savings_deposit: bool}>
+     */
+    private function accountOptionsForForms($user, int $householdId): array
+    {
+        return Account::where('household_id', $householdId)
+            ->where('active', true)
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)
+                    ->orWhere('owner_user_id', $user->id);
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Account $account) => $account->toTransactionFormOption())
+            ->values()
+            ->all();
     }
 }

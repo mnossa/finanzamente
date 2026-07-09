@@ -65,8 +65,11 @@ class InboxController extends Controller
             ]);
 
         $accounts = Account::where('household_id', $user->active_household_id)
-            ->select('id', 'name', 'currency_code')
-            ->get();
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Account $account) => $account->toTransactionFormOption())
+            ->values()
+            ->all();
 
         $categories = Category::where('household_id', $user->active_household_id)
             ->select('id', 'name', 'type', 'color')
@@ -105,6 +108,13 @@ class InboxController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'account_id' => 'nullable|exists:accounts,id',
         ]);
+
+        if ($accountError = $this->savingsDepositExpenseError(
+            $validated['type'] ?? $inboxItem->type,
+            isset($validated['account_id']) ? (int) $validated['account_id'] : $inboxItem->account_id,
+        )) {
+            return back()->withErrors(['account_id' => $accountError]);
+        }
 
         $inboxItem->update($validated);
 
@@ -145,8 +155,18 @@ class InboxController extends Controller
 
         // Scegli un account: quello della voce oppure il primo della household
         $accountId = $inboxItem->account_id;
+        if ($accountId) {
+            $selectedAccount = Account::find($accountId);
+            if ($inboxItem->type === 'expense' && $selectedAccount?->isSavingsDeposit()) {
+                $accountId = null;
+            }
+        }
         if (! $accountId) {
-            $defaultAccount = Account::where('household_id', Auth::user()->active_household_id)->first();
+            $accountQuery = Account::where('household_id', Auth::user()->active_household_id);
+            if ($inboxItem->type === 'expense') {
+                $accountQuery->eligibleForExpenseTransactions();
+            }
+            $defaultAccount = $accountQuery->first();
             $accountId = $defaultAccount?->id;
         }
 
@@ -155,6 +175,9 @@ class InboxController extends Controller
         }
 
         $account = Account::find($accountId);
+        if ($accountError = $this->savingsDepositExpenseError($inboxItem->type, (int) $accountId)) {
+            return back()->withErrors(['account_id' => $accountError]);
+        }
 
         // Crea la transazione definitiva (con eventuale conversione di valuta)
         $transaction = Transaction::create($this->buildTransactionPayload($inboxItem, $account));
@@ -194,6 +217,9 @@ class InboxController extends Controller
         $user = Auth::user();
 
         $defaultAccount = Account::where('household_id', $user->active_household_id)->first();
+        $defaultExpenseAccount = Account::where('household_id', $user->active_household_id)
+            ->eligibleForExpenseTransactions()
+            ->first();
 
         $pending = InboxItem::where('user_id', $user->id)
             ->whereIn('status', ['draft', 'needs_review'])
@@ -204,7 +230,19 @@ class InboxController extends Controller
         $skipped = 0;
 
         foreach ($pending as $item) {
-            $accountId = $item->account_id ?? $defaultAccount?->id;
+            $accountId = $item->account_id;
+            if ($accountId) {
+                $selectedAccount = Account::find($accountId);
+                if ($item->type === 'expense' && $selectedAccount?->isSavingsDeposit()) {
+                    $accountId = null;
+                }
+            }
+
+            if (! $accountId) {
+                $accountId = $item->type === 'expense'
+                    ? $defaultExpenseAccount?->id
+                    : $defaultAccount?->id;
+            }
 
             if (! $accountId) {
                 $skipped++;
@@ -345,6 +383,20 @@ class InboxController extends Controller
     // -------------------------------------------------------------------------
     // Autorizzazione
     // -------------------------------------------------------------------------
+
+    private function savingsDepositExpenseError(?string $type, ?int $accountId): ?string
+    {
+        if ($type !== 'expense' || ! $accountId) {
+            return null;
+        }
+
+        $account = Account::query()->find($accountId);
+        if ($account && $account->isSavingsDeposit()) {
+            return 'I conti deposito non possono essere usati per le uscite.';
+        }
+
+        return null;
+    }
 
     private function authorizeItem(InboxItem $item): void
     {

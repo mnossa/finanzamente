@@ -12,7 +12,12 @@ import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { Pagination } from '@/Components/Pagination';
 import { PageProps } from '@/types';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    accountsForTransactionType,
+    resolveTransactionAccountId,
+    type TransactionAccount,
+} from '@/utils/transactionAccounts';
 
 // -------------------------------------------------------------------------
 // Types
@@ -25,11 +30,7 @@ interface Category {
     color: string | null;
 }
 
-interface Account {
-    id: number;
-    name: string;
-    currency_code: string;
-}
+interface Account extends TransactionAccount {}
 
 interface InboxItem {
     id: number;
@@ -234,6 +235,18 @@ function EditForm({ item, accounts, categories, onClose }: EditFormProps) {
         account_id: item.account?.id?.toString() ?? '',
     });
 
+    const selectableAccounts = useMemo(
+        () => accountsForTransactionType(accounts, data.type, { keepAccountId: item.account?.id }),
+        [accounts, data.type, item.account?.id],
+    );
+
+    useEffect(() => {
+        const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
+        if (nextAccountId !== data.account_id) {
+            setData('account_id', nextAccountId);
+        }
+    }, [selectableAccounts, data.account_id, setData]);
+
     function submit(e: React.FormEvent) {
         e.preventDefault();
         put(route('inbox.update', item.id), {
@@ -337,7 +350,7 @@ function EditForm({ item, accounts, categories, onClose }: EditFormProps) {
                         className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm bg-white dark:bg-slate-800 dark:text-white"
                     >
                         <option value="">— Nessuno —</option>
-                        {accounts.map(a => (
+                        {selectableAccounts.map(a => (
                             <option key={a.id} value={a.id}>{a.name}</option>
                         ))}
                     </select>
@@ -375,14 +388,26 @@ interface ConfirmModalProps {
 }
 
 function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps) {
+    const selectableAccounts = useMemo(
+        () => accountsForTransactionType(accounts, item.type, { keepAccountId: item.account?.id }),
+        [accounts, item.type, item.account?.id],
+    );
+
     // Precedence: (1) item's existing account, (2) single account auto-select, (3) empty for manual selection
     const defaultAccountId = item.account?.id?.toString()
-        ?? (accounts.length === 1 ? accounts[0].id.toString() : '');
+        ?? (selectableAccounts.length === 1 ? selectableAccounts[0].id.toString() : '');
 
     const { data, setData, post, processing } = useForm({
         account_id: defaultAccountId,
         category_id: item.category?.id?.toString() ?? '',
     });
+
+    useEffect(() => {
+        const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
+        if (nextAccountId !== data.account_id) {
+            setData('account_id', nextAccountId);
+        }
+    }, [selectableAccounts, data.account_id, setData]);
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -436,7 +461,7 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
                             className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm bg-white dark:bg-slate-800 dark:text-white"
                         >
                             <option value="">— Predefinito —</option>
-                            {accounts.map(a => (
+                            {selectableAccounts.map(a => (
                                 <option key={a.id} value={a.id}>{a.name} ({a.currency_code})</option>
                             ))}
                         </select>

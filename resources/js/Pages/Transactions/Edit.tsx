@@ -17,7 +17,12 @@ import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import { useFxPreview } from '@/hooks/useFxPreview';
 import { useFormTimer } from '@/hooks/useFormTimer';
 import { tx } from '@/utils/analytics';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+    accountsForTransactionType,
+    resolveTransactionAccountId,
+    type TransactionAccount,
+} from '@/utils/transactionAccounts';
 
 interface Category {
     id: number;
@@ -27,11 +32,7 @@ interface Category {
     icon: string | null;
 }
 
-interface Account {
-    id: number;
-    name: string;
-    currency_code: string;
-}
+interface Account extends TransactionAccount {}
 
 interface Tag {
     id: number;
@@ -160,6 +161,20 @@ export default function Edit({
     const isExpense = selectedCategory?.type === 'expense';
     const isTransfer = transaction.transfer_id !== null;
     const isInterHouseholdTransfer = transaction.is_inter_household_transfer || false;
+
+    const selectableAccounts = useMemo(
+        () => accountsForTransactionType(accounts, isExpense ? 'expense' : 'income', {
+            keepAccountId: transaction.account_id,
+        }),
+        [accounts, isExpense, transaction.account_id],
+    );
+
+    useEffect(() => {
+        const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
+        if (nextAccountId !== data.account_id) {
+            setData('account_id', nextAccountId);
+        }
+    }, [selectableAccounts, data.account_id, setData]);
 
     // Filtra i debiti/crediti in base al tipo di categoria
     const filteredDebtsCredits = selectedCategory
@@ -377,7 +392,7 @@ export default function Edit({
                                     required
                                     disabled={isTransfer || isInterHouseholdTransfer}
                                 >
-                                    {accounts.map((account) => (
+                                    {selectableAccounts.map((account) => (
                                         <option key={account.id} value={account.id}>
                                             {account.name} ({account.currency_code})
                                         </option>

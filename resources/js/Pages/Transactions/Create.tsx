@@ -22,7 +22,12 @@ import { useFxPreview } from '@/hooks/useFxPreview';
 import { useFormTimer } from '@/hooks/useFormTimer';
 import { tx } from '@/utils/analytics';
 import SplitPaymentSection, { SplitLine } from '@/Components/SplitPaymentSection';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+    accountsForTransactionType,
+    resolveTransactionAccountId,
+    type TransactionAccount,
+} from '@/utils/transactionAccounts';
 
 interface Category {
     id: number;
@@ -32,11 +37,7 @@ interface Category {
     icon: string | null;
 }
 
-interface Account {
-    id: number;
-    name: string;
-    currency_code: string;
-}
+interface Account extends TransactionAccount {}
 
 interface Tag {
     id: number;
@@ -183,6 +184,31 @@ export default function Create({
 
     const selectedCategory = categories.find((c) => c.id === Number(data.category_id));
     const isExpense = selectedCategory?.type === 'expense';
+
+    const selectableAccounts = useMemo(
+        () => accountsForTransactionType(accounts, isExpense ? 'expense' : 'income'),
+        [accounts, isExpense],
+    );
+
+    useEffect(() => {
+        const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
+        if (nextAccountId !== data.account_id) {
+            setData('account_id', nextAccountId);
+        }
+    }, [selectableAccounts, data.account_id, setData]);
+
+    useEffect(() => {
+        if (!splitEnabled) {
+            return;
+        }
+
+        setSplits((currentSplits) =>
+            currentSplits.map((line) => ({
+                ...line,
+                account_id: resolveTransactionAccountId(selectableAccounts, line.account_id),
+            })),
+        );
+    }, [selectableAccounts, splitEnabled]);
 
     // Filtra i debiti/crediti in base al tipo di categoria:
     // spesa → debiti (stai pagando ciò che devi)
@@ -363,7 +389,7 @@ export default function Create({
                                     onToggle={(enabled) => {
                                         setSplitEnabled(enabled);
                                     }}
-                                    accounts={accounts}
+                                    accounts={selectableAccounts}
                                     splits={splits}
                                     onSplitsChange={setSplits}
                                     totalAmount={data.amount}
@@ -384,7 +410,7 @@ export default function Create({
                                         required
                                     >
                                         <option value="">Seleziona un conto</option>
-                                        {accounts.map((account) => (
+                                        {selectableAccounts.map((account) => (
                                             <option key={account.id} value={account.id}>
                                                 {account.name} ({account.currency_code})
                                             </option>

@@ -2,14 +2,18 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesExpenseAccountEligibility;
 use App\Models\Account;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreTransactionRequest extends FormRequest
 {
+    use ValidatesExpenseAccountEligibility;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,6 +34,13 @@ class StoreTransactionRequest extends FormRequest
         if (! is_array($splits) || $splits === []) {
             $this->merge(['splits' => null]);
         }
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $this->validateExpenseAccountEligibility($validator);
+        });
     }
 
     public function rules(): array
@@ -120,7 +131,7 @@ class StoreTransactionRequest extends FormRequest
         ];
     }
 
-    private function hasSplitPayment(): bool
+    protected function hasSplitPayment(): bool
     {
         return is_array($this->input('splits')) && count($this->input('splits')) >= 2;
     }

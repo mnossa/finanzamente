@@ -10,7 +10,12 @@ import SplitPaymentSection, { type SplitLine } from '@/Components/SplitPaymentSe
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { Head, Link, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import {
+    accountsForTransactionType,
+    resolveTransactionAccountId,
+    type TransactionAccount,
+} from '@/utils/transactionAccounts';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 interface Category {
@@ -21,11 +26,7 @@ interface Category {
     icon: string | null;
 }
 
-interface Account {
-    id: number;
-    name: string;
-    currency_code: string;
-}
+interface Account extends TransactionAccount {}
 
 interface Tag {
     id: number;
@@ -124,6 +125,31 @@ export default function TransactionCreateGuided({
     const selectedCategory = categories.find((c) => String(c.id) === data.category_id);
     const isExpense = txType === 'expense';
 
+    const selectableAccounts = useMemo(
+        () => accountsForTransactionType(accounts, txType),
+        [accounts, txType],
+    );
+
+    useEffect(() => {
+        const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
+        if (nextAccountId !== data.account_id) {
+            setData('account_id', nextAccountId);
+        }
+    }, [selectableAccounts, data.account_id, setData]);
+
+    useEffect(() => {
+        if (!splitEnabled) {
+            return;
+        }
+
+        setSplits((currentSplits) =>
+            currentSplits.map((line) => ({
+                ...line,
+                account_id: resolveTransactionAccountId(selectableAccounts, line.account_id),
+            })),
+        );
+    }, [selectableAccounts, splitEnabled]);
+
     const handleTagAdd = (tag: Tag) => {
         const normalized = { ...tag, name: tag.name.toUpperCase() };
         if (selectedTagsList.some((t) => t.name === normalized.name)) {
@@ -160,7 +186,7 @@ export default function TransactionCreateGuided({
                 return Boolean(data.date);
             case 3: {
                 if (splitEnabled) {
-                    if (accounts.length < 2) {
+                    if (selectableAccounts.length < 2) {
                         return false;
                     }
                     const total = parseFloat(data.amount) || 0;
@@ -301,11 +327,11 @@ export default function TransactionCreateGuided({
 
                     {step === 3 && (
                         <div className="space-y-4">
-                            {accounts.length >= 2 ? (
+                            {selectableAccounts.length >= 2 ? (
                                 <SplitPaymentSection
                                     enabled={splitEnabled}
                                     onToggle={setSplitEnabled}
-                                    accounts={accounts}
+                                    accounts={selectableAccounts}
                                     splits={splits}
                                     onSplitsChange={setSplits}
                                     totalAmount={data.amount}
@@ -318,7 +344,7 @@ export default function TransactionCreateGuided({
                             )}
                             {!splitEnabled && (
                                 <div className="space-y-2">
-                                    {accounts.map((account) => (
+                                    {selectableAccounts.map((account) => (
                                         <button
                                             key={account.id}
                                             type="button"
@@ -474,7 +500,7 @@ export default function TransactionCreateGuided({
                                         ? splits
                                               .filter((l) => l.account_id && parseFloat(l.amount) > 0)
                                               .map((l) => {
-                                                  const acc = accounts.find((a) => String(a.id) === l.account_id);
+                                                  const acc = selectableAccounts.find((a) => String(a.id) === l.account_id);
                                                   return `${acc?.name ?? 'Conto'}: ${formatCurrency(Number(l.amount))}`;
                                               })
                                               .join(' · ')

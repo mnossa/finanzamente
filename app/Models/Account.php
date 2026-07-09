@@ -75,6 +75,30 @@ class Account extends Model
         return $this->type === 'bank' && $this->interest_rate !== null;
     }
 
+    /**
+     * Conti su cui è consentito registrare uscite (esclude i conti deposito).
+     */
+    public function scopeEligibleForExpenseTransactions($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('type', '!=', 'bank')
+                ->orWhereNull('interest_rate');
+        });
+    }
+
+    /**
+     * @return array{id: int, name: string, currency_code: string, is_savings_deposit: bool}
+     */
+    public function toTransactionFormOption(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'currency_code' => $this->currency_code,
+            'is_savings_deposit' => $this->isSavingsDeposit(),
+        ];
+    }
+
     public function household()
     {
         return $this->belongsTo(Household::class);

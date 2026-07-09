@@ -597,6 +597,11 @@ class TelegramWebhookController extends Controller
         [$accountId, $resolvedAccount] = $this->resolveAccountByName($parsed['account_name'], $user);
         [$categoryId, $resolvedCategory] = $this->resolveCategoryByName($parsed['category_name'], $user);
 
+        if ($type === 'expense' && $resolvedAccount?->isSavingsDeposit()) {
+            $accountId = null;
+            $resolvedAccount = null;
+        }
+
         $effectiveCurrency = $this->resolveCurrencyForUser($parsed['currency'], $user);
         $exchangeRate = null;
         $amountBase = null;
@@ -654,7 +659,18 @@ class TelegramWebhookController extends Controller
             if ($accountId && $resolvedAccount) {
                 $extras[] = "🏦 {$resolvedAccount->name}";
             } elseif ($parsed['account_name'] !== null) {
-                $extras[] = "⚠️ Conto \"{$parsed['account_name']}\" non trovato";
+                if ($type === 'expense') {
+                    $namedAccount = Account::where('household_id', $user->active_household_id)
+                        ->whereRaw('LOWER(name) = ?', [mb_strtolower($parsed['account_name'])])
+                        ->first();
+                    if ($namedAccount?->isSavingsDeposit()) {
+                        $extras[] = '⚠️ I conti deposito non sono disponibili per le uscite';
+                    } else {
+                        $extras[] = "⚠️ Conto \"{$parsed['account_name']}\" non trovato";
+                    }
+                } else {
+                    $extras[] = "⚠️ Conto \"{$parsed['account_name']}\" non trovato";
+                }
             }
             if ($categoryId && $resolvedCategory) {
                 $extras[] = "🏷️ {$resolvedCategory->name}";
@@ -935,6 +951,18 @@ class TelegramWebhookController extends Controller
             if (is_array($pending) && isset($pending['inbox_item_id'])) {
                 $item = InboxItem::where('user_id', $user->id)->find($pending['inbox_item_id']);
                 if ($item) {
+                    $account = Account::find($accountId);
+                    $transactionType = (string) ($pending['type'] ?? $item->type ?? 'expense');
+                    if ($transactionType === 'expense' && $account?->isSavingsDeposit()) {
+                        $this->telegram->answerCallbackQuery(
+                            $callbackId,
+                            'I conti deposito non sono disponibili per le uscite',
+                            true,
+                        );
+
+                        return;
+                    }
+
                     $item->update(['account_id' => $accountId]);
                     $pending['account_id'] = $accountId;
                     Cache::put("telegram_pending:{$chatId}", $pending, now()->addMinutes(15));
@@ -1005,7 +1033,7 @@ class TelegramWebhookController extends Controller
         ], now()->addMinutes(15));
 
         if ($needAccount) {
-            $this->sendAccountKeyboard($user, $chatId);
+            $this->sendAccountKeyboard($user, $chatId, $type);
 
             return;
         }
@@ -1015,12 +1043,16 @@ class TelegramWebhookController extends Controller
         }
     }
 
-    private function sendAccountKeyboard(User $user, string $chatId): void
+    private function sendAccountKeyboard(User $user, string $chatId, string $transactionType = 'expense'): void
     {
-        $accounts = Account::where('household_id', $user->active_household_id)
-            ->orderBy('name')
-            ->limit(8)
-            ->get();
+        $query = Account::where('household_id', $user->active_household_id)
+            ->orderBy('name');
+
+        if ($transactionType === 'expense') {
+            $query->eligibleForExpenseTransactions();
+        }
+
+        $accounts = $query->limit(8)->get();
 
         if ($accounts->isEmpty()) {
             return;
