@@ -159,13 +159,16 @@ class PortfolioSnapshotService
         }
 
         $accountRows = [];
-        $liquidValue = $this->accountBalanceService->computeHouseholdTotal($user, $accounts);
+
+        $liquidValue = 0.0;
+        $depositValue = 0.0;
         $allocationLiquidValue = 0.0;
 
         foreach ($accounts as $account) {
             $balance = $accountBalances[$account->id];
             $accountType = $account->type ?? 'other';
-            $assetClass = AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity';
+            $isSavingsDeposit = $account->isSavingsDeposit();
+            $assetClass = $isSavingsDeposit ? 'deposit' : (AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity');
             $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
 
             $accountRows[] = [
@@ -175,13 +178,22 @@ class PortfolioSnapshotService
                 'type_label' => Account::TYPES[$accountType] ?? $accountType,
                 'balance' => round($balance, 2),
                 'currency_code' => $account->currency_code,
+                'asset_class' => $assetClass,
+                'is_savings_deposit' => $isSavingsDeposit,
             ];
 
             if ($balance <= 0) {
                 continue;
             }
 
-            $allocationLiquidValue += $balance;
+            if ($isSavingsDeposit) {
+                // I conti deposito sono trattati come \"investiti prudenti\":
+                // esclusi dal saldo conti liquido e inclusi tra gli investimenti.
+                $depositValue += $balance;
+            } else {
+                $liquidValue += $balance;
+                $allocationLiquidValue += $balance;
+            }
 
             $positions[] = [
                 'id' => 'account_'.$account->id,
@@ -204,8 +216,13 @@ class PortfolioSnapshotService
             ];
         }
 
+        // I conti deposito vengono considerati come investimenti collegati al ledger
+        // ai fini del patrimonio totale e dei KPI di investimento.
+        $investedValue += $depositValue;
+        $investedLinkedValue += $depositValue;
+
         $totalValue = $liquidValue + $investedLinkedValue;
-        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue;
+        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue + $depositValue;
 
         foreach ($accountRows as &$accountRow) {
             $accountRow['portfolio_percentage'] = $totalValue > 0

@@ -16,6 +16,7 @@ class AssetClassificationService
     public const ALLOCATION_CLASSES = [
         'equities',
         'bonds',
+        'deposit',
         'commodities',
         'crypto',
         'other',
@@ -65,6 +66,7 @@ class AssetClassificationService
     public const CLASS_LABELS = [
         'equities' => 'Azionario',
         'bonds' => 'Obbligazionario',
+        'deposit' => 'Conti deposito',
         'commodities' => 'Commodities',
         'crypto' => 'Crypto',
         'liquidity' => 'Liquidità',
@@ -75,6 +77,7 @@ class AssetClassificationService
     public const CLASS_COLORS = [
         'equities' => '#3b82f6', // blue
         'bonds' => '#10b981', // emerald
+        'deposit' => '#0ea5e9', // sky
         'commodities' => '#f59e0b', // amber
         'crypto' => '#8b5cf6', // violet
         'liquidity' => '#06b6d4', // cyan

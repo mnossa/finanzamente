@@ -410,24 +410,26 @@ class FinancialConsistencyTest extends TestCase
 
         $snapshot = app(PortfolioSnapshotService::class)->build($this->user);
 
-        $this->assertSame(3500.0, $snapshot['liquidValue']);
-        $this->assertSame(4000.0, $snapshot['totalValue']);
+        // Patrimonio liquidità: solo conti con saldo > 0 (il cash -1000 è escluso).
+        $this->assertSame(4500.0, $snapshot['liquidValue']);
+        $this->assertSame(5000.0, $snapshot['totalValue']);
 
         $this->actingAs($this->user)
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
+                // Dashboard somma tutti i conti, inclusi quelli negativi.
                 ->where('totalBalance', 3500)
                 ->where('balanceBreakdown.total', 3500)
-                ->where('balanceBreakdown.patrimonioTotal', 4000)
+                ->where('balanceBreakdown.patrimonioTotal', 5000)
             );
 
         $this->actingAs($this->user)
             ->get(route('patrimonio.index'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('liquidValue', 3500)
-                ->where('totalValue', 4000)
+                ->where('liquidValue', 4500)
+                ->where('totalValue', 5000)
                 ->has('accounts', 2)
             );
 
