@@ -7,6 +7,7 @@ use App\Models\AppNotification;
 use App\Models\Category;
 use App\Models\Household;
 use App\Models\InboxItem;
+use App\Models\Tag;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -506,5 +507,169 @@ class InboxItemTest extends TestCase
         $this->assertEquals('EUR', $tx->currency_code);
         $this->assertNull($tx->original_amount);
         $this->assertNull($tx->original_currency_code);
+    }
+
+    #[Test]
+    public function confirming_inbox_item_can_attach_tags(): void
+    {
+        $existingTag = Tag::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'name' => 'CENA',
+            'color' => '#6366f1',
+        ]);
+
+        $item = InboxItem::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'status' => 'draft',
+            'source' => 'telegram_text',
+            'type' => 'expense',
+            'raw_text' => '20 Cena',
+            'amount' => 20.00,
+            'description' => 'Cena',
+            'transaction_date' => '2026-07-16',
+            'account_id' => $this->account->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('inbox.confirm', $item->id), [
+            'tag_ids' => [$existingTag->id],
+            'new_tag_names' => ['AMICI'],
+        ]);
+
+        $response->assertRedirect();
+        $item->refresh();
+        $transaction = Transaction::find($item->transaction_id);
+        $this->assertNotNull($transaction);
+        $tagNames = $transaction->tags()->pluck('name')->sort()->values()->all();
+        $this->assertEquals(['AMICI', 'CENA'], $tagNames);
+    }
+
+    #[Test]
+    public function index_exposes_similar_groups_for_matching_pending_items(): void
+    {
+        $this->withoutVite();
+
+        $category = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+        ]);
+
+        foreach ([10, 12, 8] as $amount) {
+            InboxItem::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'status' => 'draft',
+                'source' => 'telegram_text',
+                'type' => 'expense',
+                'raw_text' => "{$amount} Pizza",
+                'amount' => $amount,
+                'description' => 'Pizza',
+                'transaction_date' => '2026-07-16',
+                'account_id' => $this->account->id,
+                'category_id' => $category->id,
+            ]);
+        }
+
+        $response = $this->actingAs($this->user)->get(route('inbox.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Inbox/Index')
+            ->has('similarGroups', 1)
+            ->where('similarGroups.0.item_count', 3)
+            ->where('similarGroups.0.total_amount', 30));
+    }
+
+    #[Test]
+    public function merging_similar_inbox_items_creates_one_transaction_with_summed_amount_and_tags(): void
+    {
+        $category = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+        ]);
+
+        $ids = [];
+        foreach ([10, 15, 5] as $amount) {
+            $item = InboxItem::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'status' => 'draft',
+                'source' => 'telegram_text',
+                'type' => 'expense',
+                'raw_text' => "{$amount} Pizza",
+                'amount' => $amount,
+                'currency_code' => 'EUR',
+                'description' => 'Pizza',
+                'transaction_date' => '2026-07-16',
+                'account_id' => $this->account->id,
+                'category_id' => $category->id,
+            ]);
+            $ids[] = $item->id;
+        }
+
+        $response = $this->actingAs($this->user)->post(route('inbox.merge'), [
+            'inbox_item_ids' => $ids,
+            'new_tag_names' => ['SERATA'],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $this->assertEquals(1, Transaction::where('user_id', $this->user->id)->count());
+        $tx = Transaction::where('user_id', $this->user->id)->first();
+        $this->assertEquals(-30.0, (float) $tx->amount);
+        $this->assertEquals('Pizza', $tx->description);
+        $this->assertTrue($tx->tags()->where('name', 'SERATA')->exists());
+
+        foreach ($ids as $id) {
+            $item = InboxItem::find($id);
+            $this->assertEquals('confirmed', $item->status);
+            $this->assertEquals($tx->id, $item->transaction_id);
+        }
+    }
+
+    #[Test]
+    public function confirming_similar_items_separately_creates_one_transaction_each_with_shared_tags(): void
+    {
+        $category = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+        ]);
+
+        $ids = [];
+        foreach ([10, 12] as $amount) {
+            $item = InboxItem::create([
+                'user_id' => $this->user->id,
+                'household_id' => $this->household->id,
+                'status' => 'draft',
+                'source' => 'telegram_text',
+                'type' => 'expense',
+                'raw_text' => "{$amount} Pizza",
+                'amount' => $amount,
+                'currency_code' => 'EUR',
+                'description' => 'Pizza',
+                'transaction_date' => '2026-07-16',
+                'account_id' => $this->account->id,
+                'category_id' => $category->id,
+            ]);
+            $ids[] = $item->id;
+        }
+
+        $response = $this->actingAs($this->user)->post(route('inbox.confirm-separate'), [
+            'inbox_item_ids' => $ids,
+            'new_tag_names' => ['DOPPIO'],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertEquals(2, Transaction::where('user_id', $this->user->id)->count());
+
+        foreach (Transaction::where('user_id', $this->user->id)->get() as $tx) {
+            $this->assertTrue($tx->tags()->where('name', 'DOPPIO')->exists());
+        }
+
+        foreach ($ids as $id) {
+            $this->assertEquals('confirmed', InboxItem::find($id)->status);
+        }
     }
 }

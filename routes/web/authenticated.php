@@ -126,6 +126,8 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::put('/posta-in-arrivo/{inboxItem}', [InboxController::class, 'update'])->name('inbox.update');
         Route::post('/posta-in-arrivo/{inboxItem}/conferma', [InboxController::class, 'confirm'])->name('inbox.confirm');
         Route::post('/posta-in-arrivo/{inboxItem}/rifiuta', [InboxController::class, 'reject'])->name('inbox.reject');
+        Route::post('/posta-in-arrivo/unisci', [InboxController::class, 'merge'])->name('inbox.merge');
+        Route::post('/posta-in-arrivo/conferma-separate', [InboxController::class, 'confirmSeparate'])->name('inbox.confirm-separate');
         Route::post('/posta-in-arrivo/conferma-tutte', [InboxController::class, 'confirmAll'])->name('inbox.confirm-all');
         Route::post('/posta-in-arrivo/rifiuta-tutte', [InboxController::class, 'rejectAll'])->name('inbox.reject-all');
         Route::delete('/posta-in-arrivo/{inboxItem}', [InboxController::class, 'destroy'])->name('inbox.destroy');

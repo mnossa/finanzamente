@@ -16,6 +16,7 @@ use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
 use App\Services\DebtCreditTransactionPrefillService;
 use App\Services\InvestmentTransactionSyncService;
+use App\Services\TagResolutionService;
 use App\Services\TransactionSplitService;
 use App\Services\UpcomingCashflowService;
 use App\Support\TransactionDescriptionFilter;
@@ -1324,23 +1325,7 @@ class TransactionController extends Controller
      */
     private function resolveTagIds(array $tagIds, array $newTagNames, int $householdId, int $userId): array
     {
-        $tagIds = Tag::forUser($userId, $householdId)
-            ->whereIn('id', $tagIds)
-            ->pluck('id')
-            ->all();
-
-        foreach ($newTagNames as $tagName) {
-            $tag = Tag::findByNameForHousehold($tagName, $householdId, $userId)
-                ?? Tag::create([
-                    'household_id' => $householdId,
-                    'user_id' => $userId,
-                    'name' => $tagName,
-                    'color' => '#6366f1',
-                ]);
-            $tagIds[] = $tag->id;
-        }
-
-        return array_values(array_unique($tagIds));
+        return app(TagResolutionService::class)->resolve($tagIds, $newTagNames, $householdId, $userId);
     }
 
     /**

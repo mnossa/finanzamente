@@ -7,6 +7,7 @@ import CardBox from '@/Components/CardBox';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexInfoBanner from '@/Components/Index/IndexInfoBanner';
 import IndexListCard from '@/Components/Index/IndexListCard';
+import TagAutocomplete from '@/Components/TagAutocomplete';
 import { Head, router, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -18,6 +19,12 @@ import {
     resolveTransactionAccountId,
     type TransactionAccount,
 } from '@/utils/transactionAccounts';
+
+interface TagOption {
+    id: number;
+    name: string;
+    color: string | null;
+}
 
 // -------------------------------------------------------------------------
 // Types
@@ -76,6 +83,26 @@ interface ArchiveItem {
     updated_at: string | null;
 }
 
+interface SimilarGroupItem {
+    id: number;
+    amount: string | null;
+    currency_code: string | null;
+    transaction_date: string | null;
+    description: string | null;
+}
+
+interface SimilarGroup {
+    ids: number[];
+    type: 'income' | 'expense';
+    description: string | null;
+    account: { id: number; name: string; currency_code: string } | null;
+    category: { id: number; name: string } | null;
+    currency_code: string | null;
+    total_amount: number;
+    item_count: number;
+    items: SimilarGroupItem[];
+}
+
 interface Props extends PageProps {
     items: PaginatedData<InboxItem>;
     accounts: Account[];
@@ -83,6 +110,7 @@ interface Props extends PageProps {
     pendingCount: number;
     archiveCount: number;
     recentArchive: ArchiveItem[];
+    similarGroups: SimilarGroup[];
     telegramLinked: boolean;
     telegramBotUsername: string | null;
 }
@@ -400,7 +428,11 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
     const { data, setData, post, processing } = useForm({
         account_id: defaultAccountId,
         category_id: item.category?.id?.toString() ?? '',
+        tag_ids: [] as number[],
+        new_tag_names: [] as string[],
     });
+
+    const [selectedTagsList, setSelectedTagsList] = useState<TagOption[]>([]);
 
     useEffect(() => {
         const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
@@ -408,6 +440,28 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
             setData('account_id', nextAccountId);
         }
     }, [selectableAccounts, data.account_id, setData]);
+
+    function handleTagAdd(tag: TagOption) {
+        const normalized = { ...tag, name: tag.name.toUpperCase() };
+        if (selectedTagsList.some((t) => t.name === normalized.name)) return;
+        setSelectedTagsList((prev) => [...prev, normalized]);
+        if (normalized.id > 0) {
+            setData('tag_ids', [...data.tag_ids, normalized.id]);
+        } else {
+            setData('new_tag_names', [...data.new_tag_names, normalized.name]);
+        }
+    }
+
+    function handleTagRemove(tagName: string) {
+        const toRemove = selectedTagsList.find((t) => t.name === tagName);
+        if (!toRemove) return;
+        setSelectedTagsList((prev) => prev.filter((t) => t.name !== tagName));
+        if (toRemove.id > 0) {
+            setData('tag_ids', data.tag_ids.filter((id) => id !== toRemove.id));
+        } else {
+            setData('new_tag_names', data.new_tag_names.filter((n) => n !== tagName));
+        }
+    }
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -422,7 +476,7 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                         ✓ Conferma voce
@@ -483,6 +537,17 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
                         </select>
                     </div>
 
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            Etichette <span className="text-slate-400">(opzionale)</span>
+                        </label>
+                        <TagAutocomplete
+                            selectedTags={selectedTagsList}
+                            onAdd={handleTagAdd}
+                            onRemove={handleTagRemove}
+                        />
+                    </div>
+
                     <div className="flex gap-2 pt-1">
                         <button
                             type="button"
@@ -497,6 +562,277 @@ function ConfirmModal({ item, accounts, categories, onClose }: ConfirmModalProps
                             className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                         >
                             {processing ? 'Conferma...' : '✓ Conferma'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// -------------------------------------------------------------------------
+// Gruppo voci simili — unisci o mantieni separate
+// -------------------------------------------------------------------------
+
+interface SimilarGroupCardProps {
+    group: SimilarGroup;
+    accounts: Account[];
+    categories: Category[];
+}
+
+function SimilarGroupCard({ group, accounts, categories }: SimilarGroupCardProps) {
+    const [showModal, setShowModal] = useState(false);
+    const isIncome = group.type === 'income';
+    const sign = isIncome ? '+' : '−';
+
+    return (
+        <>
+            {showModal && (
+                <SimilarGroupModal
+                    group={group}
+                    accounts={accounts}
+                    categories={categories}
+                    onClose={() => setShowModal(false)}
+                />
+            )}
+            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 sm:p-4 dark:border-sky-800/60 dark:bg-sky-900/20">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 space-y-1">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                            Voci simili rilevate
+                        </p>
+                        <p className="text-sm font-medium text-slate-800 dark:text-white">
+                            {group.description || '(nessuna descrizione)'}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {group.item_count} voci · stessa descrizione
+                            {group.account ? ` · ${group.account.name}` : ''}
+                            {group.category ? ` · ${group.category.name}` : ''}
+                            {' · date entro 1 giorno'}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className={clsx('text-base font-bold', isIncome ? 'text-emerald-600' : 'text-rose-600')}>
+                            {sign}{formatAmountWithCurrency(group.total_amount, group.currency_code)}
+                        </p>
+                        <p className="text-xs text-slate-500">totale se unite</p>
+                    </div>
+                </div>
+
+                <ul className="mt-3 space-y-1.5">
+                    {group.items.map((item) => (
+                        <li
+                            key={item.id}
+                            className="flex items-center justify-between gap-2 rounded-lg bg-white/70 px-2.5 py-1.5 text-sm dark:bg-slate-800/60"
+                        >
+                            <span className="min-w-0 truncate text-slate-600 dark:text-slate-300">
+                                {item.transaction_date ? formatDate(item.transaction_date) : '—'}
+                            </span>
+                            <span className={clsx('shrink-0 font-medium', isIncome ? 'text-emerald-600' : 'text-rose-600')}>
+                                {sign}{formatAmountWithCurrency(Math.abs(parseFloat(item.amount ?? '0')), item.currency_code)}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+
+                <div className="mt-3">
+                    <button
+                        type="button"
+                        onClick={() => setShowModal(true)}
+                        className="w-full rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 sm:w-auto"
+                    >
+                        Scegli: unisci o mantieni separate
+                    </button>
+                </div>
+            </div>
+        </>
+    );
+}
+
+interface SimilarGroupModalProps {
+    group: SimilarGroup;
+    accounts: Account[];
+    categories: Category[];
+    onClose: () => void;
+}
+
+function SimilarGroupModal({ group, accounts, categories, onClose }: SimilarGroupModalProps) {
+    const selectableAccounts = useMemo(
+        () => accountsForTransactionType(accounts, group.type, { keepAccountId: group.account?.id }),
+        [accounts, group.type, group.account?.id],
+    );
+
+    const defaultAccountId = group.account?.id?.toString()
+        ?? (selectableAccounts.length === 1 ? selectableAccounts[0].id.toString() : '');
+
+    const { data, setData, post, processing } = useForm({
+        inbox_item_ids: group.ids,
+        account_id: defaultAccountId,
+        category_id: group.category?.id?.toString() ?? '',
+        tag_ids: [] as number[],
+        new_tag_names: [] as string[],
+    });
+
+    const [selectedTagsList, setSelectedTagsList] = useState<TagOption[]>([]);
+    const [mode, setMode] = useState<'merge' | 'separate'>('merge');
+    const filteredCategories = categories.filter((c) => c.type === group.type);
+    const isIncome = group.type === 'income';
+    const sign = isIncome ? '+' : '−';
+
+    function handleTagAdd(tag: TagOption) {
+        const normalized = { ...tag, name: tag.name.toUpperCase() };
+        if (selectedTagsList.some((t) => t.name === normalized.name)) return;
+        setSelectedTagsList((prev) => [...prev, normalized]);
+        if (normalized.id > 0) {
+            setData('tag_ids', [...data.tag_ids, normalized.id]);
+        } else {
+            setData('new_tag_names', [...data.new_tag_names, normalized.name]);
+        }
+    }
+
+    function handleTagRemove(tagName: string) {
+        const toRemove = selectedTagsList.find((t) => t.name === tagName);
+        if (!toRemove) return;
+        setSelectedTagsList((prev) => prev.filter((t) => t.name !== tagName));
+        if (toRemove.id > 0) {
+            setData('tag_ids', data.tag_ids.filter((id) => id !== toRemove.id));
+        } else {
+            setData('new_tag_names', data.new_tag_names.filter((n) => n !== tagName));
+        }
+    }
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
+        const routeName = mode === 'merge' ? 'inbox.merge' : 'inbox.confirm-separate';
+        post(route(routeName), {
+            preserveScroll: true,
+            onSuccess: onClose,
+        });
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <div className="max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                        Voci simili
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="text-xl leading-none text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        aria-label="Chiudi"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-700/50">
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                        {group.description || '(nessuna descrizione)'}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                        {group.item_count} voci · totale {sign}{formatAmountWithCurrency(group.total_amount, group.currency_code)}
+                    </p>
+                </div>
+
+                <form onSubmit={submit} className="space-y-3">
+                    <div>
+                        <p className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-400">Azione</p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={() => setMode('merge')}
+                                className={clsx(
+                                    'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                                    mode === 'merge'
+                                        ? 'border-sky-500 bg-sky-50 text-sky-800 dark:border-sky-400 dark:bg-sky-900/30 dark:text-sky-200'
+                                        : 'border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700',
+                                )}
+                            >
+                                <span className="font-medium">Unisci in una</span>
+                                <span className="mt-0.5 block text-xs opacity-80">Somma gli importi in un'unica transazione</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setMode('separate')}
+                                className={clsx(
+                                    'rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                                    mode === 'separate'
+                                        ? 'border-sky-500 bg-sky-50 text-sky-800 dark:border-sky-400 dark:bg-sky-900/30 dark:text-sky-200'
+                                        : 'border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700',
+                                )}
+                            >
+                                <span className="font-medium">Mantieni separate</span>
+                                <span className="mt-0.5 block text-xs opacity-80">Conferma ogni voce come transazione distinta</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {mode === 'merge' && (
+                        <>
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+                                    Conto
+                                </label>
+                                <select
+                                    value={data.account_id}
+                                    onChange={(e) => setData('account_id', e.target.value)}
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                                >
+                                    <option value="">— Predefinito —</option>
+                                    {selectableAccounts.map((a) => (
+                                        <option key={a.id} value={a.id}>{a.name} ({a.currency_code})</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+                                    Categoria
+                                </label>
+                                <select
+                                    value={data.category_id}
+                                    onChange={(e) => setData('category_id', e.target.value)}
+                                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                                >
+                                    <option value="">— Nessuna —</option>
+                                    {filteredCategories.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </>
+                    )}
+
+                    <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+                            Etichette <span className="text-slate-400">(opzionale, applicate a tutte)</span>
+                        </label>
+                        <TagAutocomplete
+                            selectedTags={selectedTagsList}
+                            onAdd={handleTagAdd}
+                            onRemove={handleTagRemove}
+                        />
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                        >
+                            Annulla
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                            {processing
+                                ? 'Salvataggio...'
+                                : mode === 'merge'
+                                    ? '✓ Unisci'
+                                    : '✓ Conferma separate'}
                         </button>
                     </div>
                 </form>
@@ -698,11 +1034,22 @@ export default function InboxIndex({
     pendingCount,
     archiveCount,
     recentArchive,
+    similarGroups = [],
     telegramLinked,
     telegramBotUsername,
 }: Props) {
     const [confirmingAll, setConfirmingAll] = useState(false);
     const [rejectingAll, setRejectingAll] = useState(false);
+
+    const groupedItemIds = useMemo(
+        () => new Set(similarGroups.flatMap((group) => group.ids)),
+        [similarGroups],
+    );
+
+    const standaloneItems = useMemo(
+        () => items.data.filter((item) => !groupedItemIds.has(item.id)),
+        [items.data, groupedItemIds],
+    );
 
     function confirmAll() {
         if (window.confirm(`Confermare tutte le ${pendingCount} voci in attesa? Verrà usato il conto predefinito per chi non ne ha uno assegnato.`)) {
@@ -817,7 +1164,15 @@ export default function InboxIndex({
                     />
                 ) : (
                     <div className="space-y-3">
-                        {items.data.map(item => (
+                        {similarGroups.map((group) => (
+                            <SimilarGroupCard
+                                key={group.ids.join('-')}
+                                group={group}
+                                accounts={accounts}
+                                categories={categories}
+                            />
+                        ))}
+                        {standaloneItems.map(item => (
                             <InboxRow
                                 key={item.id}
                                 item={item}

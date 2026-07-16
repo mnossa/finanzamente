@@ -58,6 +58,7 @@ class InboxIndexTest extends TestCase
             ->has('items.data', 1)
             ->where('items.data.0.status', 'draft')
             ->where('archiveCount', 2)
-            ->has('recentArchive', 2));
+            ->has('recentArchive', 2)
+            ->has('similarGroups'));
     }
 }
