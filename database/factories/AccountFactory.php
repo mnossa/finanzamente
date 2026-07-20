@@ -32,6 +32,7 @@ class AccountFactory extends Factory
             'type' => $this->faker->randomElement(['bank', 'cash', 'card', 'broker', 'crypto', 'other']),
             'initial_balance' => $this->faker->randomFloat(2, 0, 10000),
             'interest_rate' => null,
+            'ticket_unit_value' => null,
             'current_balance' => $this->faker->randomFloat(2, 0, 10000),
             'currency_code' => 'EUR',
             'active' => true,
@@ -57,7 +58,18 @@ class AccountFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'type' => 'bank',
             'interest_rate' => $interestRate,
+            'ticket_unit_value' => null,
             'name' => $this->faker->randomElement(['Conto Deposito', 'Deposito Vincolato']),
+        ]);
+    }
+
+    public function mealVoucher(float $ticketUnitValue = 8.0): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => Account::MEAL_VOUCHER_TYPE,
+            'interest_rate' => null,
+            'ticket_unit_value' => $ticketUnitValue,
+            'name' => $this->faker->randomElement(['Buoni pasto', 'Ticket restaurant']),
         ]);
     }
 

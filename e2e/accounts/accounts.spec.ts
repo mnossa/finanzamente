@@ -74,4 +74,40 @@ test.describe('Conti', () => {
         await primaryFormSubmitLocator(page).click();
         expect(page.url()).toContain('/crea');
     });
+
+    test('crea un conto buoni pasto e mostra i ticket nel dettaglio', async ({ page }) => {
+        const nomeConto = `Buoni E2E ${Date.now()}`;
+
+        await page.goto('/conti/crea');
+
+        const limitReached = await page.locator('[class*="rose"], [class*="red"]')
+            .filter({ hasText: /limit|massimo/i })
+            .isVisible()
+            .catch(() => false);
+
+        if (limitReached) {
+            return;
+        }
+
+        await page.locator('input[name="name"]').fill(nomeConto);
+        await page.getByRole('button', { name: /buoni pasto/i }).click();
+
+        const saldoInput = page.locator('input[name="initial_balance"]');
+        if (await saldoInput.isVisible()) {
+            await saldoInput.fill('80');
+        }
+
+        await expect(page.locator('input[name="ticket_unit_value"]')).toBeVisible();
+        await page.locator('input[name="ticket_unit_value"]').fill('8');
+
+        await primaryFormSubmitLocator(page).click();
+        await expect(page).toHaveURL(/\/conti\/?$/, { timeout: 10_000 });
+
+        await page.getByText(nomeConto).first().click();
+        await expect(page).toHaveURL(new RegExp(`/conti/\\d+`), { timeout: 10_000 });
+
+        await expect(page.getByText('Ticket disponibili', { exact: true })).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByText('Valore di un ticket', { exact: true })).toBeVisible();
+        await expect(page.getByText('10', { exact: true }).first()).toBeVisible();
+    });
 });

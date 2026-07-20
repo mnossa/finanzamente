@@ -8,7 +8,7 @@ import { useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import { useState } from 'react';
 
-const STEPS = [{ label: 'Nome' }, { label: 'Tipo' }, { label: 'Saldo' }, { label: 'Interesse' }];
+const STEPS = [{ label: 'Nome' }, { label: 'Tipo' }, { label: 'Saldo' }, { label: 'Dettaglio' }];
 
 interface Props {
     accountTypes: Record<string, string>;
@@ -21,21 +21,27 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
 
     const { data, setData, post, processing, errors } = useForm({
         name: '',
-        type: types[0]?.[0] ?? 'checking',
+        type: types[0]?.[0] ?? 'bank',
         initial_balance: '0',
         interest_rate: '',
+        ticket_unit_value: '',
         currency_code: defaultCurrency,
         is_private: false,
     });
 
+    const isSavingsDeposit = data.type === 'savings_deposit';
+    const isMealVoucher = data.type === 'meal_voucher';
+    const shouldShowDetailStep = isSavingsDeposit || isMealVoucher;
+    const lastStep = shouldShowDetailStep ? 3 : 2;
+
     const meta = [
         { title: 'Come si chiama il conto?', subtitle: 'Es. Conto corrente, Carta, Risparmi' },
-        { title: 'Che tipo di conto è?', subtitle: 'Scegli l\'opzione più adatta.' },
+        { title: 'Che tipo di conto è?', subtitle: "Scegli l'opzione più adatta." },
         { title: 'Qual è il saldo iniziale?', subtitle: 'Puoi usare 0 se non sei sicuro.' },
-        { title: 'Tasso del conto deposito', subtitle: 'Solo se scegli conto deposito. Altrimenti puoi lasciare vuoto.' },
+        isMealVoucher
+            ? { title: 'Valore di un ticket', subtitle: 'Importo in euro di un singolo buono pasto.' }
+            : { title: 'Tasso del conto deposito', subtitle: 'Solo se scegli conto deposito. Altrimenti puoi lasciare vuoto.' },
     ][step];
-    const shouldShowInterestStep = data.type === 'savings_deposit';
-    const lastStep = shouldShowInterestStep ? 3 : 2;
 
     return (
         <form
@@ -45,7 +51,8 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
                     if (step === 0 && !data.name.trim()) return;
                     setStep((s) => s + 1);
                 } else {
-                    if (shouldShowInterestStep && !data.interest_rate.trim()) return;
+                    if (isSavingsDeposit && !data.interest_rate.trim()) return;
+                    if (isMealVoucher && !data.ticket_unit_value.trim()) return;
                     post(route('accounts.store'));
                 }
             }}
@@ -98,7 +105,7 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
                         <InputError message={errors.initial_balance} className="mt-2" />
                     </div>
                 )}
-                {step === 3 && shouldShowInterestStep && (
+                {step === 3 && isSavingsDeposit && (
                     <div>
                         <InputLabel htmlFor="interest_rate" value="Tasso interesse annuo (%)" />
                         <TextInput
@@ -110,15 +117,29 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
                             className="mt-1 block w-full"
                             value={data.interest_rate}
                             onChange={(e) => setData('interest_rate', e.target.value)}
-                            disabled={data.type !== 'savings_deposit'}
-                            required={data.type === 'savings_deposit'}
+                            required={isSavingsDeposit}
                         />
-                        {data.type !== 'savings_deposit' && (
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Non necessario: il conto selezionato non e un conto deposito.
-                            </p>
-                        )}
                         <InputError message={errors.interest_rate} className="mt-2" />
+                    </div>
+                )}
+                {step === 3 && isMealVoucher && (
+                    <div>
+                        <InputLabel htmlFor="ticket_unit_value" value="Valore di un ticket" />
+                        <TextInput
+                            id="ticket_unit_value"
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            className="mt-1 block w-full"
+                            value={data.ticket_unit_value}
+                            onChange={(e) => setData('ticket_unit_value', e.target.value)}
+                            placeholder="es. 8.00"
+                            required={isMealVoucher}
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            I ticket disponibili si calcolano dal saldo del conto.
+                        </p>
+                        <InputError message={errors.ticket_unit_value} className="mt-2" />
                     </div>
                 )}
                 <div className="mt-8 flex justify-end">

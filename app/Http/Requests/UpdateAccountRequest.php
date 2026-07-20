@@ -48,6 +48,13 @@ class UpdateAccountRequest extends FormRequest
                 'max:100',
                 Rule::requiredIf(fn () => (bool) $this->input('is_savings_deposit', false)),
             ],
+            'ticket_unit_value' => [
+                'nullable',
+                'numeric',
+                'min:0.01',
+                'max:999999.99',
+                Rule::requiredIf(fn () => $this->input('type') === Account::MEAL_VOUCHER_TYPE),
+            ],
         ];
     }
 
@@ -73,6 +80,10 @@ class UpdateAccountRequest extends FormRequest
             'interest_rate.numeric' => 'Il tasso di interesse deve essere un numero.',
             'interest_rate.min' => 'Il tasso di interesse non può essere negativo.',
             'interest_rate.max' => 'Il tasso di interesse non può superare il 100%.',
+            'ticket_unit_value.required' => 'Il valore di un ticket è obbligatorio per i buoni pasto.',
+            'ticket_unit_value.numeric' => 'Il valore di un ticket deve essere un numero.',
+            'ticket_unit_value.min' => 'Il valore di un ticket deve essere almeno 0,01.',
+            'ticket_unit_value.max' => 'Il valore di un ticket è troppo alto.',
         ];
     }
 }

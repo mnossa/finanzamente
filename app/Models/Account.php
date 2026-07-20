@@ -31,10 +31,13 @@ class Account extends Model
         'card' => 'Carta',
         'broker' => 'Broker',
         'crypto' => 'Crypto',
+        'meal_voucher' => 'Buoni pasto',
         'other' => 'Altro',
     ];
 
     public const SAVINGS_DEPOSIT_TYPE = 'savings_deposit';
+
+    public const MEAL_VOUCHER_TYPE = 'meal_voucher';
 
     protected $fillable = [
         'household_id',
@@ -47,6 +50,7 @@ class Account extends Model
         'is_private',
         'owner_user_id',
         'interest_rate',
+        'ticket_unit_value',
     ];
 
     protected $casts = [
@@ -55,6 +59,7 @@ class Account extends Model
         'active' => 'boolean',
         'is_private' => 'boolean',
         'interest_rate' => 'decimal:2',
+        'ticket_unit_value' => 'decimal:2',
     ];
 
     /**
@@ -75,8 +80,53 @@ class Account extends Model
         return $this->type === 'bank' && $this->interest_rate !== null;
     }
 
+    public function isMealVoucher(): bool
+    {
+        return $this->type === self::MEAL_VOUCHER_TYPE;
+    }
+
+    /**
+     * Ticket interi disponibili da un saldo: floor(balance / unit), mai sotto 0.
+     * Resto non multiplo non conta come ticket intero.
+     */
+    public function ticketCountFromBalance(float $balance): ?int
+    {
+        if (! $this->isMealVoucher()) {
+            return null;
+        }
+
+        $unit = (float) ($this->ticket_unit_value ?? 0);
+        if ($unit <= 0) {
+            return null;
+        }
+
+        if ($balance <= 0) {
+            return 0;
+        }
+
+        return (int) floor($balance / $unit);
+    }
+
+    /**
+     * Equivalenza ticket di un importo (segno = direzione TX). Null se non meal voucher.
+     */
+    public function ticketsDeltaForAmount(float $amount): ?float
+    {
+        if (! $this->isMealVoucher()) {
+            return null;
+        }
+
+        $unit = (float) ($this->ticket_unit_value ?? 0);
+        if ($unit <= 0) {
+            return null;
+        }
+
+        return round($amount / $unit, 2);
+    }
+
     /**
      * Conti su cui è consentito registrare uscite (esclude i conti deposito).
+     * I buoni pasto sono eleggibili alle uscite.
      */
     public function scopeEligibleForExpenseTransactions($query)
     {

@@ -66,6 +66,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
         type: 'bank',
         initial_balance: '0',
         interest_rate: '',
+        ticket_unit_value: '',
         currency_code: defaultCurrency,
         is_private: false,
     });
@@ -76,6 +77,10 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
             onSuccess: () => accs.created(data.type, data.currency_code),
         });
     };
+
+    const isSavingsDeposit = data.type === 'savings_deposit';
+    const isMealVoucher = data.type === 'meal_voucher';
+    const showExtraTypeField = isSavingsDeposit || isMealVoucher;
 
     return (
         <AuthenticatedLayout
@@ -195,8 +200,8 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                     <InputError message={errors.initial_balance} className="mt-2" />
                                 </div>
 
-                                <div className={data.type === 'savings_deposit' ? 'sm:col-span-2' : ''}>
-                                    {data.type === 'savings_deposit' && (
+                                <div className={showExtraTypeField ? 'sm:col-span-2' : ''}>
+                                    {isSavingsDeposit && (
                                         <div className="mb-4">
                                             <InputLabel htmlFor="interest_rate" value="Tasso di interesse annuo (%)" />
                                             <TextInput
@@ -210,12 +215,34 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                                 value={data.interest_rate}
                                                 onChange={(e) => setData('interest_rate', e.target.value)}
                                                 placeholder="es. 2.50"
-                                                required={data.type === 'savings_deposit'}
+                                                required={isSavingsDeposit}
                                             />
                                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                                 Usato per la simulazione di crescita del conto deposito.
                                             </p>
                                             <InputError message={errors.interest_rate} className="mt-2" />
+                                        </div>
+                                    )}
+
+                                    {isMealVoucher && (
+                                        <div className="mb-4">
+                                            <InputLabel htmlFor="ticket_unit_value" value="Valore di un ticket" />
+                                            <TextInput
+                                                id="ticket_unit_value"
+                                                name="ticket_unit_value"
+                                                type="number"
+                                                step="0.01"
+                                                min="0.01"
+                                                className="mt-1 block w-full"
+                                                value={data.ticket_unit_value}
+                                                onChange={(e) => setData('ticket_unit_value', e.target.value)}
+                                                placeholder="es. 8.00"
+                                                required={isMealVoucher}
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Importo in euro di un singolo buono pasto. I ticket disponibili si calcolano dal saldo.
+                                            </p>
+                                            <InputError message={errors.ticket_unit_value} className="mt-2" />
                                         </div>
                                     )}
 

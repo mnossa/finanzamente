@@ -113,6 +113,7 @@ class AccountController extends Controller
         $validated['interest_rate'] = isset($validated['interest_rate']) && $validated['interest_rate'] !== ''
             ? $validated['interest_rate']
             : null;
+        $validated = $this->normalizeMealVoucherFields($validated);
 
         $account = new Account($validated);
         $account->household_id = $user->active_household_id;
@@ -138,20 +139,29 @@ class AccountController extends Controller
         $this->authorizeAccount($account);
 
         // Carica le ultime transazioni del conto
+        $currentBalance = $this->accountBalanceService->computeBalance($account, Auth::user());
+        $isMealVoucher = $account->isMealVoucher();
+        $ticketUnitValue = $isMealVoucher && $account->ticket_unit_value !== null
+            ? (float) $account->ticket_unit_value
+            : null;
+
         $recentTransactions = $account->transactions()
             ->with(['category:id,name,color,icon', 'user:id,name'])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get()
-            ->map(function ($transaction) {
+            ->map(function ($transaction) use ($account, $isMealVoucher) {
+                $amount = (float) $transaction->amount;
+
                 return [
                     'id' => $transaction->id,
-                    'amount' => (float) $transaction->amount,
+                    'amount' => $amount,
                     'date' => $transaction->date->format('Y-m-d'),
                     'description' => $transaction->description,
                     'category' => $transaction->category,
                     'user' => $transaction->user,
+                    'tickets_delta' => $isMealVoucher ? $account->ticketsDeltaForAmount($amount) : null,
                 ];
             });
 
@@ -164,9 +174,11 @@ class AccountController extends Controller
                     ? Account::uiTypes()[Account::SAVINGS_DEPOSIT_TYPE]
                     : (Account::TYPES[$account->type] ?? $account->type),
                 'initial_balance' => (float) $account->initial_balance,
-                'current_balance' => (float) $account->current_balance,
+                'current_balance' => $currentBalance,
                 'currency_code' => $account->currency_code,
                 'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
+                'ticket_unit_value' => $ticketUnitValue,
+                'ticket_count' => $isMealVoucher ? $account->ticketCountFromBalance($currentBalance) : null,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
                 'created_at' => $account->created_at->format('d/m/Y'),
@@ -192,6 +204,7 @@ class AccountController extends Controller
                 'initial_balance' => (float) $account->initial_balance,
                 'currency_code' => $account->currency_code,
                 'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
+                'ticket_unit_value' => $account->ticket_unit_value !== null ? (float) $account->ticket_unit_value : null,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
             ],
@@ -212,6 +225,7 @@ class AccountController extends Controller
         $validated['interest_rate'] = isset($validated['interest_rate']) && $validated['interest_rate'] !== ''
             ? $validated['interest_rate']
             : null;
+        $validated = $this->normalizeMealVoucherFields($validated, $account->type);
 
         // Se cambia il saldo iniziale, ricalcola il saldo corrente
         if (isset($validated['initial_balance']) && $validated['initial_balance'] != $account->initial_balance) {
@@ -231,6 +245,26 @@ class AccountController extends Controller
         return redirect()
             ->route('accounts.show', $account)
             ->with('success', 'Conto aggiornato con successo.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function normalizeMealVoucherFields(array $validated, ?string $fallbackType = null): array
+    {
+        $type = $validated['type'] ?? $fallbackType;
+
+        if ($type === Account::MEAL_VOUCHER_TYPE) {
+            $validated['interest_rate'] = null;
+            if (array_key_exists('ticket_unit_value', $validated) && $validated['ticket_unit_value'] === '') {
+                $validated['ticket_unit_value'] = null;
+            }
+        } else {
+            $validated['ticket_unit_value'] = null;
+        }
+
+        return $validated;
     }
 
     /**
