@@ -7,6 +7,7 @@ use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountBalanceService;
+use App\Services\MealVoucherLedgerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -150,7 +151,7 @@ class AccountBalanceServiceTest extends TestCase
             'active' => true,
             'currency_code' => 'EUR',
         ]);
-        app(\App\Services\MealVoucherLedgerService::class)->initializeAccount($meal);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
 
         $bank = Account::factory()->bank()->create([
             'household_id' => $this->household->id,
