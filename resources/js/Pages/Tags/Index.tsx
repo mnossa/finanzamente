@@ -32,6 +32,8 @@ interface IndexProps {
 function TagCard({ tag, onDeleteClick }: { tag: Tag; onDeleteClick: (id: number, name: string) => void }) {
     return (
         <IndexEntityCard
+            href={route('tags.show', tag.id)}
+            ariaLabel={`Dettaglio tag ${tag.name}`}
             icon={<span className="text-lg text-white">🏷️</span>}
             iconClassName="flex h-10 w-10 items-center justify-center rounded-full"
             iconStyle={{ backgroundColor: tag.color }}

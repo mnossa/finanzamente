@@ -107,7 +107,8 @@ test.describe('Conti', () => {
         await expect(page).toHaveURL(new RegExp(`/conti/\\d+`), { timeout: 10_000 });
 
         await expect(page.getByText('Ticket disponibili', { exact: true })).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByText('Valore di un ticket', { exact: true })).toBeVisible();
+        await expect(page.getByText('Valore ticket vigente', { exact: true })).toBeVisible();
+        await expect(page.getByText('Lotti in cassa', { exact: true })).toBeVisible();
         await expect(page.getByText('10', { exact: true }).first()).toBeVisible();
     });
 });

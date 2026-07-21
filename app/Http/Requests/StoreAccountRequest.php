@@ -57,6 +57,29 @@ class StoreAccountRequest extends FormRequest
         ];
     }
 
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            if ($this->input('type') !== Account::MEAL_VOUCHER_TYPE) {
+                return;
+            }
+
+            $unit = (float) $this->input('ticket_unit_value', 0);
+            $balance = (float) $this->input('initial_balance', 0);
+            if ($unit <= 0 || $balance == 0.0) {
+                return;
+            }
+
+            $ratio = $balance / $unit;
+            if (abs($ratio - round($ratio)) >= 0.0001) {
+                $validator->errors()->add(
+                    'initial_balance',
+                    'Il saldo iniziale deve essere un multiplo del valore di un ticket (i buoni non sono frazionabili).'
+                );
+            }
+        });
+    }
+
     /**
      * Get custom messages for validator errors.
      *

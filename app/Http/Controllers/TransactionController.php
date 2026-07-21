@@ -16,6 +16,7 @@ use App\Services\AccountBalanceService;
 use App\Services\CurrencyConverter;
 use App\Services\DebtCreditTransactionPrefillService;
 use App\Services\InvestmentTransactionSyncService;
+use App\Services\MealVoucherLedgerService;
 use App\Services\TagResolutionService;
 use App\Services\TransactionSplitService;
 use App\Services\UpcomingCashflowService;
@@ -667,6 +668,19 @@ class TransactionController extends Controller
         );
         $transaction->tags()->sync($tagIds);
 
+        if ($account?->isMealVoucher()) {
+            $ledger = app(MealVoucherLedgerService::class);
+            if ($amount < 0) {
+                $lines = array_map(fn ($line) => [
+                    'lot_id' => (int) $line['lot_id'],
+                    'quantity' => (int) $line['quantity'],
+                ], $validated['meal_voucher_lines'] ?? []);
+                $ledger->applySpend($account, $transaction, $lines);
+            } else {
+                $ledger->applyIncome($account, $transaction);
+            }
+        }
+
         // Aggiorna il saldo del conto
         $account->current_balance += $amount;
         $account->save();
@@ -1236,6 +1250,9 @@ class TransactionController extends Controller
 
         // Aggiorna il saldo del conto
         $account = $transaction->account;
+        if ($account?->isMealVoucher()) {
+            app(MealVoucherLedgerService::class)->reverseTransaction($transaction);
+        }
         $account->current_balance -= (float) $transaction->amount;
         $account->save();
 

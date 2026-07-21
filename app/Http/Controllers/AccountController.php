@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAccountRequest;
+use App\Http\Requests\StoreMealVoucherUnitValueRequest;
 use App\Http\Requests\UpdateAccountRequest;
 use App\Models\Account;
 use App\Models\Currency;
 use App\Models\User;
 use App\Services\AccountBalanceService;
+use App\Services\MealVoucherLedgerService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +19,10 @@ use Inertia\Response;
 
 class AccountController extends Controller
 {
-    public function __construct(private readonly AccountBalanceService $accountBalanceService) {}
+    public function __construct(
+        private readonly AccountBalanceService $accountBalanceService,
+        private readonly MealVoucherLedgerService $mealVoucherLedger,
+    ) {}
 
     /**
      * Mostra l'elenco dei conti della household attiva.
@@ -126,6 +132,10 @@ class AccountController extends Controller
 
         $account->save();
 
+        if ($account->isMealVoucher()) {
+            $this->mealVoucherLedger->initializeAccount($account);
+        }
+
         return redirect()
             ->route('accounts.index')
             ->with('success', 'Conto creato con successo.');
@@ -138,12 +148,14 @@ class AccountController extends Controller
     {
         $this->authorizeAccount($account);
 
-        // Carica le ultime transazioni del conto
         $currentBalance = $this->accountBalanceService->computeBalance($account, Auth::user());
         $isMealVoucher = $account->isMealVoucher();
-        $ticketUnitValue = $isMealVoucher && $account->ticket_unit_value !== null
-            ? (float) $account->ticket_unit_value
+        $ticketUnitValue = $isMealVoucher
+            ? $this->mealVoucherLedger->unitValueOn($account, now())
             : null;
+        $lots = $isMealVoucher ? $this->mealVoucherLedger->lotsPayload($account) : [];
+        $ticketCount = $isMealVoucher ? $this->mealVoucherLedger->totalTicketCount($account) : null;
+        $unitValueHistory = $isMealVoucher ? $this->mealVoucherLedger->unitValueHistory($account) : [];
 
         $recentTransactions = $account->transactions()
             ->with(['category:id,name,color,icon', 'user:id,name'])
@@ -151,8 +163,14 @@ class AccountController extends Controller
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get()
-            ->map(function ($transaction) use ($account, $isMealVoucher) {
+            ->map(function ($transaction) use ($isMealVoucher) {
                 $amount = (float) $transaction->amount;
+                $movements = $isMealVoucher
+                    ? $this->mealVoucherLedger->movementsForTransaction($transaction)
+                    : [];
+                $ticketsDelta = $movements === []
+                    ? null
+                    : array_sum(array_column($movements, 'quantity'));
 
                 return [
                     'id' => $transaction->id,
@@ -161,7 +179,8 @@ class AccountController extends Controller
                     'description' => $transaction->description,
                     'category' => $transaction->category,
                     'user' => $transaction->user,
-                    'tickets_delta' => $isMealVoucher ? $account->ticketsDeltaForAmount($amount) : null,
+                    'tickets_delta' => $ticketsDelta,
+                    'meal_voucher_movements' => $movements,
                 ];
             });
 
@@ -178,13 +197,38 @@ class AccountController extends Controller
                 'currency_code' => $account->currency_code,
                 'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
                 'ticket_unit_value' => $ticketUnitValue,
-                'ticket_count' => $isMealVoucher ? $account->ticketCountFromBalance($currentBalance) : null,
+                'ticket_count' => $ticketCount,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
                 'created_at' => $account->created_at->format('d/m/Y'),
             ],
+            'mealVoucherLots' => $lots,
+            'mealVoucherUnitValueHistory' => $unitValueHistory,
             'recentTransactions' => $recentTransactions,
         ]);
+    }
+
+    public function storeUnitValue(StoreMealVoucherUnitValueRequest $request, Account $account): RedirectResponse
+    {
+        $this->authorizeAccount($account);
+
+        if (! $account->isMealVoucher()) {
+            abort(404);
+        }
+
+        try {
+            $this->mealVoucherLedger->scheduleUnitValue(
+                $account,
+                (float) $request->validated('unit_value'),
+                Carbon::parse($request->validated('effective_from')),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['unit_value' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('accounts.show', $account)
+            ->with('success', 'Nuovo valore ticket programmato.');
     }
 
     /**

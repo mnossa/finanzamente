@@ -11,7 +11,7 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
 import { Pagination } from '@/Components/Pagination';
@@ -21,6 +21,41 @@ import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import axios from 'axios';
 import { filtersAnalytics, tx } from '@/utils/analytics';
 import { formatCurrency } from '@/utils/format';
+import type { PageProps } from '@/types';
+
+const UPCOMING_EXPANDED_STORAGE_PREFIX = 'finanzamente.upcomingMovements.expanded';
+
+function readUpcomingExpandedPreference(userId: number | undefined): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    const key = userId != null
+        ? `${UPCOMING_EXPANDED_STORAGE_PREFIX}.${userId}`
+        : UPCOMING_EXPANDED_STORAGE_PREFIX;
+
+    try {
+        return window.localStorage.getItem(key) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function writeUpcomingExpandedPreference(userId: number | undefined, expanded: boolean): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+
+    const key = userId != null
+        ? `${UPCOMING_EXPANDED_STORAGE_PREFIX}.${userId}`
+        : UPCOMING_EXPANDED_STORAGE_PREFIX;
+
+    try {
+        window.localStorage.setItem(key, expanded ? '1' : '0');
+    } catch {
+        // ignore quota / private mode
+    }
+}
 
 interface Category {
     id: number;
@@ -575,7 +610,43 @@ export default function Index({
     upcomingMovements = [],
     projectedHouseholdBalance = null,
 }: IndexProps) {
+    const { auth } = usePage<PageProps>().props;
     const summaryCurrency = filters.currency_code || 'EUR';
+    const userId = auth.user?.id;
+
+    const [upcomingExpanded, setUpcomingExpanded] = useState(false);
+
+    useEffect(() => {
+        setUpcomingExpanded(readUpcomingExpandedPreference(userId));
+    }, [userId]);
+
+    const upcomingSummary = useMemo(() => {
+        let income = 0;
+        let expenses = 0;
+        for (const movement of upcomingMovements) {
+            const amount = Number(movement.amount) || 0;
+            if (amount > 0) {
+                income += amount;
+            } else {
+                expenses += Math.abs(amount);
+            }
+        }
+
+        return {
+            count: upcomingMovements.length,
+            income,
+            expenses,
+            net: income - expenses,
+        };
+    }, [upcomingMovements]);
+
+    const toggleUpcomingExpanded = () => {
+        setUpcomingExpanded((prev) => {
+            const next = !prev;
+            writeUpcomingExpandedPreference(userId, next);
+            return next;
+        });
+    };
 
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{
@@ -1159,33 +1230,78 @@ export default function Index({
                     {upcomingMovements.length > 0 ? (
                         <IndexListCard
                             header={(
-                                <div className="flex flex-col gap-1 border-b border-gray-100 px-4 py-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
-                                    <div>
-                                        <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Prossimi movimenti</h2>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Ricorrenze e PAC previsti (non inclusi nel saldo attuale).
-                                        </p>
-                                    </div>
-                                    {projectedHouseholdBalance != null ? (
-                                        <p className="text-xs text-gray-600 dark:text-gray-300">
-                                            Dopo movimenti programmati (90 gg):{' '}
-                                            <span className="font-semibold tabular-nums">{formatCurrency(projectedHouseholdBalance, summaryCurrency)}</span>
-                                        </p>
-                                    ) : null}
+                                <div className="border-b border-gray-100 dark:border-gray-700">
+                                    <button
+                                        type="button"
+                                        onClick={toggleUpcomingExpanded}
+                                        aria-expanded={upcomingExpanded}
+                                        aria-controls="upcoming-movements-list"
+                                        data-testid="upcoming-movements-toggle"
+                                        className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:hover:bg-gray-800/60 sm:flex-row sm:items-center sm:justify-between"
+                                    >
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                    Prossimi movimenti
+                                                </h2>
+                                                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                                    {upcomingSummary.count}
+                                                </span>
+                                                <span className="text-xs text-gray-400" aria-hidden>
+                                                    {upcomingExpanded ? '▾' : '▸'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Ricorrenze e PAC previsti (non inclusi nel saldo attuale).
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
+                                            <span>
+                                                Entrate{' '}
+                                                <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                    {formatCurrency(upcomingSummary.income, summaryCurrency)}
+                                                </span>
+                                            </span>
+                                            <span>
+                                                Uscite{' '}
+                                                <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
+                                                    {formatCurrency(upcomingSummary.expenses, summaryCurrency)}
+                                                </span>
+                                            </span>
+                                            <span>
+                                                Netto{' '}
+                                                <span className="font-semibold tabular-nums">
+                                                    {formatCurrency(upcomingSummary.net, summaryCurrency)}
+                                                </span>
+                                            </span>
+                                            {projectedHouseholdBalance != null ? (
+                                                <span>
+                                                    Dopo 90 gg:{' '}
+                                                    <span className="font-semibold tabular-nums">
+                                                        {formatCurrency(projectedHouseholdBalance, summaryCurrency)}
+                                                    </span>
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                    </button>
                                 </div>
                             )}
                             isEmpty={false}
                         >
-                            {upcomingMovements.map((movement) => (
-                                <TransactionListRow
-                                    key={movement.id}
-                                    transaction={movement}
-                                    onDeleteClick={() => undefined}
-                                    isSelected={false}
-                                    onToggleSelect={() => undefined}
-                                    indexQuery={returnQuery}
-                                />
-                            ))}
+                            {upcomingExpanded ? (
+                                <div id="upcoming-movements-list">
+                                    {upcomingMovements.map((movement) => (
+                                        <TransactionListRow
+                                            key={movement.id}
+                                            transaction={movement}
+                                            onDeleteClick={() => undefined}
+                                            isSelected={false}
+                                            onToggleSelect={() => undefined}
+                                            indexQuery={returnQuery}
+                                        />
+                                    ))}
+                                </div>
+                            ) : null}
                         </IndexListCard>
                     ) : null}
 

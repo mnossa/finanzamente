@@ -194,6 +194,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::patch('/conti/{account}', [AccountController::class, 'update'])->name('accounts.update');
         Route::delete('/conti/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
         Route::post('/conti/{account}/attiva-disattiva', [AccountController::class, 'toggleActive'])->name('accounts.toggle-active');
+        Route::post('/conti/{account}/valore-ticket', [AccountController::class, 'storeUnitValue'])->name('accounts.meal-voucher-unit-value.store');
 
         // Transactions - modifica
         Route::get('/transazioni/anteprima-cambio', [TransactionController::class, 'fxPreview'])->name('transactions.fx-preview');
@@ -357,6 +358,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
 
     Route::get('/etichette', [TagController::class, 'index'])->name('tags.index');
     Route::get('/etichette/cerca', [TagController::class, 'search'])->name('tags.search');
+    Route::get('/etichette/{tag}', [TagController::class, 'show'])->name('tags.show');
 
     Route::get('/budget', [BudgetController::class, 'index'])->name('budgets.index');
     Route::get('/budget/{budget}', [BudgetController::class, 'show'])->name('budgets.show');

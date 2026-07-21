@@ -1,8 +1,19 @@
+export interface MealVoucherLotOption {
+    id: number;
+    unit_value: number;
+    quantity_remaining: number;
+    acquired_on: string;
+    euro_value: number;
+}
+
 export interface TransactionAccount {
     id: number;
     name: string;
     currency_code: string;
     is_savings_deposit?: boolean;
+    is_meal_voucher?: boolean;
+    ticket_unit_value?: number | null;
+    meal_voucher_lots?: MealVoucherLotOption[];
 }
 
 export function accountsForTransactionType(

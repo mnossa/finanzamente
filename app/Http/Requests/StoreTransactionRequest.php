@@ -4,6 +4,10 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\ValidatesExpenseAccountEligibility;
 use App\Models\Account;
+use App\Models\Category;
+use App\Models\MealVoucherLot;
+use App\Services\MealVoucherLedgerService;
+use Carbon\Carbon;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +44,7 @@ class StoreTransactionRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $this->validateExpenseAccountEligibility($validator);
+            $this->validateMealVoucherRules($validator);
         });
     }
 
@@ -97,6 +102,9 @@ class StoreTransactionRequest extends FormRequest
                         ->whereIn('status', ['open', 'overdue']);
                 }),
             ],
+            'meal_voucher_lines' => ['nullable', 'array'],
+            'meal_voucher_lines.*.lot_id' => ['required', 'integer', 'exists:meal_voucher_lots,id'],
+            'meal_voucher_lines.*.quantity' => ['required', 'integer', 'min:1'],
         ];
     }
 
@@ -134,5 +142,92 @@ class StoreTransactionRequest extends FormRequest
     protected function hasSplitPayment(): bool
     {
         return is_array($this->input('splits')) && count($this->input('splits')) >= 2;
+    }
+
+    private function validateMealVoucherRules(Validator $validator): void
+    {
+        if ($this->hasSplitPayment()) {
+            $splitAccountIds = collect($this->input('splits', []))->pluck('account_id')->filter()->all();
+            if ($splitAccountIds !== [] && Account::query()->whereIn('id', $splitAccountIds)->where('type', Account::MEAL_VOUCHER_TYPE)->exists()) {
+                $validator->errors()->add('splits', 'I conti buoni pasto non supportano i pagamenti divisi.');
+            }
+
+            return;
+        }
+
+        $accountId = $this->input('account_id');
+        if (! $accountId) {
+            return;
+        }
+
+        $account = Account::query()->find($accountId);
+        if (! $account || ! $account->isMealVoucher()) {
+            return;
+        }
+
+        $category = Category::query()->find($this->input('category_id'));
+        if (! $category) {
+            return;
+        }
+
+        $ledger = app(MealVoucherLedgerService::class);
+        $amount = abs((float) $this->input('amount', 0));
+        $date = Carbon::parse($this->input('date', now()->toDateString()));
+
+        if ($category->type === 'expense') {
+            $lines = $this->input('meal_voucher_lines', []);
+            if (! is_array($lines) || $lines === []) {
+                $validator->errors()->add(
+                    'meal_voucher_lines',
+                    'Per spendere buoni pasto seleziona i ticket (interi) da usare.'
+                );
+
+                return;
+            }
+
+            try {
+                $computed = $ledger->euroFromLines($account, array_map(fn ($line) => [
+                    'lot_id' => (int) ($line['lot_id'] ?? 0),
+                    'quantity' => (int) ($line['quantity'] ?? 0),
+                ], $lines));
+
+                foreach ($lines as $line) {
+                    $lot = MealVoucherLot::query()
+                        ->where('account_id', $account->id)
+                        ->whereKey((int) ($line['lot_id'] ?? 0))
+                        ->first();
+                    if (! $lot || (int) ($line['quantity'] ?? 0) > (int) $lot->quantity_remaining) {
+                        $validator->errors()->add('meal_voucher_lines', 'Quantità ticket non disponibile.');
+
+                        return;
+                    }
+                }
+
+                if (abs($computed - $amount) > 0.001) {
+                    $validator->errors()->add(
+                        'amount',
+                        'L\'importo deve corrispondere ai ticket selezionati ('.$computed.' €).'
+                    );
+                }
+            } catch (\InvalidArgumentException $e) {
+                $validator->errors()->add('meal_voucher_lines', $e->getMessage());
+            }
+
+            return;
+        }
+
+        $unit = $ledger->unitValueOn($account, $date);
+        if ($unit === null || $unit <= 0) {
+            $validator->errors()->add('account_id', 'Nessun valore ticket vigente per questo conto.');
+
+            return;
+        }
+
+        if (! $ledger->isMultipleOfUnit($amount, $unit)) {
+            $validator->errors()->add(
+                'amount',
+                'L\'importo deve essere un multiplo del valore ticket vigente ('.number_format($unit, 2, ',', '.').' €). I buoni non sono frazionabili.'
+            );
+        }
     }
 }

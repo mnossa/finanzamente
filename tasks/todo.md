@@ -1,20 +1,18 @@
-# WFI-109 — Conto buoni pasto (meal_voucher)
+# WFI-106 / WFI-107 / WFI-108
 
 ## Plan
-- [x] Migration `ticket_unit_value` on accounts + ENUM `meal_voucher`
-- [x] `Account::TYPES` + helpers (`isMealVoucher`, ticket count formula)
-- [x] Form requests store/update validation
-- [x] Expense eligibility: meal_voucher allowed for expenses (already via non-deposit)
-- [x] AccountController show/create/edit/store/update props
-- [x] UI Create/Edit/Show/Guided
-- [x] Feature + Unit tests
-- [x] `make test` + `make pint-check` + playwright accounts meal voucher
+- [x] WFI-106: `tags.show` + stats mese + Tags/Show + Index link + Feature test
+- [x] WFI-107: collapse Prossimi movimenti + localStorage + E2E smoke
+- [x] WFI-108: analisi budget+tag → commento Jira (no code)
 
-## Formula
-`ticket_count = max(0, floor(current_balance / ticket_unit_value))` when unit > 0  
-Per TX on show: `tickets_delta = round(amount / ticket_unit_value, 2)` (signed)
+## Verify
+- [x] `make test` (1004 passed)
+- [x] `make pint-check`
+- [x] Playwright transazioni (Prossimi movimenti + split payment) green dopo seed
 
 ## Review
-- Backend: type `meal_voucher`, `ticket_unit_value`, show KPI + deltas
-- UI ticket only on Account show (index/dashboard untouched)
-- Verify: 998 PHPUnit passed, pint OK, e2e buoni pasto desktop+mobile OK
+- Tag show: mese Y-m, KPI + byCategory + link lista filtrata
+- Upcoming: collapsed default, aria-expanded, storage keyed by user id
+- WFI-108: raccomandazione Opzione 1 (categoria AS-IS); ownership tag vs HH apre v2
+- E2E: select non-buoni per split; seed TX futura per upcoming
+- Jira: commento WFI-108 ok; status Completato non auto-transition (approvare se serve)

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\DispatchesModelEvents;
 use App\Services\AccountBalanceService;
+use App\Services\MealVoucherLedgerService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -85,9 +86,19 @@ class Account extends Model
         return $this->type === self::MEAL_VOUCHER_TYPE;
     }
 
+    public function mealVoucherLots()
+    {
+        return $this->hasMany(MealVoucherLot::class);
+    }
+
+    public function mealVoucherUnitValues()
+    {
+        return $this->hasMany(MealVoucherUnitValue::class);
+    }
+
     /**
-     * Ticket interi disponibili da un saldo: floor(balance / unit), mai sotto 0.
-     * Resto non multiplo non conta come ticket intero.
+     * @deprecated Preferire MealVoucherLedgerService::totalTicketCount (lotti).
+     * Ticket interi da saldo/valore corrente: floor(balance / unit), mai sotto 0.
      */
     public function ticketCountFromBalance(float $balance): ?int
     {
@@ -108,7 +119,7 @@ class Account extends Model
     }
 
     /**
-     * Equivalenza ticket di un importo (segno = direzione TX). Null se non meal voucher.
+     * @deprecated Preferire movimenti lotti legati alla TX.
      */
     public function ticketsDeltaForAmount(float $amount): ?float
     {
@@ -137,16 +148,35 @@ class Account extends Model
     }
 
     /**
-     * @return array{id: int, name: string, currency_code: string, is_savings_deposit: bool}
+     * @return array{
+     *   id: int,
+     *   name: string,
+     *   currency_code: string,
+     *   is_savings_deposit: bool,
+     *   is_meal_voucher: bool,
+     *   ticket_unit_value: float|null,
+     *   meal_voucher_lots: list<array{id: int, unit_value: float, quantity_remaining: int, acquired_on: string, euro_value: float}>
+     * }
      */
     public function toTransactionFormOption(): array
     {
-        return [
+        $option = [
             'id' => $this->id,
             'name' => $this->name,
             'currency_code' => $this->currency_code,
             'is_savings_deposit' => $this->isSavingsDeposit(),
+            'is_meal_voucher' => $this->isMealVoucher(),
+            'ticket_unit_value' => null,
+            'meal_voucher_lots' => [],
         ];
+
+        if ($this->isMealVoucher()) {
+            $ledger = app(MealVoucherLedgerService::class);
+            $option['ticket_unit_value'] = $ledger->unitValueOn($this, now());
+            $option['meal_voucher_lots'] = $ledger->lotsPayload($this);
+        }
+
+        return $option;
     }
 
     public function household()

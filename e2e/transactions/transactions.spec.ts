@@ -93,6 +93,28 @@ test.describe('Transazioni', () => {
         await expect(page.getByLabel('Usa espressione regolare')).toBeVisible();
     });
 
+    test('sezione Prossimi movimenti collassa ed espande', async ({ page }) => {
+        await page.evaluate(() => {
+            Object.keys(localStorage)
+                .filter((k) => k.startsWith('finanzamente.upcomingMovements.expanded'))
+                .forEach((k) => localStorage.removeItem(k));
+        });
+        await page.reload();
+
+        const toggle = page.getByTestId('upcoming-movements-toggle');
+        await expect(toggle).toBeVisible({ timeout: 10_000 });
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.locator('#upcoming-movements-list')).toHaveCount(0);
+
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.locator('#upcoming-movements-list')).toBeVisible();
+
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.locator('#upcoming-movements-list')).toHaveCount(0);
+    });
+
     test('navigazione paginazione funziona se ci sono più pagine', async ({ page }) => {
         const pagination = page.getByRole('navigation', { name: /paginazione/i });
         if (await pagination.isVisible()) {
@@ -107,6 +129,25 @@ test.describe('Transazioni', () => {
     test('il form di creazione espone il pagamento su più conti', async ({ page }) => {
         await visibleHrefLocator(page, '/transazioni/crea').click();
         await expect(page).toHaveURL('/transazioni/crea');
+
+        // Split nascosto su conti buoni pasto (WFI-109): seleziona un conto corrente/carta.
+        const accountSelect = page.locator('#account_id');
+        await expect(accountSelect).toBeVisible({ timeout: 8_000 });
+        const options = accountSelect.locator('option');
+        const count = await options.count();
+        let selected = false;
+        for (let i = 0; i < count; i++) {
+            const label = (await options.nth(i).textContent())?.trim() ?? '';
+            const value = await options.nth(i).getAttribute('value');
+            if (!value || /^buoni\b/i.test(label)) {
+                continue;
+            }
+            await accountSelect.selectOption(value);
+            selected = true;
+            break;
+        }
+        expect(selected).toBeTruthy();
+
         await expect(page.getByText(/pagamento su più conti/i)).toBeVisible({ timeout: 8_000 });
     });
 

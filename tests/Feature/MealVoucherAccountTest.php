@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Household;
-use App\Models\Transaction;
+use App\Models\MealVoucherLot;
 use App\Models\User;
+use App\Services\MealVoucherLedgerService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -46,15 +48,10 @@ class MealVoucherAccountTest extends TestCase
                 'is_private' => false,
             ])
             ->assertSessionHasErrors('ticket_unit_value');
-
-        $this->assertDatabaseMissing('accounts', [
-            'household_id' => $this->household->id,
-            'name' => 'Buoni Edenred',
-        ]);
     }
 
     #[Test]
-    public function can_create_meal_voucher_account_with_ticket_unit_value(): void
+    public function can_create_meal_voucher_account_with_opening_lot(): void
     {
         $this->actingAs($this->user)
             ->post(route('accounts.store'), [
@@ -67,17 +64,21 @@ class MealVoucherAccountTest extends TestCase
             ])
             ->assertRedirect(route('accounts.index'));
 
-        $this->assertDatabaseHas('accounts', [
-            'household_id' => $this->household->id,
-            'name' => 'Buoni Edenred',
-            'type' => 'meal_voucher',
-            'ticket_unit_value' => 8,
-            'interest_rate' => null,
+        $account = Account::query()->where('name', 'Buoni Edenred')->firstOrFail();
+        $this->assertSame('meal_voucher', $account->type);
+        $this->assertDatabaseHas('meal_voucher_unit_values', [
+            'account_id' => $account->id,
+            'unit_value' => 8,
+        ]);
+        $this->assertDatabaseHas('meal_voucher_lots', [
+            'account_id' => $account->id,
+            'unit_value' => 8,
+            'quantity_remaining' => 10,
         ]);
     }
 
     #[Test]
-    public function show_exposes_ticket_count_from_balance_and_tickets_delta_on_transactions(): void
+    public function show_exposes_lots_and_ticket_count(): void
     {
         $account = Account::factory()->mealVoucher(8)->create([
             'household_id' => $this->household->id,
@@ -85,22 +86,7 @@ class MealVoucherAccountTest extends TestCase
             'initial_balance' => 80,
             'current_balance' => 80,
         ]);
-
-        $expenseCategory = Category::factory()->create([
-            'household_id' => $this->household->id,
-            'type' => 'expense',
-        ]);
-
-        Transaction::factory()->create([
-            'account_id' => $account->id,
-            'user_id' => $this->user->id,
-            'category_id' => $expenseCategory->id,
-            'amount' => -16,
-            'date' => now()->toDateString(),
-            'description' => 'Pranzo',
-        ]);
-
-        $account->recalculateBalance();
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
 
         $this->actingAs($this->user)
             ->get(route('accounts.show', $account))
@@ -109,34 +95,13 @@ class MealVoucherAccountTest extends TestCase
                 ->component('Accounts/Show')
                 ->where('account.type', 'meal_voucher')
                 ->where('account.ticket_unit_value', 8)
-                ->where('account.current_balance', 64)
-                ->where('account.ticket_count', 8)
-                ->where('recentTransactions.0.tickets_delta', -2)
+                ->where('account.ticket_count', 10)
+                ->has('mealVoucherLots', 1)
             );
     }
 
     #[Test]
-    public function show_omits_ticket_fields_for_non_meal_voucher_accounts(): void
-    {
-        $account = Account::factory()->bank()->create([
-            'household_id' => $this->household->id,
-            'owner_user_id' => $this->user->id,
-            'initial_balance' => 100,
-            'current_balance' => 100,
-        ]);
-
-        $this->actingAs($this->user)
-            ->get(route('accounts.show', $account))
-            ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('Accounts/Show')
-                ->where('account.ticket_unit_value', null)
-                ->where('account.ticket_count', null)
-            );
-    }
-
-    #[Test]
-    public function can_store_expense_on_meal_voucher_account(): void
+    public function can_schedule_new_unit_value_without_recalculating_lots(): void
     {
         $account = Account::factory()->mealVoucher(8)->create([
             'household_id' => $this->household->id,
@@ -144,6 +109,98 @@ class MealVoucherAccountTest extends TestCase
             'initial_balance' => 80,
             'current_balance' => 80,
         ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
+
+        $this->actingAs($this->user)
+            ->post(route('accounts.meal-voucher-unit-value.store', $account), [
+                'unit_value' => 10,
+                'effective_from' => now()->addDay()->toDateString(),
+            ])
+            ->assertRedirect(route('accounts.show', $account));
+
+        $this->assertDatabaseHas('meal_voucher_unit_values', [
+            'account_id' => $account->id,
+            'unit_value' => 10,
+        ]);
+        $this->assertSame(10, (int) MealVoucherLot::query()->where('account_id', $account->id)->sum('quantity_remaining'));
+        $this->assertEquals(8.0, (float) MealVoucherLot::query()->where('account_id', $account->id)->value('unit_value'));
+        $this->assertEquals(8.0, (float) $account->fresh()->ticket_unit_value);
+    }
+
+    #[Test]
+    public function cannot_schedule_unit_value_in_the_past(): void
+    {
+        $account = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 0,
+            'current_balance' => 0,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
+
+        $this->actingAs($this->user)
+            ->post(route('accounts.meal-voucher-unit-value.store', $account), [
+                'unit_value' => 10,
+                'effective_from' => now()->subDay()->toDateString(),
+            ])
+            ->assertSessionHasErrors('effective_from');
+    }
+
+    #[Test]
+    public function income_creates_lot_at_current_unit_value(): void
+    {
+        $account = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 0,
+            'current_balance' => 0,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
+
+        app(MealVoucherLedgerService::class)->scheduleUnitValue(
+            $account,
+            10,
+            now()->addDay(),
+        );
+
+        Carbon::setTestNow(now()->addDay());
+
+        $incomeCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'income',
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('transactions.store'), [
+                'account_id' => $account->id,
+                'category_id' => $incomeCategory->id,
+                'amount' => 50,
+                'date' => now()->toDateString(),
+                'description' => 'Ricarica buoni',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('meal_voucher_lots', [
+            'account_id' => $account->id,
+            'unit_value' => 10,
+            'quantity_remaining' => 5,
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function expense_requires_whole_tickets_from_chosen_lots(): void
+    {
+        $account = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
+        $lot = MealVoucherLot::query()->where('account_id', $account->id)->firstOrFail();
 
         $expenseCategory = Category::factory()->create([
             'household_id' => $this->household->id,
@@ -156,17 +213,73 @@ class MealVoucherAccountTest extends TestCase
                 'category_id' => $expenseCategory->id,
                 'amount' => 16,
                 'date' => now()->toDateString(),
-                'description' => 'Pranzo con buoni',
+                'description' => 'Pranzo',
+                'meal_voucher_lines' => [
+                    ['lot_id' => $lot->id, 'quantity' => 2],
+                ],
             ])
             ->assertRedirect()
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('transactions', [
-            'account_id' => $account->id,
-            'amount' => -16,
+        $this->assertSame(8, (int) $lot->fresh()->quantity_remaining);
+        $this->assertSame(8, app(MealVoucherLedgerService::class)->totalTicketCount($account->fresh()));
+    }
+
+    #[Test]
+    public function expense_rejects_fractional_euro_without_matching_tickets(): void
+    {
+        $account = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
+
+        $expenseCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
         ]);
 
-        $account->refresh();
-        $this->assertSame(8, $account->ticketCountFromBalance((float) $account->current_balance));
+        $this->actingAs($this->user)
+            ->post(route('transactions.store'), [
+                'account_id' => $account->id,
+                'category_id' => $expenseCategory->id,
+                'amount' => 12.5,
+                'date' => now()->toDateString(),
+            ])
+            ->assertSessionHasErrors('meal_voucher_lines');
+    }
+
+    #[Test]
+    public function fifo_suggestion_prefers_oldest_lots(): void
+    {
+        $account = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 0,
+            'current_balance' => 0,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($account);
+
+        MealVoucherLot::query()->create([
+            'account_id' => $account->id,
+            'unit_value' => 8,
+            'quantity_remaining' => 3,
+            'acquired_on' => Carbon::parse('2026-01-01'),
+        ]);
+        MealVoucherLot::query()->create([
+            'account_id' => $account->id,
+            'unit_value' => 10,
+            'quantity_remaining' => 5,
+            'acquired_on' => Carbon::parse('2026-06-01'),
+        ]);
+
+        $lines = app(MealVoucherLedgerService::class)->suggestFifoForEuro($account, 34);
+        $this->assertCount(2, $lines);
+        $this->assertSame(3, $lines[0]['quantity']);
+        $this->assertSame(8.0, $lines[0]['unit_value']);
+        $this->assertSame(1, $lines[1]['quantity']);
+        $this->assertSame(10.0, $lines[1]['unit_value']);
     }
 }

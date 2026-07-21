@@ -330,6 +330,22 @@ class E2ESeeder extends Seeder
                 'recurring' => true,
             ]
         );
+
+        // TX futura per sezione "Prossimi movimenti" (collapse E2E WFI-107)
+        Transaction::updateOrCreate(
+            [
+                'account_id' => $account->id,
+                'description' => 'Movimento futuro E2E',
+                'date' => Carbon::today()->addDays(20)->toDateString(),
+            ],
+            [
+                'user_id' => $user->id,
+                'category_id' => $expenseCategory->id,
+                'amount' => -15.00,
+                'currency_code' => 'EUR',
+                'recurring' => false,
+            ]
+        );
     }
 
     private function seedMagazineArticles(): void

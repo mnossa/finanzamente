@@ -80,5 +80,9 @@ class TagUserIsolationTest extends TestCase
         $this->actingAs($this->userB)
             ->get(route('tags.edit', $foreignTag))
             ->assertForbidden();
+
+        $this->actingAs($this->userB)
+            ->get(route('tags.show', $foreignTag))
+            ->assertForbidden();
     }
 }

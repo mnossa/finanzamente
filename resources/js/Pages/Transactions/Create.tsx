@@ -22,6 +22,7 @@ import { useFxPreview } from '@/hooks/useFxPreview';
 import { useFormTimer } from '@/hooks/useFormTimer';
 import { tx } from '@/utils/analytics';
 import SplitPaymentSection, { SplitLine } from '@/Components/SplitPaymentSection';
+import MealVoucherSpendSection, { MealVoucherLine } from '@/Components/MealVoucherSpendSection';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
     accountsForTransactionType,
@@ -140,6 +141,7 @@ export default function Create({
         original_currency_code: debtCreditPrefill?.original_currency_code || '',
         manual_rate: '',
         splits: [] as SplitLine[],
+        meal_voucher_lines: [] as MealVoucherLine[],
     });
 
     const [splitEnabled, setSplitEnabled] = useState(false);
@@ -174,6 +176,9 @@ export default function Create({
     }, []);
     const selectedAccount = accounts.find((a) => a.id === Number(data.account_id));
     const accountCurrency = selectedAccount?.currency_code ?? 'EUR';
+    const isMealVoucherAccount = Boolean(selectedAccount?.is_meal_voucher);
+    const mealVoucherLots = selectedAccount?.meal_voucher_lots ?? [];
+    const mealVoucherUnit = selectedAccount?.ticket_unit_value ?? null;
 
     const fxPreview = useFxPreview({
         enabled: showFx && !!data.original_currency_code && !!accountCurrency && data.original_currency_code !== accountCurrency,
@@ -384,6 +389,7 @@ export default function Create({
                                     />
                                 </div>
 
+                                {!isMealVoucherAccount && (
                                 <SplitPaymentSection
                                     enabled={splitEnabled}
                                     onToggle={(enabled) => {
@@ -395,6 +401,7 @@ export default function Create({
                                     totalAmount={data.amount}
                                     errors={errors as Record<string, string>}
                                 />
+                                )}
 
                                 {/* Conto */}
                                 {!splitEnabled && (
@@ -406,6 +413,7 @@ export default function Create({
                                         value={data.account_id}
                                         onChange={(e) => {
                                             setData('account_id', e.target.value);
+                                            setData('meal_voucher_lines', []);
                                         }}
                                         required
                                     >
@@ -418,6 +426,31 @@ export default function Create({
                                     </select>
                                     <InputError message={errors.account_id} className="mt-1" />
                                 </div>
+                                )}
+
+                                {isMealVoucherAccount && isExpense && !splitEnabled && (
+                                    <MealVoucherSpendSection
+                                        lots={mealVoucherLots}
+                                        lines={data.meal_voucher_lines}
+                                        amount={data.amount}
+                                        currencyCode={accountCurrency}
+                                        error={errors.meal_voucher_lines}
+                                        onAmountChange={(value) => setData('amount', value)}
+                                        onChange={(lines, euro) => {
+                                            setData('meal_voucher_lines', lines);
+                                            if (euro > 0) {
+                                                setData('amount', String(euro));
+                                            }
+                                        }}
+                                    />
+                                )}
+
+                                {isMealVoucherAccount && !isExpense && mealVoucherUnit && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Accredito buoni: l&apos;importo deve essere un multiplo di{' '}
+                                        {new Intl.NumberFormat('it-IT', { style: 'currency', currency: accountCurrency }).format(mealVoucherUnit)}{' '}
+                                        (ticket interi al valore vigente).
+                                    </p>
                                 )}
 
                                 {/* Descrizione */}

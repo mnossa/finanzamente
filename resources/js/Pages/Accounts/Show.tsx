@@ -5,8 +5,12 @@ import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
+import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
+import PrimaryButton from '@/Components/PrimaryButton';
+import TextInput from '@/Components/TextInput';
 import { IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
@@ -17,6 +21,12 @@ interface Category {
     name: string;
     color: string | null;
     icon: string | null;
+}
+
+interface MealVoucherMovement {
+    lot_id: number;
+    unit_value: number;
+    quantity: number;
 }
 
 interface Transaction {
@@ -30,6 +40,7 @@ interface Transaction {
         name: string;
     };
     tickets_delta: number | null;
+    meal_voucher_movements?: MealVoucherMovement[];
 }
 
 interface Account {
@@ -47,9 +58,24 @@ interface Account {
     created_at: string;
 }
 
+interface MealVoucherLot {
+    id: number;
+    unit_value: number;
+    quantity_remaining: number;
+    acquired_on: string;
+    euro_value: number;
+}
+
+interface UnitValueHistoryRow {
+    unit_value: number;
+    effective_from: string;
+}
+
 interface ShowProps {
     account: Account;
     recentTransactions: Transaction[];
+    mealVoucherLots?: MealVoucherLot[];
+    mealVoucherUnitValueHistory?: UnitValueHistoryRow[];
 }
 
 function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -61,12 +87,10 @@ function formatCurrency(amount: number, currency: string = 'EUR'): string {
 
 function formatTicketsDelta(delta: number): string {
     const formatted = new Intl.NumberFormat('it-IT', {
-        minimumFractionDigits: Number.isInteger(delta) ? 0 : 1,
-        maximumFractionDigits: 2,
+        maximumFractionDigits: 0,
     }).format(Math.abs(delta));
     const sign = delta > 0 ? '+' : delta < 0 ? '−' : '';
-    const unit = Math.abs(delta) === 1 ? 'ticket' : 'ticket';
-    return `${sign}${formatted} ${unit}`;
+    return `${sign}${formatted} ticket`;
 }
 
 function TransactionRow({
@@ -101,6 +125,13 @@ function TransactionRow({
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                         {new Date(transaction.date).toLocaleDateString('it-IT')}
                     </p>
+                    {showTickets && (transaction.meal_voucher_movements?.length ?? 0) > 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {transaction.meal_voucher_movements!
+                                .map((m) => `${Math.abs(m.quantity)}×${formatCurrency(m.unit_value, currency)}`)
+                                .join(' · ')}
+                        </p>
+                    )}
                 </div>
             </div>
             <div className="text-right">
@@ -134,7 +165,69 @@ function TransactionRow({
     );
 }
 
-export default function Show({ account, recentTransactions }: ShowProps) {
+function MealVoucherUnitValueForm({ accountId }: { accountId: number }) {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, setData, post, processing, errors, reset } = useForm({
+        unit_value: '',
+        effective_from: today,
+    });
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                post(route('accounts.meal-voucher-unit-value.store', accountId), {
+                    preserveScroll: true,
+                    onSuccess: () => reset('unit_value'),
+                });
+            }}
+            className="space-y-3"
+        >
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+                Dal giorno indicato i nuovi accrediti useranno questo valore. I ticket già in cassa non cambiano.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                    <InputLabel htmlFor="unit_value" value="Nuovo valore ticket" />
+                    <TextInput
+                        id="unit_value"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        className="mt-1 block w-full"
+                        value={data.unit_value}
+                        onChange={(e) => setData('unit_value', e.target.value)}
+                        required
+                    />
+                    <InputError message={errors.unit_value} className="mt-1" />
+                </div>
+                <div>
+                    <InputLabel htmlFor="effective_from" value="Valido dal" />
+                    <TextInput
+                        id="effective_from"
+                        type="date"
+                        min={today}
+                        className="mt-1 block w-full"
+                        value={data.effective_from}
+                        onChange={(e) => setData('effective_from', e.target.value)}
+                        required
+                    />
+                    <InputError message={errors.effective_from} className="mt-1" />
+                </div>
+            </div>
+            <PrimaryButton disabled={processing}>
+                {processing ? 'Salvataggio...' : 'Programma valore'}
+            </PrimaryButton>
+        </form>
+    );
+}
+
+export default function Show({
+    account,
+    recentTransactions,
+    mealVoucherLots = [],
+    mealVoucherUnitValueHistory = [],
+}: ShowProps) {
     const isMealVoucher = account.type === 'meal_voucher';
 
     return (
@@ -167,7 +260,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                             />
                             <p className="text-sm text-gray-600 dark:text-gray-300">
                                 {isMealVoucher
-                                    ? 'Saldo in euro, buoni pasto equivalenti e ultime operazioni.'
+                                    ? 'Saldo in euro, lotti di buoni pasto e ultime operazioni.'
                                     : 'Stato del conto, saldi e ultime operazioni in un unico riepilogo.'}
                             </p>
                         </div>
@@ -193,7 +286,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                                 </CardBox>
                                 <CardBox className="p-4 shadow-sm">
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Valore di un ticket
+                                        Valore ticket vigente
                                     </p>
                                     <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                         {account.ticket_unit_value !== null
@@ -224,6 +317,58 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                         )}
                     </div>
 
+                    {isMealVoucher && (
+                        <>
+                            <CardBox className="overflow-hidden p-4 shadow-sm">
+                                <h3 className="mb-3 font-semibold text-gray-900 dark:text-white">Lotti in cassa</h3>
+                                {mealVoucherLots.length === 0 ? (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Nessun ticket in cassa.</p>
+                                ) : (
+                                    <ul className="space-y-2">
+                                        {mealVoucherLots.map((lot) => (
+                                            <li
+                                                key={lot.id}
+                                                className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 dark:border-gray-700"
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {lot.quantity_remaining} ticket da{' '}
+                                                        {formatCurrency(lot.unit_value, account.currency_code)}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        Acquisiti il {new Date(lot.acquired_on).toLocaleDateString('it-IT')}
+                                                    </p>
+                                                </div>
+                                                <p className={clsx('text-sm font-semibold', moneyTabular)}>
+                                                    {formatCurrency(lot.euro_value, account.currency_code)}
+                                                </p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </CardBox>
+
+                            <CardBox className="overflow-hidden p-4 shadow-sm">
+                                <h3 className="mb-3 font-semibold text-gray-900 dark:text-white">
+                                    Storico valore ticket
+                                </h3>
+                                {mealVoucherUnitValueHistory.length > 0 && (
+                                    <ul className="mb-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                        {mealVoucherUnitValueHistory.map((row) => (
+                                            <li key={row.effective_from}>
+                                                Dal {new Date(row.effective_from).toLocaleDateString('it-IT')}:{' '}
+                                                <span className="font-medium text-gray-900 dark:text-white">
+                                                    {formatCurrency(row.unit_value, account.currency_code)}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <MealVoucherUnitValueForm accountId={account.id} />
+                            </CardBox>
+                        </>
+                    )}
+
                     <CardBox className="overflow-hidden shadow-sm">
                         <div className="flex items-center justify-between border-b border-gray-100 p-4 dark:border-gray-700">
                             <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -231,7 +376,7 @@ export default function Show({ account, recentTransactions }: ShowProps) {
                             </h3>
                             {isMealVoucher && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    Equivalenza in ticket per movimento
+                                    Ticket interi per movimento
                                 </p>
                             )}
                         </div>
