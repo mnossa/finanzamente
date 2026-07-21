@@ -129,7 +129,7 @@ class MealVoucherAccountTest extends TestCase
     }
 
     #[Test]
-    public function cannot_schedule_unit_value_in_the_past(): void
+    public function can_set_unit_value_in_the_past_for_historical_categorization(): void
     {
         $account = Account::factory()->mealVoucher(8)->create([
             'household_id' => $this->household->id,
@@ -139,12 +139,64 @@ class MealVoucherAccountTest extends TestCase
         ]);
         app(MealVoucherLedgerService::class)->initializeAccount($account);
 
+        $pastDate = now()->subMonths(2)->toDateString();
+
         $this->actingAs($this->user)
             ->post(route('accounts.meal-voucher-unit-value.store', $account), [
-                'unit_value' => 10,
-                'effective_from' => now()->subDay()->toDateString(),
+                'unit_value' => 7,
+                'effective_from' => $pastDate,
             ])
-            ->assertSessionHasErrors('effective_from');
+            ->assertRedirect(route('accounts.show', $account))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('meal_voucher_unit_values', [
+            'account_id' => $account->id,
+            'unit_value' => 7,
+            'effective_from' => $pastDate,
+        ]);
+
+        $ledger = app(MealVoucherLedgerService::class);
+        $this->assertEquals(7.0, $ledger->unitValueOn($account->fresh(), Carbon::parse($pastDate)));
+        // Valore corrente (oggi) resta quello più recente vigente: 8 dall'inizializzazione
+        $this->assertEquals(8.0, (float) $account->fresh()->ticket_unit_value);
+    }
+
+    #[Test]
+    public function past_income_uses_historical_unit_value(): void
+    {
+        $account = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 0,
+            'current_balance' => 0,
+        ]);
+        $ledger = app(MealVoucherLedgerService::class);
+        $ledger->initializeAccount($account);
+
+        $pastDate = now()->subMonth()->startOfDay();
+        $ledger->scheduleUnitValue($account, 5, $pastDate);
+
+        $incomeCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'income',
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('transactions.store'), [
+                'account_id' => $account->id,
+                'category_id' => $incomeCategory->id,
+                'amount' => 25,
+                'date' => $pastDate->toDateString(),
+                'description' => 'Ricarica storica',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('meal_voucher_lots', [
+            'account_id' => $account->id,
+            'unit_value' => 5,
+            'quantity_remaining' => 5,
+        ]);
     }
 
     #[Test]

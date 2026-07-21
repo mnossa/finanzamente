@@ -110,5 +110,9 @@ test.describe('Conti', () => {
         await expect(page.getByText('Valore ticket vigente', { exact: true })).toBeVisible();
         await expect(page.getByText('Lotti in cassa', { exact: true })).toBeVisible();
         await expect(page.getByText('10', { exact: true }).first()).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Salva valore' })).toBeVisible();
+        await expect(page.locator('input#effective_from')).toBeVisible();
+        // Date passate ammesse (nessun min sul campo)
+        await expect(page.locator('input#effective_from')).not.toHaveAttribute('min', /.+/);
     });
 });

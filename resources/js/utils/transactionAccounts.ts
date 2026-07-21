@@ -6,6 +6,11 @@ export interface MealVoucherLotOption {
     euro_value: number;
 }
 
+export interface MealVoucherUnitValueHistoryRow {
+    unit_value: number;
+    effective_from: string;
+}
+
 export interface TransactionAccount {
     id: number;
     name: string;
@@ -14,6 +19,32 @@ export interface TransactionAccount {
     is_meal_voucher?: boolean;
     ticket_unit_value?: number | null;
     meal_voucher_lots?: MealVoucherLotOption[];
+    meal_voucher_unit_value_history?: MealVoucherUnitValueHistoryRow[];
+}
+
+/**
+ * Valore ticket vigente alla data (ultimo effective_from <= date).
+ */
+export function mealVoucherUnitValueOnDate(
+    account: TransactionAccount | null | undefined,
+    date: string,
+): number | null {
+    if (!account?.is_meal_voucher) {
+        return null;
+    }
+
+    const history = account.meal_voucher_unit_value_history ?? [];
+    if (history.length > 0 && date) {
+        const eligible = history
+            .filter((row) => row.effective_from <= date)
+            .sort((a, b) => b.effective_from.localeCompare(a.effective_from));
+
+        if (eligible[0]) {
+            return eligible[0].unit_value;
+        }
+    }
+
+    return account.ticket_unit_value ?? null;
 }
 
 export function accountsForTransactionType(

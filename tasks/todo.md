@@ -1,11 +1,11 @@
-# Movimenti hub + Org snella (+ Tag)
+# Conti ticket: valore storico + label dashboard
 
 ## Piano
-- [x] MovementsHubNav: Transazioni · Trasferimenti · Rimborsi · Ricorrenti · Inbox
-- [x] OrganizationHubNav: Conti · Categorie · Etichette
-- [x] Sidebar + mobileBottomNav patterns
-- [x] E2E hub + transfers (desktop/mobile smoke)
+- [ ] Rimuovere vincolo `effective_from >= oggi` (Form Request + `MealVoucherLedgerService` + UI Show)
+- [ ] Test: salvare valore ticket nel passato; aggiornare test che lo vietava
+- [ ] Form transazione: mostrare valore ticket vigente alla data selezionata (history in account options)
+- [ ] Dashboard: label italiana «Buoni pasto» + conteggio ticket
+- [ ] `make test` + `make pint-check` (+ playwright se UI navigabile)
 
 ## Review
-- Movimenti = flussi TX; Org = Conti / Categorie / Etichette
-- Entry Org → accounts.index; bottom nav highlight allineato
+(da compilare a fine lavoro)

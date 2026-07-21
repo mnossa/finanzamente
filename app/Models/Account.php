@@ -155,7 +155,8 @@ class Account extends Model
      *   is_savings_deposit: bool,
      *   is_meal_voucher: bool,
      *   ticket_unit_value: float|null,
-     *   meal_voucher_lots: list<array{id: int, unit_value: float, quantity_remaining: int, acquired_on: string, euro_value: float}>
+     *   meal_voucher_lots: list<array{id: int, unit_value: float, quantity_remaining: int, acquired_on: string, euro_value: float}>,
+     *   meal_voucher_unit_value_history: list<array{unit_value: float, effective_from: string}>
      * }
      */
     public function toTransactionFormOption(): array
@@ -168,12 +169,14 @@ class Account extends Model
             'is_meal_voucher' => $this->isMealVoucher(),
             'ticket_unit_value' => null,
             'meal_voucher_lots' => [],
+            'meal_voucher_unit_value_history' => [],
         ];
 
         if ($this->isMealVoucher()) {
             $ledger = app(MealVoucherLedgerService::class);
             $option['ticket_unit_value'] = $ledger->unitValueOn($this, now());
             $option['meal_voucher_lots'] = $ledger->lotsPayload($this);
+            $option['meal_voucher_unit_value_history'] = $ledger->unitValueHistory($this);
         }
 
         return $option;
