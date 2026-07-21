@@ -23,6 +23,7 @@ export const HUB_INDEX_ROUTE_NAMES = new Set([
     'investment-assets.index',
     'investment-analyses.index',
     'categories.index',
+    'tags.index',
     'inbox.index',
     'refunds.index',
     'recurring-transactions.index',

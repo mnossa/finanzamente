@@ -1,18 +1,11 @@
 import SectionHubNav, { type SectionHubTab } from '@/Components/SectionHubNav';
 
-type HubTab = 'categories' | 'inbox' | 'refunds' | 'recurring';
+type HubTab = 'accounts' | 'categories' | 'tags';
 
 const TABS: SectionHubTab[] = [
-    { id: 'categories', label: 'Categorie', icon: 'Tags', routeName: 'categories.index', moduleId: 'categories' },
-    { id: 'inbox', label: 'Inbox', icon: 'Inbox', routeName: 'inbox.index', requiresPro: true, moduleId: 'inbox' },
-    { id: 'refunds', label: 'Rimborsi', icon: 'Undo', routeName: 'refunds.index', moduleId: 'refunds' },
-    {
-        id: 'recurring',
-        label: 'Ricorrenti',
-        icon: 'Repeat',
-        routeName: 'recurring-transactions.index',
-        moduleId: 'recurring_transactions',
-    },
+    { id: 'accounts', label: 'Conti', icon: 'Wallet', routeName: 'accounts.index', moduleId: 'accounts' },
+    { id: 'categories', label: 'Categorie', icon: 'Receipt', routeName: 'categories.index', moduleId: 'categories' },
+    { id: 'tags', label: 'Etichette', icon: 'Tags', routeName: 'tags.index', moduleId: 'tags' },
 ];
 
 export default function OrganizationHubNav({ active }: { active: HubTab }) {

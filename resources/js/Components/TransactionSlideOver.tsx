@@ -299,6 +299,15 @@ export default function TransactionSlideOver({
                                                             </span>
                                                         ) : null}
                                                     </div>
+
+                                                    {isTransfer && transaction.transfer_id ? (
+                                                        <Link
+                                                            href={route('transfers.show', transaction.transfer_id)}
+                                                            className="inline-flex text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+                                                        >
+                                                            Vedi trasferimento completo →
+                                                        </Link>
+                                                    ) : null}
                                                 </div>
                                             ) : null}
                                         </div>

@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
@@ -82,7 +83,6 @@ export default function Index({ transfers }: IndexProps) {
             header={
                 <PageHeader
                     title="Trasferimenti"
-                    backLink={route('transactions.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('transfers.create')} icon={<PlusIcon />}>
@@ -107,6 +107,7 @@ export default function Index({ transfers }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
+                <MovementsHubNav active="transfers" />
                 <IndexIntroSection
                     label="Trasferimenti"
                     icon={<span className="text-sm leading-none">🔄</span>}

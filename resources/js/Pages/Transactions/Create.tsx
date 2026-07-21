@@ -304,6 +304,49 @@ export default function Create({
                                 Inserisci una nuova transazione
                             </h2>
                         </header>
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Altre operazioni
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-3">
+                                <Link
+                                    href={route('transfers.create')}
+                                    className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-left transition-colors hover:border-amber-400 dark:border-amber-800 dark:bg-amber-900/20 dark:hover:border-amber-600"
+                                >
+                                    <span className="text-lg" aria-hidden>🔄</span>
+                                    <p className="mt-1 text-sm font-semibold text-amber-950 dark:text-amber-100">
+                                        Trasferimento
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200">
+                                        Tra due conti
+                                    </p>
+                                </Link>
+                                <Link
+                                    href={route('refunds.create')}
+                                    className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-3 text-left transition-colors hover:border-sky-400 dark:border-sky-800 dark:bg-sky-900/20 dark:hover:border-sky-600"
+                                >
+                                    <span className="text-lg" aria-hidden>💸</span>
+                                    <p className="mt-1 text-sm font-semibold text-sky-950 dark:text-sky-100">
+                                        Rimborso
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-sky-800 dark:text-sky-200">
+                                        Su una spesa esistente
+                                    </p>
+                                </Link>
+                                <Link
+                                    href={route('recurring-transactions.create')}
+                                    className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-3 text-left transition-colors hover:border-violet-400 dark:border-violet-800 dark:bg-violet-900/20 dark:hover:border-violet-600"
+                                >
+                                    <span className="text-lg" aria-hidden>🔁</span>
+                                    <p className="mt-1 text-sm font-semibold text-violet-950 dark:text-violet-100">
+                                        Ricorrenza
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-violet-800 dark:text-violet-200">
+                                        Movimento ripetuto
+                                    </p>
+                                </Link>
+                            </div>
+                        </div>
                         {accounts.length === 0 ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">🏦</div>

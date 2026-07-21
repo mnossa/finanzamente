@@ -337,7 +337,12 @@ export default function PatrimonioIndex({
 
                 <CardBox className="overflow-hidden">
                     <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-700">
-                        <h2 className="font-medium text-gray-900 dark:text-white">Conti ({accounts.length})</h2>
+                        <div className="flex items-center justify-between gap-2">
+                            <h2 className="font-medium text-gray-900 dark:text-white">Conti ({accounts.length})</h2>
+                            <Link href={route('accounts.index')} className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+                                Gestisci →
+                            </Link>
+                        </div>
                     </div>
                     {accounts.length === 0 ? (
                         <p className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">Nessun conto attivo.</p>

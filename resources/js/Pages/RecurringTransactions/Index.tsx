@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import OrganizationHubNav from '@/Components/OrganizationHubNav';
+import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar, MobileCreateLinkButton } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
@@ -122,7 +122,7 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
             />
 
             <PageContent maxWidth="7xl">
-                <OrganizationHubNav active="recurring" />
+                <MovementsHubNav active="recurring" />
                 <IndexIntroSection
                     label="Ricorrenze"
                     icon={<span className="text-sm leading-none">🔁</span>}

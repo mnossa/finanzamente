@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
+import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
@@ -90,18 +91,18 @@ export default function Index({ tags }: IndexProps) {
         <AuthenticatedLayout
             header={
                 <PageHeader
-                    title="Tag"
+                    title="Etichette"
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('tags.create')} icon={<PlusIcon />}>
-                                Nuovo Tag
+                                Nuova etichetta
                             </LinkButton>
                         </IndexPageHeaderActions>
                     }
                 />
             }
         >
-            <Head title="Tag" />
+            <Head title="Etichette" />
 
             <ConfirmDeleteDialog
                 open={deleteDialogOpen}
@@ -114,8 +115,9 @@ export default function Index({ tags }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
+                    <OrganizationHubNav active="tags" />
                     <IndexIntroSection
-                        label="Tag"
+                        label="Etichette"
                         icon={<span className="text-sm leading-none">🏷️</span>}
                         description="Organizza le transazioni con etichette rapide e facili da filtrare."
                     />

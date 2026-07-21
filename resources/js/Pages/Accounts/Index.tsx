@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import PatrimonioHubNav from '@/Components/PatrimonioHubNav';
+import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
@@ -112,7 +112,6 @@ export default function Index({
             header={
                 <PageHeader
                     title="I tuoi Conti"
-                    backLink={route('transactions.index')}
                     actions={
                         <IndexPageHeaderActions>
                             <LinkButton href={route('accounts.create')} icon={<PlusIcon />}>
@@ -126,7 +125,7 @@ export default function Index({
             <Head title="Conti" />
 
             <PageContent maxWidth="7xl">
-                    <PatrimonioHubNav active="accounts" />
+                    <OrganizationHubNav active="accounts" />
                     <IndexIntroSection
                         label="Panoramica conti"
                         icon={<span className="text-sm leading-none">🏦</span>}

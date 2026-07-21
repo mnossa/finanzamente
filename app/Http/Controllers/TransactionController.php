@@ -27,9 +27,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use InvalidArgumentException;
 
 class TransactionController extends Controller
 {
@@ -940,77 +942,107 @@ class TransactionController extends Controller
             $newAmount,
         );
 
-        // Aggiorna la transazione
-        $transaction->update([
-            'account_id' => $validated['account_id'],
-            'category_id' => $validated['category_id'],
-            'amount' => $newAmount,
-            'date' => $validated['date'],
-            'description' => $validated['description'] ?? null,
-            'is_private' => $validated['is_private'] ?? false,
-            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
-            'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
-            'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
-            'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
-            'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? Carbon::parse($validated['date'])->year : null),
-            ...$currencyFields,
-        ]);
+        $spendLines = null;
+        if (isset($validated['meal_voucher_lines']) && is_array($validated['meal_voucher_lines'])) {
+            $spendLines = array_map(fn ($line) => [
+                'lot_id' => (int) $line['lot_id'],
+                'quantity' => (int) $line['quantity'],
+            ], $validated['meal_voucher_lines']);
+        }
 
-        // Sincronizza i tag (esistenti + nuovi da creare)
-        $tagIds = $this->resolveTagIds(
-            $validated['tag_ids'] ?? [],
-            $validated['new_tag_names'] ?? [],
-            Auth::user()->active_household_id,
-            Auth::id()
-        );
-        $transaction->tags()->sync($tagIds);
-
-        // Se è un trasferimento, aggiorna anche la transazione collegata
-        if ($isTransfer) {
-            $linkedTransaction = Transaction::where('transfer_id', $transaction->transfer_id)
-                ->where('id', '!=', $transaction->id)
-                ->first();
-
-            if ($linkedTransaction) {
-                // Calcola il nuovo importo per la transazione collegata
-                // Se questa è uscita (negativa), l'altra è entrata (positiva) e viceversa
-                $linkedOldAmount = (float) $linkedTransaction->amount;
-                $linkedNewAmount = $oldAmount != 0
-                    ? ($linkedOldAmount / abs($oldAmount)) * abs($newAmount)
-                    : abs($newAmount);
-
-                // Aggiorna descrizione e privacy, mantieni segno originale dell'importo
-                $linkedTransaction->update([
-                    'amount' => $linkedNewAmount,
+        try {
+            DB::transaction(function () use (
+                $transaction,
+                $validated,
+                $newAmount,
+                $currencyFields,
+                $isTransfer,
+                $oldAmount,
+                $oldAccountId,
+                $spendLines,
+            ) {
+                // Aggiorna la transazione
+                $transaction->update([
+                    'account_id' => $validated['account_id'],
+                    'category_id' => $validated['category_id'],
+                    'amount' => $newAmount,
+                    'date' => $validated['date'],
                     'description' => $validated['description'] ?? null,
                     'is_private' => $validated['is_private'] ?? false,
+                    'debt_credit_id' => $validated['debt_credit_id'] ?? null,
+                    'is_tax_deductible' => $validated['is_tax_deductible'] ?? false,
+                    'tax_deduction_rate' => $validated['tax_deduction_rate'] ?? null,
+                    'tax_deduction_type' => $validated['tax_deduction_type'] ?? null,
+                    'tax_year' => $validated['tax_year'] ?? (($validated['is_tax_deductible'] ?? false) ? Carbon::parse($validated['date'])->year : null),
+                    ...$currencyFields,
                 ]);
 
-                // Aggiorna il saldo del conto collegato
-                $linkedAccount = $linkedTransaction->account;
-                $linkedAccount->current_balance += ($linkedNewAmount - $linkedOldAmount);
-                $linkedAccount->save();
-            }
+                // Sincronizza i tag (esistenti + nuovi da creare)
+                $tagIds = $this->resolveTagIds(
+                    $validated['tag_ids'] ?? [],
+                    $validated['new_tag_names'] ?? [],
+                    Auth::user()->active_household_id,
+                    Auth::id()
+                );
+                $transaction->tags()->sync($tagIds);
+
+                // Se è un trasferimento, aggiorna anche la transazione collegata
+                if ($isTransfer) {
+                    $linkedTransaction = Transaction::where('transfer_id', $transaction->transfer_id)
+                        ->where('id', '!=', $transaction->id)
+                        ->first();
+
+                    if ($linkedTransaction) {
+                        // Calcola il nuovo importo per la transazione collegata
+                        // Se questa è uscita (negativa), l'altra è entrata (positiva) e viceversa
+                        $linkedOldAmount = (float) $linkedTransaction->amount;
+                        $linkedNewAmount = $oldAmount != 0
+                            ? ($linkedOldAmount / abs($oldAmount)) * abs($newAmount)
+                            : abs($newAmount);
+
+                        // Aggiorna descrizione e privacy, mantieni segno originale dell'importo
+                        $linkedTransaction->update([
+                            'amount' => $linkedNewAmount,
+                            'description' => $validated['description'] ?? null,
+                            'is_private' => $validated['is_private'] ?? false,
+                        ]);
+
+                        // Aggiorna il saldo del conto collegato
+                        $linkedAccount = $linkedTransaction->account;
+                        $linkedAccount->current_balance += ($linkedNewAmount - $linkedOldAmount);
+                        $linkedAccount->save();
+                    }
+                }
+
+                // Aggiorna i saldi dei conti
+                if ($oldAccountId === $validated['account_id']) {
+                    // Stesso conto: aggiorna la differenza
+                    $account = Account::find($validated['account_id']);
+                    $account->current_balance += ($newAmount - $oldAmount);
+                    $account->save();
+                } else {
+                    // Conti diversi: rimuovi dal vecchio, aggiungi al nuovo
+                    $oldAccount = Account::find($oldAccountId);
+                    $oldAccount->current_balance -= $oldAmount;
+                    $oldAccount->save();
+
+                    $movedToAccount = Account::find($validated['account_id']);
+                    $movedToAccount->current_balance += $newAmount;
+                    $movedToAccount->save();
+                }
+
+                app(MealVoucherLedgerService::class)->resyncTransaction(
+                    $transaction->fresh(['account']),
+                    $spendLines,
+                );
+            });
+        } catch (InvalidArgumentException $e) {
+            return redirect()->back()->withErrors([
+                'account_id' => $e->getMessage(),
+            ])->withInput();
         }
 
-        // Aggiorna i saldi dei conti
-        if ($oldAccountId === $validated['account_id']) {
-            // Stesso conto: aggiorna la differenza
-            $account = Account::find($validated['account_id']);
-            $account->current_balance += ($newAmount - $oldAmount);
-            $account->save();
-        } else {
-            // Conti diversi: rimuovi dal vecchio, aggiungi al nuovo
-            $oldAccount = Account::find($oldAccountId);
-            $oldAccount->current_balance -= $oldAmount;
-            $oldAccount->save();
-
-            $newAccount = Account::find($validated['account_id']);
-            $newAccount->current_balance += $newAmount;
-            $newAccount->save();
-        }
-
-        if ($oldDate !== $validated['date'] && $transaction->isInvestmentLedger()) {
+        if ($oldDate !== $validated['date'] && $transaction->fresh()->isInvestmentLedger()) {
             $investmentTransactionSyncService->syncBuyDateFromTransaction($transaction->fresh());
         }
 
@@ -1108,47 +1140,70 @@ class TransactionController extends Controller
                 ->with('info', 'Nessuna modifica da applicare.');
         }
 
-        foreach ($transactions as $transaction) {
-            // Gestione cambio conto con aggiornamento saldi
-            if ($newAccountId !== null && $transaction->account_id !== $newAccountId) {
-                $newAccount = Account::where('id', $newAccountId)
-                    ->where('household_id', $user->active_household_id)
-                    ->first();
+        try {
+            DB::transaction(function () use (
+                $transactions,
+                $newAccountId,
+                $user,
+                $fields,
+                $newDate,
+                $hasTagSync,
+                $request,
+                $householdId,
+                $investmentTransactionSyncService,
+            ) {
+                $ledger = app(MealVoucherLedgerService::class);
 
-                if ($newAccount) {
-                    // Storna dal conto vecchio
-                    $transaction->account->current_balance -= (float) $transaction->amount;
-                    $transaction->account->save();
+                foreach ($transactions as $transaction) {
+                    // Gestione cambio conto con aggiornamento saldi
+                    if ($newAccountId !== null && $transaction->account_id !== $newAccountId) {
+                        $newAccount = Account::where('id', $newAccountId)
+                            ->where('household_id', $user->active_household_id)
+                            ->first();
 
-                    // Accredita sul nuovo conto
-                    $newAccount->current_balance += (float) $transaction->amount;
-                    $newAccount->save();
+                        if ($newAccount) {
+                            // Storna dal conto vecchio
+                            $transaction->account->current_balance -= (float) $transaction->amount;
+                            $transaction->account->save();
 
-                    $fields['account_id'] = $newAccountId;
+                            // Accredita sul nuovo conto
+                            $newAccount->current_balance += (float) $transaction->amount;
+                            $newAccount->save();
+
+                            $fields['account_id'] = $newAccountId;
+                        }
+                    }
+
+                    $transaction->fill($fields);
+
+                    if ($newDate !== null && $transaction->is_tax_deductible) {
+                        $transaction->tax_year = Carbon::parse($newDate)->year;
+                    }
+
+                    $transaction->save();
+
+                    if ($newDate !== null && $transaction->isInvestmentLedger()) {
+                        $investmentTransactionSyncService->syncBuyDateFromTransaction($transaction->fresh());
+                    }
+
+                    if ($hasTagSync) {
+                        $tagIds = $this->resolveTagIds(
+                            $request->input('tag_ids', []),
+                            $request->input('new_tag_names', []),
+                            $householdId,
+                            $user->id
+                        );
+                        $transaction->tags()->sync($tagIds);
+                    }
+
+                    $ledger->resyncTransaction($transaction->fresh(['account']));
                 }
-            }
+            });
+        } catch (InvalidArgumentException $e) {
+            $returnQuery = $this->returnIndexQueryFromRequest($request);
 
-            $transaction->fill($fields);
-
-            if ($newDate !== null && $transaction->is_tax_deductible) {
-                $transaction->tax_year = Carbon::parse($newDate)->year;
-            }
-
-            $transaction->save();
-
-            if ($newDate !== null && $transaction->isInvestmentLedger()) {
-                $investmentTransactionSyncService->syncBuyDateFromTransaction($transaction->fresh());
-            }
-
-            if ($hasTagSync) {
-                $tagIds = $this->resolveTagIds(
-                    $request->input('tag_ids', []),
-                    $request->input('new_tag_names', []),
-                    $householdId,
-                    $user->id
-                );
-                $transaction->tags()->sync($tagIds);
-            }
+            return redirect()->route('transactions.index', $returnQuery)
+                ->with('error', $e->getMessage());
         }
 
         $count = $transactions->count();
@@ -1216,6 +1271,7 @@ class TransactionController extends Controller
                 }
             } else {
                 $account = $transaction->account;
+                app(MealVoucherLedgerService::class)->reverseTransaction($transaction);
                 $account->current_balance -= (float) $transaction->amount;
                 $account->save();
                 $transaction->delete();

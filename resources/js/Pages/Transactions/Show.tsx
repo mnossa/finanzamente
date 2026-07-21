@@ -173,6 +173,12 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
                                     Questa transazione fa parte di un trasferimento.
                                 </p>
                             </div>
+                            <Link
+                                href={route('transfers.show', transaction.transfer_id!)}
+                                className="ml-auto shrink-0 text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
+                            >
+                                Vedi trasferimento →
+                            </Link>
                         </div>
                     )}
 

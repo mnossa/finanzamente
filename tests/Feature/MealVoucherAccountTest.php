@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Category;
 use App\Models\Household;
 use App\Models\MealVoucherLot;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\MealVoucherLedgerService;
 use Carbon\Carbon;
@@ -281,5 +282,155 @@ class MealVoucherAccountTest extends TestCase
         $this->assertSame(8.0, $lines[0]['unit_value']);
         $this->assertSame(1, $lines[1]['quantity']);
         $this->assertSame(10.0, $lines[1]['unit_value']);
+    }
+
+    #[Test]
+    public function moving_income_transaction_to_meal_voucher_updates_ticket_count(): void
+    {
+        $checking = Account::factory()->bank()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 100,
+            'current_balance' => 140,
+        ]);
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+
+        $incomeCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'income',
+        ]);
+
+        $tx = Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $checking->id,
+            'category_id' => $incomeCategory->id,
+            'amount' => 40,
+            'currency_code' => 'EUR',
+            'date' => now()->toDateString(),
+            'description' => 'Ricarica da spostare',
+        ]);
+
+        $this->assertSame(10, app(MealVoucherLedgerService::class)->totalTicketCount($meal->fresh()));
+
+        $this->actingAs($this->user)
+            ->patch(route('transactions.update', $tx), [
+                'account_id' => $meal->id,
+                'category_id' => $incomeCategory->id,
+                'amount' => 40,
+                'date' => now()->toDateString(),
+                'description' => 'Ricarica da spostare',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(15, app(MealVoucherLedgerService::class)->totalTicketCount($meal->fresh()));
+        $this->assertSame($meal->id, $tx->fresh()->account_id);
+    }
+
+    #[Test]
+    public function moving_expense_transaction_to_meal_voucher_updates_ticket_count_via_fifo(): void
+    {
+        $checking = Account::factory()->bank()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 100,
+            'current_balance' => 84,
+        ]);
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+
+        $expenseCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+        ]);
+
+        $tx = Transaction::create([
+            'user_id' => $this->user->id,
+            'account_id' => $checking->id,
+            'category_id' => $expenseCategory->id,
+            'amount' => -16,
+            'currency_code' => 'EUR',
+            'date' => now()->toDateString(),
+            'description' => 'Pranzo da spostare',
+        ]);
+
+        $this->actingAs($this->user)
+            ->patch(route('transactions.update', $tx), [
+                'account_id' => $meal->id,
+                'category_id' => $expenseCategory->id,
+                'amount' => 16,
+                'date' => now()->toDateString(),
+                'description' => 'Pranzo da spostare',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(8, app(MealVoucherLedgerService::class)->totalTicketCount($meal->fresh()));
+    }
+
+    #[Test]
+    public function moving_transaction_off_meal_voucher_restores_tickets(): void
+    {
+        $checking = Account::factory()->bank()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 0,
+            'current_balance' => 0,
+        ]);
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+        $lot = MealVoucherLot::query()->where('account_id', $meal->id)->firstOrFail();
+
+        $expenseCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('transactions.store'), [
+                'account_id' => $meal->id,
+                'category_id' => $expenseCategory->id,
+                'amount' => 16,
+                'date' => now()->toDateString(),
+                'description' => 'Pranzo',
+                'meal_voucher_lines' => [
+                    ['lot_id' => $lot->id, 'quantity' => 2],
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $tx = Transaction::query()->where('description', 'Pranzo')->firstOrFail();
+        $this->assertSame(8, app(MealVoucherLedgerService::class)->totalTicketCount($meal->fresh()));
+
+        $this->actingAs($this->user)
+            ->patch(route('transactions.update', $tx), [
+                'account_id' => $checking->id,
+                'category_id' => $expenseCategory->id,
+                'amount' => 16,
+                'date' => now()->toDateString(),
+                'description' => 'Pranzo',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(10, app(MealVoucherLedgerService::class)->totalTicketCount($meal->fresh()));
+        $this->assertSame($checking->id, $tx->fresh()->account_id);
     }
 }

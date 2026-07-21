@@ -3,7 +3,7 @@ import { PageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { useMemo } from 'react';
 
-type HubTab = 'patrimonio' | 'accounts' | 'positions';
+type HubTab = 'patrimonio' | 'positions';
 
 const BASE_TABS: SectionHubTab[] = [
     {
@@ -12,13 +12,6 @@ const BASE_TABS: SectionHubTab[] = [
         mobileLabel: 'Patrimonio',
         icon: 'Wallet',
         routeName: 'patrimonio.index',
-    },
-    {
-        id: 'accounts',
-        label: 'Conti',
-        icon: 'Wallet',
-        routeName: 'accounts.index',
-        moduleId: 'accounts',
     },
     {
         id: 'positions',

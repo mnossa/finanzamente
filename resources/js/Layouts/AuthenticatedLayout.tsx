@@ -199,14 +199,21 @@ const navigationSections: NavigationSection[] = [
         ]
     },
     {
-        title: 'Conti & Movimenti',
+        title: 'Movimenti',
         defaultExpanded: true,
         items: [
             {
-                name: 'Conti e movimenti',
+                name: 'Movimenti',
                 href: 'transactions.index',
                 routeMatch: 'transactions.index',
-                routeMatchPatterns: ['transactions.*', 'transfers.*', 'inter-household-transfers.*'],
+                routeMatchPatterns: [
+                    'transactions.*',
+                    'transfers.*',
+                    'refunds.*',
+                    'recurring-transactions.*',
+                    'inbox.*',
+                    'inter-household-transfers.*',
+                ],
                 icon: Icons.ArrowLeftRight,
             },
         ],
@@ -217,9 +224,9 @@ const navigationSections: NavigationSection[] = [
         items: [
             {
                 name: 'Organizzazione',
-                href: 'categories.index',
-                routeMatch: 'categories.index',
-                routeMatchPatterns: ['categories.*', 'inbox.*', 'refunds.*', 'recurring-transactions.*'],
+                href: 'accounts.index',
+                routeMatch: 'accounts.index',
+                routeMatchPatterns: ['categories.*', 'accounts.*', 'tags.*'],
                 icon: Icons.Tags,
             },
         ],
@@ -247,7 +254,6 @@ const navigationSections: NavigationSection[] = [
                 routeMatch: 'patrimonio.index',
                 routeMatchPatterns: [
                     'patrimonio.*',
-                    'accounts.*',
                     'investments.*',
                     'investment-pacs.*',
                     'asset-allocation.*',
@@ -789,28 +795,6 @@ export default function Authenticated({
                         </div>
 
                         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
-                            <Link
-                                href={route('categories.index')}
-                                className="rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-slate-100 sm:p-2 dark:text-slate-400 dark:hover:bg-slate-700 lg:hidden"
-                                aria-label="Organizzazione"
-                            >
-                                <Icons.Tags />
-                            </Link>
-
-                            {/* Search - Desktop only */}
-                            {/*<div className="relative hidden md:block">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                                    <Icons.Search />
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="Cerca..."
-                                    className="pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-xl text-sm w-56 
-                                         focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 
-                                         transition-all outline-none"
-                                />
-                            </div>*/}
-
                             {/* Notifications */}
                             <div className="relative" ref={notifRef}>
                                 <button

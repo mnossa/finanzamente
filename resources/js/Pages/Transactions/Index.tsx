@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import CashflowHubNav from '@/Components/CashflowHubNav';
+import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar, mobileFilterBodyClass, mobileFilterSummaryClass, mobileLegendClass, mobileListPanelClass } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
@@ -1013,7 +1013,7 @@ export default function Index({
             />
 
             <PageContent maxWidth="7xl">
-                    <CashflowHubNav active="transactions" />
+                    <MovementsHubNav active="transactions" />
                     {/* Intro decorativa — solo su desktop */}
                     <IndexIntroSection
                         label="Registro transazioni"

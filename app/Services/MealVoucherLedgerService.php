@@ -364,6 +364,54 @@ class MealVoucherLedgerService
     }
 
     /**
+     * Annulla movimenti esistenti e riapplica sul conto attuale della transazione.
+     * Usato dopo update/bulk move account_id (o cambio importo) su/da buoni pasto.
+     *
+     * @param  list<array{lot_id: int, quantity: int}>|null  $spendLines
+     */
+    public function resyncTransaction(Transaction $transaction, ?array $spendLines = null): void
+    {
+        $this->reverseTransaction($transaction);
+
+        $transaction->refresh();
+        $account = $transaction->account;
+        if (! $account?->isMealVoucher()) {
+            return;
+        }
+
+        $amount = (float) $transaction->amount;
+        if ($amount > 0) {
+            $this->applyIncome($account, $transaction);
+
+            return;
+        }
+
+        if ($amount >= 0) {
+            return;
+        }
+
+        $lines = $spendLines;
+        if ($lines === null || $lines === []) {
+            $suggested = $this->suggestFifoForEuro($account, abs($amount));
+            $lines = array_map(fn (array $line): array => [
+                'lot_id' => (int) $line['lot_id'],
+                'quantity' => (int) $line['quantity'],
+            ], $suggested);
+        }
+
+        if ($lines === []) {
+            throw new InvalidArgumentException('Impossibile allocare i ticket buoni pasto per questo importo.');
+        }
+
+        $expected = $this->euroFromLines($account, $lines);
+        if (abs($expected - abs($amount)) > 0.001) {
+            throw new InvalidArgumentException('L\'importo non corrisponde a un numero intero di ticket disponibili sul conto buoni pasto.');
+        }
+
+        $this->applySpend($account, $transaction, $lines);
+    }
+
+    /**
      * @return list<array{lot_id: int, unit_value: float, quantity: int}>
      */
     public function movementsForTransaction(Transaction $transaction): array

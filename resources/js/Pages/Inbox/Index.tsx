@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import OrganizationHubNav from '@/Components/OrganizationHubNav';
+import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { mobileFilterBodyClass, mobileFilterSummaryClass } from '@/Components/IndexPageListToolbars';
 import CardBox from '@/Components/CardBox';
@@ -1089,7 +1089,7 @@ export default function InboxIndex({
             <Head title="Inbox" />
 
             <PageContent>
-                <OrganizationHubNav active="inbox" />
+                <MovementsHubNav active="inbox" />
                 {pendingCount > 0 && (
                     <IndexInfoBanner
                         icon="⚠"

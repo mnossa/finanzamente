@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import OrganizationHubNav from '@/Components/OrganizationHubNav';
+import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
@@ -129,7 +129,7 @@ export default function Index({ refunds }: IndexProps) {
             />
 
             <PageContent maxWidth="7xl">
-                <OrganizationHubNav active="refunds" />
+                <MovementsHubNav active="refunds" />
                 <IndexIntroSection
                     label="Rimborsi"
                     icon={<span className="text-sm leading-none">💸</span>}

@@ -9,7 +9,7 @@ test.describe('Bottom navigation mobile', () => {
         const bottomNav = page.getByRole('navigation', { name: 'Navigazione rapida' });
 
         await expect(bottomNav.getByRole('link', { name: 'Dashboard' })).toBeVisible();
-        await expect(bottomNav.getByRole('link', { name: 'Conti e movimenti' })).toBeVisible();
+        await expect(bottomNav.getByRole('link', { name: 'Movimenti' })).toBeVisible();
         await expect(bottomNav.getByRole('link', { name: 'Patrimonio' })).toBeVisible();
         await expect(bottomNav.getByRole('link', { name: 'Pianificazione e risparmio' })).toBeVisible();
         await expect(bottomNav.getByRole('button', { name: 'Altro' })).toBeVisible();
