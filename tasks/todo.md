@@ -1,11 +1,13 @@
 # Conti ticket: valore storico + label dashboard
 
 ## Piano
-- [ ] Rimuovere vincolo `effective_from >= oggi` (Form Request + `MealVoucherLedgerService` + UI Show)
-- [ ] Test: salvare valore ticket nel passato; aggiornare test che lo vietava
-- [ ] Form transazione: mostrare valore ticket vigente alla data selezionata (history in account options)
-- [ ] Dashboard: label italiana «Buoni pasto» + conteggio ticket
+- [x] Rimuovere vincolo `effective_from >= oggi` (Form Request + `MealVoucherLedgerService` + UI Show)
+- [x] Test: salvare valore ticket nel passato; aggiornare test che lo vietava
+- [x] Form transazione: mostrare valore ticket vigente alla data selezionata (history in account options)
+- [x] Dashboard: label italiana «Buoni pasto» + conteggio ticket
 - [ ] `make test` + `make pint-check` (+ playwright se UI navigabile)
 
 ## Review
-(da compilare a fine lavoro)
+- Valore ticket: date passate ammesse; lotti esistenti non ricalcolati; accrediti usano `unitValueOn(data TX)`
+- Dashboard: `type_label` + `ticket_count` da `AccountBalanceService::mapAccountsWithBalance`
+- UI copy: «Salva valore»; hint date storiche su Show e Create TX
