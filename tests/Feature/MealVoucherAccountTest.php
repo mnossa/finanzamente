@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\Category;
 use App\Models\Household;
 use App\Models\MealVoucherLot;
+use App\Models\MealVoucherUnitValue;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\MealVoucherLedgerService;
@@ -149,11 +150,13 @@ class MealVoucherAccountTest extends TestCase
             ->assertRedirect(route('accounts.show', $account))
             ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('meal_voucher_unit_values', [
-            'account_id' => $account->id,
-            'unit_value' => 7,
-            'effective_from' => $pastDate,
-        ]);
+        $this->assertTrue(
+            MealVoucherUnitValue::query()
+                ->where('account_id', $account->id)
+                ->where('unit_value', 7)
+                ->whereDate('effective_from', $pastDate)
+                ->exists()
+        );
 
         $ledger = app(MealVoucherLedgerService::class);
         $this->assertEquals(7.0, $ledger->unitValueOn($account->fresh(), Carbon::parse($pastDate)));
