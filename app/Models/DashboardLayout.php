@@ -98,4 +98,29 @@ class DashboardLayout extends Model
 
         return $normalizer->normalize($user, $config);
     }
+
+    /**
+     * Layout essenziale per nuovi utenti.
+     *
+     * @return array<string, mixed>
+     */
+    public static function essentialConfigForUser(User $user): array
+    {
+        /** @var FormulaWidgetLayoutNormalizer $normalizer */
+        $normalizer = app(FormulaWidgetLayoutNormalizer::class);
+
+        $config = [
+            'widgets' => [
+                ['id' => 'accounts',             'visible' => true, 'position' => 0, 'size' => 'lg'],
+                ['id' => 'expense_distribution', 'visible' => true, 'position' => 1, 'size' => 'md'],
+                ['id' => 'active_budgets',       'visible' => true, 'position' => 2, 'size' => 'md'],
+                ['id' => 'recent_transactions',  'visible' => true, 'position' => 3, 'size' => 'md'],
+                ['id' => 'quick_actions',        'visible' => true, 'position' => 4, 'size' => 'sm'],
+            ],
+        ];
+
+        $config = $normalizer->mergeInstalledFormulaWidgets($user, $config);
+
+        return $normalizer->normalize($user, $config);
+    }
 }

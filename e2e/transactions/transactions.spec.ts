@@ -250,4 +250,40 @@ test.describe('Transazioni', () => {
         await expect(page.locator('#account_id')).toBeVisible();
         await expect(page.getByRole('button', { name: /salva transazione|salva/i }).first()).toBeVisible();
     });
+
+    test('dettaglio: slide-over su desktop, pagina completa su mobile', async ({ page }, testInfo) => {
+        const isMobile = testInfo.project.name === 'autenticato-mobile';
+
+        const emptyState = page.getByText(/nessuna transazione trovata/i).first();
+        const hasEmpty = await emptyState.isVisible().catch(() => false);
+        test.skip(hasEmpty, 'Serve almeno una transazione in lista');
+
+        if (isMobile) {
+            const mobileLink = page
+                .locator('div.sm\\:hidden a[href*="/transazioni/"]')
+                .filter({ visible: true })
+                .first();
+            await expect(mobileLink).toBeVisible({ timeout: 15_000 });
+            await mobileLink.click();
+            await expect(page).toHaveURL(/\/transazioni\/\d+/);
+            await expect(page).toHaveTitle(/dettaglio transazione/i);
+            return;
+        }
+
+        const desktopTitleLink = page
+            .locator('div.hidden.sm\\:grid a.min-w-0[href*="/transazioni/"]')
+            .filter({ visible: true })
+            .first();
+        await expect(desktopTitleLink).toBeVisible({ timeout: 15_000 });
+        await desktopTitleLink.click();
+
+        await expect(page).toHaveURL(/\/transazioni(?:\?|$)/);
+        const slideOver = page.getByTestId('transaction-slide-over');
+        await expect(slideOver).toBeVisible({ timeout: 10_000 });
+        await expect(page.getByTestId('transaction-slide-over-close')).toBeVisible();
+        await expect(slideOver.getByText(/dettaglio senza lasciare/i)).toBeVisible();
+
+        await page.getByTestId('transaction-slide-over-close').click();
+        await expect(slideOver).toBeHidden({ timeout: 5_000 });
+    });
 });

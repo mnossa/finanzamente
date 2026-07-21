@@ -7,6 +7,9 @@ import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TransactionListRow, { type TransactionListRowTransaction } from '@/Components/TransactionListRow';
+import TransactionSlideOver, {
+    type TransactionSlideOverTransaction,
+} from '@/Components/TransactionSlideOver';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
@@ -22,6 +25,7 @@ import axios from 'axios';
 import { filtersAnalytics, tx } from '@/utils/analytics';
 import { formatCurrency } from '@/utils/format';
 import type { PageProps } from '@/types';
+import useMdUp from '@/hooks/useMdUp';
 
 const UPCOMING_EXPANDED_STORAGE_PREFIX = 'finanzamente.upcomingMovements.expanded';
 
@@ -658,6 +662,37 @@ export default function Index({
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
     const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
     const [draftFilters, setDraftFilters] = React.useState<Filters>({ ...filters });
+    const preferSlideOver = useMdUp();
+    const [slideOverOpen, setSlideOverOpen] = React.useState(false);
+    const [slideOverLoading, setSlideOverLoading] = React.useState(false);
+    const [slideOverError, setSlideOverError] = React.useState<string | null>(null);
+    const [slideOverTransaction, setSlideOverTransaction] =
+        React.useState<TransactionSlideOverTransaction | null>(null);
+
+    const closeSlideOver = () => {
+        setSlideOverOpen(false);
+        setSlideOverLoading(false);
+        setSlideOverError(null);
+        setSlideOverTransaction(null);
+    };
+
+    const openSlideOver = async (transactionId: number) => {
+        setSlideOverOpen(true);
+        setSlideOverLoading(true);
+        setSlideOverError(null);
+        setSlideOverTransaction(null);
+        try {
+            const resp = await axios.get<{ transaction: TransactionSlideOverTransaction }>(
+                route('transactions.show', { transaction: transactionId, ...returnQuery }),
+                { headers: { Accept: 'application/json' } },
+            );
+            setSlideOverTransaction(resp.data.transaction);
+        } catch {
+            setSlideOverError('Impossibile caricare il dettaglio della transazione.');
+        } finally {
+            setSlideOverLoading(false);
+        }
+    };
 
     useEffect(() => {
         setDraftFilters({ ...filters });
@@ -966,6 +1001,15 @@ export default function Index({
                 cancelLabel="Annulla"
                 onConfirm={handleConfirmBulkDelete}
                 onCancel={handleCancelBulkDelete}
+            />
+
+            <TransactionSlideOver
+                open={slideOverOpen}
+                loading={slideOverLoading}
+                error={slideOverError}
+                transaction={slideOverTransaction}
+                indexQuery={returnQuery}
+                onClose={closeSlideOver}
             />
 
             <PageContent maxWidth="7xl">
@@ -1298,6 +1342,8 @@ export default function Index({
                                             isSelected={false}
                                             onToggleSelect={() => undefined}
                                             indexQuery={returnQuery}
+                                            preferSlideOver={preferSlideOver}
+                                            onOpenDetail={openSlideOver}
                                         />
                                     ))}
                                 </div>
@@ -1397,6 +1443,8 @@ export default function Index({
                                 isSelected={selectedIds.has(transaction.id)}
                                 onToggleSelect={toggleSelect}
                                 indexQuery={returnQuery}
+                                preferSlideOver={preferSlideOver}
+                                onOpenDetail={openSlideOver}
                             />
                         ))}
                     </IndexListCard>

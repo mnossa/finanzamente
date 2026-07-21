@@ -62,21 +62,4 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveURL('/profilo');
     });
 
-    /** Pannello widget (header + body): h3 → flex row → colonna titolo → header → shell. */
-    function goalsWidget(page: import('@playwright/test').Page) {
-        return page.getByRole('heading', { name: 'Obiettivi finanziari' }).locator('../../../..');
-    }
-
-    test('il widget obiettivi mostra almeno un obiettivo attivo', async ({ page }) => {
-        const widget = goalsWidget(page);
-        await widget.scrollIntoViewIfNeeded();
-        await expect(widget.locator('a[href*="/obiettivi-finanziari/"]').first()).toBeVisible();
-    });
-
-    test('il link "vedi tutti" del widget obiettivi porta alla pagina obiettivi', async ({ page }) => {
-        const widget = goalsWidget(page);
-        await widget.scrollIntoViewIfNeeded();
-        await widget.getByRole('link', { name: /vedi tutti/i }).click();
-        await expect(page).toHaveURL('/obiettivi-finanziari');
-    });
 });

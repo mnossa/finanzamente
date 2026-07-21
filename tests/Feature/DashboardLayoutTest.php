@@ -65,7 +65,14 @@ class DashboardLayoutTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonStructure(['config' => ['widgets']]);
-        $response->assertJsonFragment(['id' => 'accounts']);
+        $widgets = $response->json('config.widgets');
+
+        $this->assertIsArray($widgets);
+        $this->assertCount(5, $widgets);
+        $this->assertSame(
+            ['accounts', 'expense_distribution', 'active_budgets', 'recent_transactions', 'quick_actions'],
+            array_column($widgets, 'id'),
+        );
     }
 
     #[Test]

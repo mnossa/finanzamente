@@ -1,18 +1,33 @@
-# WFI-106 / WFI-107 / WFI-108
+# WFI-105 — Review IA navigazione
 
-## Plan
-- [x] WFI-106: `tags.show` + stats mese + Tags/Show + Index link + Feature test
-- [x] WFI-107: collapse Prossimi movimenti + localStorage + E2E smoke
-- [x] WFI-108: analisi budget+tag → commento Jira (no code)
+## Piano (ordine: Fase 1 → 2 → 3)
+
+### Fase 1 — WFI-110 IA core
+- [x] `PatrimonioHubNav` + hub su patrimonio, accounts, investments
+- [x] Sidebar: sezione Patrimonio; rimuovere Investimenti top-level
+- [x] `mobileBottomNav`: destination `patrimonio`, default 4 slot
+- [x] Icona Organizzazione in app bar mobile
+- [x] `CashflowHubNav`: solo Transazioni · Conti
+- [x] Redirect soft `transfers.index` → `transactions.index`
+- [x] Filtrare `requiresPro` da sidebar
+- [x] Test Feature nav + E2E smoke
+
+### Fase 2 — WFI-111 Dashboard Essenziale
+- [x] `DashboardLayout::essentialConfigForUser()`
+- [x] Applicare solo nuovi utenti senza layout salvato
+- [x] Test DashboardLayout
+
+### Fase 3 — WFI-112 Slide-over + Pro
+- [x] `TransactionSlideOver` (md+)
+- [x] Value moments Pro (conto investimento, patrimonio preview)
+- [x] E2E slide-over
 
 ## Verify
-- [x] `make test` (1004 passed)
+- [x] `make test`
 - [x] `make pint-check`
-- [x] Playwright transazioni (Prossimi movimenti + split payment) green dopo seed
+- [x] `make playwright`
 
 ## Review
-- Tag show: mese Y-m, KPI + byCategory + link lista filtrata
-- Upcoming: collapsed default, aria-expanded, storage keyed by user id
-- WFI-108: raccomandazione Opzione 1 (categoria AS-IS); ownership tag vs HH apre v2
-- E2E: select non-buoni per split; seed TX futura per upcoming
-- Jira: commento WFI-108 ok; status Completato non auto-transition (approvare se serve)
+- Fase 1–3 WFI-105 complete.
+- Slide-over: `transactions.show` JSON + `TransactionSlideOver` md+; mobile portrait → pagina Show.
+- Modifica in slide-over → pagina edit (create resta AS-IS).

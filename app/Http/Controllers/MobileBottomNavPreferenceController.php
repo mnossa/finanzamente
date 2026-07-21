@@ -16,7 +16,7 @@ class MobileBottomNavPreferenceController extends Controller
         $allowed = config('mobile_bottom_nav.allowed_destinations', []);
 
         $validated = $request->validate([
-            'mobile_bottom_nav' => ['required', 'array', 'size:3'],
+            'mobile_bottom_nav' => ['required', 'array', 'size:'.config('mobile_bottom_nav.slot_count', 4)],
             'mobile_bottom_nav.*' => ['required', 'string', Rule::in($allowed), 'distinct'],
         ]);
 

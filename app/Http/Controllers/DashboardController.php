@@ -890,7 +890,7 @@ class DashboardController extends Controller
             ->first();
 
         if (! $layout) {
-            return DashboardLayout::defaultConfigForUser($user);
+            return DashboardLayout::essentialConfigForUser($user);
         }
 
         $savedConfig = DashboardLayout::stripTierALegacyWidgets($layout->config);

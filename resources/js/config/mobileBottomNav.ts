@@ -5,6 +5,7 @@ export type MobileBottomNavDestinationId =
     | 'cashflow'
     | 'organization'
     | 'planning'
+    | 'patrimonio'
     | 'investments';
 
 export interface MobileBottomNavDestination {
@@ -19,10 +20,13 @@ export interface MobileBottomNavDestination {
     requiresPro?: boolean;
 }
 
+export const MOBILE_BOTTOM_NAV_SLOT_COUNT = 4;
+
 export const MOBILE_BOTTOM_NAV_DEFAULT_SLOTS: MobileBottomNavDestinationId[] = [
     'dashboard',
     'cashflow',
-    'organization',
+    'patrimonio',
+    'planning',
 ];
 
 export const MOBILE_BOTTOM_NAV_DESTINATIONS: MobileBottomNavDestination[] = [
@@ -42,12 +46,28 @@ export const MOBILE_BOTTOM_NAV_DESTINATIONS: MobileBottomNavDestination[] = [
         routeName: 'transactions.index',
         routeMatch: 'transactions.index',
         routeMatchPatterns: [
-            'accounts.*',
             'transactions.*',
             'transfers.*',
             'inter-household-transfers.*',
         ],
         icon: 'ArrowLeftRight',
+    },
+    {
+        id: 'patrimonio',
+        label: 'Patrimonio',
+        ariaLabel: 'Patrimonio',
+        routeName: 'patrimonio.index',
+        routeMatch: 'patrimonio.index',
+        routeMatchPatterns: [
+            'patrimonio.*',
+            'accounts.*',
+            'investments.*',
+            'investment-pacs.*',
+            'asset-allocation.*',
+            'investment-assets.*',
+            'investment-analyses.*',
+        ],
+        icon: 'Wallet',
     },
     {
         id: 'organization',
@@ -60,6 +80,7 @@ export const MOBILE_BOTTOM_NAV_DESTINATIONS: MobileBottomNavDestination[] = [
             'inbox.*',
             'refunds.*',
             'recurring-transactions.*',
+            'tags.*',
         ],
         icon: 'Tags',
     },

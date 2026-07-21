@@ -700,10 +700,24 @@ class TransactionController extends Controller
     /**
      * Mostra i dettagli di una transazione.
      */
-    public function show(Request $request, Transaction $transaction): Response
+    public function show(Request $request, Transaction $transaction): Response|JsonResponse
     {
         $this->authorizeTransaction($transaction);
 
+        $payload = $this->showPayload($request, $transaction);
+
+        if ($request->wantsJson()) {
+            return response()->json($payload);
+        }
+
+        return Inertia::render('Transactions/Show', $payload);
+    }
+
+    /**
+     * @return array{transaction: array<string, mixed>, indexQueryForReturn: array<string, string|int>}
+     */
+    private function showPayload(Request $request, Transaction $transaction): array
+    {
         $transaction->load([
             'account:id,name,currency_code',
             'category:id,name,color,icon,type',
@@ -734,7 +748,7 @@ class TransactionController extends Controller
             ];
         }
 
-        return Inertia::render('Transactions/Show', [
+        return [
             'transaction' => [
                 'id' => $transaction->id,
                 'amount' => (float) $transaction->amount,
@@ -775,7 +789,7 @@ class TransactionController extends Controller
                 ]),
             ],
             'indexQueryForReturn' => $this->indexQueryFromCurrentUrl($request),
-        ]);
+        ];
     }
 
     /**

@@ -22,52 +22,11 @@ class TransferController extends Controller
     /**
      * Mostra l'elenco dei trasferimenti della household attiva.
      */
-    public function index(Request $request): Response
+    public function index(Request $request): RedirectResponse
     {
-        $user = Auth::user();
-        $householdId = $user->active_household_id;
-
-        $transfers = Transfer::with([
-            'sourceAccount:id,name,currency_code',
-            'destinationAccount:id,name,currency_code',
-            'user:id,name',
-        ])
-            ->where(function ($query) use ($householdId) {
-                $query->whereHas('sourceAccount', fn ($q) => $q->where('household_id', $householdId))
-                    ->orWhereHas('destinationAccount', fn ($q) => $q->where('household_id', $householdId));
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(25)
-            ->through(function ($transfer) {
-                return [
-                    'id' => $transfer->id,
-                    'uuid' => $transfer->uuid,
-                    'source_amount' => (float) $transfer->source_amount,
-                    'source_currency' => $transfer->source_currency,
-                    'dest_amount' => (float) $transfer->dest_amount,
-                    'dest_currency' => $transfer->dest_currency,
-                    'exchange_rate' => $transfer->exchange_rate ? (float) $transfer->exchange_rate : null,
-                    'fee' => $transfer->fee ? (float) $transfer->fee : null,
-                    'status' => $transfer->status,
-                    'created_at' => $transfer->created_at->format('d/m/Y H:i'),
-                    'source_account' => $transfer->sourceAccount ? [
-                        'id' => $transfer->sourceAccount->id,
-                        'name' => $transfer->sourceAccount->name,
-                    ] : null,
-                    'destination_account' => $transfer->destinationAccount ? [
-                        'id' => $transfer->destinationAccount->id,
-                        'name' => $transfer->destinationAccount->name,
-                    ] : null,
-                    'user' => $transfer->user ? [
-                        'id' => $transfer->user->id,
-                        'name' => $transfer->user->name,
-                    ] : null,
-                ];
-            });
-
-        return Inertia::render('Transfers/Index', [
-            'transfers' => $transfers,
-        ]);
+        return redirect()
+            ->route('transactions.index')
+            ->with('success', 'I trasferimenti ora sono gestiti da Conti e movimenti.');
     }
 
     /**

@@ -206,7 +206,7 @@ const navigationSections: NavigationSection[] = [
                 name: 'Conti e movimenti',
                 href: 'transactions.index',
                 routeMatch: 'transactions.index',
-                routeMatchPatterns: ['accounts.*', 'transactions.*', 'transfers.*', 'inter-household-transfers.*'],
+                routeMatchPatterns: ['transactions.*', 'transfers.*', 'inter-household-transfers.*'],
                 icon: Icons.ArrowLeftRight,
             },
         ],
@@ -238,23 +238,23 @@ const navigationSections: NavigationSection[] = [
         ],
     },
     {
-        title: 'Investimenti',
+        title: 'Patrimonio',
         defaultExpanded: false,
         items: [
             {
-                name: 'Investimenti',
-                href: 'investments.index',
-                routeMatch: 'investments.index',
+                name: 'Patrimonio',
+                href: 'patrimonio.index',
+                routeMatch: 'patrimonio.index',
                 routeMatchPatterns: [
+                    'patrimonio.*',
+                    'accounts.*',
                     'investments.*',
                     'investment-pacs.*',
                     'asset-allocation.*',
                     'investment-assets.*',
                     'investment-analyses.*',
                 ],
-                icon: Icons.TrendingUp,
-                moduleId: 'investments',
-                requiresPro: true,
+                icon: Icons.Wallet,
             },
         ],
     },
@@ -621,16 +621,15 @@ export default function Authenticated({
         return false;
     };
 
-    // Filtra le sezioni in base ai moduli disponibili.
-    // Le voci Pro sono sempre incluse (gestite da SidebarNavItem con ProBadge).
+    // Filtra le sezioni in base ai moduli disponibili e al piano.
+    // Le voci Pro vengono nascoste per utenti Base.
     // Le voci bloccate da impostazioni profilo (non pro) vengono nascoste.
     const filterSectionsByModules = (sections: NavigationSection[]): NavigationSection[] => {
         return sections
             .map(section => ({
                 ...section,
                 items: section.items.filter(item => {
-                    // Le voci Pro sono sempre visibili (badge + redirect)
-                    if (item.requiresPro) return true;
+                    if (item.requiresPro && !isPro) return false;
                     // Le voci senza moduleId sono sempre visibili
                     if (!item.moduleId) return true;
                     // Le altre voci si basano sull'abilitazione del modulo (profilo)
@@ -790,6 +789,14 @@ export default function Authenticated({
                         </div>
 
                         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
+                            <Link
+                                href={route('categories.index')}
+                                className="rounded-xl p-1.5 text-slate-500 transition-colors hover:bg-slate-100 sm:p-2 dark:text-slate-400 dark:hover:bg-slate-700 lg:hidden"
+                                aria-label="Organizzazione"
+                            >
+                                <Icons.Tags />
+                            </Link>
+
                             {/* Search - Desktop only */}
                             {/*<div className="relative hidden md:block">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -1174,7 +1181,7 @@ function MobileBottomNav({
     };
 
     const leftSlots = slots.slice(0, 2);
-    const rightSlot = slots[2];
+    const rightSlots = slots.slice(2);
 
     return (
         <nav
@@ -1199,13 +1206,14 @@ function MobileBottomNav({
                 </div>
 
                 <div className="flex items-end justify-evenly">
-                    {rightSlot && (
+                    {rightSlots.map((destination) => (
                         <MobileBottomNavDestinationLink
-                            destination={rightSlot}
-                            isActive={isDestinationActive(rightSlot)}
-                            onNavigate={() => nav.bottomBar(rightSlot.id)}
+                            key={destination.id}
+                            destination={destination}
+                            isActive={isDestinationActive(destination)}
+                            onNavigate={() => nav.bottomBar(destination.id)}
                         />
-                    )}
+                    ))}
                     <MobileBottomNavAltroButton onClick={onMenuOpen} />
                 </div>
             </div>

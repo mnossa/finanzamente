@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import InvestmentHubNav from '@/Components/InvestmentHubNav';
+import PatrimonioHubNav from '@/Components/PatrimonioHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
@@ -475,6 +476,7 @@ export default function Index({
             <Head title="Investimenti" />
 
             <PageContent maxWidth="7xl">
+                    <PatrimonioHubNav active="positions" />
                     <InvestmentHubNav active="positions" />
                     <IndexIntroSection
                         label="Portafoglio investimenti"

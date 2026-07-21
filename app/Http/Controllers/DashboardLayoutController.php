@@ -24,7 +24,7 @@ class DashboardLayoutController extends Controller
 
         if ($layout === null) {
             return response()->json([
-                'config' => DashboardLayout::defaultConfigForUser($user),
+                'config' => DashboardLayout::essentialConfigForUser($user),
             ]);
         }
 

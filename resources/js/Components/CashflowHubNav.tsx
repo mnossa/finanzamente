@@ -1,9 +1,8 @@
-import { usePage } from '@inertiajs/react';
 import SectionHubNav, { type SectionHubTab } from '@/Components/SectionHubNav';
 
-type HubTab = 'transactions' | 'accounts' | 'transfers' | 'inter-household';
+type HubTab = 'transactions' | 'accounts';
 
-const BASE_TABS: SectionHubTab[] = [
+const TABS: SectionHubTab[] = [
     {
         id: 'transactions',
         label: 'Transazioni',
@@ -19,23 +18,8 @@ const BASE_TABS: SectionHubTab[] = [
         routeName: 'accounts.index',
         moduleId: 'accounts',
     },
-    {
-        id: 'transfers',
-        label: 'Trasferimenti',
-        icon: 'Transfer',
-        routeName: 'transfers.index',
-        moduleId: 'transfers',
-    },
-    {
-        id: 'inter-household',
-        label: 'Tra nuclei',
-        icon: 'Home',
-        routeName: 'inter-household-transfers.index',
-        requiresPro: true,
-        moduleId: 'inter_household_transfers',
-    },
 ];
 
 export default function CashflowHubNav({ active }: { active: HubTab }) {
-    return <SectionHubNav tabs={BASE_TABS} active={active} ariaLabel="Conti e movimenti" />;
+    return <SectionHubNav tabs={TABS} active={active} ariaLabel="Hub conti e movimenti" />;
 }

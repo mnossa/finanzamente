@@ -26,16 +26,16 @@ class MobileBottomNavPreferenceControllerTest extends TestCase
         $user = $this->createUserWithActiveHousehold();
 
         $response = $this->actingAs($user)->patchJson(route('user.preferences.mobile_bottom_nav'), [
-            'mobile_bottom_nav' => ['dashboard', 'planning', 'investments'],
+            'mobile_bottom_nav' => ['dashboard', 'cashflow', 'patrimonio', 'planning'],
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('mobile_bottom_nav', ['dashboard', 'planning', 'investments']);
+            ->assertJsonPath('mobile_bottom_nav', ['dashboard', 'cashflow', 'patrimonio', 'planning']);
 
         $user->refresh();
 
         $this->assertSame(
-            ['dashboard', 'planning', 'investments'],
+            ['dashboard', 'cashflow', 'patrimonio', 'planning'],
             data_get($user->preferences, 'mobile_bottom_nav'),
         );
     }
@@ -46,7 +46,7 @@ class MobileBottomNavPreferenceControllerTest extends TestCase
         $user = $this->createUserWithActiveHousehold();
 
         $response = $this->actingAs($user)->patchJson(route('user.preferences.mobile_bottom_nav'), [
-            'mobile_bottom_nav' => ['dashboard', 'dashboard', 'organization'],
+            'mobile_bottom_nav' => ['dashboard', 'dashboard', 'organization', 'planning'],
         ]);
 
         $response->assertUnprocessable()
@@ -59,11 +59,11 @@ class MobileBottomNavPreferenceControllerTest extends TestCase
         $user = $this->createUserWithActiveHousehold();
 
         $response = $this->actingAs($user)->patchJson(route('user.preferences.mobile_bottom_nav'), [
-            'mobile_bottom_nav' => ['dashboard', 'cashflow', 'unknown'],
+            'mobile_bottom_nav' => ['dashboard', 'cashflow', 'patrimonio', 'unknown'],
         ]);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['mobile_bottom_nav.2']);
+            ->assertJsonValidationErrors(['mobile_bottom_nav.3']);
     }
 
     private function createUserWithActiveHousehold(): User

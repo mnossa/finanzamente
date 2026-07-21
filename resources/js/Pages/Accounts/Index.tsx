@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import CashflowHubNav from '@/Components/CashflowHubNav';
+import PatrimonioHubNav from '@/Components/PatrimonioHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
@@ -126,7 +126,7 @@ export default function Index({
             <Head title="Conti" />
 
             <PageContent maxWidth="7xl">
-                    <CashflowHubNav active="accounts" />
+                    <PatrimonioHubNav active="accounts" />
                     <IndexIntroSection
                         label="Panoramica conti"
                         icon={<span className="text-sm leading-none">🏦</span>}

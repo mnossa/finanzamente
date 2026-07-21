@@ -1,12 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
+import PatrimonioHubNav from '@/Components/PatrimonioHubNav';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import CardBox from '@/Components/CardBox';
 import { MiniAllocationBar } from '@/Pages/AssetAllocation/Index';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 import clsx from 'clsx';
 import { useState, type ReactNode } from 'react';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -211,10 +213,14 @@ export default function PatrimonioIndex({
     positionGroups,
     positionMovementCount,
 }: Props) {
+    const { plan } = usePage<PageProps>().props;
+    const isProPlan = plan?.current === 'pro';
+
     return (
         <AuthenticatedLayout header={<PageHeader title="Patrimonio" backLink={route('dashboard')} />}>
             <Head title="Patrimonio" />
             <PageContent maxWidth="7xl">
+                <PatrimonioHubNav active="patrimonio" />
                 <IndexIntroSection
                     label="Patrimonio"
                     icon={<span className="text-sm leading-none">💰</span>}
@@ -252,6 +258,25 @@ export default function PatrimonioIndex({
                         detail={riskLabel}
                     />
                 </IndexKpiStrip>
+
+                {!isProPlan && (
+                    <CardBox className="mb-4 border border-indigo-200 bg-indigo-50/70 dark:border-indigo-800 dark:bg-indigo-900/20">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Vuoi il portafoglio completo?</p>
+                                <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                                    Con Pro monitori investimenti, PAC e asset allocation in un unico spazio.
+                                </p>
+                            </div>
+                            <Link
+                                href={`${route('profile.subscription')}?from=investments`}
+                                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                            >
+                                Scopri Pro
+                            </Link>
+                        </div>
+                    </CardBox>
+                )}
 
                 <CardBox className="sm:p-5">
                     <h2 className="text-base font-semibold text-gray-900 dark:text-white">Allocazione per classe</h2>

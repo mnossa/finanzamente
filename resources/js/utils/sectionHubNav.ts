@@ -12,6 +12,7 @@ export const HUB_INDEX_ROUTE_NAMES = new Set([
     'debts-credits.index',
     'financial-goals.index',
     'tax-deductions.index',
+    'patrimonio.index',
     'transactions.index',
     'accounts.index',
     'transfers.index',

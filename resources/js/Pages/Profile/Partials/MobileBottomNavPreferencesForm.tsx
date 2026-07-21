@@ -2,6 +2,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import {
     MOBILE_BOTTOM_NAV_DEFAULT_SLOTS,
     MOBILE_BOTTOM_NAV_DESTINATIONS,
+    MOBILE_BOTTOM_NAV_SLOT_COUNT,
     type MobileBottomNavDestination,
     type MobileBottomNavDestinationId,
 } from '@/config/mobileBottomNav';
@@ -23,7 +24,7 @@ function resolveInitialSlots(preferences: Record<string, unknown> | undefined): 
 
     const slots = raw.filter((value): value is MobileBottomNavDestinationId => typeof value === 'string');
 
-    return slots.length === 3 ? slots : [...MOBILE_BOTTOM_NAV_DEFAULT_SLOTS];
+    return slots.length === MOBILE_BOTTOM_NAV_SLOT_COUNT ? slots : [...MOBILE_BOTTOM_NAV_DEFAULT_SLOTS];
 }
 
 function MobileBottomNavPreviewItem({ destination }: { destination: MobileBottomNavDestination }) {
@@ -119,9 +120,9 @@ export default function MobileBottomNavPreferencesForm() {
                         +
                     </div>
                     <div className="flex items-end justify-evenly">
-                        {previewSlots[2] && (
-                            <MobileBottomNavPreviewItem destination={previewSlots[2]} />
-                        )}
+                        {previewSlots.slice(2).map((destination) => (
+                            <MobileBottomNavPreviewItem key={destination.id} destination={destination} />
+                        ))}
                         <div className="flex min-w-0 max-w-[4.75rem] flex-1 flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200" aria-hidden="true">
                             <span className="flex h-6 w-6 items-center justify-center text-base">☰</span>
                             <span className="w-full truncate text-center text-[10px] font-medium leading-none">Altro</span>
@@ -130,8 +131,8 @@ export default function MobileBottomNavPreferencesForm() {
                 </div>
             </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                {(['Sinistra', 'Centro-sinistra', 'Destra (prima di Altro)'] as const).map((label, index) => (
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {(['Sinistra', 'Centro-sinistra', 'Centro-destra', 'Destra (prima di Altro)'] as const).map((label, index) => (
                     <div key={label}>
                         <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                             {label}

@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import type { MouseEvent } from 'react';
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
@@ -73,6 +74,9 @@ interface TransactionListRowProps {
     isSelected: boolean;
     onToggleSelect: (id: number) => void;
     indexQuery: TransactionListIndexQuery;
+    /** When true with onOpenDetail, intercept detail navigation (md+ slide-over). */
+    preferSlideOver?: boolean;
+    onOpenDetail?: (transactionId: number) => void;
 }
 
 const FREQUENCY_LABELS: Record<string, string> = {
@@ -148,6 +152,8 @@ export default function TransactionListRow({
     isSelected,
     onToggleSelect,
     indexQuery,
+    preferSlideOver = false,
+    onOpenDetail,
 }: TransactionListRowProps) {
     const isFuture = transaction.is_future === true;
     const isVirtual = transaction.is_virtual === true;
@@ -158,6 +164,14 @@ export default function TransactionListRow({
     const isPac = transaction.is_pac === true;
     const isRecurring = transaction.recurring_transaction_id !== null;
     const isManualInvestment = transaction.investment_id !== null && !isPac;
+
+    const handleDetailClick = (event: MouseEvent) => {
+        if (isVirtual || !preferSlideOver || !onOpenDetail) {
+            return;
+        }
+        event.preventDefault();
+        onOpenDetail(transaction.id);
+    };
     const isInvestment = transaction.investment_id !== null;
     const hasAttachments = (transaction.attachments_count ?? 0) > 0;
     const hasTags = transaction.tags.length > 0;
@@ -373,6 +387,7 @@ export default function TransactionListRow({
                 <Link
                     href={detailHref}
                     className="contents active:opacity-80"
+                    onClick={handleDetailClick}
                     aria-label={
                         isPac
                             ? `${title}, generata da PAC`
@@ -421,6 +436,7 @@ export default function TransactionListRow({
                 <Link
                     href={detailHref}
                     className="min-w-0"
+                    onClick={handleDetailClick}
                     aria-label={
                         isPac
                             ? `${title}, generata da PAC`
@@ -458,6 +474,7 @@ export default function TransactionListRow({
                             href={detailHref}
                             className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-gray-700 dark:hover:text-emerald-400"
                             title="Visualizza"
+                            onClick={handleDetailClick}
                         >
                             <EyeIcon size={16} />
                         </Link>

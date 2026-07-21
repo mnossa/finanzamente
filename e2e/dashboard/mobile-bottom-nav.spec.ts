@@ -10,7 +10,8 @@ test.describe('Bottom navigation mobile', () => {
 
         await expect(bottomNav.getByRole('link', { name: 'Dashboard' })).toBeVisible();
         await expect(bottomNav.getByRole('link', { name: 'Conti e movimenti' })).toBeVisible();
-        await expect(bottomNav.getByRole('link', { name: 'Organizzazione' })).toBeVisible();
+        await expect(bottomNav.getByRole('link', { name: 'Patrimonio' })).toBeVisible();
+        await expect(bottomNav.getByRole('link', { name: 'Pianificazione e risparmio' })).toBeVisible();
         await expect(bottomNav.getByRole('button', { name: 'Altro' })).toBeVisible();
     });
 

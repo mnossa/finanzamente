@@ -1,6 +1,7 @@
 import {
     MOBILE_BOTTOM_NAV_DEFAULT_SLOTS,
     MOBILE_BOTTOM_NAV_DESTINATIONS,
+    MOBILE_BOTTOM_NAV_SLOT_COUNT,
     type MobileBottomNavDestination,
     type MobileBottomNavDestinationId,
 } from '@/config/mobileBottomNav';
@@ -38,7 +39,7 @@ export function resolveMobileBottomNavSlots(
     const used = new Set<MobileBottomNavDestinationId>();
 
     for (const id of requestedIds) {
-        if (resolved.length >= 3) {
+        if (resolved.length >= MOBILE_BOTTOM_NAV_SLOT_COUNT) {
             break;
         }
 
@@ -51,7 +52,7 @@ export function resolveMobileBottomNavSlots(
     }
 
     for (const destination of available) {
-        if (resolved.length >= 3) {
+        if (resolved.length >= MOBILE_BOTTOM_NAV_SLOT_COUNT) {
             break;
         }
 
@@ -61,7 +62,7 @@ export function resolveMobileBottomNavSlots(
         }
     }
 
-    return resolved.slice(0, 3);
+    return resolved.slice(0, MOBILE_BOTTOM_NAV_SLOT_COUNT);
 }
 
 let slotOverride: MobileBottomNavDestinationId[] | null = null;
