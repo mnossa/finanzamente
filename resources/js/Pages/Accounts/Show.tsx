@@ -184,7 +184,9 @@ function MealVoucherUnitValueForm({ accountId }: { accountId: number }) {
             className="space-y-3"
         >
             <p className="text-sm text-gray-600 dark:text-gray-300">
-                Dal giorno indicato i nuovi accrediti useranno questo valore. I ticket già in cassa non cambiano.
+                Dal giorno indicato i nuovi accrediti useranno questo valore. Puoi impostare anche date
+                passate per categorizzare movimenti storici con l&apos;importo corretto. I ticket già in
+                cassa non cambiano.
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -206,7 +208,6 @@ function MealVoucherUnitValueForm({ accountId }: { accountId: number }) {
                     <TextInput
                         id="effective_from"
                         type="date"
-                        min={today}
                         className="mt-1 block w-full"
                         value={data.effective_from}
                         onChange={(e) => setData('effective_from', e.target.value)}
@@ -216,7 +217,7 @@ function MealVoucherUnitValueForm({ accountId }: { accountId: number }) {
                 </div>
             </div>
             <PrimaryButton disabled={processing}>
-                {processing ? 'Salvataggio...' : 'Programma valore'}
+                {processing ? 'Salvataggio...' : 'Salva valore'}
             </PrimaryButton>
         </form>
     );

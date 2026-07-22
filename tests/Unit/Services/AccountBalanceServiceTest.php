@@ -7,6 +7,7 @@ use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountBalanceService;
+use App\Services\MealVoucherLedgerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -137,5 +138,39 @@ class AccountBalanceServiceTest extends TestCase
         ]);
 
         $this->assertSame(5000.0, $this->service->computeHouseholdTotal($this->user));
+    }
+
+    #[Test]
+    public function map_accounts_with_balance_exposes_meal_voucher_labels_and_ticket_count(): void
+    {
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+
+        $bank = Account::factory()->bank()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 100,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        $mapped = $this->service->mapAccountsWithBalance(
+            collect([$meal->fresh(), $bank->fresh()]),
+            $this->user,
+        )->keyBy('id');
+
+        $this->assertSame('Buoni pasto', $mapped[$meal->id]['type_label']);
+        $this->assertTrue($mapped[$meal->id]['is_meal_voucher']);
+        $this->assertSame(10, $mapped[$meal->id]['ticket_count']);
+        $this->assertSame('Conto Bancario', $mapped[$bank->id]['type_label']);
+        $this->assertFalse($mapped[$bank->id]['is_meal_voucher']);
+        $this->assertNull($mapped[$bank->id]['ticket_count']);
     }
 }

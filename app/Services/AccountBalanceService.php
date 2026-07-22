@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Account;
+use App\Models\MealVoucherLot;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,15 +63,36 @@ class AccountBalanceService
     {
         $balances = $this->batchComputeBalances($accounts, $viewer);
 
-        return $accounts->map(function (Account $account) use ($balances) {
+        $mealVoucherIds = $accounts
+            ->filter(fn (Account $account) => $account->isMealVoucher())
+            ->pluck('id');
+
+        $ticketCounts = $mealVoucherIds->isEmpty()
+            ? collect()
+            : MealVoucherLot::query()
+                ->whereIn('account_id', $mealVoucherIds)
+                ->groupBy('account_id')
+                ->selectRaw('account_id, COALESCE(SUM(quantity_remaining), 0) as total')
+                ->pluck('total', 'account_id');
+
+        return $accounts->map(function (Account $account) use ($balances, $ticketCounts) {
+            $isMealVoucher = $account->isMealVoucher();
+
             return [
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $account->type,
+                'type_label' => $account->isSavingsDeposit()
+                    ? Account::uiTypes()[Account::SAVINGS_DEPOSIT_TYPE]
+                    : (Account::TYPES[$account->type] ?? $account->type),
                 'currency_code' => $account->currency_code,
                 'initial_balance' => (float) $account->initial_balance,
                 'current_balance' => $balances[$account->id] ?? 0.0,
                 'is_private' => $account->is_private,
+                'is_meal_voucher' => $isMealVoucher,
+                'ticket_count' => $isMealVoucher
+                    ? (int) ($ticketCounts[$account->id] ?? 0)
+                    : null,
             ];
         });
     }

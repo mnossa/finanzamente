@@ -136,7 +136,9 @@ class MealVoucherLedgerService
     }
 
     /**
-     * Nuovo valore ticket da data (non retroattivo: effective_from >= oggi).
+     * Imposta (o aggiorna) il valore ticket a partire da una data.
+     * Ammesse date passate (per categorizzare movimenti storici) e future.
+     * I lotti già in cassa non vengono ricalcolati.
      */
     public function scheduleUnitValue(Account $account, float $unitValue, CarbonInterface $effectiveFrom): MealVoucherUnitValue
     {
@@ -149,10 +151,6 @@ class MealVoucherLedgerService
         }
 
         $from = $effectiveFrom->copy()->startOfDay();
-        $today = now()->startOfDay();
-        if ($from->lt($today)) {
-            throw new InvalidArgumentException('Non puoi impostare un valore ticket con data passata.');
-        }
 
         $existsSameDay = MealVoucherUnitValue::query()
             ->where('account_id', $account->id)

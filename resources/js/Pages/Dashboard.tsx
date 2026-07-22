@@ -5,6 +5,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
 import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
+import { getAccountTypeLabel } from '@/Components/getAccountTypeLabel';
 import PageHeader from '@/Components/PageHeader';
 import PageContent from '@/Components/PageContent';
 import { LockedModuleCard } from '@/Components/ModuleAccess';
@@ -53,10 +54,13 @@ interface Account {
     id: number;
     name: string;
     type: string;
+    type_label: string;
     currency_code: string;
     initial_balance: number;
     current_balance: number;
     is_private: boolean;
+    is_meal_voucher?: boolean;
+    ticket_count?: number | null;
 }
 
 interface Category {
@@ -152,33 +156,26 @@ interface DashboardProps {
     importShareToken?: string | null;
 }
 
-function getAccountTypeLabel(type: string): string {
-    const types: Record<string, string> = {
-        bank: 'Conto Bancario',
-        cash: 'Contanti',
-        credit_card: 'Carta di Credito',
-        debit_card: 'Carta di Debito',
-        investment: 'Investimento',
-        crypto: 'Crypto',
-        other: 'Altro',
-    };
-    return types[type] || type;
-}
-
 function AccountCard({ account }: { account: Account }) {
+    const typeLabel = account.type_label || getAccountTypeLabel(account.type);
+    const showTicketCount = Boolean(account.is_meal_voucher) && account.ticket_count != null;
+
     return (
         <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/50">
-            <div className="flex items-center gap-2">
-                <span className="text-lg">{getAccountTypeIcon(account.type)}</span>
-                <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
+            <div className="flex items-center gap-2 min-w-0">
+                <span className="text-lg shrink-0">{getAccountTypeIcon(account.type)}</span>
+                <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-tight truncate">
                         {account.name}
                         {account.is_private && <span className="ml-1 text-xs text-gray-400">🔒</span>}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{getAccountTypeLabel(account.type)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {typeLabel}
+                        {showTicketCount ? ` · ${account.ticket_count} ticket` : ''}
+                    </p>
                 </div>
             </div>
-            <p className={clsx('text-sm font-semibold', moneyTabular, account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400')}>
+            <p className={clsx('ml-2 shrink-0 text-sm font-semibold', moneyTabular, account.current_balance >= 0 ? 'text-gray-900 dark:text-white' : 'text-red-600 dark:text-red-400')}>
                 {formatCurrency(account.current_balance, account.currency_code)}
             </p>
         </div>

@@ -26,6 +26,7 @@ import MealVoucherSpendSection, { MealVoucherLine } from '@/Components/MealVouch
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
     accountsForTransactionType,
+    mealVoucherUnitValueOnDate,
     resolveTransactionAccountId,
     type TransactionAccount,
 } from '@/utils/transactionAccounts';
@@ -178,7 +179,7 @@ export default function Create({
     const accountCurrency = selectedAccount?.currency_code ?? 'EUR';
     const isMealVoucherAccount = Boolean(selectedAccount?.is_meal_voucher);
     const mealVoucherLots = selectedAccount?.meal_voucher_lots ?? [];
-    const mealVoucherUnit = selectedAccount?.ticket_unit_value ?? null;
+    const mealVoucherUnit = mealVoucherUnitValueOnDate(selectedAccount, data.date);
 
     const fxPreview = useFxPreview({
         enabled: showFx && !!data.original_currency_code && !!accountCurrency && data.original_currency_code !== accountCurrency,
@@ -492,7 +493,7 @@ export default function Create({
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Accredito buoni: l&apos;importo deve essere un multiplo di{' '}
                                         {new Intl.NumberFormat('it-IT', { style: 'currency', currency: accountCurrency }).format(mealVoucherUnit)}{' '}
-                                        (ticket interi al valore vigente).
+                                        (ticket interi al valore vigente alla data selezionata).
                                     </p>
                                 )}
 

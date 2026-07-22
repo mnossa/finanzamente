@@ -228,7 +228,7 @@ class AccountController extends Controller
 
         return redirect()
             ->route('accounts.show', $account)
-            ->with('success', 'Nuovo valore ticket programmato.');
+            ->with('success', 'Valore ticket salvato.');
     }
 
     /**
