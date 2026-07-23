@@ -77,6 +77,7 @@ class HandleInertiaRequests extends Middleware
                 'info' => fn () => $request->session()->get('info'),
                 'duplicateWidget' => fn () => $request->session()->get('duplicateWidget'),
                 'duplicateMarketplaceWidget' => fn () => $request->session()->get('duplicateMarketplaceWidget'),
+                'undoFormulaWidget' => fn () => $request->session()->get('undoFormulaWidget'),
             ],
             'notifications' => fn () => $user
                 ? ['deferred' => true, 'unread_count' => 0, 'items' => []]

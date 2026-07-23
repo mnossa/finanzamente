@@ -30,7 +30,15 @@ class FormulaWidgetPolicy
 
     public function delete(User $user, FormulaWidget $formulaWidget): bool
     {
-        return $this->update($user, $formulaWidget);
+        return $this->update($user, $formulaWidget)
+            && ! $formulaWidget->isOfficialProtected();
+    }
+
+    public function restore(User $user, FormulaWidget $formulaWidget): bool
+    {
+        return (int) $formulaWidget->user_id === (int) $user->id
+            && $formulaWidget->trashed()
+            && ! $formulaWidget->isOfficialProtected();
     }
 
     private function ownsOrPublic(User $user, FormulaWidget $formulaWidget): bool

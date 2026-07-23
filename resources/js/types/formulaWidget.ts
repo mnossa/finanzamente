@@ -177,6 +177,9 @@ export interface FormulaWidgetSummary {
     financial_variable: FinancialVariableSummary | null;
     template_slug?: string | null;
     is_official_template?: boolean;
+    is_official_origin?: boolean;
+    can_delete?: boolean;
+    clones_count?: number;
     installed?: boolean;
     installed_widget_id?: number | null;
     source_id?: number | null;
@@ -195,4 +198,5 @@ export interface FormulaWidgetMeta {
     name: string;
     display_type: string;
     variant?: string | null;
+    can_delete?: boolean;
 }

@@ -95,6 +95,7 @@ export type PageProps<
         info?: string;
         duplicateWidget?: FormulaWidgetSummary | null;
         duplicateMarketplaceWidget?: FormulaWidgetSummary | null;
+        undoFormulaWidget?: { widget_id: number; expires_at: string } | null;
     };
     notifications: {
         deferred?: boolean;

@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FormulaWidget extends Model
 {
     /** @use HasFactory<FormulaWidgetFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     public const DISPLAY_KPI = 'kpi';
 
@@ -93,5 +94,28 @@ class FormulaWidget extends Model
     public function clones(): HasMany
     {
         return $this->hasMany(self::class, 'source_id');
+    }
+
+    /**
+     * Template ufficiale o clone installato da un template ufficiale: non eliminabile.
+     */
+    public function isOfficialProtected(): bool
+    {
+        if ($this->is_official_template) {
+            return true;
+        }
+
+        if ($this->source_id === null) {
+            return false;
+        }
+
+        if ($this->relationLoaded('source')) {
+            return (bool) $this->source?->is_official_template;
+        }
+
+        return self::query()
+            ->where('id', $this->source_id)
+            ->where('is_official_template', true)
+            ->exists();
     }
 }

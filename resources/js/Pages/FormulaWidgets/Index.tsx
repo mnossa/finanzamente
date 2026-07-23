@@ -21,7 +21,24 @@ interface IndexProps {
     widgets: FormulaWidgetSummary[];
 }
 
-function WidgetCard({ widget, onDelete }: { widget: FormulaWidgetSummary; onDelete: (id: number, name: string) => void }) {
+function deleteWarning(widget: FormulaWidgetSummary): string {
+    const clones = widget.clones_count ?? 0;
+    let message = `Vuoi rimuovere «${widget.name}»? Verrà tolto anche dalla dashboard. Potrai annullare entro 30 secondi.`;
+
+    if (widget.is_public && clones > 0) {
+        message += ` ${clones === 1 ? '1 utente ha' : `${clones} utenti hanno`} già installato questo widget: le loro copie resteranno attive.`;
+    }
+
+    return message;
+}
+
+function WidgetCard({
+    widget,
+    onDelete,
+}: {
+    widget: FormulaWidgetSummary;
+    onDelete: (widget: FormulaWidgetSummary) => void;
+}) {
     return (
         <CardBox className="flex flex-col gap-3 p-4 shadow-sm">
             <div className="min-w-0">
@@ -30,7 +47,9 @@ function WidgetCard({ widget, onDelete }: { widget: FormulaWidgetSummary; onDele
                     {formulaWidgetDisplayLabel(widget.display_type)}
                     {widget.financial_variable ? ` · ${widget.financial_variable.name}` : ''}
                 </p>
-                {widget.source_id ? (
+                {widget.is_official_origin ? (
+                    <p className="mt-1 text-xs text-primary-700 dark:text-primary-300">Template ufficiale · non eliminabile</p>
+                ) : widget.source_id ? (
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Installato dalla galleria</p>
                 ) : null}
             </div>
@@ -63,15 +82,17 @@ function WidgetCard({ widget, onDelete }: { widget: FormulaWidgetSummary; onDele
                     >
                         Aggiungi alla dashboard
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => onDelete(widget.id, widget.name)}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-300 px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-red-900/20 sm:w-auto sm:py-1.5"
-                        aria-label={`Elimina ${widget.name}`}
-                    >
-                        <TrashIcon className="h-4 w-4" />
-                        Elimina
-                    </button>
+                    {widget.can_delete !== false ? (
+                        <button
+                            type="button"
+                            onClick={() => onDelete(widget)}
+                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-300 px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-red-900/20 sm:w-auto sm:py-1.5"
+                            aria-label={`Elimina ${widget.name}`}
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                            Elimina
+                        </button>
+                    ) : null}
                 </div>
             </div>
         </CardBox>
@@ -79,7 +100,7 @@ function WidgetCard({ widget, onDelete }: { widget: FormulaWidgetSummary; onDele
 }
 
 export default function Index({ widgets }: IndexProps) {
-    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<FormulaWidgetSummary | null>(null);
     const [duplicateDismissed, setDuplicateDismissed] = useState(false);
     const { flash, errors } = usePage<PageProps>().props;
     const duplicateWidget = flash?.duplicateWidget;
@@ -163,7 +184,7 @@ export default function Index({ widgets }: IndexProps) {
                 ) : (
                     <div className={clsx('grid gap-3 sm:grid-cols-2 sm:gap-4')}>
                         {widgets.map((widget) => (
-                            <WidgetCard key={widget.id} widget={widget} onDelete={(id, name) => setDeleteTarget({ id, name })} />
+                            <WidgetCard key={widget.id} widget={widget} onDelete={setDeleteTarget} />
                         ))}
                     </div>
                 )}
@@ -172,7 +193,7 @@ export default function Index({ widgets }: IndexProps) {
             <ConfirmDeleteDialog
                 open={deleteTarget !== null}
                 title="Elimina widget"
-                description={deleteTarget ? `Vuoi rimuovere «${deleteTarget.name}»? Verrà eliminato anche dalla dashboard.` : undefined}
+                description={deleteTarget ? deleteWarning(deleteTarget) : undefined}
                 onConfirm={() => {
                     if (deleteTarget) {
                         router.delete(route('formula-widgets.destroy', deleteTarget.id), {

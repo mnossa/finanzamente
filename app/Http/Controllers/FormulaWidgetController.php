@@ -43,7 +43,8 @@ class FormulaWidgetController extends Controller
         $widgets = FormulaWidget::query()
             ->where('user_id', $user->id)
             ->where('is_official_template', false)
-            ->with('financialVariable:id,code,name,type')
+            ->with(['financialVariable:id,code,name,type', 'source:id,is_official_template,template_slug'])
+            ->withCount('clones')
             ->orderByDesc('updated_at')
             ->get()
             ->map(fn (FormulaWidget $widget) => $this->formatWidget($widget));
@@ -259,11 +260,25 @@ class FormulaWidgetController extends Controller
     {
         $this->authorize('delete', $formulaWidget);
 
-        $removalService->remove(Auth::user(), $formulaWidget);
+        $undo = $removalService->remove(Auth::user(), $formulaWidget);
 
         return redirect()
-            ->route('formula-widgets.index')
-            ->with('success', 'Widget rimosso.');
+            ->back()
+            ->with('success', 'Widget rimosso. Puoi annullare entro 30 secondi.')
+            ->with('undoFormulaWidget', $undo);
+    }
+
+    public function restore(int $formulaWidget, FormulaWidgetRemovalService $removalService): RedirectResponse
+    {
+        $widget = FormulaWidget::withTrashed()->findOrFail($formulaWidget);
+
+        $this->authorize('restore', $widget);
+
+        $removalService->restore(Auth::user(), $widget);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Eliminazione annullata. Widget ripristinato.');
     }
 
     public function choosePinBoard(FormulaWidget $formulaWidget, FormulaWidgetDashboardPinService $pinService): Response|RedirectResponse
@@ -360,6 +375,10 @@ class FormulaWidgetController extends Controller
             'share_token' => $widget->share_token,
             'downloads_count' => $widget->downloads_count,
             'source_id' => $widget->source_id,
+            'is_official_template' => $widget->is_official_template,
+            'is_official_origin' => $widget->isOfficialProtected(),
+            'can_delete' => ! $widget->isOfficialProtected(),
+            'clones_count' => (int) ($widget->clones_count ?? $widget->clones()->count()),
             'financial_variable' => $widget->relationLoaded('financialVariable') && $widget->financialVariable
                 ? FinancialVariableController::formatVariable($widget->financialVariable)
                 : null,

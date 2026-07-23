@@ -57,6 +57,51 @@ class DashboardBoardTest extends TestCase
     }
 
     #[Test]
+    public function empty_template_board_has_no_widgets_on_create_and_load(): void
+    {
+        $this->user->update(['plan' => 'pro']);
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'name' => 'Home',
+            'is_home' => true,
+            'sort_order' => 0,
+            'config' => DashboardLayout::essentialConfigForUser($this->user),
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('dashboard.boards.store'), [
+                'name' => 'Vuota test',
+                'template' => 'empty',
+            ])
+            ->assertRedirect(route('dashboard.boards.index'));
+
+        $board = DashboardLayout::query()
+            ->where('user_id', $this->user->id)
+            ->where('name', 'Vuota test')
+            ->firstOrFail();
+
+        $this->assertSame([], $board->config['widgets'] ?? null);
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard', ['board' => $board->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Dashboard')
+                ->where('dashboardLayout.widgets', [])
+            );
+
+        $this->actingAs($this->user)
+            ->getJson(route('dashboard.layout.show', ['board' => $board->id]))
+            ->assertOk()
+            ->assertJsonPath('config.widgets', []);
+
+        $board->refresh();
+        $this->assertSame([], $board->config['widgets'] ?? null);
+    }
+
+    #[Test]
     public function user_can_create_additional_board_up_to_base_limit(): void
     {
         DashboardLayout::create([

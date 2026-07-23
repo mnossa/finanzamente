@@ -142,12 +142,114 @@ class FormulaWidgetDashboardPinService
             return;
         }
 
+        $this->removeFromLayouts(
+            DashboardLayout::query()
+                ->where('user_id', $user->id)
+                ->where('household_id', $householdId)
+                ->get(),
+            $widget,
+        );
+    }
+
+    /**
+     * Rimuove il widget da tutte le board dell'utente (tutte le household).
+     */
+    public function removeFromAllLayouts(User $user, FormulaWidget $widget): void
+    {
+        $this->removeFromLayouts(
+            DashboardLayout::query()->where('user_id', $user->id)->get(),
+            $widget,
+        );
+    }
+
+    /**
+     * @return list<array{layout_id: int, entry: array<string, mixed>}>
+     */
+    public function snapshotPins(User $user, FormulaWidget $widget): array
+    {
+        $widgetLayoutId = "formula_widget_{$widget->id}";
+        $pins = [];
+
+        DashboardLayout::query()
+            ->where('user_id', $user->id)
+            ->orderBy('id')
+            ->each(function (DashboardLayout $layout) use ($widgetLayoutId, &$pins): void {
+                foreach ($layout->config['widgets'] ?? [] as $entry) {
+                    if (($entry['id'] ?? '') !== $widgetLayoutId) {
+                        continue;
+                    }
+
+                    $pins[] = [
+                        'layout_id' => $layout->id,
+                        'entry' => $entry,
+                    ];
+                }
+            });
+
+        return $pins;
+    }
+
+    /**
+     * @param  list<array{layout_id: int, entry: array<string, mixed>}>  $pins
+     */
+    public function restorePins(User $user, FormulaWidget $widget, array $pins): void
+    {
+        if ($pins === []) {
+            return;
+        }
+
         $widgetLayoutId = "formula_widget_{$widget->id}";
 
-        $layouts = DashboardLayout::query()
-            ->where('user_id', $user->id)
-            ->where('household_id', $householdId)
-            ->get();
+        foreach ($pins as $pin) {
+            $layoutId = (int) ($pin['layout_id'] ?? 0);
+            $entry = $pin['entry'] ?? null;
+
+            if ($layoutId <= 0 || ! is_array($entry)) {
+                continue;
+            }
+
+            $layout = DashboardLayout::query()
+                ->where('id', $layoutId)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($layout === null) {
+                continue;
+            }
+
+            $widgets = $layout->config['widgets'] ?? [];
+            $alreadyPinned = false;
+
+            foreach ($widgets as $existing) {
+                if (($existing['id'] ?? '') === $widgetLayoutId) {
+                    $alreadyPinned = true;
+                    break;
+                }
+            }
+
+            if ($alreadyPinned) {
+                continue;
+            }
+
+            $entry['id'] = $widgetLayoutId;
+            $widgets[] = $entry;
+
+            usort($widgets, fn (array $a, array $b) => ((int) ($a['position'] ?? 0)) <=> ((int) ($b['position'] ?? 0)));
+
+            foreach ($widgets as $index => $row) {
+                $widgets[$index]['position'] = $index;
+            }
+
+            $layout->update(['config' => ['widgets' => $widgets]]);
+        }
+    }
+
+    /**
+     * @param  Collection<int, DashboardLayout>  $layouts
+     */
+    private function removeFromLayouts(Collection $layouts, FormulaWidget $widget): void
+    {
+        $widgetLayoutId = "formula_widget_{$widget->id}";
 
         foreach ($layouts as $layout) {
             $widgets = array_values(array_filter(

@@ -403,7 +403,7 @@ class DashboardLayoutTest extends TestCase
     }
 
     #[Test]
-    public function dashboard_heals_saved_layout_missing_installed_formula_widgets(): void
+    public function custom_board_does_not_auto_merge_installed_formula_widgets(): void
     {
         $widget = $this->createUserFormulaWidget(['default_size' => 'md']);
 
@@ -417,16 +417,13 @@ class DashboardLayoutTest extends TestCase
                 ->where('dashboardLayout.widgets', function ($widgets) use ($widget): bool {
                     $ids = collect($widgets)->pluck('id')->all();
 
-                    return in_array("formula_widget_{$widget->id}", $ids, true);
+                    return ! in_array("formula_widget_{$widget->id}", $ids, true);
                 })
             );
 
-        $this->assertDatabaseHas('dashboard_layouts', [
-            'id' => $board->id,
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'is_home' => false,
-        ]);
+        $board->refresh();
+        $ids = array_column($board->config['widgets'] ?? [], 'id');
+        $this->assertNotContains("formula_widget_{$widget->id}", $ids);
     }
 
     #[Test]

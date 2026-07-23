@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\PurgeSoftDeletedFormulaWidgetJob;
 use App\Models\Account;
 use App\Models\DashboardLayout;
 use App\Models\FinancialVariable;
@@ -9,9 +10,12 @@ use App\Models\FormulaWidget;
 use App\Models\Household;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\FinancialVariableCloneService;
+use App\Services\FormulaWidgetRemovalService;
 use Database\Seeders\FormulaWidgetTemplateSeeder;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -469,7 +473,7 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
-    public function marketplace_can_uninstall_installed_template(): void
+    public function marketplace_cannot_uninstall_official_template(): void
     {
         $this->seed(FormulaWidgetTemplateSeeder::class);
 
@@ -486,9 +490,12 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->delete(route('formula-marketplace.uninstall-template', 'official.saldo_liquidita'))
-            ->assertRedirect(route('formula-marketplace.index'));
+            ->assertForbidden();
 
-        $this->assertDatabaseMissing('formula_widgets', ['id' => $installed->id]);
+        $this->assertDatabaseHas('formula_widgets', [
+            'id' => $installed->id,
+            'deleted_at' => null,
+        ]);
     }
 
     #[Test]
@@ -547,6 +554,7 @@ class FormulaWidgetHttpTest extends TestCase
             ->assertRedirect(route('dashboard', ['board' => $custom->id]));
 
         $this->actingAs($this->user)
+            ->from(route('formula-widgets.index'))
             ->delete(route('formula-widgets.destroy', $widget))
             ->assertRedirect(route('formula-widgets.index'));
 
@@ -554,6 +562,112 @@ class FormulaWidgetHttpTest extends TestCase
 
         $ids = array_column($layout->config['widgets'], 'id');
         $this->assertNotContains("formula_widget_{$widget->id}", $ids);
+        $this->assertDatabaseMissing('formula_widgets', ['id' => $widget->id, 'deleted_at' => null]);
+    }
+
+    #[Test]
+    public function destroy_rejects_official_origin_clone(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $this->actingAs($this->user)
+            ->post(route('formula-marketplace.install-template', 'official.saldo_liquidita'))
+            ->assertRedirect();
+
+        $installed = FormulaWidget::query()
+            ->where('user_id', $this->user->id)
+            ->where('is_official_template', false)
+            ->firstOrFail();
+
+        $this->actingAs($this->user)
+            ->delete(route('formula-widgets.destroy', $installed))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('formula_widgets', [
+            'id' => $installed->id,
+            'deleted_at' => null,
+        ]);
+    }
+
+    #[Test]
+    public function destroy_soft_deletes_and_restore_within_window(): void
+    {
+        Queue::fake();
+
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
+        $widget = FormulaWidget::factory()
+            ->for($this->user)
+            ->for($variable, 'financialVariable')
+            ->create(['name' => 'Soft delete', 'display_type' => 'kpi']);
+
+        $custom = $this->customBoard();
+
+        $this->actingAs($this->user)
+            ->post(route('formula-widgets.pin', $widget))
+            ->assertRedirect();
+
+        $this->actingAs($this->user)
+            ->from(route('formula-widgets.index'))
+            ->delete(route('formula-widgets.destroy', $widget))
+            ->assertRedirect(route('formula-widgets.index'))
+            ->assertSessionHas('undoFormulaWidget.widget_id', $widget->id);
+
+        $this->assertSoftDeleted('formula_widgets', ['id' => $widget->id]);
+        Queue::assertPushed(PurgeSoftDeletedFormulaWidgetJob::class);
+
+        $ids = array_column($custom->fresh()->config['widgets'], 'id');
+        $this->assertNotContains("formula_widget_{$widget->id}", $ids);
+
+        $this->actingAs($this->user)
+            ->from(route('formula-widgets.index'))
+            ->post(route('formula-widgets.restore', $widget->id))
+            ->assertRedirect(route('formula-widgets.index'));
+
+        $this->assertDatabaseHas('formula_widgets', [
+            'id' => $widget->id,
+            'deleted_at' => null,
+        ]);
+
+        $idsAfterRestore = array_column($custom->fresh()->config['widgets'], 'id');
+        $this->assertContains("formula_widget_{$widget->id}", $idsAfterRestore);
+    }
+
+    #[Test]
+    public function purge_keeps_clones_of_other_users(): void
+    {
+        Queue::fake();
+
+        $ownerVariable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create();
+        $ownerWidget = FormulaWidget::factory()
+            ->for($this->user)
+            ->for($ownerVariable, 'financialVariable')
+            ->create([
+                'name' => 'Condiviso',
+                'display_type' => 'kpi',
+                'is_public' => true,
+                'share_token' => 'w_shared001',
+            ]);
+
+        $other = User::factory()->create();
+        $cloneService = app(FinancialVariableCloneService::class);
+        $clone = $cloneService->installWidget($other, $ownerWidget);
+
+        $this->actingAs($this->user)
+            ->delete(route('formula-widgets.destroy', $ownerWidget))
+            ->assertRedirect();
+
+        $this->assertSoftDeleted('formula_widgets', ['id' => $ownerWidget->id]);
+
+        app(PurgeSoftDeletedFormulaWidgetJob::class, ['formulaWidgetId' => $ownerWidget->id])->handle(
+            app(FormulaWidgetRemovalService::class),
+        );
+
+        $this->assertDatabaseMissing('formula_widgets', ['id' => $ownerWidget->id]);
+        $this->assertDatabaseHas('formula_widgets', [
+            'id' => $clone->id,
+            'source_id' => null,
+            'deleted_at' => null,
+        ]);
     }
 
     #[Test]

@@ -96,13 +96,19 @@ function MarketplaceCard({
                 )}
             </div>
             {widget.installed ? (
-                <button
-                    type="button"
-                    onClick={onUninstall}
-                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 sm:py-2"
-                >
-                    Rimuovi
-                </button>
+                widget.is_official_template ? (
+                    <p className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2.5 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300 sm:py-2">
+                        Installato · i template ufficiali non si possono rimuovere
+                    </p>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={onUninstall}
+                        className="w-full rounded-lg border border-red-200 bg-white px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 sm:py-2"
+                    >
+                        Rimuovi
+                    </button>
+                )
             ) : (
                 <button
                     type="button"

@@ -891,7 +891,8 @@ class DashboardController extends Controller
         FormulaWidget::query()
             ->where('user_id', $user->id)
             ->whereIn('id', $widgetIds)
-            ->get(['id', 'name', 'display_type', 'chart_config'])
+            ->with('source:id,is_official_template')
+            ->get(['id', 'name', 'display_type', 'chart_config', 'source_id', 'is_official_template'])
             ->each(function (FormulaWidget $widget) use (&$meta) {
                 $chartConfig = $widget->chart_config ?? [];
 
@@ -899,6 +900,7 @@ class DashboardController extends Controller
                     'name' => $widget->name,
                     'display_type' => $widget->display_type,
                     'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
+                    'can_delete' => ! $widget->isOfficialProtected(),
                 ];
             });
 
@@ -957,7 +959,8 @@ class DashboardController extends Controller
 
             $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
         } else {
-            $savedConfig = $this->formulaWidgetLayoutNormalizer->mergeInstalledFormulaWidgets($user, $savedConfig);
+            // Board custom: rispetta config salvata (template «Vuota» = zero widget).
+            // I formula si aggiungono solo via pin esplicito / template alla creazione.
             $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
         }
 

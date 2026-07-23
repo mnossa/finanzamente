@@ -54,7 +54,7 @@ export default function DashboardWidgetGridEditable({
         >
             <SortableContext items={sortableIds} strategy={rectSortingStrategy}>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-6 xl:gap-6">
-                    {items.map(({ widget, content, formulaTitle, formulaNumericId, renderable }) => {
+                    {items.map(({ widget, content, formulaTitle, formulaNumericId, formulaCanDelete, renderable }) => {
                         if (!renderable) {
                             return null;
                         }
@@ -76,7 +76,7 @@ export default function DashboardWidgetGridEditable({
                                         : undefined
                                 }
                                 onManageDelete={
-                                    formulaNumericId && onManageDelete
+                                    formulaNumericId && formulaCanDelete !== false && onManageDelete
                                         ? () => onManageDelete({
                                             id: Number(formulaNumericId),
                                             name: formulaTitle ?? 'Widget a formula',

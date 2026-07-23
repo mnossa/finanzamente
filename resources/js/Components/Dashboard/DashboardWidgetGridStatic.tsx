@@ -7,6 +7,7 @@ export interface DashboardWidgetGridItem {
     content: ReactNode;
     formulaTitle?: string;
     formulaNumericId: string | null;
+    formulaCanDelete?: boolean;
     renderable: boolean;
 }
 
@@ -27,7 +28,7 @@ export default function DashboardWidgetGridStatic({
 }: DashboardWidgetGridStaticProps) {
     return (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-6 xl:gap-6">
-            {items.map(({ widget, content, formulaTitle, formulaNumericId, renderable }) => {
+            {items.map(({ widget, content, formulaTitle, formulaNumericId, formulaCanDelete, renderable }) => {
                 if (!renderable) {
                     return null;
                 }
@@ -52,7 +53,7 @@ export default function DashboardWidgetGridStatic({
                                 : undefined
                         }
                         onManageDelete={
-                            isEditing && formulaNumericId && onManageDelete
+                            isEditing && formulaNumericId && formulaCanDelete !== false && onManageDelete
                                 ? () => onManageDelete({
                                     id: Number(formulaNumericId),
                                     name: formulaTitle ?? 'Widget a formula',

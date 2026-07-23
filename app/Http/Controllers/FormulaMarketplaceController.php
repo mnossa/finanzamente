@@ -138,25 +138,14 @@ class FormulaMarketplaceController extends Controller
             ->with('installedWidgetId', $cloned->id);
     }
 
-    public function uninstallTemplate(string $templateSlug, FormulaWidgetRemovalService $removalService): RedirectResponse
+    public function uninstallTemplate(string $templateSlug): RedirectResponse
     {
-        $user = Auth::user();
-
-        $official = FormulaWidget::query()
+        FormulaWidget::query()
             ->where('template_slug', $templateSlug)
             ->where('is_official_template', true)
             ->firstOrFail();
 
-        $installed = FormulaWidget::query()
-            ->where('user_id', $user->id)
-            ->where('source_id', $official->id)
-            ->firstOrFail();
-
-        $removalService->remove($user, $installed);
-
-        return redirect()
-            ->route('formula-marketplace.index')
-            ->with('success', 'Template rimosso dalla tua libreria.');
+        abort(403, 'I template ufficiali non possono essere rimossi dalla libreria.');
     }
 
     public function uninstallWidget(FormulaWidget $formulaWidget, FormulaWidgetRemovalService $removalService): RedirectResponse
@@ -167,16 +156,21 @@ class FormulaMarketplaceController extends Controller
             abort(404);
         }
 
+        if ($formulaWidget->isOfficialProtected()) {
+            abort(403, 'I widget ufficiali non possono essere rimossi.');
+        }
+
         $installed = FormulaWidget::query()
             ->where('user_id', $user->id)
             ->where('source_id', $formulaWidget->id)
             ->firstOrFail();
 
-        $removalService->remove($user, $installed);
+        $undo = $removalService->remove($user, $installed);
 
         return redirect()
             ->route('formula-marketplace.index')
-            ->with('success', 'Widget rimosso dalla tua libreria.');
+            ->with('success', 'Widget rimosso. Puoi annullare entro 30 secondi.')
+            ->with('undoFormulaWidget', $undo);
     }
 
     /**

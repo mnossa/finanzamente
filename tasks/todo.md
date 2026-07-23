@@ -1,18 +1,23 @@
-# Home default — D3 disposition
+# Soft delete widget + restore Saldo conti
 
-## Layout
-```
-[ ========== Saldo xl ========== ]
-[ Entrate md ][ Uscite md ]
-[ Budget md  ][ Treemap md ]
-[ TX md      ][ Conti md   ]
-```
+## Plan
+1. Migration one-shot: reseed `official.saldo_liquidita` + ensure clone + Home pin (D3)
+2. Schema: `formula_widgets.deleted_at` SoftDeletes
+3. Removal: soft delete → job purge 30s → forceDelete; restore undoes
+4. Official (`is_official_template` o clone da ufficiale): no delete/uninstall
+5. Community/custom: confirm + soft delete; clones altri utenti restano (detach `source_id` su purge)
+6. UI: dialog conferma + flash undo 30s
+7. Tests + pint + playwright
 
 ## Done
-- [x] `home_essential_formula_widgets` slug→size
-- [x] built-in tutti `md`
-- [x] migration + clear-cache
-- [x] test + pint green
+- [x] migration softDeletes (`2026_06_10_100150`) + restore Home (`2026_07_23_170100`)
+- [x] FormulaWidget SoftDeletes + RemovalService + PurgeSoftDeletedFormulaWidgetJob + restore route
+- [x] Policy / marketplace block official (+ clone da ufficiale)
+- [x] UI confirm + undo toast (Annulla Ns)
+- [x] tests green (1036 PHPUnit) + pint + playwright (264 passed)
 
-## Verify
-Home DB sizes: xl, md, md, md, md, md, md
+## Review
+- Official = `is_official_template` **o** `source` ufficiale → no delete/uninstall
+- Soft delete 30s + queue Redis; sync in test = purge immediato se Queue non faked
+- Clone community: su purge `source_id` → null, copie restano
+- Home one-shot: reseed template + install missing home-essential + rebuild essentialConfigForUser

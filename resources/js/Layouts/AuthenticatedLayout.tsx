@@ -351,6 +351,8 @@ function FlashMessages() {
     const { flash } = usePage<PageProps>().props;
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState<{ type: string; text: string } | null>(null);
+    const [undo, setUndo] = useState<{ widget_id: number; expires_at: string } | null>(null);
+    const [undoSecondsLeft, setUndoSecondsLeft] = useState(0);
 
     useEffect(() => {
         if (flash?.success) {
@@ -363,14 +365,40 @@ function FlashMessages() {
             setMessage({ type: 'info', text: flash.info });
             setVisible(true);
         }
+
+        if (flash?.undoFormulaWidget?.widget_id && flash.undoFormulaWidget.expires_at) {
+            setUndo(flash.undoFormulaWidget);
+        }
     }, [flash]);
 
     useEffect(() => {
-        if (visible) {
+        if (!undo) {
+            setUndoSecondsLeft(0);
+            return;
+        }
+
+        const tick = () => {
+            const remaining = Math.max(
+                0,
+                Math.ceil((new Date(undo.expires_at).getTime() - Date.now()) / 1000),
+            );
+            setUndoSecondsLeft(remaining);
+            if (remaining <= 0) {
+                setUndo(null);
+            }
+        };
+
+        tick();
+        const interval = window.setInterval(tick, 250);
+        return () => window.clearInterval(interval);
+    }, [undo]);
+
+    useEffect(() => {
+        if (visible && !undo) {
             const timer = setTimeout(() => setVisible(false), 5000);
             return () => clearTimeout(timer);
         }
-    }, [visible]);
+    }, [visible, undo]);
 
     if (!visible || !message) return null;
 
@@ -384,6 +412,22 @@ function FlashMessages() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-4">
             <div className={clsx('alert pr-8', alertClasses)} role="alert">
                 <span className="block sm:inline">{message.text}</span>
+                {undo && undoSecondsLeft > 0 ? (
+                    <button
+                        type="button"
+                        className="ml-3 inline-flex font-semibold underline hover:no-underline"
+                        onClick={() => {
+                            router.post(route('formula-widgets.restore', undo.widget_id), {}, {
+                                onFinish: () => {
+                                    setUndo(null);
+                                    setVisible(false);
+                                },
+                            });
+                        }}
+                    >
+                        Annulla ({undoSecondsLeft}s)
+                    </button>
+                ) : null}
                 <button
                     className="absolute top-0 bottom-0 right-0 px-2 py-2 hover:opacity-70 transition-opacity"
                     onClick={() => setVisible(false)}

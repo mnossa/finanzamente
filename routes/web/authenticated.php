@@ -104,6 +104,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::put('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'update'])->name('formula-widgets.update');
     Route::post('/widget-formule/anteprima', [FormulaWidgetController::class, 'preview'])->name('formula-widgets.preview');
     Route::delete('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'destroy'])->name('formula-widgets.destroy');
+    Route::post('/widget-formule/{formula_widget}/ripristina', [FormulaWidgetController::class, 'restore'])->name('formula-widgets.restore');
     Route::get('/widget-formule/{formula_widget}/aggiungi', [FormulaWidgetController::class, 'choosePinBoard'])->name('formula-widgets.pin.choose');
     Route::post('/widget-formule/{formula_widget}/pin', [FormulaWidgetController::class, 'pin'])->name('formula-widgets.pin');
 

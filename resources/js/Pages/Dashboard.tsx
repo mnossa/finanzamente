@@ -729,6 +729,9 @@ export default function Dashboard({
                         ?? formulaWidgetMeta[formulaNumericId]?.name)
                     : undefined,
                 formulaNumericId,
+                formulaCanDelete: formulaNumericId
+                    ? formulaWidgetMeta[formulaNumericId]?.can_delete !== false
+                    : undefined,
                 renderable: isWidgetRenderable(widget.id),
             };
         }),
@@ -903,7 +906,7 @@ export default function Dashboard({
                 title="Elimina widget"
                 description={
                     deleteFormulaWidgetTarget
-                        ? `Vuoi rimuovere «${deleteFormulaWidgetTarget.name}»? Verrà eliminato anche dalla dashboard.`
+                        ? `Vuoi rimuovere «${deleteFormulaWidgetTarget.name}»? Verrà tolto anche dalla dashboard. Potrai annullare entro 30 secondi.`
                         : undefined
                 }
                 onConfirm={() => {

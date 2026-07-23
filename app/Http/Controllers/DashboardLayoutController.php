@@ -47,7 +47,8 @@ class DashboardLayoutController extends Controller
 
             $config = $savedConfig;
         } else {
-            $config = $normalizer->mergeInstalledFormulaWidgets($user, $savedConfig);
+            // Board custom: niente auto-merge formula installati (template «Vuota» resta vuota).
+            $config = $savedConfig;
         }
 
         $sanitized = $normalizer->sanitizeFormulaWidgets($user, $config);

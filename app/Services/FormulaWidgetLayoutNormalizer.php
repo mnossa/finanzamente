@@ -228,8 +228,8 @@ class FormulaWidgetLayoutNormalizer
 
     /**
      * Aggiunge al layout i widget formula installati dall'utente ma assenti dalla config
-     * (es. dopo "Ripristina default" o layout salvato senza formula_widget_*).
-     * Non usare su Home: la Home usa buildHomeEssentialConfig / essentialConfigForUser.
+     * (es. template «Completa» / defaultConfigForUser).
+     * Non usare su load Home/custom: Home usa essentialConfigForUser; custom rispetta config salvata.
      *
      * @param  array<string, mixed>  $config
      * @return array<string, mixed>
