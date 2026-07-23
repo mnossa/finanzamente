@@ -33,13 +33,10 @@ class FormulaWidgetBootstrapService
             return;
         }
 
-        $this->ensureDashboardLayout($user, $clonedWidgets);
+        $this->ensureHomeLayout($user);
     }
 
-    /**
-     * @param  array<int, FormulaWidget>  $widgets
-     */
-    private function ensureDashboardLayout(User $user, array $widgets): void
+    private function ensureHomeLayout(User $user): void
     {
         $householdId = $user->active_household_id;
 
@@ -47,60 +44,17 @@ class FormulaWidgetBootstrapService
             return;
         }
 
-        $layout = DashboardLayout::query()
-            ->where('user_id', $user->id)
-            ->where('household_id', $householdId)
-            ->first();
-
-        $config = $layout?->config ?? DashboardLayout::defaultConfig();
-        $existingIds = array_column($config['widgets'] ?? [], 'id');
-
-        $position = 0;
-        $newEntries = [];
-
-        foreach ($widgets as $widget) {
-            $widgetId = "formula_widget_{$widget->id}";
-            if (in_array($widgetId, $existingIds, true)) {
-                continue;
-            }
-
-            $newEntries[] = [
-                'id' => $widgetId,
-                'visible' => true,
-                'position' => $position,
-                'size' => $widget->default_size,
-            ];
-            $position++;
-        }
-
-        if ($newEntries === []) {
+        if (DashboardLayout::findHome($user->id, $householdId) !== null) {
             return;
         }
 
-        $legacyWidgets = array_values(array_filter(
-            $config['widgets'] ?? [],
-            fn (array $entry) => ! $this->isTierALegacyWidget($entry['id'] ?? ''),
-        ));
-
-        foreach ($legacyWidgets as $index => $entry) {
-            $legacyWidgets[$index]['position'] = $position;
-            $position++;
-        }
-
-        $config['widgets'] = array_merge($newEntries, $legacyWidgets);
-
-        DashboardLayout::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'household_id' => $householdId,
-            ],
-            ['config' => $config],
-        );
-    }
-
-    private function isTierALegacyWidget(string $widgetId): bool
-    {
-        return in_array($widgetId, DashboardLayout::TIER_A_LEGACY_WIDGET_IDS, true)
-            || array_key_exists($widgetId, config('financial_variables.legacy_widget_replacements', []));
+        DashboardLayout::create([
+            'user_id' => $user->id,
+            'household_id' => $householdId,
+            'name' => 'Home',
+            'is_home' => true,
+            'sort_order' => 0,
+            'config' => DashboardLayout::essentialConfigForUser($user),
+        ]);
     }
 }

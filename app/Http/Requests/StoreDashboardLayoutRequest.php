@@ -67,7 +67,10 @@ class StoreDashboardLayoutRequest extends FormRequest
             return;
         }
 
-        $sanitized = app(FormulaWidgetLayoutNormalizer::class)->sanitizeFormulaWidgets($user, $config);
+        $sanitized = app(FormulaWidgetLayoutNormalizer::class)->sanitizeFormulaWidgets(
+            $user,
+            DashboardLayout::stripUnsupportedWidgets($config),
+        );
 
         $this->merge(['config' => $sanitized]);
     }
@@ -85,7 +88,6 @@ class StoreDashboardLayoutRequest extends FormRequest
             'recent_transactions',
             'active_budgets',
             'debts_credits',
-            'quick_actions',
             'asset_allocation',
             'expense_treemap',
             'financial_goals',
@@ -99,7 +101,8 @@ class StoreDashboardLayoutRequest extends FormRequest
             $unknownIds = [];
 
             foreach ($ids as $id) {
-                if (in_array($id, DashboardLayout::TIER_A_LEGACY_WIDGET_IDS, true)) {
+                if (in_array($id, DashboardLayout::TIER_A_LEGACY_WIDGET_IDS, true)
+                    || in_array($id, DashboardLayout::REMOVED_WIDGET_IDS, true)) {
                     $unknownIds[] = $id;
 
                     continue;

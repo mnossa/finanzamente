@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import DashboardWidgetCard from '@/Components/DashboardWidgetCard';
 import type { WidgetConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 import type { ReactNode } from 'react';
@@ -60,9 +59,6 @@ export default function DashboardWidgetGridStatic({
                                 })
                                 : undefined
                         }
-                        className={clsx(
-                            widget.id === 'quick_actions' && !isEditing && 'hidden lg:flex',
-                        )}
                     >
                         {content}
                     </DashboardWidgetCard>

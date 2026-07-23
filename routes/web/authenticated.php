@@ -8,6 +8,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\BalancePrivacyPreferenceController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardBoardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardLayoutController;
 use App\Http\Controllers\DebtCreditController;
@@ -88,6 +89,11 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::get('/dashboard/layout', [DashboardLayoutController::class, 'show'])->name('dashboard.layout.show');
     Route::post('/dashboard/layout', [DashboardLayoutController::class, 'store'])->name('dashboard.layout.store');
     Route::delete('/dashboard/layout', [DashboardLayoutController::class, 'reset'])->name('dashboard.layout.reset');
+    Route::get('/dashboard/boards', [DashboardBoardController::class, 'index'])->name('dashboard.boards.index');
+    Route::post('/dashboard/boards', [DashboardBoardController::class, 'store'])->name('dashboard.boards.store');
+    Route::patch('/dashboard/boards/{dashboard_layout}', [DashboardBoardController::class, 'update'])->name('dashboard.boards.update');
+    Route::delete('/dashboard/boards/{dashboard_layout}', [DashboardBoardController::class, 'destroy'])->name('dashboard.boards.destroy');
+    Route::post('/dashboard/boards/{dashboard_layout}/home', [DashboardBoardController::class, 'setHome'])->name('dashboard.boards.set-home');
     Route::get('/dashboard/formula-widget-payloads', [DashboardController::class, 'formulaWidgetPayloads'])->name('dashboard.formula-widget-payloads');
     Route::get('/dashboard/deferred-widgets', [DashboardController::class, 'deferredWidgets'])->name('dashboard.deferred-widgets');
 
@@ -98,6 +104,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
     Route::put('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'update'])->name('formula-widgets.update');
     Route::post('/widget-formule/anteprima', [FormulaWidgetController::class, 'preview'])->name('formula-widgets.preview');
     Route::delete('/widget-formule/{formula_widget}', [FormulaWidgetController::class, 'destroy'])->name('formula-widgets.destroy');
+    Route::get('/widget-formule/{formula_widget}/aggiungi', [FormulaWidgetController::class, 'choosePinBoard'])->name('formula-widgets.pin.choose');
     Route::post('/widget-formule/{formula_widget}/pin', [FormulaWidgetController::class, 'pin'])->name('formula-widgets.pin');
 
     Route::get('/widget-formule/variabili', [FinancialVariableController::class, 'index'])->name('formula-variables.index');

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DashboardLayout;
 use App\Models\FormulaWidget;
 use App\Models\User;
 
@@ -173,8 +174,62 @@ class FormulaWidgetLayoutNormalizer
     }
 
     /**
+     * Costruisce la Home Essenziale: KPI (slug→size) in cima + built-in D3.
+     *
+     * @return array{widgets: list<array{id: string, visible: bool, position: int, size: string}>}
+     */
+    public function buildHomeEssentialConfig(User $user): array
+    {
+        /** @var array<string, string> $slugSizes */
+        $slugSizes = config('financial_variables.home_essential_formula_widgets');
+
+        if (! is_array($slugSizes) || $slugSizes === []) {
+            /** @var list<string> $legacySlugs */
+            $legacySlugs = config('financial_variables.home_essential_formula_slugs', []);
+            $slugSizes = array_fill_keys($legacySlugs, 'md');
+        }
+
+        $slugs = array_keys($slugSizes);
+
+        $clonesBySlug = FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->where('is_official_template', false)
+            ->whereHas('source', fn ($query) => $query->whereIn('template_slug', $slugs))
+            ->with('source')
+            ->orderBy('created_at')
+            ->get()
+            ->unique(fn (FormulaWidget $widget) => $widget->source?->template_slug)
+            ->keyBy(fn (FormulaWidget $widget) => $widget->source?->template_slug);
+
+        $widgets = [];
+        $position = 0;
+
+        foreach ($slugSizes as $slug => $size) {
+            $clone = $clonesBySlug->get($slug);
+            if ($clone === null) {
+                continue;
+            }
+
+            $widgets[] = [
+                'id' => "formula_widget_{$clone->id}",
+                'visible' => true,
+                'position' => $position++,
+                'size' => $size,
+            ];
+        }
+
+        foreach (DashboardLayout::essentialConfig()['widgets'] as $entry) {
+            $entry['position'] = $position++;
+            $widgets[] = $entry;
+        }
+
+        return ['widgets' => $widgets];
+    }
+
+    /**
      * Aggiunge al layout i widget formula installati dall'utente ma assenti dalla config
      * (es. dopo "Ripristina default" o layout salvato senza formula_widget_*).
+     * Non usare su Home: la Home usa buildHomeEssentialConfig / essentialConfigForUser.
      *
      * @param  array<string, mixed>  $config
      * @return array<string, mixed>

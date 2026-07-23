@@ -48,17 +48,10 @@ class InvestmentMetricsService
             ->filter(fn (Investment $inv) => $inv->isOpen() && $inv->relationLoaded('asset') && $inv->asset?->symbol)
             ->pluck('asset.symbol')
             ->unique()
-            ->values();
+            ->values()
+            ->all();
 
-        $prices = [];
-        foreach ($symbols as $symbol) {
-            $result = $this->assetPriceService->getCurrentPrice($symbol);
-            if (! $result['error'] && isset($result['price'])) {
-                $prices[$symbol] = (float) $result['price'];
-            }
-        }
-
-        return $prices;
+        return $this->assetPriceService->getCurrentPrices($symbols);
     }
 
     /**

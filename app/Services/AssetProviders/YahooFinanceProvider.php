@@ -103,6 +103,7 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
 
     /**
      * Ottiene il prezzo corrente di un asset.
+     * Non mette in cache le risposte di errore (evita fallback ripetuti su miss stale).
      */
     public function getCurrentPrice(string $symbol): array
     {
@@ -111,55 +112,161 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
         }
 
         $cacheKey = 'yf_price_'.strtoupper($symbol);
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && empty($cached['error']) && isset($cached['price'])) {
+            return $cached;
+        }
 
-        return Cache::remember($cacheKey, self::CACHE_TTL_REALTIME, function () use ($symbol) {
+        $result = $this->fetchCurrentPriceFromApi($symbol);
+        if (empty($result['error']) && isset($result['price'])) {
+            Cache::put($cacheKey, $result, self::CACHE_TTL_REALTIME);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Prezzi correnti in batch (una HTTP per chunk). Chiavi = simbolo uppercase.
+     *
+     * @param  list<string>  $symbols
+     * @return array<string, float>
+     */
+    public function getCurrentPrices(array $symbols): array
+    {
+        if (! $this->isConfigured()) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($symbols as $symbol) {
+            $symbol = strtoupper(trim((string) $symbol));
+            if ($symbol !== '') {
+                $normalized[$symbol] = $symbol;
+            }
+        }
+        $normalized = array_values($normalized);
+        if ($normalized === []) {
+            return [];
+        }
+
+        $prices = [];
+        $misses = [];
+
+        foreach ($normalized as $symbol) {
+            $cached = Cache::get('yf_price_'.$symbol);
+            if (is_array($cached) && empty($cached['error']) && isset($cached['price'])) {
+                $prices[$symbol] = (float) $cached['price'];
+            } else {
+                $misses[] = $symbol;
+            }
+        }
+
+        foreach (array_chunk($misses, 25) as $chunk) {
             try {
-                $response = Http::timeout(10)
+                $response = Http::timeout(3)
                     ->withHeaders([
                         'x-rapidapi-key' => $this->apiKey,
                         'x-rapidapi-host' => self::API_HOST,
                     ])
                     ->get(self::BASE_URL.'/market/v2/get-quotes', [
                         'region' => 'US',
-                        'symbols' => $symbol,
+                        'symbols' => implode(',', $chunk),
                     ]);
 
                 if (! $response->successful()) {
-                    return ['error' => 'Errore nel recupero del prezzo', 'price' => null];
+                    Log::warning('Yahoo Finance batch quotes failed', [
+                        'symbols' => $chunk,
+                        'status' => $response->status(),
+                    ]);
+
+                    continue;
                 }
 
-                $data = $response->json();
-                $quotes = $data['quoteResponse']['result'] ?? [];
+                $quotes = $response->json('quoteResponse.result') ?? [];
+                foreach ($quotes as $quote) {
+                    $symbol = strtoupper((string) ($quote['symbol'] ?? ''));
+                    if ($symbol === '' || ! isset($quote['regularMarketPrice'])) {
+                        continue;
+                    }
 
-                if (empty($quotes)) {
-                    return ['error' => 'Simbolo non trovato', 'price' => null];
+                    $payload = [
+                        'error' => null,
+                        'symbol' => $symbol,
+                        'price' => round((float) $quote['regularMarketPrice'], 2),
+                        'open' => round((float) ($quote['regularMarketOpen'] ?? 0), 2),
+                        'high' => round((float) ($quote['regularMarketDayHigh'] ?? 0), 2),
+                        'low' => round((float) ($quote['regularMarketDayLow'] ?? 0), 2),
+                        'volume' => (int) ($quote['regularMarketVolume'] ?? 0),
+                        'previous_close' => round((float) ($quote['regularMarketPreviousClose'] ?? 0), 2),
+                        'change' => round((float) ($quote['regularMarketChange'] ?? 0), 2),
+                        'change_percent' => round((float) ($quote['regularMarketChangePercent'] ?? 0), 2),
+                        'currency' => $quote['currency'] ?? null,
+                        'name' => $quote['shortName'] ?? $quote['longName'] ?? null,
+                    ];
+
+                    Cache::put('yf_price_'.$symbol, $payload, self::CACHE_TTL_REALTIME);
+                    $prices[$symbol] = $payload['price'];
                 }
-
-                $quote = $quotes[0];
-
-                return [
-                    'error' => null,
-                    'symbol' => $quote['symbol'] ?? $symbol,
-                    'price' => round((float) ($quote['regularMarketPrice'] ?? 0), 2),
-                    'open' => round((float) ($quote['regularMarketOpen'] ?? 0), 2),
-                    'high' => round((float) ($quote['regularMarketDayHigh'] ?? 0), 2),
-                    'low' => round((float) ($quote['regularMarketDayLow'] ?? 0), 2),
-                    'volume' => (int) ($quote['regularMarketVolume'] ?? 0),
-                    'previous_close' => round((float) ($quote['regularMarketPreviousClose'] ?? 0), 2),
-                    'change' => round((float) ($quote['regularMarketChange'] ?? 0), 2),
-                    'change_percent' => round((float) ($quote['regularMarketChangePercent'] ?? 0), 2),
-                    'currency' => $quote['currency'] ?? null,
-                    'name' => $quote['shortName'] ?? $quote['longName'] ?? null,
-                ];
             } catch (\Exception $e) {
-                Log::error('Yahoo Finance get price error', [
-                    'symbol' => $symbol,
+                Log::error('Yahoo Finance batch quotes error', [
+                    'symbols' => $chunk,
                     'error' => $e->getMessage(),
                 ]);
-
-                return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
             }
-        });
+        }
+
+        return $prices;
+    }
+
+    /**
+     * @return array{error: string|null, price: float|null, symbol?: string, ...}
+     */
+    private function fetchCurrentPriceFromApi(string $symbol): array
+    {
+        try {
+            $response = Http::timeout(3)
+                ->withHeaders([
+                    'x-rapidapi-key' => $this->apiKey,
+                    'x-rapidapi-host' => self::API_HOST,
+                ])
+                ->get(self::BASE_URL.'/market/v2/get-quotes', [
+                    'region' => 'US',
+                    'symbols' => $symbol,
+                ]);
+
+            if (! $response->successful()) {
+                return ['error' => 'Errore nel recupero del prezzo', 'price' => null];
+            }
+
+            $quotes = $response->json('quoteResponse.result') ?? [];
+            if ($quotes === []) {
+                return ['error' => 'Simbolo non trovato', 'price' => null];
+            }
+
+            $quote = $quotes[0];
+
+            return [
+                'error' => null,
+                'symbol' => $quote['symbol'] ?? $symbol,
+                'price' => round((float) ($quote['regularMarketPrice'] ?? 0), 2),
+                'open' => round((float) ($quote['regularMarketOpen'] ?? 0), 2),
+                'high' => round((float) ($quote['regularMarketDayHigh'] ?? 0), 2),
+                'low' => round((float) ($quote['regularMarketDayLow'] ?? 0), 2),
+                'volume' => (int) ($quote['regularMarketVolume'] ?? 0),
+                'previous_close' => round((float) ($quote['regularMarketPreviousClose'] ?? 0), 2),
+                'change' => round((float) ($quote['regularMarketChange'] ?? 0), 2),
+                'change_percent' => round((float) ($quote['regularMarketChangePercent'] ?? 0), 2),
+                'currency' => $quote['currency'] ?? null,
+                'name' => $quote['shortName'] ?? $quote['longName'] ?? null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Yahoo Finance get price error', [
+                'symbol' => $symbol,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
+        }
     }
 
     /**

@@ -16,11 +16,10 @@ test.describe('Dashboard principale', () => {
         await expect(page).toHaveTitle(/Dashboard/i);
     });
 
-    test('su mobile mostra la bottom nav e nasconde il widget azioni rapide', async ({ page }) => {
+    test('su mobile mostra la bottom nav', async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/dashboard');
 
-        await expect(page.getByRole('heading', { name: 'Azioni rapide' })).toBeHidden();
         await expect(page.getByRole('navigation', { name: /navigazione rapida/i })).toBeVisible();
     });
 
@@ -50,9 +49,9 @@ test.describe('Dashboard principale', () => {
         ).toBeVisible();
     });
 
-    test('la navigazione ha un link alle categorie', async ({ page }) => {
+    test('la navigazione ha un link a organizzazione (conti/categorie)', async ({ page }) => {
         await expect(
-            page.getByRole('navigation').locator('a[href*="/categorie"]').first()
+            page.getByRole('navigation').locator('a[href*="/conti"]').first()
         ).toBeVisible();
     });
 

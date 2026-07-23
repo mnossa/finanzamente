@@ -116,6 +116,7 @@ async function fetchFormulaWidgetPayloads(
     etag: string | null,
     signal: AbortSignal,
     useConditionalRequest: boolean,
+    boardId?: number | null,
 ): Promise<{
     payloads: Record<string, FormulaWidgetPayload>;
     etag: string | null;
@@ -130,6 +131,7 @@ async function fetchFormulaWidgetPayloads(
     const response = await axios.get<{ payloads: Record<string, FormulaWidgetPayload>; dataVersion?: string }>(
         route('dashboard.formula-widget-payloads', {
             ids: widgetIds.join(','),
+            ...(boardId ? { board: boardId } : {}),
             params: Object.fromEntries(
                 widgetIds
                     .filter((widgetId) => runtimeParams[widgetId])
@@ -171,6 +173,7 @@ export function useDashboardFormulaPayloads(
     dashboardLayout: DashboardLayoutConfig,
     initialPayloads: Record<string, FormulaWidgetPayload> = {},
     initialDataVersion: string | null = null,
+    boardId: number | null = null,
 ) {
     const { activeHousehold, formulaWidgetDataVersion } = usePage<PageProps>().props;
     const householdId = activeHousehold?.id ?? null;
@@ -334,6 +337,7 @@ export function useDashboardFormulaPayloads(
                 storeRef.current.etag,
                 controller.signal,
                 useConditionalRequest,
+                boardId,
             );
 
             let fetched: Record<string, FormulaWidgetPayload> = result.payloads;
@@ -349,7 +353,7 @@ export function useDashboardFormulaPayloads(
 
                 const missing = pendingIds.filter((id) => fetched[id] === undefined);
                 if (missing.length > 0) {
-                    const retry = await fetchFormulaWidgetPayloads(missing, runtimeParams, null, controller.signal, false);
+                    const retry = await fetchFormulaWidgetPayloads(missing, runtimeParams, null, controller.signal, false, boardId);
                     fetched = { ...fetched, ...retry.payloads };
                     if (retry.etag) {
                         storeRef.current.etag = retry.etag;
@@ -405,7 +409,7 @@ export function useDashboardFormulaPayloads(
             cancelled = true;
             controller.abort();
         };
-    }, [widgetIdsKey, runtimeParamsKey, householdId, dataVersion, fetchCacheKey, signatureByWidgetId, runtimeParams, cachedEntry]);
+    }, [widgetIdsKey, runtimeParamsKey, householdId, dataVersion, fetchCacheKey, signatureByWidgetId, runtimeParams, cachedEntry, boardId]);
 
     return { payloads, loading, pendingWidgetIds, error, cacheTtlMs: FORMULA_WIDGET_PAYLOAD_CACHE_TTL_MS };
 }

@@ -77,6 +77,8 @@ interface TransactionListRowProps {
     /** When true with onOpenDetail, intercept detail navigation (md+ slide-over). */
     preferSlideOver?: boolean;
     onOpenDetail?: (transactionId: number) => void;
+    /** Nasconde la colonna checkbox (es. prossimi movimenti virtuali). */
+    hideCheckbox?: boolean;
 }
 
 const FREQUENCY_LABELS: Record<string, string> = {
@@ -154,6 +156,7 @@ export default function TransactionListRow({
     indexQuery,
     preferSlideOver = false,
     onOpenDetail,
+    hideCheckbox = false,
 }: TransactionListRowProps) {
     const isFuture = transaction.is_future === true;
     const isVirtual = transaction.is_virtual === true;
@@ -357,9 +360,17 @@ export default function TransactionListRow({
 
     const metaLabel = `${formatDate(transaction.date)} · ${transaction.account.name}`;
 
-    const checkbox = isVirtual ? (
-        <span className="inline-block h-4 w-4 shrink-0" aria-hidden />
-    ) : (
+    const avatar = (
+        <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm sm:h-10 sm:w-10 sm:text-base"
+            style={avatarStyle}
+            aria-hidden
+        >
+            {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
+        </div>
+    );
+
+    const checkbox = hideCheckbox || isVirtual ? null : (
         <input
             type="checkbox"
             checked={isSelected}
@@ -370,20 +381,37 @@ export default function TransactionListRow({
         />
     );
 
+    const mobileGridClass = checkbox
+        ? 'grid min-h-[2.75rem] grid-cols-[auto_auto_minmax(0,1fr)] grid-rows-[auto_auto] gap-x-2 gap-y-0.5 py-2 sm:hidden'
+        : 'grid min-h-[2.75rem] grid-cols-[auto_minmax(0,1fr)] grid-rows-[auto_auto] gap-x-2 gap-y-0.5 py-2 sm:hidden';
+    const mobileContentCol = checkbox ? 'col-start-3' : 'col-start-2';
+
+    const desktopGridClass = checkbox
+        ? 'hidden min-h-[4.25rem] grid-cols-[auto_auto_1fr_auto_auto] items-center gap-x-3 px-4 py-2 sm:grid'
+        : 'hidden min-h-[4.25rem] grid-cols-[auto_1fr_auto_auto] items-center gap-x-3 px-4 py-2 sm:grid';
+
+    /** Upcoming/virtual: niente checkbox → inset più stretto (meno margine SX). */
+    const rowInsetClass = hideCheckbox
+        ? 'px-2 sm:px-3'
+        : mobileListRowInsetClass;
+
     return (
         <div
             className={clsx(
                 'border-b border-gray-100 transition-colors last:border-0',
-                mobileListRowInsetClass,
+                rowInsetClass,
                 rowStateClass,
                 borderClasses,
                 isFuture && 'opacity-60',
             )}
             title={rowTitle ? `${title} — ${rowTitle}` : title}
         >
-            {/* Mobile: griglia con offset fisso — titoli allineati tra tutte le righe */}
-            <div className="grid min-h-[3.25rem] grid-cols-[auto_minmax(0,1fr)] grid-rows-[auto_auto] gap-x-2 gap-y-1 py-2.5 sm:hidden">
-                <div className="row-span-2 flex items-center self-center">{checkbox}</div>
+            {/* Mobile: icona · titolo/importo · data·conto (denso) */}
+            <div className={mobileGridClass}>
+                {checkbox ? (
+                    <div className="row-span-2 flex items-center self-center">{checkbox}</div>
+                ) : null}
+                <div className="row-span-2 flex items-center self-center">{avatar}</div>
                 <Link
                     href={detailHref}
                     className="contents active:opacity-80"
@@ -396,18 +424,18 @@ export default function TransactionListRow({
                               : title
                     }
                 >
-                    <div className="col-start-2 flex min-h-4 min-w-0 items-center justify-between gap-2 overflow-hidden">
+                    <div className={clsx(mobileContentCol, 'flex min-h-4 min-w-0 items-center justify-between gap-2 overflow-hidden')}>
                         <p className={titleClassName} title={title}>
                             {title}
                         </p>
                         <p className={amountClassName}>{formattedAmount}</p>
                     </div>
                     {isFuture && transaction.projected_balance_after != null ? (
-                        <p className="col-start-2 text-[10px] leading-tight text-gray-500 dark:text-gray-400">
+                        <p className={clsx(mobileContentCol, 'text-[10px] leading-tight text-gray-500 dark:text-gray-400')}>
                             Saldo previsto dopo: {formatCurrency(transaction.projected_balance_after, transaction.account.currency_code)}
                         </p>
                     ) : null}
-                    <div className="col-start-2 flex min-h-4 min-w-0 items-center gap-1 overflow-hidden">
+                    <div className={clsx(mobileContentCol, 'flex min-h-4 min-w-0 items-center gap-1 overflow-hidden')}>
                         <span
                             className="min-w-0 truncate text-[11px] leading-none text-gray-500 dark:text-gray-400"
                             title={metaLabel}
@@ -422,16 +450,10 @@ export default function TransactionListRow({
             </div>
 
             {/* Desktop */}
-            <div className="hidden min-h-[4.25rem] grid-cols-[auto_auto_1fr_auto_auto] items-center gap-x-3 px-4 py-2 sm:grid">
+            <div className={desktopGridClass}>
                 {checkbox}
 
-                <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base"
-                    style={avatarStyle}
-                    aria-hidden
-                >
-                    {isTransfer ? '🔄' : isRefund ? '💸' : transaction.category?.icon || (isIncome ? '💰' : '💸')}
-                </div>
+                {avatar}
 
                 <Link
                     href={detailHref}

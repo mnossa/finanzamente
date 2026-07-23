@@ -56,6 +56,9 @@ class DashboardController extends Controller
 
         $this->formulaWidgetBootstrapService->provisionForUser($user);
 
+        $activeBoard = $this->resolveActiveBoard($request, $user);
+        $canEditLayout = $activeBoard !== null;
+
         $periodLabel = 'Ultimi 30 giorni';
         $previousPeriodLabel = '30 giorni precedenti';
         $endOfPeriod = Carbon::now()->endOfDay();
@@ -70,27 +73,51 @@ class DashboardController extends Controller
             $endOfPeriod,
             $startOfPrevious,
             $endOfPrevious,
+            $activeBoard,
         ) {
-            return array_merge($this->buildIndexPayload($user), [
+            return array_merge($this->buildIndexPayload($user, $activeBoard), [
                 'periodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod),
                 'previousPeriodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious),
             ]);
-        });
+        }, $activeBoard?->id);
+
+        $boards = DashboardLayout::query()
+            ->where('user_id', $user->id)
+            ->where('household_id', $householdId)
+            ->orderByDesc('is_home')
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'name', 'is_home'])
+            ->map(fn (DashboardLayout $board) => [
+                'id' => $board->id,
+                'name' => $board->name,
+                'is_home' => $board->is_home,
+            ])
+            ->values()
+            ->all();
 
         return Inertia::render('Dashboard', array_merge($payload, [
             'periodLabel' => $periodLabel,
             'previousPeriodLabel' => $previousPeriodLabel,
             'importShareToken' => session('importShareToken'),
+            'activeBoard' => $activeBoard ? [
+                'id' => $activeBoard->id,
+                'name' => $activeBoard->name,
+                'is_home' => $activeBoard->is_home,
+            ] : null,
+            'boards' => $boards,
+            'canEditLayout' => $canEditLayout,
+            'startEditing' => $canEditLayout && $request->boolean('edit'),
         ]));
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function buildIndexPayload(User $user): array
+    private function buildIndexPayload(User $user, ?DashboardLayout $activeBoard = null): array
     {
         $householdId = $user->active_household_id;
-        $dashboardLayout = $this->getDashboardLayout($user);
+        $dashboardLayout = $this->getDashboardLayout($user, $activeBoard);
         $formulaWidgetDataVersion = $this->formulaWidgetDataVersionService->resolveForUser($user);
         $formulaWidgetPayloads = $this->buildPriorityFormulaWidgetPayloads($user, $dashboardLayout);
         $formulaWidgetMeta = $this->buildFormulaWidgetMeta($user, $dashboardLayout);
@@ -265,7 +292,8 @@ class DashboardController extends Controller
     public function formulaWidgetPayloads(Request $request): JsonResponse|Response
     {
         $user = Auth::user();
-        $dashboardLayout = $this->getDashboardLayout($user);
+        $activeBoard = $this->resolveActiveBoard($request, $user);
+        $dashboardLayout = $this->getDashboardLayout($user, $activeBoard);
         $widgetIds = $this->extractVisibleFormulaWidgetIds($dashboardLayout);
         $dataVersion = $this->formulaWidgetDataVersionService->resolveForUser($user);
 
@@ -878,46 +906,63 @@ class DashboardController extends Controller
     }
 
     /**
-     * Recupera la configurazione layout della dashboard per l'utente corrente.
-     * Se non esiste una configurazione salvata, restituisce quella di default.
-     * I widget nuovi (non presenti nel layout salvato) vengono aggiunti in coda
-     * in modo che gli utenti esistenti vedano i nuovi widget automaticamente.
+     * Resolve board from ?board= or Home (create Home se manca).
      */
-    private function getDashboardLayout(User $user): array
+    private function resolveActiveBoard(Request $request, User $user): ?DashboardLayout
     {
-        $layout = DashboardLayout::where('user_id', $user->id)
-            ->where('household_id', $user->active_household_id)
-            ->first();
+        $householdId = $user->active_household_id;
+        $boardId = $request->integer('board') ?: null;
 
-        if (! $layout) {
-            return DashboardLayout::essentialConfigForUser($user);
+        if ($boardId) {
+            $board = DashboardLayout::findOwned($user->id, $householdId, $boardId);
+            abort_if($board === null, 404);
+
+            return $board;
         }
 
-        $savedConfig = DashboardLayout::stripTierALegacyWidgets($layout->config);
-        $defaultWidgets = DashboardLayout::defaultConfig()['widgets'];
+        $home = DashboardLayout::findHome($user->id, $householdId);
 
-        // Ricava gli ID già presenti nel layout salvato
-        $existingIds = array_column($savedConfig['widgets'] ?? [], 'id');
-        $maxPosition = empty($savedConfig['widgets']) ? -1 : max(array_column($savedConfig['widgets'], 'position'));
+        if ($home !== null || $householdId === null) {
+            return $home;
+        }
 
-        // Aggiungi in coda i widget del default che non sono ancora presenti
-        foreach ($defaultWidgets as $defaultWidget) {
-            if (! in_array($defaultWidget['id'], $existingIds, true)) {
-                $maxPosition++;
-                $savedConfig['widgets'][] = array_merge($defaultWidget, ['position' => $maxPosition]);
+        return DashboardLayout::create([
+            'user_id' => $user->id,
+            'household_id' => $householdId,
+            'name' => 'Home',
+            'is_home' => true,
+            'sort_order' => 0,
+            'config' => DashboardLayout::essentialConfigForUser($user),
+        ]);
+    }
+
+    /**
+     * Layout della board attiva (Home o custom).
+     */
+    private function getDashboardLayout(User $user, ?DashboardLayout $board = null): array
+    {
+        if ($board === null) {
+            return DashboardLayout::essentialConfig();
+        }
+
+        $savedConfig = DashboardLayout::stripUnsupportedWidgets($board->config);
+
+        if ($board->is_home) {
+            if (DashboardLayout::isBareEssentialConfig($savedConfig)) {
+                $healed = DashboardLayout::essentialConfigForUser($user);
+                $board->update(['config' => $healed]);
+
+                return $healed;
             }
+
+            $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
+        } else {
+            $savedConfig = $this->formulaWidgetLayoutNormalizer->mergeInstalledFormulaWidgets($user, $savedConfig);
+            $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
         }
 
-        $widgetIdsBeforeMerge = array_column($savedConfig['widgets'] ?? [], 'id');
-        $savedConfig = $this->formulaWidgetLayoutNormalizer->mergeInstalledFormulaWidgets($user, $savedConfig);
-        $widgetIdsAfterMerge = array_column($savedConfig['widgets'] ?? [], 'id');
-
-        $sanitized = $this->formulaWidgetLayoutNormalizer->sanitizeFormulaWidgets($user, $savedConfig);
-        $idsBefore = $widgetIdsBeforeMerge;
-        $idsAfter = array_column($sanitized['widgets'] ?? [], 'id');
-
-        if ($idsBefore !== $idsAfter || $widgetIdsBeforeMerge !== $widgetIdsAfterMerge) {
-            $layout->update(['config' => $sanitized]);
+        if (array_column($board->config['widgets'] ?? [], 'id') !== array_column($sanitized['widgets'] ?? [], 'id')) {
+            $board->update(['config' => $sanitized]);
         }
 
         return $this->formulaWidgetLayoutNormalizer->normalize($user, $sanitized);

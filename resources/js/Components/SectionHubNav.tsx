@@ -177,12 +177,12 @@ export default function SectionHubNav({ tabs, active, ariaLabel, enableSwipe = t
 
     return (
         <nav
-            className="relative mb-3 border-b border-gray-200 dark:border-gray-700 sm:mb-4"
+            className="relative mb-2 border-b border-gray-200 dark:border-gray-700 sm:mb-4"
             aria-label={ariaLabel}
         >
             <div
                 ref={scrollRef}
-                className="-mb-px flex gap-1 overflow-x-auto scrollbar-hide"
+                className="-mb-px flex gap-0.5 overflow-x-auto scrollbar-hide sm:gap-1"
                 data-horizontal-scroll
             >
                 {visibleTabs.map((tab) => {
@@ -207,7 +207,7 @@ export default function SectionHubNav({ tabs, active, ariaLabel, enableSwipe = t
                             href={href}
                             onClick={(event) => handleTabClick(event, tab, href)}
                             className={clsx(
-                                'flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium min-h-10 sm:px-4 sm:text-sm',
+                                'flex shrink-0 items-center gap-1 border-b-2 border-transparent px-2.5 py-2 text-[11px] font-medium min-h-9 sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm sm:min-h-10',
                                 'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
                                 isActive
                                     ? 'text-emerald-700 dark:text-emerald-400'
@@ -217,7 +217,9 @@ export default function SectionHubNav({ tabs, active, ariaLabel, enableSwipe = t
                             )}
                             aria-current={isActive ? 'page' : undefined}
                         >
-                            {renderHubTabIcon(tab.icon)}
+                            <span className="[&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-4 sm:[&>svg]:w-4">
+                                {renderHubTabIcon(tab.icon)}
+                            </span>
                             <span>{label}</span>
                             {lockedByPlan && (
                                 <span className="text-[10px] font-semibold uppercase text-amber-500">Pro</span>

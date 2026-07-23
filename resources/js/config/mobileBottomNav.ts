@@ -25,8 +25,8 @@ export const MOBILE_BOTTOM_NAV_SLOT_COUNT = 4;
 export const MOBILE_BOTTOM_NAV_DEFAULT_SLOTS: MobileBottomNavDestinationId[] = [
     'dashboard',
     'cashflow',
-    'patrimonio',
     'planning',
+    'patrimonio',
 ];
 
 export const MOBILE_BOTTOM_NAV_DESTINATIONS: MobileBottomNavDestination[] = [

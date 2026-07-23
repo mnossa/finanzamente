@@ -8,6 +8,7 @@ use App\Models\Budget;
 use App\Models\Category;
 use App\Models\Currency;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -67,8 +68,11 @@ class BudgetController extends Controller
                 ];
             });
 
+        $monthlyIncome = $this->monthlyIncomeForHousehold($householdId, $user);
+
         return Inertia::render('Budgets/Index', [
             'budgets' => $budgets,
+            'monthlyIncome' => $monthlyIncome,
         ]);
     }
 
@@ -256,6 +260,27 @@ class BudgetController extends Controller
         return redirect()
             ->route('budgets.index')
             ->with('success', 'Budget eliminato con successo.');
+    }
+
+    /**
+     * Entrate reali del mese corrente (amount > 0, no trasferimenti).
+     */
+    private function monthlyIncomeForHousehold(?int $householdId, User $user): float
+    {
+        if ($householdId === null) {
+            return 0.0;
+        }
+
+        $start = now()->startOfMonth()->toDateString();
+        $end = now()->endOfMonth()->toDateString();
+
+        return round((float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+            ->where('amount', '>', 0)
+            ->whereNull('transfer_id')
+            ->excludeInterHouseholdStats()
+            ->whereBetween('date', [$start, $end])
+            ->sum('amount'), 2);
     }
 
     /**

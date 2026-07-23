@@ -27,7 +27,13 @@ return [
         'max_refunds' => 10,
         'max_debts_credits' => 5,
         'max_financial_goals' => 1,
+        /** Home inclusa: Base = Home + 1 vista custom */
+        'max_dashboard_boards' => 2,
         'can_invite_members' => false,
+    ],
+
+    'pro_limits' => [
+        'max_dashboard_boards' => 10,
     ],
 
     /*

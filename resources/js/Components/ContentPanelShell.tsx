@@ -1,10 +1,13 @@
 import clsx from 'clsx';
 import { ReactNode } from 'react';
 
-export type ContentPanelVariant = 'index' | 'dashboard';
+export type ContentPanelVariant = 'index' | 'indexFlush' | 'dashboard';
 
 const variantShellClass: Record<ContentPanelVariant, string> = {
     index: 'overflow-hidden rounded-2xl border border-gray-200/80 bg-white/95 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/95',
+    /** Lista mobile a tutta larghezza; da sm+ stesso look di `index`. */
+    indexFlush:
+        'overflow-hidden bg-white dark:bg-gray-800 sm:rounded-2xl sm:border sm:border-gray-200/80 sm:bg-white/95 sm:shadow-sm sm:backdrop-blur-sm dark:sm:border-gray-700 dark:sm:bg-gray-800/95',
     dashboard: 'overflow-hidden rounded-xl bg-white shadow-sm dark:bg-gray-800',
 };
 

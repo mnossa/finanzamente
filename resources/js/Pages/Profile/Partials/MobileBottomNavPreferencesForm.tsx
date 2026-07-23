@@ -29,7 +29,7 @@ function resolveInitialSlots(preferences: Record<string, unknown> | undefined): 
 
 function MobileBottomNavPreviewItem({ destination }: { destination: MobileBottomNavDestination }) {
     return (
-        <div className="flex min-w-0 max-w-[4.75rem] flex-1 flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200" aria-hidden="true">
+        <div className="flex min-w-0 w-full flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200" aria-hidden="true">
             <span className="flex h-6 w-6 items-center justify-center">
                 {renderHubTabIcon(destination.icon)}
             </span>
@@ -103,36 +103,28 @@ export default function MobileBottomNavPreferencesForm() {
                 Navigazione mobile
             </h2>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                Scegli quali aree principali mostrare nella barra in basso. Il pulsante centrale (+) resta sempre al centro: verde quando c’è un’azione rapida, attenuato sulle pagine di sola consultazione. La voce Altro è sempre disponibile.
+                Scegli quali aree principali mostrare nella barra in basso su telefono e tablet.
+                La barra ha quattro scorciatoie personalizzabili più la voce Altro (sempre presente).
+                L&apos;azione Aggiungi/Salva è un pulsante flottante separato, non nella barra né nell&apos;header.
             </p>
 
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Anteprima
                 </p>
-                <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-end rounded-xl border border-slate-200 bg-white px-2 py-2 dark:border-slate-700 dark:bg-slate-800">
-                    <div className="flex items-end justify-evenly">
-                        {previewSlots.slice(0, 2).map((destination) => (
-                            <MobileBottomNavPreviewItem key={destination.id} destination={destination} />
-                        ))}
-                    </div>
-                    <div className="flex h-10 w-10 shrink-0 -mt-4 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-lg text-white dark:border-slate-800" aria-hidden="true">
-                        +
-                    </div>
-                    <div className="flex items-end justify-evenly">
-                        {previewSlots.slice(2).map((destination) => (
-                            <MobileBottomNavPreviewItem key={destination.id} destination={destination} />
-                        ))}
-                        <div className="flex min-w-0 max-w-[4.75rem] flex-1 flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200" aria-hidden="true">
-                            <span className="flex h-6 w-6 items-center justify-center text-base">☰</span>
-                            <span className="w-full truncate text-center text-[10px] font-medium leading-none">Altro</span>
-                        </div>
+                <div className="grid h-14 grid-cols-5 items-end rounded-xl border border-slate-200 bg-white px-1 py-2 dark:border-slate-700 dark:bg-slate-800">
+                    {previewSlots.map((destination) => (
+                        <MobileBottomNavPreviewItem key={destination.id} destination={destination} />
+                    ))}
+                    <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-slate-700 dark:text-slate-200" aria-hidden="true">
+                        <span className="flex h-6 w-6 items-center justify-center text-base">☰</span>
+                        <span className="w-full truncate text-center text-[10px] font-medium leading-none">Altro</span>
                     </div>
                 </div>
             </div>
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {(['Sinistra', 'Centro-sinistra', 'Centro-destra', 'Destra (prima di Altro)'] as const).map((label, index) => (
+                {(['Posizione 1', 'Posizione 2', 'Posizione 3', 'Posizione 4'] as const).map((label, index) => (
                     <div key={label}>
                         <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                             {label}

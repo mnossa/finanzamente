@@ -1,5 +1,5 @@
 /**
- * FAB centrale (bottom nav mobile): destinazione primaria in base alla rotta corrente.
+ * FAB floating (mobile/tablet): destinazione primaria in base alla rotta corrente.
  * Su form di creazione/modifica diventa submit verso il form con id
  * {@link FM_MOBILE_PRIMARY_FORM_ID}.
  * Tenere allineato con i test PHP che verificano Route::has sui nomi usati.
@@ -115,7 +115,7 @@ function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
 }
 
 /**
- * Risolve href/etichetta del pulsante centrale nel footer mobile.
+ * Risolve href/etichetta del FAB floating mobile/tablet (non nella sticky bar).
  */
 export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
     if (typeof route !== 'function') {

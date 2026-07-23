@@ -20,14 +20,12 @@ import { renderHubTabIcon } from '@/utils/hubTabIcons';
 import type { MobileBottomNavDestination } from '@/config/mobileBottomNav';
 import { FM_MOBILE_PRIMARY_FORM_ID, dispatchMobileFabAction, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 
-const MOBILE_FAB_BUTTON_CLASSES =
-    'relative z-50 flex h-14 w-14 shrink-0 -mt-7 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-white active:scale-95 transition-transform dark:border-slate-800';
-
-const MOBILE_FAB_INACTIVE_CLASSES =
-    'relative z-50 flex h-14 w-14 shrink-0 -mt-7 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-slate-400 dark:border-slate-800 dark:bg-slate-700/80 dark:text-slate-500 pointer-events-none';
+/** FAB azione primaria: floating sopra sticky bar (solo viewport < lg). Non in header né nel centro bar. */
+const MOBILE_FLOATING_FAB_CLASSES =
+    'lg:hidden fixed z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg ring-2 ring-white active:scale-95 transition-transform dark:ring-slate-800 right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]';
 
 const MOBILE_BOTTOM_NAV_TAB_CLASSES =
-    'flex min-h-12 min-w-0 max-w-[4.75rem] flex-1 flex-col items-center justify-end gap-0.5 rounded-xl px-1 py-1 transition-colors';
+    'flex min-h-12 min-w-0 w-full flex-col items-center justify-end gap-0.5 rounded-xl px-0.5 py-1 transition-colors';
 
 const BLADE_ANALYTICS_CONSENT_KEY = 'fm_analytics_consent';
 type UINotification = AppNotification & { action_url?: string | null; severity?: 'info' | 'warning' | 'critical' };
@@ -102,6 +100,11 @@ const Icons = {
     BarChart2: () => (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" x2="18" y1="20" y2="10" /><line x1="12" x2="12" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="14" />
+        </svg>
+    ),
+    Layouts: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" />
         </svg>
     ),
     Home: () => (
@@ -187,16 +190,15 @@ interface NavigationSection {
     defaultExpanded?: boolean;
 }
 
-// Definizione sezioni menu navigazione
+// Definizione sezioni menu navigazione (ordine = frequenza d'uso, budget-first)
 const navigationSections: NavigationSection[] = [
     {
         title: 'Panoramica',
         defaultExpanded: true,
         items: [
             { name: 'Dashboard', href: 'dashboard', routeMatch: 'dashboard', icon: Icons.Dashboard, moduleId: 'dashboard' },
-            { name: 'Widget a formula', href: 'formula-marketplace.index', routeMatch: 'formula-*', icon: Icons.BarChart2 },
-            { name: 'Simulazioni', href: 'simulations.public', routeMatch: 'simulations.*', icon: Icons.Simulation },
-        ]
+            { name: 'Le mie dashboard', href: 'dashboard.boards.index', routeMatch: 'dashboard.boards.*', icon: Icons.Layouts },
+        ],
     },
     {
         title: 'Movimenti',
@@ -219,20 +221,7 @@ const navigationSections: NavigationSection[] = [
         ],
     },
     {
-        title: 'Organizzazione',
-        defaultExpanded: false,
-        items: [
-            {
-                name: 'Organizzazione',
-                href: 'accounts.index',
-                routeMatch: 'accounts.index',
-                routeMatchPatterns: ['categories.*', 'accounts.*', 'tags.*'],
-                icon: Icons.Tags,
-            },
-        ],
-    },
-    {
-        title: 'Pianificazione & Risparmio',
+        title: 'Pianificazione',
         defaultExpanded: false,
         items: [
             {
@@ -262,6 +251,27 @@ const navigationSections: NavigationSection[] = [
                 ],
                 icon: Icons.Wallet,
             },
+        ],
+    },
+    {
+        title: 'Organizzazione',
+        defaultExpanded: false,
+        items: [
+            {
+                name: 'Organizzazione',
+                href: 'accounts.index',
+                routeMatch: 'accounts.index',
+                routeMatchPatterns: ['categories.*', 'accounts.*', 'tags.*'],
+                icon: Icons.Tags,
+            },
+        ],
+    },
+    {
+        title: 'Strumenti',
+        defaultExpanded: false,
+        items: [
+            { name: 'Widget a formula', href: 'formula-marketplace.index', routeMatch: 'formula-*', icon: Icons.BarChart2 },
+            { name: 'Simulazioni', href: 'simulations.public', routeMatch: 'simulations.*', icon: Icons.Simulation },
         ],
     },
 ];
@@ -992,8 +1002,9 @@ export default function Authenticated({
                 </div>
             </div>
 
-            {/* Bottom Navigation — mobile only */}
+            {/* Bottom nav + FAB azione — solo mobile/tablet (lg:hidden). Desktop: CTA in header. */}
             <MobileBottomNav isRouteActive={isRouteActive} onMenuOpen={() => setSidebarOpen(true)} />
+            <MobilePrimaryFab />
             <PwaInstallBanner />
         </>
         </OfflineGate>
@@ -1073,7 +1084,7 @@ function MobileBottomNavAltroButton({ onClick }: { onClick: () => void }) {
     );
 }
 
-function MobileBottomNavFabPlusIcon() {
+function MobileFabPlusIcon() {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12h14" /><path d="M12 5v14" />
@@ -1081,27 +1092,40 @@ function MobileBottomNavFabPlusIcon() {
     );
 }
 
-function MobileBottomNavFabSlot({ primaryFab }: { primaryFab: ReturnType<typeof resolveMobilePrimaryFab> }) {
+function MobileFabSaveIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+        </svg>
+    );
+}
+
+/**
+ * Azione primaria (crea/salva): floating bottom-right sopra la sticky bar.
+ * Solo mobile/tablet — su desktop la CTA resta nell'header pagina.
+ */
+function MobilePrimaryFab() {
+    const primaryFab = resolveMobilePrimaryFab();
+
     if (!primaryFab) {
-        return (
-            <div className={MOBILE_FAB_INACTIVE_CLASSES} aria-hidden="true">
-                <MobileBottomNavFabPlusIcon />
-            </div>
-        );
+        return null;
     }
 
     if (primaryFab.mode === 'action') {
         return (
             <button
                 type="button"
+                data-testid="mobile-primary-fab"
                 onClick={() => {
                     nav.mobileFab(primaryFab.analyticsSection);
                     dispatchMobileFabAction(primaryFab.actionId);
                 }}
-                className={MOBILE_FAB_BUTTON_CLASSES}
+                className={MOBILE_FLOATING_FAB_CLASSES}
                 aria-label={primaryFab.ariaLabel}
             >
-                <MobileBottomNavFabPlusIcon />
+                <MobileFabPlusIcon />
             </button>
         );
     }
@@ -1111,15 +1135,12 @@ function MobileBottomNavFabSlot({ primaryFab }: { primaryFab: ReturnType<typeof 
             <button
                 type="submit"
                 form={primaryFab.formId ?? FM_MOBILE_PRIMARY_FORM_ID}
+                data-testid="mobile-primary-fab"
                 onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-                className={MOBILE_FAB_BUTTON_CLASSES}
+                className={MOBILE_FLOATING_FAB_CLASSES}
                 aria-label={primaryFab.ariaLabel}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                </svg>
+                <MobileFabSaveIcon />
             </button>
         );
     }
@@ -1127,11 +1148,12 @@ function MobileBottomNavFabSlot({ primaryFab }: { primaryFab: ReturnType<typeof 
     return (
         <Link
             href={primaryFab.href}
+            data-testid="mobile-primary-fab"
             onClick={() => nav.mobileFab(primaryFab.analyticsSection)}
-            className={MOBILE_FAB_BUTTON_CLASSES}
+            className={MOBILE_FLOATING_FAB_CLASSES}
             aria-label={primaryFab.ariaLabel}
         >
-            <MobileBottomNavFabPlusIcon />
+            <MobileFabPlusIcon />
         </Link>
     );
 }
@@ -1149,7 +1171,6 @@ function MobileBottomNav({
     onMenuOpen: () => void;
 }) {
     const slots = useMobileBottomNavSlots();
-    const primaryFab = resolveMobilePrimaryFab();
 
     const isDestinationActive = (destination: MobileBottomNavDestination): boolean => {
         if (destination.routeMatchPatterns?.length) {
@@ -1164,42 +1185,22 @@ function MobileBottomNav({
         return isRouteActive(destination.routeMatch);
     };
 
-    const leftSlots = slots.slice(0, 2);
-    const rightSlots = slots.slice(2);
-
     return (
         <nav
             className="lg:hidden fixed bottom-0 inset-x-0 z-40 overflow-visible bg-white/95 backdrop-blur-md dark:bg-slate-800/95 border-t border-slate-200 dark:border-slate-700"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             aria-label="Navigazione rapida"
         >
-            <div className="grid h-16 grid-cols-[1fr_auto_1fr] items-end px-1">
-                <div className="flex items-end justify-evenly">
-                    {leftSlots.map((destination) => (
-                        <MobileBottomNavDestinationLink
-                            key={destination.id}
-                            destination={destination}
-                            isActive={isDestinationActive(destination)}
-                            onNavigate={() => nav.bottomBar(destination.id)}
-                        />
-                    ))}
-                </div>
-
-                <div className="flex shrink-0 items-center justify-center px-1">
-                    <MobileBottomNavFabSlot primaryFab={primaryFab} />
-                </div>
-
-                <div className="flex items-end justify-evenly">
-                    {rightSlots.map((destination) => (
-                        <MobileBottomNavDestinationLink
-                            key={destination.id}
-                            destination={destination}
-                            isActive={isDestinationActive(destination)}
-                            onNavigate={() => nav.bottomBar(destination.id)}
-                        />
-                    ))}
-                    <MobileBottomNavAltroButton onClick={onMenuOpen} />
-                </div>
+            <div className="grid h-12 grid-cols-5 items-end px-1">
+                {slots.map((destination) => (
+                    <MobileBottomNavDestinationLink
+                        key={destination.id}
+                        destination={destination}
+                        isActive={isDestinationActive(destination)}
+                        onNavigate={() => nav.bottomBar(destination.id)}
+                    />
+                ))}
+                <MobileBottomNavAltroButton onClick={onMenuOpen} />
             </div>
         </nav>
     );

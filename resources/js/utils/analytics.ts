@@ -180,6 +180,6 @@ export const nav = {
     bottomBar: (destination: string) =>
         trackEvent('nav.bottom_bar', { destination }),
 
-    /** Tap sul FAB centrale (destinazione dipende dalla pagina corrente) */
+    /** Tap sul FAB floating mobile/tablet (destinazione dipende dalla pagina corrente) */
     mobileFab: (section: string) => trackEvent('nav.mobile_fab', { section }),
 } as const;

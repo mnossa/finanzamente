@@ -7,6 +7,7 @@ use App\Models\FinancialVariable;
 use App\Models\FormulaWidget;
 use App\Models\Household;
 use App\Models\User;
+use Database\Seeders\FormulaWidgetTemplateSeeder;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -33,6 +34,18 @@ class DashboardLayoutTest extends TestCase
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
+    }
+
+    private function editableBoard(array $config = ['widgets' => []]): DashboardLayout
+    {
+        return DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'name' => 'Custom '.uniqid(),
+            'is_home' => false,
+            'sort_order' => 1,
+            'config' => $config,
+        ]);
     }
 
     private function createUserFormulaWidget(array $attributes = []): FormulaWidget
@@ -68,9 +81,9 @@ class DashboardLayoutTest extends TestCase
         $widgets = $response->json('config.widgets');
 
         $this->assertIsArray($widgets);
-        $this->assertCount(5, $widgets);
+        $this->assertCount(4, $widgets);
         $this->assertSame(
-            ['accounts', 'expense_distribution', 'active_budgets', 'recent_transactions', 'quick_actions'],
+            ['active_budgets', 'expense_treemap', 'recent_transactions', 'accounts'],
             array_column($widgets, 'id'),
         );
     }
@@ -80,7 +93,7 @@ class DashboardLayoutTest extends TestCase
     {
         $config = [
             'widgets' => [
-                ['id' => 'quick_actions',       'visible' => true,  'position' => 0, 'size' => 'lg'],
+                ['id' => 'expense_distribution', 'visible' => true,  'position' => 0, 'size' => 'lg'],
                 ['id' => 'accounts',             'visible' => false, 'position' => 1, 'size' => 'lg'],
                 ['id' => 'lifestyle_widget',     'visible' => true,  'position' => 4, 'size' => 'lg'],
                 ['id' => 'recent_transactions',  'visible' => true,  'position' => 5, 'size' => 'md'],
@@ -89,17 +102,13 @@ class DashboardLayoutTest extends TestCase
             ],
         ];
 
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'config' => $config,
-        ]);
+        $board = $this->editableBoard($config);
 
         $response = $this->actingAs($this->user)
-            ->getJson(route('dashboard.layout.show'));
+            ->getJson(route('dashboard.layout.show', ['board' => $board->id]));
 
         $response->assertOk();
-        $response->assertJsonFragment(['id' => 'quick_actions']);
+        $response->assertJsonFragment(['id' => 'expense_distribution']);
         $widgets = $response->json('config.widgets');
         $accountsWidget = collect($widgets)->firstWhere('id', 'accounts');
         $this->assertFalse($accountsWidget['visible']);
@@ -110,7 +119,10 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function user_can_save_valid_layout(): void
     {
+        $board = $this->editableBoard();
+
         $payload = [
+            'board' => $board->id,
             'config' => [
                 'widgets' => [
                     ['id' => 'accounts',             'visible' => true, 'position' => 0, 'size' => 'lg'],
@@ -118,7 +130,7 @@ class DashboardLayoutTest extends TestCase
                     ['id' => 'recent_transactions',  'visible' => true, 'position' => 4, 'size' => 'md'],
                     ['id' => 'active_budgets',       'visible' => true, 'position' => 5, 'size' => 'md'],
                     ['id' => 'debts_credits',        'visible' => true, 'position' => 6, 'size' => 'md'],
-                    ['id' => 'quick_actions',        'visible' => true, 'position' => 7, 'size' => 'lg'],
+                    ['id' => 'expense_distribution', 'visible' => true, 'position' => 7, 'size' => 'lg'],
                 ],
             ],
         ];
@@ -130,17 +142,21 @@ class DashboardLayoutTest extends TestCase
         $response->assertJsonStructure(['config', 'message']);
 
         $this->assertDatabaseHas('dashboard_layouts', [
+            'id' => $board->id,
             'user_id' => $this->user->id,
             'household_id' => $this->household->id,
+            'is_home' => false,
         ]);
     }
 
     #[Test]
     public function saving_layout_updates_existing_record(): void
     {
-        // Primo salvataggio
+        $board = $this->editableBoard();
+
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), [
+                'board' => $board->id,
                 'config' => [
                     'widgets' => [
                         ['id' => 'accounts',             'visible' => true, 'position' => 0, 'size' => 'lg'],
@@ -148,17 +164,17 @@ class DashboardLayoutTest extends TestCase
                         ['id' => 'recent_transactions',  'visible' => true, 'position' => 4, 'size' => 'md'],
                         ['id' => 'active_budgets',       'visible' => true, 'position' => 5, 'size' => 'md'],
                         ['id' => 'debts_credits',        'visible' => true, 'position' => 6, 'size' => 'md'],
-                        ['id' => 'quick_actions',        'visible' => true, 'position' => 7, 'size' => 'lg'],
+                        ['id' => 'expense_distribution', 'visible' => true, 'position' => 7, 'size' => 'lg'],
                     ],
                 ],
             ]);
 
-        // Secondo salvataggio (aggiornamento)
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), [
+                'board' => $board->id,
                 'config' => [
                     'widgets' => [
-                        ['id' => 'quick_actions',        'visible' => true,  'position' => 0, 'size' => 'lg'],
+                        ['id' => 'expense_distribution', 'visible' => true,  'position' => 0, 'size' => 'lg'],
                         ['id' => 'accounts',             'visible' => false, 'position' => 1, 'size' => 'lg'],
                         ['id' => 'lifestyle_widget',     'visible' => true,  'position' => 4, 'size' => 'lg'],
                         ['id' => 'recent_transactions',  'visible' => true,  'position' => 5, 'size' => 'md'],
@@ -168,24 +184,51 @@ class DashboardLayoutTest extends TestCase
                 ],
             ]);
 
-        // Deve esistere un solo record per utente/household
         $this->assertCount(
             1,
             DashboardLayout::where('user_id', $this->user->id)
                 ->where('household_id', $this->household->id)
+                ->where('is_home', false)
                 ->get()
         );
 
-        // Verifica che la configurazione sia aggiornata
-        $layout = DashboardLayout::where('user_id', $this->user->id)->first();
-        $quickActions = collect($layout->config['widgets'])->firstWhere('id', 'quick_actions');
-        $this->assertEquals(0, $quickActions['position']);
+        $layout = $board->fresh();
+        $first = collect($layout->config['widgets'])->firstWhere('id', 'expense_distribution');
+        $this->assertEquals(0, $first['position']);
+    }
+
+    #[Test]
+    public function saving_layout_with_quick_actions_strips_it_silently(): void
+    {
+        $board = $this->editableBoard();
+
+        $payload = [
+            'board' => $board->id,
+            'config' => [
+                'widgets' => [
+                    ['id' => 'accounts', 'visible' => true, 'position' => 0, 'size' => 'lg'],
+                    ['id' => 'quick_actions', 'visible' => true, 'position' => 1, 'size' => 'md'],
+                    ['id' => 'active_budgets', 'visible' => true, 'position' => 2, 'size' => 'md'],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson(route('dashboard.layout.store'), $payload)
+            ->assertOk();
+
+        $ids = array_column($board->fresh()->config['widgets'], 'id');
+        $this->assertSame(['accounts', 'active_budgets'], $ids);
+        $this->assertNotContains('quick_actions', $ids);
     }
 
     #[Test]
     public function saving_layout_with_invalid_widget_id_fails(): void
     {
+        $board = $this->editableBoard();
+
         $payload = [
+            'board' => $board->id,
             'config' => [
                 'widgets' => [
                     ['id' => 'widget_inesistente', 'visible' => true, 'position' => 0, 'size' => 'lg'],
@@ -203,7 +246,10 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function saving_layout_with_invalid_size_fails(): void
     {
+        $board = $this->editableBoard();
+
         $payload = [
+            'board' => $board->id,
             'config' => [
                 'widgets' => [
                     ['id' => 'accounts', 'visible' => true, 'position' => 0, 'size' => 'xxl'],
@@ -220,8 +266,10 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function saving_layout_without_config_fails(): void
     {
+        $board = $this->editableBoard();
+
         $response = $this->actingAs($this->user)
-            ->postJson(route('dashboard.layout.store'), []);
+            ->postJson(route('dashboard.layout.store'), ['board' => $board->id]);
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors(['config']);
@@ -240,55 +288,118 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function user_can_reset_layout_to_default(): void
     {
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'config' => ['widgets' => []],
-        ]);
+        $board = $this->editableBoard(['widgets' => []]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson(route('dashboard.layout.reset'));
+            ->deleteJson(route('dashboard.layout.reset', ['board' => $board->id]));
 
         $response->assertOk();
         $response->assertJsonFragment(['id' => 'accounts']);
 
-        $this->assertDatabaseMissing('dashboard_layouts', [
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
+        $board->refresh();
+        $this->assertSame(
+            array_column(DashboardLayout::essentialConfigForUser($this->user)['widgets'], 'id'),
+            array_column($board->config['widgets'], 'id'),
+        );
+        $this->assertDatabaseHas('dashboard_layouts', [
+            'id' => $board->id,
+            'is_home' => false,
         ]);
     }
 
     #[Test]
-    public function resetting_layout_with_no_saved_layout_returns_default(): void
+    public function resetting_layout_with_no_saved_layout_creates_home_default(): void
     {
         $response = $this->actingAs($this->user)
             ->deleteJson(route('dashboard.layout.reset'));
 
         $response->assertOk();
         $response->assertJsonStructure(['config' => ['widgets']]);
+        $this->assertSame(
+            array_column(DashboardLayout::essentialConfigForUser($this->user)['widgets'], 'id'),
+            array_column($response->json('config.widgets'), 'id'),
+        );
+        $this->assertDatabaseHas('dashboard_layouts', [
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'is_home' => true,
+        ]);
     }
 
     #[Test]
-    public function reset_layout_includes_installed_formula_widgets(): void
+    public function reset_layout_pins_home_essential_kpi_formulas_only(): void
     {
-        $widget = $this->createUserFormulaWidget(['default_size' => 'lg']);
+        $this->seed(FormulaWidgetTemplateSeeder::class);
 
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'config' => [
-                'widgets' => [
-                    ['id' => "formula_widget_{$widget->id}", 'visible' => true, 'position' => 0, 'size' => 'lg'],
-                ],
+        $saldoTemplate = FormulaWidget::query()
+            ->where('template_slug', 'official.saldo_liquidita')
+            ->where('is_official_template', true)
+            ->firstOrFail();
+
+        $saldoClone = $this->createUserFormulaWidget([
+            'source_id' => $saldoTemplate->id,
+            'default_size' => 'sm',
+        ]);
+        $extra = $this->createUserFormulaWidget(['default_size' => 'lg']);
+
+        $board = $this->editableBoard([
+            'widgets' => [
+                ['id' => "formula_widget_{$extra->id}", 'visible' => true, 'position' => 0, 'size' => 'lg'],
             ],
         ]);
 
         $response = $this->actingAs($this->user)
-            ->deleteJson(route('dashboard.layout.reset'));
+            ->deleteJson(route('dashboard.layout.reset', ['board' => $board->id]));
 
         $response->assertOk();
-        $response->assertJsonFragment(['id' => 'accounts']);
-        $response->assertJsonFragment(['id' => "formula_widget_{$widget->id}"]);
+        $response->assertJsonFragment(['id' => 'active_budgets']);
+        $response->assertJsonFragment(['id' => 'expense_treemap']);
+        $response->assertJsonFragment(['id' => "formula_widget_{$saldoClone->id}"]);
+        $response->assertJsonMissing(['id' => "formula_widget_{$extra->id}"]);
+
+        $board->refresh();
+        $this->assertSame(
+            array_column(DashboardLayout::essentialConfigForUser($this->user)['widgets'], 'id'),
+            array_column($board->config['widgets'], 'id'),
+        );
+    }
+
+    #[Test]
+    public function home_dashboard_does_not_auto_merge_non_essential_formula_widgets(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $cashflowTemplate = FormulaWidget::query()
+            ->where('template_slug', 'official.cashflow_mensile')
+            ->where('is_official_template', true)
+            ->firstOrFail();
+
+        $cashflowClone = $this->createUserFormulaWidget([
+            'source_id' => $cashflowTemplate->id,
+            'default_size' => 'md',
+        ]);
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'name' => 'Home',
+            'is_home' => true,
+            'sort_order' => 0,
+            'config' => DashboardLayout::essentialConfig(),
+        ]);
+
+        $this->withoutVite()
+            ->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('dashboardLayout.widgets', function ($widgets) use ($cashflowClone): bool {
+                    $ids = collect($widgets)->pluck('id')->all();
+
+                    return $ids === array_column(DashboardLayout::essentialConfigForUser($this->user)['widgets'], 'id')
+                        && ! in_array("formula_widget_{$cashflowClone->id}", $ids, true);
+                })
+            );
     }
 
     #[Test]
@@ -296,15 +407,11 @@ class DashboardLayoutTest extends TestCase
     {
         $widget = $this->createUserFormulaWidget(['default_size' => 'md']);
 
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'config' => DashboardLayout::defaultConfig(),
-        ]);
+        $board = $this->editableBoard(DashboardLayout::defaultConfig());
 
         $this->withoutVite()
             ->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['board' => $board->id]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('dashboardLayout.widgets', function ($widgets) use ($widget): bool {
@@ -315,8 +422,10 @@ class DashboardLayoutTest extends TestCase
             );
 
         $this->assertDatabaseHas('dashboard_layouts', [
+            'id' => $board->id,
             'user_id' => $this->user->id,
             'household_id' => $this->household->id,
+            'is_home' => false,
         ]);
     }
 
@@ -331,24 +440,26 @@ class DashboardLayoutTest extends TestCase
         ]);
         $otherUser->update(['active_household_id' => $otherHousehold->id]);
 
-        // Salva un layout per l'altro utente
         DashboardLayout::create([
             'user_id' => $otherUser->id,
             'household_id' => $otherHousehold->id,
+            'name' => 'Home',
+            'is_home' => true,
+            'sort_order' => 0,
             'config' => ['widgets' => [
-                ['id' => 'quick_actions', 'visible' => true, 'position' => 0, 'size' => 'lg'],
+                ['id' => 'accounts', 'visible' => true, 'position' => 0, 'size' => 'lg'],
             ]],
         ]);
 
-        // L'utente corrente non vede il layout dell'altro utente
         $response = $this->actingAs($this->user)
             ->getJson(route('dashboard.layout.show'));
 
         $response->assertOk();
-        // Deve ricevere il layout di default, non quello dell'altro utente
         $widgets = $response->json('config.widgets');
-        // Il default ha più widget del layout dell'altro utente
-        $this->assertGreaterThan(1, count($widgets));
+        $this->assertSame(
+            ['active_budgets', 'expense_treemap', 'recent_transactions', 'accounts'],
+            array_column($widgets, 'id'),
+        );
     }
 
     // ─── Dashboard Inertia integration ────────────────────────────────────
@@ -360,8 +471,13 @@ class DashboardLayoutTest extends TestCase
             ->get(route('dashboard'));
 
         $response->assertStatus(200);
+        $expectedIds = array_column(DashboardLayout::essentialConfigForUser($this->user)['widgets'], 'id');
         $response->assertInertia(fn ($page) => $page->has('dashboardLayout')
             ->has('dashboardLayout.widgets')
+            ->where('canEditLayout', true)
+            ->where('dashboardLayout.widgets', function ($widgets) use ($expectedIds): bool {
+                return collect($widgets)->pluck('id')->all() === $expectedIds;
+            })
         );
     }
 
@@ -370,37 +486,35 @@ class DashboardLayoutTest extends TestCase
     {
         $config = [
             'widgets' => [
-                ['id' => 'quick_actions',       'visible' => true, 'position' => 0, 'size' => 'lg'],
-                ['id' => 'accounts',             'visible' => true, 'position' => 1, 'size' => 'lg'],
-                ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 5, 'size' => 'lg'],
-                ['id' => 'accounts',             'visible' => true, 'position' => 6, 'size' => 'md'],
-                ['id' => 'recent_transactions',  'visible' => true, 'position' => 7, 'size' => 'md'],
-                ['id' => 'active_budgets',       'visible' => true, 'position' => 8, 'size' => 'md'],
-                ['id' => 'debts_credits',        'visible' => true, 'position' => 9, 'size' => 'md'],
+                ['id' => 'accounts',             'visible' => true, 'position' => 0, 'size' => 'lg'],
+                ['id' => 'lifestyle_widget',     'visible' => true, 'position' => 1, 'size' => 'lg'],
+                ['id' => 'recent_transactions',  'visible' => true, 'position' => 2, 'size' => 'md'],
+                ['id' => 'active_budgets',       'visible' => true, 'position' => 3, 'size' => 'md'],
+                ['id' => 'debts_credits',        'visible' => true, 'position' => 4, 'size' => 'md'],
             ],
         ];
 
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'config' => $config,
-        ]);
+        $board = $this->editableBoard($config);
 
         $response = $this->withoutVite()->actingAs($this->user)
-            ->get(route('dashboard'));
+            ->get(route('dashboard', ['board' => $board->id]));
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page->where('dashboardLayout.widgets', function ($widgets): bool {
-            return collect($widgets)->pluck('id')->contains('quick_actions');
+            return collect($widgets)->pluck('id')->contains('accounts')
+                && collect($widgets)->pluck('id')->contains('lifestyle_widget');
         }));
     }
 
-    // ─── Regressione: financial_goals non deve essere rifiutato ───────────
+    // ─── Regression: financial_goals must be accepted ─────────────────────
 
     #[Test]
     public function saving_layout_with_financial_goals_widget_succeeds(): void
     {
+        $board = $this->editableBoard();
+
         $payload = [
+            'board' => $board->id,
             'config' => [
                 'widgets' => [
                     ['id' => 'accounts',         'visible' => true, 'position' => 0, 'size' => 'xl'],
@@ -417,8 +531,11 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function saving_full_default_layout_succeeds(): void
     {
-        // Tutti i widget del defaultConfig() devono essere accettati senza errori
-        $payload = ['config' => DashboardLayout::defaultConfig()];
+        $board = $this->editableBoard();
+        $payload = [
+            'board' => $board->id,
+            'config' => DashboardLayout::defaultConfig(),
+        ];
 
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), $payload)
@@ -428,9 +545,11 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function all_allowed_widget_ids_are_accepted_by_validation(): void
     {
+        $board = $this->editableBoard();
+
         $allWidgets = [
             'lifestyle_widget', 'accounts',
-            'recent_transactions', 'active_budgets', 'debts_credits', 'quick_actions',
+            'recent_transactions', 'active_budgets', 'debts_credits',
             'asset_allocation', 'expense_treemap', 'financial_goals', 'expense_distribution', 'pac_projection',
         ];
 
@@ -439,44 +558,49 @@ class DashboardLayoutTest extends TestCase
         ], $allWidgets, array_keys($allWidgets)));
 
         $this->actingAs($this->user)
-            ->postJson(route('dashboard.layout.store'), ['config' => ['widgets' => $widgets]])
+            ->postJson(route('dashboard.layout.store'), [
+                'board' => $board->id,
+                'config' => ['widgets' => $widgets],
+            ])
             ->assertOk();
     }
 
     #[Test]
-    public function tier_a_legacy_widget_ids_are_rejected_on_save(): void
+    public function tier_a_legacy_widget_ids_are_stripped_on_save(): void
     {
+        $board = $this->editableBoard();
+
         foreach (DashboardLayout::TIER_A_LEGACY_WIDGET_IDS as $legacyId) {
             $this->actingAs($this->user)
                 ->postJson(route('dashboard.layout.store'), [
+                    'board' => $board->id,
                     'config' => [
                         'widgets' => [
-                            ['id' => $legacyId, 'visible' => true, 'position' => 0, 'size' => 'md'],
+                            ['id' => 'accounts', 'visible' => true, 'position' => 0, 'size' => 'md'],
+                            ['id' => $legacyId, 'visible' => true, 'position' => 1, 'size' => 'md'],
                         ],
                     ],
                 ])
-                ->assertUnprocessable()
-                ->assertJsonFragment(['config.widgets' => ["Uno o più widget non sono riconosciuti: {$legacyId}"]]);
+                ->assertOk();
+
+            $ids = array_column($board->fresh()->config['widgets'], 'id');
+            $this->assertSame(['accounts'], $ids);
         }
     }
 
     #[Test]
     public function dashboard_page_strips_legacy_widgets_from_saved_layout(): void
     {
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
-            'config' => [
-                'widgets' => [
-                    ['id' => 'total_balance', 'visible' => true, 'position' => 0, 'size' => 'xl'],
-                    ['id' => 'accounts', 'visible' => true, 'position' => 1, 'size' => 'md'],
-                ],
+        $board = $this->editableBoard([
+            'widgets' => [
+                ['id' => 'total_balance', 'visible' => true, 'position' => 0, 'size' => 'xl'],
+                ['id' => 'accounts', 'visible' => true, 'position' => 1, 'size' => 'md'],
             ],
         ]);
 
         $this->withoutVite()
             ->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['board' => $board->id]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has('dashboardLayout.widgets')
@@ -491,10 +615,12 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function saving_layout_strips_orphan_formula_widgets(): void
     {
+        $board = $this->editableBoard();
         $owned = $this->createUserFormulaWidget();
 
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), [
+                'board' => $board->id,
                 'config' => [
                     'widgets' => [
                         ['id' => 'accounts', 'visible' => true, 'position' => 0, 'size' => 'md'],
@@ -505,7 +631,7 @@ class DashboardLayoutTest extends TestCase
             ])
             ->assertOk();
 
-        $layout = DashboardLayout::query()->where('user_id', $this->user->id)->first();
+        $layout = $board->fresh();
         $ids = array_column($layout->config['widgets'], 'id');
 
         $this->assertContains('accounts', $ids);
@@ -516,6 +642,7 @@ class DashboardLayoutTest extends TestCase
     #[Test]
     public function saving_layout_remaps_official_template_formula_widget_id_to_user_clone(): void
     {
+        $board = $this->editableBoard();
         $official = FormulaWidget::factory()
             ->officialTemplate('official.test_widget')
             ->create();
@@ -524,6 +651,7 @@ class DashboardLayoutTest extends TestCase
 
         $this->actingAs($this->user)
             ->postJson(route('dashboard.layout.store'), [
+                'board' => $board->id,
                 'config' => [
                     'widgets' => [
                         ['id' => "formula_widget_{$official->id}", 'visible' => true, 'position' => 0, 'size' => 'lg'],
@@ -532,7 +660,7 @@ class DashboardLayoutTest extends TestCase
             ])
             ->assertOk();
 
-        $layout = DashboardLayout::query()->where('user_id', $this->user->id)->first();
+        $layout = $board->fresh();
         $ids = array_column($layout->config['widgets'], 'id');
 
         $this->assertSame(["formula_widget_{$clone->id}"], $ids);

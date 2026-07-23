@@ -16,6 +16,8 @@ interface IndexListCardProps {
     children?: ReactNode;
     className?: string;
     bodyClassName?: string;
+    /** `flush` = lista full-bleed su mobile (WFI-114 M2). */
+    appearance?: 'default' | 'flush';
 }
 
 /**
@@ -31,9 +33,14 @@ export default function IndexListCard({
     children,
     className,
     bodyClassName,
+    appearance = 'default',
 }: IndexListCardProps): ReactNode {
     return (
-        <ContentPanelShell variant="index" className={clsx('shadow-sm', className)} wrapBody={false}>
+        <ContentPanelShell
+            variant={appearance === 'flush' ? 'indexFlush' : 'index'}
+            className={clsx(appearance === 'default' && 'shadow-sm', className)}
+            wrapBody={false}
+        >
             {header}
             {kpi}
             {toolbar}

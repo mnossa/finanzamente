@@ -12,7 +12,6 @@ import {
     sortableKeyboardCoordinates,
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import clsx from 'clsx';
 import SortableDashboardWidgetCard from '@/Components/Dashboard/SortableDashboardWidgetCard';
 import type { DashboardDragEndEvent } from '@/types/dashboardDrag';
 import type { WidgetId, WidgetSize } from '@/types/dashboard';
@@ -84,9 +83,6 @@ export default function DashboardWidgetGridEditable({
                                         })
                                         : undefined
                                 }
-                                className={clsx(
-                                    widget.id === 'quick_actions' && 'hidden lg:flex',
-                                )}
                             >
                                 {content}
                             </SortableDashboardWidgetCard>

@@ -11,6 +11,12 @@ function arrayMove<T>(items: T[], fromIndex: number, toIndex: number): T[] {
     return next;
 }
 
+interface UseDashboardLayoutOptions {
+    boardId?: number | null;
+    canEdit?: boolean;
+    startEditing?: boolean;
+}
+
 interface UseDashboardLayoutReturn {
     config: DashboardLayoutConfig;
     sortedWidgets: WidgetConfig[];
@@ -29,34 +35,38 @@ interface UseDashboardLayoutReturn {
     resetLayout: () => void;
 }
 
+function boardParams(boardId?: number | null): Record<string, number> {
+    return boardId ? { board: boardId } : {};
+}
+
 /**
  * Hook per gestire il layout personalizzabile della dashboard.
- *
- * Gestisce:
- * - la modalità di modifica (editing mode)
- * - la visibilità dei widget
- * - il riordinamento tramite drag & drop
- * - il resize dei widget
- * - il salvataggio e il ripristino del layout
  */
-export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDashboardLayoutReturn {
+export function useDashboardLayout(
+    initialConfig: DashboardLayoutConfig,
+    options: UseDashboardLayoutOptions = {},
+): UseDashboardLayoutReturn {
+    const { boardId = null, canEdit = true, startEditing = false } = options;
     const [config, setConfig] = useState<DashboardLayoutConfig>(() => ({
         widgets: [...initialConfig.widgets].sort((a, b) => a.position - b.position),
     }));
-    const [snapshot, setSnapshot] = useState<DashboardLayoutConfig | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
+    const [snapshot, setSnapshot] = useState<DashboardLayoutConfig | null>(() =>
+        canEdit && startEditing
+            ? { widgets: [...initialConfig.widgets].sort((a, b) => a.position - b.position) }
+            : null,
+    );
+    const [isEditing, setIsEditing] = useState(() => canEdit && startEditing);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
 
-    /** Ordina i widget per posizione. */
     const sortedWidgets = [...config.widgets].sort((a, b) => a.position - b.position);
 
-    /** Attiva/disattiva la modalità di modifica. */
     const toggleEditing = useCallback(() => {
+        if (!canEdit) {
+            return;
+        }
         setIsEditing((prev) => {
             if (!prev) {
-                // Salva snapshot prima di entrare in modifica
-                setSnapshot((s) => s ?? null);
                 setConfig((current) => {
                     setSnapshot({ widgets: [...current.widgets] });
                     return current;
@@ -65,9 +75,8 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
             return !prev;
         });
         setSaveError(null);
-    }, []);
+    }, [canEdit]);
 
-    /** Annulla le modifiche ripristinando la configurazione al momento dell'apertura. */
     const cancelEditing = useCallback(() => {
         if (snapshot) {
             setConfig({
@@ -79,7 +88,6 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
         setSaveError(null);
     }, [snapshot]);
 
-    /** Aggiorna la visibilità di un widget. */
     const toggleWidgetVisibility = useCallback((id: WidgetId) => {
         setConfig((prev) => ({
             widgets: prev.widgets.map((w) =>
@@ -88,14 +96,12 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
         }));
     }, []);
 
-    /** Aggiorna la dimensione di un widget. */
     const setWidgetSize = useCallback((id: WidgetId, size: WidgetSize) => {
         setConfig((prev) => ({
             widgets: prev.widgets.map((w) => (w.id === id ? { ...w, size } : w)),
         }));
     }, []);
 
-    /** Aggiorna un parametro runtime del widget (es. conto selezionato). */
     const setWidgetRuntimeParam = useCallback((id: WidgetId, key: string, value: string) => {
         setConfig((prev) => ({
             widgets: prev.widgets.map((widget) => {
@@ -114,8 +120,11 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
         }));
     }, []);
 
-    /** Aggiorna e salva subito un parametro runtime del widget. */
     const persistWidgetRuntimeParam = useCallback(async (id: WidgetId, key: string, value: string): Promise<void> => {
+        if (!canEdit) {
+            return;
+        }
+
         const nextWidgets = sortedWidgets.map((widget) => {
             if (widget.id !== id) {
                 return widget;
@@ -137,7 +146,10 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
         setSaveError(null);
 
         try {
-            await axios.post(route('dashboard.layout.store'), { config: { widgets: nextWidgets } });
+            await axios.post(route('dashboard.layout.store'), {
+                config: { widgets: nextWidgets },
+                ...boardParams(boardId),
+            });
         } catch (error) {
             const errors = (error as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors;
             const msg = errors
@@ -146,12 +158,8 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
             setSaveError(msg);
             throw new Error(msg);
         }
-    }, [sortedWidgets]);
+    }, [sortedWidgets, boardId, canEdit]);
 
-    /**
-     * Sposta un widget dalla posizione `oldIndex` alla posizione `newIndex`
-     * e aggiorna i campi `position` di tutti i widget.
-     */
     const moveWidget = useCallback((oldIndex: number, newIndex: number) => {
         setConfig((prev) => {
             const sorted = [...prev.widgets].sort((a, b) => a.position - b.position);
@@ -162,99 +170,90 @@ export function useDashboardLayout(initialConfig: DashboardLayoutConfig): UseDas
         });
     }, []);
 
-    /** Salva la configurazione corrente sul server. */
     const saveLayout = useCallback(async (): Promise<void> => {
+        if (!canEdit) {
+            return;
+        }
+
         setIsSaving(true);
         setSaveError(null);
 
-        // Normalizza le posizioni prima del salvataggio
         const normalizedWidgets: WidgetConfig[] = sortedWidgets.map((w, i) => ({
             ...w,
             position: i,
         }));
 
         return axios
-            .post(route('dashboard.layout.store'), { config: { widgets: normalizedWidgets } })
+            .post(route('dashboard.layout.store'), {
+                config: { widgets: normalizedWidgets },
+                ...boardParams(boardId),
+            })
             .then(() => {
                 setSnapshot(null);
                 setIsEditing(false);
                 setIsSaving(false);
             })
             .catch((error) => {
+                const message = error?.response?.data?.message;
                 const errors = error?.response?.data?.errors;
-                const msg = errors
-                    ? (Object.values(errors)[0] as string[])?.[0] ?? 'Errore durante il salvataggio del layout.'
-                    : 'Errore durante il salvataggio del layout.';
+                const msg = message
+                    ?? (errors ? (Object.values(errors)[0] as string[])?.[0] : null)
+                    ?? 'Errore durante il salvataggio del layout.';
                 setSaveError(msg);
                 setIsSaving(false);
                 throw new Error(msg);
             });
-    }, [sortedWidgets]);
+    }, [sortedWidgets, boardId, canEdit]);
 
-    /** Ripristina il layout di default. */
     const resetLayout = useCallback(() => {
+        if (!canEdit) {
+            return;
+        }
+
         axios
-            .delete(route('dashboard.layout.reset'))
+            .delete(route('dashboard.layout.reset', boardParams(boardId)))
             .then((response) => {
                 const widgets: WidgetConfig[] = response.data?.config?.widgets ?? [];
-                if (widgets.length > 0) {
-                    setConfig({ widgets: [...widgets].sort((a, b) => a.position - b.position) });
-                }
+                setConfig({
+                    widgets: [...widgets].sort((a, b) => a.position - b.position),
+                });
+                setSnapshot(null);
                 setIsEditing(false);
+                setSaveError(null);
             })
             .catch(() => {
                 setSaveError('Errore durante il ripristino del layout.');
             });
-    }, []);
+    }, [boardId, canEdit]);
 
-    /**
-     * Nasconde uno o più widget e salva subito il layout.
-     * Esegue rollback locale in caso di errore.
-     */
     const hideWidgetsAndSave = useCallback(async (widgetIds: WidgetId[]): Promise<void> => {
-        const ids = new Set(widgetIds);
-        const currentWidgets = [...config.widgets].sort((a, b) => a.position - b.position);
-        const nextWidgets = currentWidgets.map((w) =>
-            ids.has(w.id) ? { ...w, visible: false } : w
-        );
-        const hasChanges = nextWidgets.some((widget, index) => widget.visible !== currentWidgets[index].visible);
-
-        if (!hasChanges) {
+        if (!canEdit || widgetIds.length === 0) {
             return;
         }
 
-        setIsSaving(true);
-        setSaveError(null);
+        const idSet = new Set(widgetIds);
+        const nextWidgets = sortedWidgets
+            .map((widget) => (idSet.has(widget.id) ? { ...widget, visible: false } : widget))
+            .map((widget, index) => ({ ...widget, position: index }));
+
         setConfig({ widgets: nextWidgets });
+        setSaveError(null);
 
-        const normalizedWidgets: WidgetConfig[] = nextWidgets.map((w, i) => ({
-            ...w,
-            position: i,
-        }));
-
-        return axios
-            .post(route('dashboard.layout.store'), { config: { widgets: normalizedWidgets } })
-            .then(() => {
-                setSnapshot(null);
-                setIsEditing(false);
-                setIsSaving(false);
-            })
-            .catch((error) => {
-                const errors = error?.response?.data?.errors;
-                const msg = errors
-                    ? (Object.values(errors)[0] as string[])?.[0] ?? 'Errore durante il salvataggio del layout.'
-                    : 'Errore durante il salvataggio del layout.';
-                setConfig({ widgets: currentWidgets });
-                setSaveError(msg);
-                setIsSaving(false);
-                throw new Error(msg);
+        try {
+            await axios.post(route('dashboard.layout.store'), {
+                config: { widgets: nextWidgets },
+                ...boardParams(boardId),
             });
-    }, [config.widgets]);
+        } catch {
+            setSaveError('Errore durante il salvataggio del layout.');
+            throw new Error('Errore durante il salvataggio del layout.');
+        }
+    }, [sortedWidgets, boardId, canEdit]);
 
     return {
         config,
         sortedWidgets,
-        isEditing,
+        isEditing: canEdit && isEditing,
         isSaving,
         saveError,
         toggleEditing,

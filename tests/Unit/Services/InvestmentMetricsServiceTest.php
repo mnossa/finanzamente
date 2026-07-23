@@ -6,6 +6,7 @@ use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Services\AssetPriceService;
 use App\Services\InvestmentMetricsService;
+use Illuminate\Support\Collection;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -16,6 +17,28 @@ class InvestmentMetricsServiceTest extends TestCase
     {
         Mockery::close();
         parent::tearDown();
+    }
+
+    #[Test]
+    public function fetch_current_prices_for_investments_uses_batch_api(): void
+    {
+        $assetA = new InvestmentAsset(['symbol' => 'AAA']);
+        $assetB = new InvestmentAsset(['symbol' => 'BBB']);
+        $openA = new Investment(['sell_date' => null, 'quantity' => 1, 'buy_price' => 1]);
+        $openA->setRelation('asset', $assetA);
+        $openB = new Investment(['sell_date' => null, 'quantity' => 1, 'buy_price' => 1]);
+        $openB->setRelation('asset', $assetB);
+
+        $priceService = Mockery::mock(AssetPriceService::class);
+        $priceService->shouldReceive('getCurrentPrices')
+            ->once()
+            ->with(Mockery::on(fn (array $symbols) => $symbols === ['AAA', 'BBB'] || $symbols === ['BBB', 'AAA']))
+            ->andReturn(['AAA' => 10.0, 'BBB' => 20.0]);
+
+        $service = new InvestmentMetricsService($priceService);
+        $prices = $service->fetchCurrentPricesForInvestments(new Collection([$openA, $openB]));
+
+        $this->assertSame(['AAA' => 10.0, 'BBB' => 20.0], $prices);
     }
 
     #[Test]

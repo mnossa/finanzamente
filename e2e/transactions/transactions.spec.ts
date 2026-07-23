@@ -66,12 +66,10 @@ test.describe('Transazioni', () => {
     });
 
     test('i filtri si applicano solo dopo la CTA Applica filtri', async ({ page }) => {
-        const filterDetails = page.locator('details').filter({ has: page.getByTestId('filter-summary') });
-        const filterSummary = filterDetails.locator('summary');
-        await filterSummary.click();
+        await page.getByTestId('filter-summary').click();
         await expect(page.getByLabel('Cerca nella descrizione')).toBeVisible({ timeout: 8_000 });
 
-        const applyButton = page.getByTestId('apply-filters');
+        const applyButton = page.getByTestId('apply-filters').filter({ visible: true }).first();
         await expect(applyButton).toBeVisible();
         await expect(applyButton).toBeDisabled();
 
@@ -87,8 +85,7 @@ test.describe('Transazioni', () => {
     });
 
     test('checkbox regex descrizione è presente nel pannello filtri', async ({ page }) => {
-        const filterDetails = page.locator('details').filter({ has: page.getByTestId('filter-summary') });
-        await filterDetails.locator('summary').click();
+        await page.getByTestId('filter-summary').click();
         await expect(page.getByLabel('Cerca nella descrizione')).toBeVisible({ timeout: 8_000 });
         await expect(page.getByLabel('Usa espressione regolare')).toBeVisible();
     });

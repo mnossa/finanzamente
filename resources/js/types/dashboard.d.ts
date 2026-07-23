@@ -9,7 +9,6 @@ export type KnownWidgetId =
     | 'recent_transactions'
     | 'active_budgets'
     | 'debts_credits'
-    | 'quick_actions'
     | 'asset_allocation'
     | 'expense_treemap'
     | 'financial_goals'

@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
-import { IndexPageHeaderActions, IndexPageMobileToolbar, mobileFilterBodyClass, mobileFilterSummaryClass, mobileLegendClass, mobileListPanelClass } from '@/Components/IndexPageListToolbars';
+import { IndexPageHeaderActions, IndexPageMobileToolbar, mobileFilterBodyClass, mobileLegendClass, mobileListPanelClass } from '@/Components/IndexPageListToolbars';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -14,6 +14,8 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
+import MobileBottomSheet from '@/Components/MobileBottomSheet';
+import TransactionFiltersFields from '@/Components/TransactionFiltersFields';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { type FormDataConvertible } from '@inertiajs/core';
 import clsx from 'clsx';
@@ -26,6 +28,7 @@ import { filtersAnalytics, tx } from '@/utils/analytics';
 import { formatCurrency } from '@/utils/format';
 import type { PageProps } from '@/types';
 import useMdUp from '@/hooks/useMdUp';
+import useLgUp from '@/hooks/useLgUp';
 
 const UPCOMING_EXPANDED_STORAGE_PREFIX = 'finanzamente.upcomingMovements.expanded';
 
@@ -237,6 +240,67 @@ function countActiveFilters(f: Filters): number {
 
         return v !== undefined && v !== '';
     }).length;
+}
+
+type ActiveFilterChip = { key: keyof Filters; label: string };
+
+function buildActiveFilterChips(
+    f: Filters,
+    accounts: Array<{ id: number; name: string }>,
+    categories: Category[],
+    tags: Array<{ id: number; name: string }>,
+): ActiveFilterChip[] {
+    const chips: ActiveFilterChip[] = [];
+
+    if (f.type === 'income') {
+        chips.push({ key: 'type', label: 'Entrate' });
+    } else if (f.type === 'expense') {
+        chips.push({ key: 'type', label: 'Uscite' });
+    }
+
+    if (f.account_id) {
+        const account = accounts.find((a) => String(a.id) === String(f.account_id));
+        chips.push({ key: 'account_id', label: account?.name ?? `Conto #${f.account_id}` });
+    }
+
+    if (f.category_id === '__none__') {
+        chips.push({ key: 'category_id', label: 'Senza categoria' });
+    } else if (f.category_id) {
+        const category = categories.find((c) => String(c.id) === String(f.category_id));
+        chips.push({ key: 'category_id', label: category?.name ?? `Categoria #${f.category_id}` });
+    }
+
+    if (f.from || f.to) {
+        const from = f.from ? f.from.split('-').reverse().join('/') : '…';
+        const to = f.to ? f.to.split('-').reverse().join('/') : '…';
+        chips.push({ key: f.from ? 'from' : 'to', label: `${from} – ${to}` });
+    }
+
+    if (f.tag_id) {
+        const tag = tags.find((t) => String(t.id) === String(f.tag_id));
+        chips.push({ key: 'tag_id', label: tag?.name ?? `Tag #${f.tag_id}` });
+    }
+
+    if (f.description) {
+        chips.push({ key: 'description', label: `«${f.description}»` });
+    }
+
+    if (f.amount_min || f.amount_max) {
+        chips.push({
+            key: f.amount_min ? 'amount_min' : 'amount_max',
+            label: `${f.amount_min || '0'}–${f.amount_max || '∞'} €`,
+        });
+    }
+
+    if (f.currency_code) {
+        chips.push({ key: 'currency_code', label: f.currency_code });
+    }
+
+    if (f.is_tax_deductible) {
+        chips.push({ key: 'is_tax_deductible', label: 'Detraibile' });
+    }
+
+    return chips;
 }
 
 function computeNextFilters(filters: Filters, categories: Category[], key: string, value: string): Filters {
@@ -662,7 +726,9 @@ export default function Index({
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = React.useState(false);
     const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
     const [draftFilters, setDraftFilters] = React.useState<Filters>({ ...filters });
+    const [filtersOpen, setFiltersOpen] = React.useState(false);
     const preferSlideOver = useMdUp();
+    const isLgUp = useLgUp();
     const [slideOverOpen, setSlideOverOpen] = React.useState(false);
     const [slideOverLoading, setSlideOverLoading] = React.useState(false);
     const [slideOverError, setSlideOverError] = React.useState<string | null>(null);
@@ -932,7 +998,48 @@ export default function Index({
             filtersAnalytics.cleared();
         }
         setDraftFilters({});
+        setFiltersOpen(false);
         router.get(route('transactions.index'));
+    };
+
+    const applyFiltersAndClose = () => {
+        applyFilters();
+        setFiltersOpen(false);
+    };
+
+    const activeFilterChips = useMemo(
+        () => buildActiveFilterChips(filters, accounts, categories, tags),
+        [filters, accounts, categories, tags],
+    );
+
+    const applyQuickType = (type: '' | 'income' | 'expense') => {
+        const next = computeNextFilters(filters, categories, 'type', type);
+        setDraftFilters(next);
+        router.get(route('transactions.index'), filtersToQueryParams(next), {
+            preserveState: true,
+            replace: true,
+        });
+    };
+
+    const removeAppliedFilter = (key: keyof Filters) => {
+        const next: Filters = { ...filters };
+        if (key === 'from' || key === 'to') {
+            delete next.from;
+            delete next.to;
+        } else if (key === 'amount_min' || key === 'amount_max') {
+            delete next.amount_min;
+            delete next.amount_max;
+        } else if (key === 'description') {
+            delete next.description;
+            delete next.description_regex;
+        } else {
+            delete next[key];
+        }
+        setDraftFilters(next);
+        router.get(route('transactions.index'), filtersToQueryParams(next), {
+            preserveState: true,
+            replace: true,
+        });
     };
 
     const exportHref = useMemo(
@@ -1054,195 +1161,117 @@ export default function Index({
                         </LinkButton>
                     </IndexPageMobileToolbar>
 
-                    {/* Filtri */}
-                    <CardBox className="overflow-hidden p-0 shadow-sm">
-                        {/* Header filtri — sempre visibile */}
-                        <details className="group" {...(hasFilters || hasDraftFilters ? { open: true } : {})}>
-                            <summary data-testid="filter-summary" className={clsx('flex cursor-pointer select-none items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200', mobileFilterSummaryClass)}>
-                                <span className="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-                                    </svg>
-                                    Filtri
-                                    {hasFilters && (
-                                        <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                                            {countActiveFilters(filters)}
-                                        </span>
-                                    )}
-                                    {hasPendingFilterChanges && (
-                                        <span className="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                            da applicare
-                                        </span>
-                                    )}
-                                </span>
-                                <svg className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    {/* Filtri — chip + quick type; pannello desktop / sheet mobile */}
+                    <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                data-testid="filter-summary"
+                                onClick={() => setFiltersOpen((open) => !open)}
+                                aria-expanded={filtersOpen}
+                                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400" aria-hidden="true">
+                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
                                 </svg>
-                            </summary>
-
-                            {/* Corpo filtri — 2 colonne su mobile, flex-wrap su sm+ */}
-                            <div className={clsx('border-t border-gray-100 dark:border-gray-700', mobileFilterBodyClass)}>
-                                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-end sm:gap-3">
-                                    <select
-                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={draftFilters.account_id || ''}
-                                        onChange={(e) => updateDraftFilter('account_id', e.target.value)}
-                                    >
-                                        <option value="">Tutti i conti</option>
-                                        {accounts.map((account) => (
-                                            <option key={account.id} value={account.id}>
-                                                {account.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={draftFilters.type || ''}
-                                        onChange={(e) => updateDraftFilter('type', e.target.value)}
-                                    >
-                                        <option value="">Tutti i tipi</option>
-                                        <option value="income">Entrate</option>
-                                        <option value="expense">Uscite</option>
-                                    </select>
-                                    <select
-                                        className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={draftFilters.category_id || ''}
-                                        onChange={(e) => updateDraftFilter('category_id', e.target.value)}
-                                    >
-                                        <option value="">Tutte le categorie</option>
-                                        <option value="__none__">— Senza categoria</option>
-                                        {visibleCategories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.icon} {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-44">
-                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Data da</span>
-                                        <input
-                                            type="date"
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={draftFilters.from || ''}
-                                            onChange={(e) => updateDraftFilter('from', e.target.value)}
-                                            aria-label="Data da"
-                                        />
-                                    </div>
-                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-44">
-                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Data a</span>
-                                        <input
-                                            type="date"
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={draftFilters.to || ''}
-                                            onChange={(e) => updateDraftFilter('to', e.target.value)}
-                                            aria-label="Data a"
-                                        />
-                                    </div>
-                                    {tags.length > 0 && (
-                                        <select
-                                            className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={draftFilters.tag_id || ''}
-                                            onChange={(e) => updateDraftFilter('tag_id', e.target.value)}
-                                        >
-                                            <option value="">Tutti i tag</option>
-                                            {tags.map((tag) => (
-                                                <option key={tag.id} value={tag.id}>
-                                                    {tag.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                Filtri
+                                {hasFilters && (
+                                    <span className="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                        {countActiveFilters(filters)}
+                                    </span>
+                                )}
+                                {hasPendingFilterChanges && filtersOpen && (
+                                    <span className="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                        da applicare
+                                    </span>
+                                )}
+                            </button>
+                            <div className="flex items-center gap-1.5" role="group" aria-label="Filtro rapido tipo">
+                                <button
+                                    type="button"
+                                    onClick={() => applyQuickType(filters.type === 'expense' ? '' : 'expense')}
+                                    className={clsx(
+                                        'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                                        filters.type === 'expense'
+                                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
                                     )}
-                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-2">
-                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Cerca nella descrizione</span>
-                                        <input
-                                            type="search"
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={draftFilters.description || ''}
-                                            onChange={(e) => updateDraftFilter('description', e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    applyFilters();
-                                                }
-                                            }}
-                                            placeholder={
-                                                draftFilters.description_regex === '1'
-                                                    ? 'es. ^Pagamento|carte'
-                                                    : 'es. supermercato coop'
-                                            }
-                                            aria-label="Cerca nella descrizione"
-                                        />
-                                        <label className="mt-1 flex cursor-pointer items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                                            <input
-                                                id="filter-description-regex"
-                                                type="checkbox"
-                                                checked={draftFilters.description_regex === '1'}
-                                                onChange={(e) => {
-                                                    setDraftFilters((prev) => {
-                                                        const next = { ...prev };
-                                                        if (e.target.checked) {
-                                                            next.description_regex = '1';
-                                                        } else {
-                                                            delete next.description_regex;
-                                                        }
+                                >
+                                    Uscite
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => applyQuickType(filters.type === 'income' ? '' : 'income')}
+                                    className={clsx(
+                                        'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                                        filters.type === 'income'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+                                    )}
+                                >
+                                    Entrate
+                                </button>
+                            </div>
+                        </div>
 
-                                                        return next;
-                                                    });
-                                                }}
-                                                className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800"
-                                            />
-                                            Usa espressione regolare
-                                        </label>
-                                        {draftFilters.description_regex === '1' && (
-                                            <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-500">
-                                                Esempi: <code className="text-gray-600 dark:text-gray-400">^Bolletta</code>,{' '}
-                                                <code className="text-gray-600 dark:text-gray-400">carte|pos</code>,{' '}
-                                                <code className="text-gray-600 dark:text-gray-400">ess.*unga</code>
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-36">
-                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Importo da (€)</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={draftFilters.amount_min || ''}
-                                            onChange={(e) => updateDraftFilter('amount_min', e.target.value)}
-                                            aria-label="Importo minimo"
-                                        />
-                                    </div>
-                                    <div className="col-span-2 flex w-full flex-col gap-1 sm:col-span-1 sm:max-w-36">
-                                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Importo a (€)</span>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 px-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                            value={draftFilters.amount_max || ''}
-                                            onChange={(e) => updateDraftFilter('amount_max', e.target.value)}
-                                            aria-label="Importo massimo"
-                                        />
-                                    </div>
-                                    <select
-                                        className="col-span-2 w-full rounded-lg border border-gray-200 bg-white py-2 pl-2.5 pr-8 text-sm text-gray-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:col-span-1 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                                        value={draftFilters.currency_code || ''}
-                                        onChange={(e) => updateDraftFilter('currency_code', e.target.value)}
+                        {activeFilterChips.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5" aria-label="Filtri attivi">
+                                {activeFilterChips.map((chip) => (
+                                    <button
+                                        key={`${chip.key}-${chip.label}`}
+                                        type="button"
+                                        onClick={() => removeAppliedFilter(chip.key)}
+                                        className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800"
                                     >
-                                        <option value="">Tutte le valute</option>
-                                        {currencies.map((currency) => (
-                                            <option key={currency.code} value={currency.code}>
-                                                {currency.code} - {currency.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="col-span-2 flex w-full flex-col gap-2 border-t border-gray-100 pt-3 sm:col-span-full sm:flex-row sm:items-center sm:justify-end dark:border-gray-700">
+                                        <span className="max-w-[10rem] truncate">{chip.label}</span>
+                                        <span aria-hidden="true" className="text-emerald-600 dark:text-emerald-300">×</span>
+                                        <span className="sr-only">Rimuovi filtro {chip.label}</span>
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={clearFilters}
+                                    className="rounded-full px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                                >
+                                    Pulisci
+                                </button>
+                            </div>
+                        )}
+
+                        {filtersOpen && isLgUp && (
+                            <CardBox className="overflow-hidden p-0 shadow-sm">
+                                <div className={clsx('border-gray-100 dark:border-gray-700', mobileFilterBodyClass)}>
+                                    <TransactionFiltersFields
+                                        draftFilters={draftFilters}
+                                        updateDraftFilter={updateDraftFilter}
+                                        setDraftFilters={setDraftFilters}
+                                        accounts={accounts}
+                                        visibleCategories={visibleCategories}
+                                        tags={tags}
+                                        currencies={currencies}
+                                        applyFilters={applyFiltersAndClose}
+                                        clearFilters={clearFilters}
+                                        hasPendingFilterChanges={hasPendingFilterChanges}
+                                        hasFilters={hasFilters}
+                                        hasDraftFilters={hasDraftFilters}
+                                    />
+                                </div>
+                            </CardBox>
+                        )}
+
+                        {!isLgUp && (
+                            <MobileBottomSheet
+                                open={filtersOpen}
+                                onClose={() => setFiltersOpen(false)}
+                                title="Filtri"
+                                footer={(
+                                    <div className="flex flex-col gap-2">
                                         <button
                                             type="button"
                                             data-testid="apply-filters"
-                                            onClick={applyFilters}
+                                            onClick={applyFiltersAndClose}
                                             disabled={!hasPendingFilterChanges}
-                                            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto dark:focus:ring-offset-gray-900"
+                                            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900"
                                         >
                                             Applica filtri
                                         </button>
@@ -1250,16 +1279,32 @@ export default function Index({
                                             <button
                                                 type="button"
                                                 onClick={clearFilters}
-                                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 sm:w-auto"
+                                                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
                                             >
                                                 Pulisci filtri
                                             </button>
                                         )}
                                     </div>
-                                </div>
-                            </div>
-                        </details>
-                    </CardBox>
+                                )}
+                            >
+                                <TransactionFiltersFields
+                                    draftFilters={draftFilters}
+                                    updateDraftFilter={updateDraftFilter}
+                                    setDraftFilters={setDraftFilters}
+                                    accounts={accounts}
+                                    visibleCategories={visibleCategories}
+                                    tags={tags}
+                                    currencies={currencies}
+                                    applyFilters={applyFiltersAndClose}
+                                    clearFilters={clearFilters}
+                                    hasPendingFilterChanges={hasPendingFilterChanges}
+                                    hasFilters={hasFilters}
+                                    hasDraftFilters={hasDraftFilters}
+                                    hideActions
+                                />
+                            </MobileBottomSheet>
+                        )}
+                    </div>
 
                     <p className={mobileLegendClass}>
                         <span className="font-medium text-gray-600 dark:text-gray-300">Bordo sinistro:</span>
@@ -1273,6 +1318,7 @@ export default function Index({
 
                     {upcomingMovements.length > 0 ? (
                         <IndexListCard
+                            appearance="flush"
                             header={(
                                 <div className="border-b border-gray-100 dark:border-gray-700">
                                     <button
@@ -1281,56 +1327,75 @@ export default function Index({
                                         aria-expanded={upcomingExpanded}
                                         aria-controls="upcoming-movements-list"
                                         data-testid="upcoming-movements-toggle"
-                                        className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:hover:bg-gray-800/60 sm:flex-row sm:items-center sm:justify-between"
+                                        className="flex w-full items-center gap-4 px-2 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:hover:bg-gray-800/60 sm:px-3"
                                     >
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
                                                     Prossimi movimenti
                                                 </h2>
                                                 <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                                                     {upcomingSummary.count}
                                                 </span>
-                                                <span className="text-xs text-gray-400" aria-hidden>
-                                                    {upcomingExpanded ? '▾' : '▸'}
-                                                </span>
                                             </div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                Ricorrenze e PAC previsti (non inclusi nel saldo attuale).
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
-                                            <span>
-                                                Entrate{' '}
-                                                <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                                                    {formatCurrency(upcomingSummary.income, summaryCurrency)}
-                                                </span>
-                                            </span>
-                                            <span>
-                                                Uscite{' '}
-                                                <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
-                                                    {formatCurrency(upcomingSummary.expenses, summaryCurrency)}
-                                                </span>
-                                            </span>
-                                            <span>
-                                                Netto{' '}
-                                                <span className="font-semibold tabular-nums">
-                                                    {formatCurrency(upcomingSummary.net, summaryCurrency)}
-                                                </span>
-                                            </span>
-                                            {projectedHouseholdBalance != null ? (
-                                                <span>
-                                                    Dopo 90 gg:{' '}
-                                                    <span className="font-semibold tabular-nums">
-                                                        {formatCurrency(projectedHouseholdBalance, summaryCurrency)}
+                                            {upcomingExpanded ? (
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    Ricorrenze e PAC previsti (non inclusi nel saldo attuale).
+                                                </p>
+                                            ) : null}
+                                            {upcomingExpanded ? (
+                                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-gray-300 sm:mt-1.5">
+                                                    <span>
+                                                        Entrate{' '}
+                                                        <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                                            {formatCurrency(upcomingSummary.income, summaryCurrency)}
+                                                        </span>
                                                     </span>
-                                                </span>
+                                                    <span>
+                                                        Uscite{' '}
+                                                        <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
+                                                            {formatCurrency(upcomingSummary.expenses, summaryCurrency)}
+                                                        </span>
+                                                    </span>
+                                                    <span>
+                                                        Netto{' '}
+                                                        <span className="font-semibold tabular-nums">
+                                                            {formatCurrency(upcomingSummary.net, summaryCurrency)}
+                                                        </span>
+                                                    </span>
+                                                    {projectedHouseholdBalance != null ? (
+                                                        <span>
+                                                            Dopo 90 gg:{' '}
+                                                            <span className="font-semibold tabular-nums">
+                                                                {formatCurrency(projectedHouseholdBalance, summaryCurrency)}
+                                                            </span>
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             ) : null}
                                         </div>
+                                        <span
+                                            className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600"
+                                            aria-hidden
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                                className={clsx('h-6 w-6 transition-transform', upcomingExpanded && 'rotate-180')}
+                                            >
+                                                <path
+                                                    fillRule="evenodd"
+                                                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                                                    clipRule="evenodd"
+                                                />
+                                            </svg>
+                                        </span>
                                     </button>
                                 </div>
                             )}
                             isEmpty={false}
+                            bodyClassName="!px-0"
                         >
                             {upcomingExpanded ? (
                                 <div id="upcoming-movements-list">
@@ -1344,6 +1409,7 @@ export default function Index({
                                             indexQuery={returnQuery}
                                             preferSlideOver={preferSlideOver}
                                             onOpenDetail={openSlideOver}
+                                            hideCheckbox
                                         />
                                     ))}
                                 </div>
@@ -1353,8 +1419,9 @@ export default function Index({
 
                     {/* Lista Transazioni */}
                     <IndexListCard
+                        appearance="flush"
                         kpi={(
-                            <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700">
+                            <div className="border-b border-gray-100 px-3 py-1.5 sm:px-4 sm:py-2 dark:border-gray-700">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">
                                     Saldo nel periodo:{' '}
                                     <span

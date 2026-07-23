@@ -17,10 +17,10 @@ export function primaryFormSubmitLocator(page: Page): Locator {
 }
 
 /**
- * FAB centrale nella bottom nav mobile (link create).
+ * FAB floating azione primaria su mobile/tablet (crea/salva), fuori dalla sticky bar.
  */
 export function mobileFabLinkLocator(page: Page): Locator {
-    return page.locator('nav[aria-label="Navigazione rapida"] a.rounded-full');
+    return page.getByTestId('mobile-primary-fab');
 }
 
 /**

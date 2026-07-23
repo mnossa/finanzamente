@@ -77,7 +77,7 @@ export const mobileLegendClass = clsx(
 export const mobileKpiGridClass = mobileKpiPanelClass;
 
 /**
- * LinkButton create: nascosto su mobile se il FAB centrale punta allo stesso href.
+ * LinkButton create: nascosto su mobile/tablet se il FAB floating punta allo stesso href.
  */
 export function MobileCreateLinkButton(props: ComponentProps<typeof LinkButton>): ReactNode {
     const href = typeof props.href === 'string' ? props.href : '';
@@ -89,7 +89,7 @@ export function MobileCreateLinkButton(props: ComponentProps<typeof LinkButton>)
 }
 
 /**
- * Pulsante create inline: nascosto su mobile se il FAB centrale esegue la stessa azione.
+ * Pulsante create inline: nascosto su mobile/tablet se il FAB floating esegue la stessa azione.
  */
 export function MobileCreateActionButton({
     actionId,

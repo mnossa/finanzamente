@@ -74,3 +74,51 @@ export function formatNumber(value: number, decimals: number = 2): string {
         maximumFractionDigits: decimals,
     }).format(value);
 }
+
+/** ISO `YYYY-MM-DD` → display `dd/mm/yyyy`. */
+export function isoToItalianDate(iso: string | null | undefined): string {
+    if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+        return '';
+    }
+    const [y, m, d] = iso.split('-');
+
+    return `${d}/${m}/${y}`;
+}
+
+/**
+ * Parse data italiana (o ISO) → `YYYY-MM-DD`, oppure `null` se invalida.
+ * Accetta `d/m/yyyy`, `dd/mm/yyyy`, `yyyy-mm-dd`.
+ */
+export function italianDateToIso(raw: string | null | undefined): string | null {
+    if (!raw) {
+        return null;
+    }
+    const trimmed = raw.trim();
+    if (trimmed === '') {
+        return null;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        return isValidIsoDate(trimmed) ? trimmed : null;
+    }
+
+    const match = trimmed.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+    if (!match) {
+        return null;
+    }
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    return isValidIsoDate(iso) ? iso : null;
+}
+
+function isValidIsoDate(iso: string): boolean {
+    const date = parseDateSafe(iso);
+    if (isNaN(date.getTime())) {
+        return false;
+    }
+    const [y, m, d] = iso.split('-').map(Number);
+
+    return date.getFullYear() === y && date.getMonth() + 1 === m && date.getDate() === d;
+}

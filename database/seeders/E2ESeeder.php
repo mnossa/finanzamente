@@ -224,13 +224,22 @@ class E2ESeeder extends Seeder
         );
 
         DashboardLayout::updateOrCreate(
-            ['user_id' => $user->id],
             [
+                'user_id' => $user->id,
+                'household_id' => $household->id,
+                'is_home' => true,
+            ],
+            [
+                'name' => 'Home',
+                'sort_order' => 0,
                 'config' => [
-                    'widgets' => [
-                        ['id' => "formula_widget_{$widgetA->id}", 'visible' => true, 'position' => 0, 'size' => 'md'],
-                        ['id' => "formula_widget_{$widgetB->id}", 'visible' => true, 'position' => 1, 'size' => 'md'],
-                    ],
+                    'widgets' => array_values(array_merge(
+                        DashboardLayout::defaultConfig()['widgets'],
+                        [
+                            ['id' => "formula_widget_{$widgetA->id}", 'visible' => true, 'position' => 9, 'size' => 'md'],
+                            ['id' => "formula_widget_{$widgetB->id}", 'visible' => true, 'position' => 10, 'size' => 'md'],
+                        ],
+                    )),
                 ],
             ]
         );

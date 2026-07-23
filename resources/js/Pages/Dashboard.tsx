@@ -1,6 +1,4 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import PlusIcon from '@/Components/Icons/PlusIcon';
-import QuickActionCard from '@/Components/QuickActionCard';
 import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import { ProgressBar } from '@/Components/ProgressBar';
@@ -142,6 +140,12 @@ interface AssetAllocationData {
     allocation: AssetAllocationEntry[];
 }
 
+interface DashboardBoardSummary {
+    id: number;
+    name: string;
+    is_home: boolean;
+}
+
 interface DashboardProps {
     accounts: Account[];
     recentTransactions: Transaction[];
@@ -154,6 +158,10 @@ interface DashboardProps {
     formulaWidgetMeta: Record<string, FormulaWidgetMeta>;
     formulaWidgetDataVersion?: string | null;
     importShareToken?: string | null;
+    activeBoard?: DashboardBoardSummary | null;
+    boards?: DashboardBoardSummary[];
+    canEditLayout?: boolean;
+    startEditing?: boolean;
 }
 
 function AccountCard({ account }: { account: Account }) {
@@ -288,6 +296,9 @@ export default function Dashboard({
     formulaWidgetPayloads: initialFormulaWidgetPayloads = {},
     formulaWidgetMeta = {},
     formulaWidgetDataVersion = null,
+    activeBoard = null,
+    canEditLayout = false,
+    startEditing = false,
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [deleteFormulaWidgetTarget, setDeleteFormulaWidgetTarget] = useState<{ id: number; name: string } | null>(null);
@@ -299,7 +310,6 @@ export default function Dashboard({
         isEditing,
         isSaving,
         saveError,
-        toggleEditing,
         cancelEditing,
         toggleWidgetVisibility,
         setWidgetSize,
@@ -309,10 +319,19 @@ export default function Dashboard({
         saveLayout,
         hideWidgetsAndSave,
         resetLayout,
-    } = useDashboardLayout(dashboardLayout);
+    } = useDashboardLayout(dashboardLayout, {
+        boardId: activeBoard?.id ?? null,
+        canEdit: canEditLayout,
+        startEditing,
+    });
 
     const { payloads: formulaWidgetPayloads, pendingWidgetIds: formulaWidgetPendingIds, error: formulaWidgetsError } =
-        useDashboardFormulaPayloads(config, initialFormulaWidgetPayloads, formulaWidgetDataVersion);
+        useDashboardFormulaPayloads(
+            config,
+            initialFormulaWidgetPayloads,
+            formulaWidgetDataVersion,
+            activeBoard?.id ?? null,
+        );
 
     const {
         data: deferredWidgets,
@@ -493,33 +512,6 @@ export default function Dashboard({
                         isHiding={isSaving}
                     />
                 );
-
-            case 'quick_actions': {
-                const compact = size === 'sm';
-                const actionItems = [
-                    { href: route('transactions.create'), icon: <PlusIcon size={24} />, label: 'Nuova transazione' },
-                    { href: route('transfers.create'), icon: '🔄', label: 'Trasferimento' },
-                    { href: route('accounts.create'), icon: '🏦', label: 'Nuovo conto' },
-                    { href: route('categories.create'), icon: '🏷️', label: 'Nuova categoria' },
-                ] as const;
-
-                return (
-                    <DashboardWidgetShell title="Azioni rapide">
-                        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-5 lg:gap-3">
-                            {actionItems.map((action) => (
-                                <QuickActionCard
-                                    key={action.href}
-                                    href={action.href}
-                                    icon={action.icon}
-                                    label={action.label}
-                                    compact={compact}
-                                    className="min-w-[6.75rem] shrink-0 snap-start p-2.5 lg:min-w-0 lg:shrink lg:snap-align-none lg:p-3 xl:p-4"
-                                />
-                            ))}
-                        </div>
-                    </DashboardWidgetShell>
-                );
-            }
 
             case 'asset_allocation': {
                 const { allocation, total_value, risk_index, risk_label } = assetAllocationData;
@@ -761,7 +753,13 @@ export default function Dashboard({
     );
 
     return (
-        <AuthenticatedLayout header={<PageHeader title="Dashboard" />}>
+        <AuthenticatedLayout
+            header={
+                <PageHeader
+                    title={activeBoard && !activeBoard.is_home ? activeBoard.name : 'Dashboard'}
+                />
+            }
+        >
             <Head title="Dashboard">
                 <meta
                     head-key="description"
@@ -801,21 +799,6 @@ export default function Dashboard({
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* FAB personalizzazione — non editing */}
-            {!isEditing && (
-                <button
-                    type="button"
-                    onClick={toggleEditing}
-                    className="fixed bottom-6 right-6 z-40 hidden h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-gray-200 transition-all hover:bg-gray-50 hover:shadow-xl sm:flex dark:bg-gray-800 dark:ring-gray-700 dark:hover:bg-gray-700"
-                    aria-label="Personalizza la dashboard"
-                    title="Personalizza dashboard"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-gray-600 dark:text-gray-300" aria-hidden="true">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                </button>
             )}
 
             <PageContent maxWidth="7xl">

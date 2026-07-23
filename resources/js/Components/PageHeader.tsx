@@ -41,7 +41,7 @@ interface PageHeaderProps {
 
 /**
  * Componente header generico per le pagine autenticate.
- * Le `actions` sono visibili solo da `lg` in su (su mobile restano fuori dall’header appiccicoso: FAB, toolbar nel contenuto, ecc.).
+ * Le `actions` sono visibili solo da `lg` in su (su mobile/tablet: FAB floating + toolbar nel contenuto, non header).
  * Per CTA secondarie solo mobile usare `IndexPageMobileToolbar` (vedi `IndexPageListToolbars.tsx`).
  * 
  * @example

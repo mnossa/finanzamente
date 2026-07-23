@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'default_slots' => ['dashboard', 'cashflow', 'patrimonio', 'planning'],
+    'default_slots' => ['dashboard', 'cashflow', 'planning', 'patrimonio'],
 
     'slot_count' => 4,
 

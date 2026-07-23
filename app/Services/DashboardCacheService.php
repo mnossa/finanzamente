@@ -19,10 +19,10 @@ class DashboardCacheService
      * @param  callable(): T  $builder
      * @return T
      */
-    public function rememberIndexPayload(User $user, callable $builder): mixed
+    public function rememberIndexPayload(User $user, callable $builder, ?int $boardId = null): mixed
     {
         return Cache::remember(
-            $this->indexCacheKey($user),
+            $this->indexCacheKey($user, $boardId),
             self::TTL_SECONDS,
             $builder,
         );
@@ -63,15 +63,16 @@ class DashboardCacheService
         );
     }
 
-    private function indexCacheKey(User $user): string
+    private function indexCacheKey(User $user, ?int $boardId = null): string
     {
         $version = $this->dashboardDataVersionService->resolveForUser($user);
 
         return sprintf(
-            'dashboard:%d:%d:%s:index',
+            'dashboard:%d:%d:%s:index:b%d',
             $user->id,
             $user->active_household_id ?? 0,
             $version,
+            $boardId ?? 0,
         );
     }
 

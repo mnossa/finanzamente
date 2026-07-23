@@ -36,6 +36,23 @@ class FormulaWidgetHttpTest extends TestCase
             'permissions' => json_encode(['manage' => true]),
         ]);
         $this->user->update(['active_household_id' => $this->household->id]);
+
+        DashboardLayout::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'name' => 'Custom',
+            'is_home' => false,
+            'sort_order' => 1,
+            'config' => ['widgets' => []],
+        ]);
+    }
+
+    private function customBoard(): DashboardLayout
+    {
+        return DashboardLayout::query()
+            ->where('user_id', $this->user->id)
+            ->where('is_home', false)
+            ->firstOrFail();
     }
 
     #[Test]
@@ -458,7 +475,7 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('formula-marketplace.install-template', 'official.saldo_liquidita'), ['pin' => true])
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
 
         $installed = FormulaWidget::query()
             ->where('user_id', $this->user->id)
@@ -523,18 +540,17 @@ class FormulaWidgetHttpTest extends TestCase
             ->for($variable, 'financialVariable')
             ->create(['name' => 'Da rimuovere', 'display_type' => 'kpi']);
 
+        $custom = $this->customBoard();
+
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widget))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $custom->id]));
 
         $this->actingAs($this->user)
             ->delete(route('formula-widgets.destroy', $widget))
             ->assertRedirect(route('formula-widgets.index'));
 
-        $layout = DashboardLayout::query()
-            ->where('user_id', $this->user->id)
-            ->where('household_id', $this->household->id)
-            ->first();
+        $layout = $custom->fresh();
 
         $ids = array_column($layout->config['widgets'], 'id');
         $this->assertNotContains("formula_widget_{$widget->id}", $ids);
@@ -556,11 +572,13 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widget))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
+
+        $boardId = $this->customBoard()->id;
 
         $this->withoutVite()
             ->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['board' => $boardId]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has("formulaWidgetPayloads.{$widget->id}")
@@ -569,7 +587,7 @@ class FormulaWidgetHttpTest extends TestCase
                 ->has('formulaWidgetDataVersion'));
 
         $this->actingAs($this->user)
-            ->getJson(route('dashboard.formula-widget-payloads'))
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $boardId]))
             ->assertOk()
             ->assertJsonPath("payloads.{$widget->id}.type", 'kpi')
             ->assertJsonPath("payloads.{$widget->id}.name", 'Saldo test');
@@ -596,8 +614,7 @@ class FormulaWidgetHttpTest extends TestCase
                 'display_type' => 'bar',
             ]);
 
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
+        $this->customBoard()->update([
             'config' => [
                 'widgets' => [
                     ['id' => "formula_widget_{$chartWidget->id}", 'visible' => true, 'position' => 0, 'size' => 'md'],
@@ -608,7 +625,7 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->withoutVite()
             ->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['board' => $this->customBoard()->id]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has("formulaWidgetPayloads.{$kpiWidget->id}")
@@ -640,10 +657,10 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widget))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
 
         $first = $this->actingAs($this->user)
-            ->getJson(route('dashboard.formula-widget-payloads'));
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id]));
 
         $first->assertOk();
         $cacheControl = (string) $first->headers->get('Cache-Control');
@@ -655,7 +672,7 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->withHeaders(['If-None-Match' => $etag])
-            ->getJson(route('dashboard.formula-widget-payloads'))
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id]))
             ->assertStatus(304);
     }
 
@@ -674,20 +691,20 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widgetA))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widgetB))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
 
         $full = $this->actingAs($this->user)
-            ->getJson(route('dashboard.formula-widget-payloads'));
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id]));
 
         $full->assertOk();
         $etag = $full->headers->get('ETag');
 
         $this->actingAs($this->user)
             ->withHeaders(['If-None-Match' => $etag])
-            ->getJson(route('dashboard.formula-widget-payloads', ['ids' => (string) $widgetB->id]))
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id, 'ids' => (string) $widgetB->id]))
             ->assertOk()
             ->assertJsonPath("payloads.{$widgetB->id}.type", 'line');
     }
@@ -703,10 +720,10 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widget))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
 
         $response = $this->actingAs($this->user)
-            ->getJson(route('dashboard.formula-widget-payloads', ['ids' => (string) $widget->id]));
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id, 'ids' => (string) $widget->id]));
 
         $response->assertOk()
             ->assertJsonPath("payloads.{$widget->id}.name", 'Widget parziale')
@@ -725,19 +742,19 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->actingAs($this->user)
             ->post(route('formula-widgets.pin', $widget))
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('dashboard', ['board' => $this->customBoard()->id]));
 
         $account = Account::factory()->for($this->user->activeHousehold)->create();
         $transaction = Transaction::factory()->for($account)->create();
 
         $before = $this->actingAs($this->user)
-            ->getJson(route('dashboard.formula-widget-payloads'))
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id]))
             ->headers->get('ETag');
 
         Transaction::factory()->for($account)->create();
 
         $after = $this->actingAs($this->user)
-            ->getJson(route('dashboard.formula-widget-payloads'))
+            ->getJson(route('dashboard.formula-widget-payloads', ['board' => $this->customBoard()->id]))
             ->headers->get('ETag');
 
         $this->assertNotSame($before, $after);
@@ -779,9 +796,7 @@ class FormulaWidgetHttpTest extends TestCase
             ])
             ->all();
 
-        DashboardLayout::create([
-            'user_id' => $this->user->id,
-            'household_id' => $this->household->id,
+        $this->customBoard()->update([
             'config' => ['widgets' => $widgets],
         ]);
 
@@ -789,7 +804,7 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->withoutVite()
             ->actingAs($this->user)
-            ->get(route('dashboard'))
+            ->get(route('dashboard', ['board' => $this->customBoard()->id]))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->has("formulaWidgetPayloads.{$kpiWidget->id}")

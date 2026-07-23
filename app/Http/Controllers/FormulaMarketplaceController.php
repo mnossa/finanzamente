@@ -85,10 +85,27 @@ class FormulaMarketplaceController extends Controller
         $widget = $cloneService->installTemplate($user, $templateSlug);
 
         if ($request->boolean('pin')) {
-            app(FormulaWidgetDashboardPinService::class)->pin($user, $widget);
+            $pinService = app(FormulaWidgetDashboardPinService::class);
+            $boardId = $request->filled('board_id') ? $request->integer('board_id') : null;
+            $pinResult = $pinService->pin($user, $widget, $boardId);
+
+            if ($pinResult === FormulaWidgetDashboardPinService::RESULT_NEEDS_BOARD_CHOICE) {
+                return redirect()
+                    ->route('formula-widgets.pin.choose', $widget)
+                    ->with('success', 'Template installato. Scegli in quale dashboard aggiungerlo.');
+            }
+
+            if ($pinResult === FormulaWidgetDashboardPinService::RESULT_NO_CUSTOM_BOARD) {
+                return redirect()
+                    ->route('dashboard.boards.index')
+                    ->with('success', 'Template installato. Crea una dashboard per aggiungerlo.')
+                    ->with('installedWidgetId', $widget->id);
+            }
+
+            $target = $pinService->resolvePinnedBoard($user, $widget, $boardId);
 
             return redirect()
-                ->route('dashboard')
+                ->route('dashboard', $target && ! $target->is_home ? ['board' => $target->id] : [])
                 ->with('success', 'Widget aggiunto alla dashboard.');
         }
 

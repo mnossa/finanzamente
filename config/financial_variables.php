@@ -383,6 +383,25 @@ return [
         'official.patrimonio_nel_tempo',
     ],
 
+    /**
+     * KPI pinati in cima alla Home Essenziale (D3: Saldo full-width, poi Entrate/Uscite).
+     * Gli altri bootstrap restano in libreria utente, non auto-merge su Home.
+     *
+     * @var array<string, string> slug => size (sm|md|lg|xl)
+     */
+    'home_essential_formula_widgets' => [
+        'official.saldo_liquidita' => 'xl',
+        'official.entrate_30gg' => 'md',
+        'official.uscite_30gg' => 'md',
+    ],
+
+    /** @deprecated Usare home_essential_formula_widgets */
+    'home_essential_formula_slugs' => [
+        'official.saldo_liquidita',
+        'official.entrate_30gg',
+        'official.uscite_30gg',
+    ],
+
     'legacy_widget_replacements' => [
         'total_balance' => [
             'official.saldo_liquidita',

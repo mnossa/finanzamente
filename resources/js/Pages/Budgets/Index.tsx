@@ -52,6 +52,7 @@ interface Budget {
 
 interface IndexProps {
     budgets: Budget[];
+    monthlyIncome: number;
 }
 
 
@@ -124,7 +125,7 @@ function BudgetCard({ budget, onDeleteClick }: { budget: Budget; onDeleteClick: 
     );
 }
 
-export default function Index({ budgets }: IndexProps) {
+export default function Index({ budgets, monthlyIncome }: IndexProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<{ id: number; name: string } | null>(null);
 
@@ -152,7 +153,8 @@ export default function Index({ budgets }: IndexProps) {
     // Calcoli per il riepilogo
     const totalBudgeted = activeBudgets.reduce((sum, b) => sum + b.amount, 0);
     const totalSpent = activeBudgets.reduce((sum, b) => sum + b.spent, 0);
-    const exceededCount = activeBudgets.filter((b) => b.is_exceeded).length;
+    const budgetVsIncomePct =
+        monthlyIncome > 0 ? ((totalBudgeted / monthlyIncome) * 100) : null;
 
     return (
         <AuthenticatedLayout
@@ -201,7 +203,7 @@ export default function Index({ budgets }: IndexProps) {
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <IndexKpiStrip columns={3}>
+                            <IndexKpiStrip columns={4}>
                                 <div className="overflow-hidden rounded-xl bg-linear-to-br from-slate-800 to-slate-900 p-6 text-white shadow-lg">
                                     <h3 className="text-sm font-medium text-slate-300">
                                         Budget Totale
@@ -211,6 +213,34 @@ export default function Index({ budgets }: IndexProps) {
                                     </p>
                                     <p className="mt-1 text-sm text-slate-400">
                                         {activeBudgets.length} budget attivi
+                                    </p>
+                                </div>
+                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-sky-500 to-blue-600 p-6 text-white shadow-lg">
+                                    <h3 className="text-sm font-medium text-sky-100">
+                                        Entrate mese
+                                    </h3>
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
+                                        {formatCurrency(monthlyIncome)}
+                                    </p>
+                                    <p className="mt-1 text-sm text-sky-100/80">
+                                        {monthlyIncome > 0
+                                            ? 'Entrate registrate (no trasferimenti)'
+                                            : 'Nessuna entrata registrata questo mese'}
+                                    </p>
+                                </div>
+                                <div className="overflow-hidden rounded-xl bg-linear-to-br from-violet-500 to-indigo-600 p-6 text-white shadow-lg">
+                                    <h3 className="text-sm font-medium text-violet-100">
+                                        Budget / entrate
+                                    </h3>
+                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>
+                                        {budgetVsIncomePct != null
+                                            ? `${budgetVsIncomePct.toFixed(1)}%`
+                                            : '—'}
+                                    </p>
+                                    <p className="mt-1 text-sm text-violet-100/80">
+                                        {budgetVsIncomePct != null
+                                            ? 'delle entrate del mese'
+                                            : 'Serve almeno un’entrata nel mese'}
                                     </p>
                                 </div>
                                 <div className="overflow-hidden rounded-xl bg-linear-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-lg">
@@ -225,24 +255,6 @@ export default function Index({ budgets }: IndexProps) {
                                             ? ((totalSpent / totalBudgeted) * 100).toFixed(1)
                                             : 0}
                                         % del totale
-                                    </p>
-                                </div>
-                                <div
-                                    className={clsx(
-                                        'overflow-hidden rounded-xl p-6 text-white shadow-lg',
-                                        exceededCount > 0
-                                            ? 'bg-linear-to-br from-red-500 to-orange-600'
-                                            : 'bg-linear-to-br from-gray-500 to-gray-600'
-                                    )}
-                                >
-                                    <h3 className="text-sm font-medium opacity-80">
-                                        Budget Sforati
-                                    </h3>
-                                    <p className={clsx('mt-2 text-3xl font-bold', moneyTabular)}>{exceededCount}</p>
-                                    <p className="mt-1 text-sm opacity-80">
-                                        {exceededCount === 0
-                                            ? 'Ottimo lavoro!'
-                                            : 'Attenzione alle spese'}
                                     </p>
                                 </div>
                             </IndexKpiStrip>

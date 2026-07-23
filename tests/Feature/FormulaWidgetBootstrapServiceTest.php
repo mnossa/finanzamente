@@ -36,9 +36,24 @@ class FormulaWidgetBootstrapServiceTest extends TestCase
             ->first();
 
         $this->assertNotNull($layout);
+        $this->assertTrue($layout->is_home);
         $widgetIds = array_column($layout->config['widgets'], 'id');
-        $this->assertTrue(
-            collect($widgetIds)->contains(fn (string $id) => str_starts_with($id, 'formula_widget_')),
+        $this->assertSame(
+            array_column(DashboardLayout::essentialConfigForUser($user)['widgets'], 'id'),
+            $widgetIds,
+        );
+
+        $builtinIds = array_column(DashboardLayout::essentialConfig()['widgets'], 'id');
+        $this->assertSame(
+            ['active_budgets', 'expense_treemap', 'recent_transactions', 'accounts'],
+            $builtinIds,
+        );
+
+        $formulaIds = collect($widgetIds)->filter(fn (string $id) => str_starts_with($id, 'formula_widget_'));
+        $this->assertCount(3, $formulaIds);
+        $this->assertSame(
+            [...$formulaIds->all(), ...$builtinIds],
+            $widgetIds,
         );
     }
 }

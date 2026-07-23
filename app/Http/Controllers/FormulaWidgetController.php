@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateFormulaWidgetRequest;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Currency;
+use App\Models\DashboardLayout;
 use App\Models\DebtCredit;
 use App\Models\FinancialVariable;
 use App\Models\FormulaWidget;
@@ -145,7 +146,17 @@ class FormulaWidgetController extends Controller
         ]);
 
         if ($request->boolean('pin_to_dashboard')) {
-            $pinService->pin($user, $widget);
+            $pinResult = $pinService->pin($user, $widget);
+            if ($pinResult === FormulaWidgetDashboardPinService::RESULT_NEEDS_BOARD_CHOICE) {
+                return redirect()
+                    ->route('formula-widgets.pin.choose', $widget)
+                    ->with('success', 'Widget creato. Scegli in quale dashboard aggiungerlo.');
+            }
+            if ($pinResult === FormulaWidgetDashboardPinService::RESULT_NO_CUSTOM_BOARD) {
+                return redirect()
+                    ->route('dashboard.boards.index')
+                    ->with('success', 'Widget creato. Crea una dashboard per aggiungerlo.');
+            }
         }
 
         return redirect()
@@ -255,7 +266,7 @@ class FormulaWidgetController extends Controller
             ->with('success', 'Widget rimosso.');
     }
 
-    public function pin(FormulaWidget $formulaWidget, FormulaWidgetDashboardPinService $pinService): RedirectResponse
+    public function choosePinBoard(FormulaWidget $formulaWidget, FormulaWidgetDashboardPinService $pinService): Response|RedirectResponse
     {
         $this->authorize('view', $formulaWidget);
 
@@ -265,11 +276,72 @@ class FormulaWidgetController extends Controller
             abort(403);
         }
 
-        $pinService->pin($user, $formulaWidget);
+        $householdId = $user->active_household_id;
+        if ($householdId === null) {
+            return redirect()
+                ->route('dashboard.boards.index')
+                ->withErrors(['board' => 'Nessuna dashboard disponibile.']);
+        }
+
+        $boards = $pinService->listBoards($user->id, $householdId);
+
+        if ($boards->isEmpty()) {
+            return redirect()
+                ->route('dashboard.boards.index')
+                ->withErrors(['board' => 'Nessuna dashboard disponibile.']);
+        }
+
+        if ($boards->count() === 1) {
+            $pinService->pinToBoard($boards->first(), $formulaWidget);
+
+            return redirect()
+                ->route('dashboard', $boards->first()->is_home ? [] : ['board' => $boards->first()->id])
+                ->with('success', 'Widget aggiunto alla dashboard.');
+        }
+
+        return Inertia::render('FormulaWidgets/PinToBoard', [
+            'widget' => self::formatWidget($formulaWidget),
+            'boards' => $boards->map(fn (DashboardLayout $board) => [
+                'id' => $board->id,
+                'name' => $board->name,
+                'is_home' => $board->is_home,
+            ])->values()->all(),
+            'defaultBoardId' => $pinService->defaultBoardId($user->id, $householdId),
+        ]);
+    }
+
+    public function pin(Request $request, FormulaWidget $formulaWidget, FormulaWidgetDashboardPinService $pinService): RedirectResponse
+    {
+        $this->authorize('view', $formulaWidget);
+
+        $user = Auth::user();
+
+        if ((int) $formulaWidget->user_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $boardId = $request->filled('board_id') ? $request->integer('board_id') : null;
+        $pinResult = $pinService->pin($user, $formulaWidget, $boardId);
+
+        if ($pinResult === FormulaWidgetDashboardPinService::RESULT_NEEDS_BOARD_CHOICE) {
+            return redirect()->route('formula-widgets.pin.choose', $formulaWidget);
+        }
+
+        if ($pinResult === FormulaWidgetDashboardPinService::RESULT_NO_CUSTOM_BOARD) {
+            return redirect()
+                ->route('dashboard.boards.index')
+                ->withErrors([
+                    'board' => 'Nessuna dashboard disponibile per aggiungere il widget.',
+                ]);
+        }
+
+        $target = $pinService->resolvePinnedBoard($user, $formulaWidget, $boardId);
 
         return redirect()
-            ->route('dashboard')
-            ->with('success', 'Widget aggiunto alla dashboard.');
+            ->route('dashboard', $target && ! $target->is_home ? ['board' => $target->id] : [])
+            ->with('success', $pinResult === FormulaWidgetDashboardPinService::RESULT_ALREADY
+                ? 'Il widget è già presente sulla dashboard selezionata.'
+                : 'Widget aggiunto alla dashboard.');
     }
 
     /**

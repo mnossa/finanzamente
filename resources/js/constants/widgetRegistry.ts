@@ -50,14 +50,6 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
         allowedSizes: ALL_SIZES,
     },
     {
-        id: 'quick_actions',
-        title: 'Azioni Rapide',
-        description: 'Accesso rapido alle operazioni più frequenti (solo desktop: su mobile usa la barra in basso).',
-        defaultSize: 'xl',
-        defaultVisible: true,
-        allowedSizes: ALL_SIZES,
-    },
-    {
         id: 'asset_allocation',
         title: 'Asset Allocation',
         description: 'Panoramica del patrimonio suddiviso per asset class e indice di rischio.',

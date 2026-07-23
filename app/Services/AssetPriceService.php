@@ -163,6 +163,61 @@ class AssetPriceService
     }
 
     /**
+     * Prezzi correnti per più simboli (batch Yahoo quando disponibile).
+     * Fail-soft: se il batch fallisce/timeout, ritorna i prezzi già in cache senza bloccare 20s+.
+     *
+     * @param  list<string>  $symbols
+     * @return array<string, float> chiave = simbolo (case originale della prima occorrenza)
+     */
+    public function getCurrentPrices(array $symbols): array
+    {
+        $originalByUpper = [];
+        foreach ($symbols as $symbol) {
+            $symbol = trim((string) $symbol);
+            if ($symbol === '') {
+                continue;
+            }
+            $upper = strtoupper($symbol);
+            $originalByUpper[$upper] ??= $symbol;
+        }
+
+        if ($originalByUpper === []) {
+            return [];
+        }
+
+        $uppers = array_keys($originalByUpper);
+        $pricesByUpper = [];
+
+        if ($this->provider instanceof YahooFinanceProvider) {
+            $pricesByUpper = $this->provider->getCurrentPrices($uppers);
+        } else {
+            foreach ($uppers as $upper) {
+                $result = $this->provider->getCurrentPrice($upper);
+                if (! $result['error'] && isset($result['price'])) {
+                    $pricesByUpper[$upper] = (float) $result['price'];
+                }
+            }
+        }
+
+        $missing = array_values(array_diff($uppers, array_keys($pricesByUpper)));
+        if ($missing !== [] && $this->fallbackProvider) {
+            foreach (array_slice($missing, 0, 5) as $upper) {
+                $result = $this->fallbackProvider->getCurrentPrice($upper);
+                if (! $result['error'] && isset($result['price'])) {
+                    $pricesByUpper[$upper] = (float) $result['price'];
+                }
+            }
+        }
+
+        $out = [];
+        foreach ($pricesByUpper as $upper => $price) {
+            $out[$originalByUpper[$upper] ?? $upper] = $price;
+        }
+
+        return $out;
+    }
+
+    /**
      * Ottiene il prezzo storico di un asset per una data specifica.
      */
     public function getHistoricalPrice(string $symbol, string $date): array
