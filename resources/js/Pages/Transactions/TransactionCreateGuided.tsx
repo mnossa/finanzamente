@@ -264,7 +264,7 @@ export default function TransactionCreateGuided({
                     subtitle={stepMeta.subtitle}
                 >
                     {step === 0 && (
-                        <div className="space-y-5">
+                        <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 {(['expense', 'income'] as const).map((type) => (
                                     <button
@@ -294,33 +294,33 @@ export default function TransactionCreateGuided({
                                 <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                                     Altre operazioni
                                 </p>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <div className="grid grid-cols-3 gap-2">
                                     <button
                                         type="button"
                                         onClick={() => router.visit(route('transfers.create'))}
-                                        className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-left transition-colors hover:border-amber-400 dark:border-amber-800 dark:bg-amber-900/20 dark:hover:border-amber-600"
+                                        className="rounded-xl border border-amber-200 bg-amber-50 p-2 text-center transition-colors hover:border-amber-400 dark:border-amber-800 dark:bg-amber-900/20 dark:hover:border-amber-600 sm:p-3 sm:text-left"
                                     >
-                                        <span className="text-xl" aria-hidden>🔄</span>
-                                        <p className="mt-1 text-sm font-medium">Trasferimento</p>
-                                        <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200">Tra due conti</p>
+                                        <span className="text-lg sm:text-xl" aria-hidden>🔄</span>
+                                        <p className="mt-1 text-xs font-medium sm:text-sm">Trasferimento</p>
+                                        <p className="mt-0.5 hidden text-xs text-amber-800 dark:text-amber-200 sm:block">Tra due conti</p>
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => router.visit(route('refunds.create'))}
-                                        className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-left transition-colors hover:border-sky-400 dark:border-sky-800 dark:bg-sky-900/20 dark:hover:border-sky-600"
+                                        className="rounded-xl border border-sky-200 bg-sky-50 p-2 text-center transition-colors hover:border-sky-400 dark:border-sky-800 dark:bg-sky-900/20 dark:hover:border-sky-600 sm:p-3 sm:text-left"
                                     >
-                                        <span className="text-xl" aria-hidden>💸</span>
-                                        <p className="mt-1 text-sm font-medium">Rimborso</p>
-                                        <p className="mt-0.5 text-xs text-sky-800 dark:text-sky-200">Su una spesa</p>
+                                        <span className="text-lg sm:text-xl" aria-hidden>💸</span>
+                                        <p className="mt-1 text-xs font-medium sm:text-sm">Rimborso</p>
+                                        <p className="mt-0.5 hidden text-xs text-sky-800 dark:text-sky-200 sm:block">Su una spesa</p>
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => router.visit(route('recurring-transactions.create'))}
-                                        className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-left transition-colors hover:border-violet-400 dark:border-violet-800 dark:bg-violet-900/20 dark:hover:border-violet-600"
+                                        className="rounded-xl border border-violet-200 bg-violet-50 p-2 text-center transition-colors hover:border-violet-400 dark:border-violet-800 dark:bg-violet-900/20 dark:hover:border-violet-600 sm:p-3 sm:text-left"
                                     >
-                                        <span className="text-xl" aria-hidden>🔁</span>
-                                        <p className="mt-1 text-sm font-medium">Ricorrenza</p>
-                                        <p className="mt-0.5 text-xs text-violet-800 dark:text-violet-200">Movimento ripetuto</p>
+                                        <span className="text-lg sm:text-xl" aria-hidden>🔁</span>
+                                        <p className="mt-1 text-xs font-medium sm:text-sm">Ricorrenza</p>
+                                        <p className="mt-0.5 hidden text-xs text-violet-800 dark:text-violet-200 sm:block">Movimento ripetuto</p>
                                     </button>
                                 </div>
                             </div>
@@ -377,7 +377,7 @@ export default function TransactionCreateGuided({
                                 </p>
                             )}
                             {!splitEnabled && (
-                                <div className="space-y-2">
+                                <div className="max-h-[min(40vh,16rem)] space-y-2 overflow-y-auto">
                                     {selectableAccounts.map((account) => (
                                         <button
                                             key={account.id}

@@ -122,7 +122,7 @@ export default function RecurringTransactionCreateGuided({ accounts, categories,
                 subtitle={meta.subtitle}
             >
                 {step === 0 && (
-                    <div className="space-y-2">
+                    <div className="max-h-[min(40vh,16rem)] space-y-2 overflow-y-auto">
                         {accounts.map((account) => (
                             <button
                                 key={account.id}

@@ -74,4 +74,53 @@ class FormulaWidgetConfigValidatorTest extends TestCase
 
         $this->assertTrue(true);
     }
+
+    #[Test]
+    public function it_requires_table_config_for_table_widgets(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->validator->validate(FormulaWidget::DISPLAY_TABLE, 'current_month', [
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'count',
+            ],
+        ]);
+    }
+
+    #[Test]
+    public function it_accepts_table_rows_configuration(): void
+    {
+        $this->validator->validate(FormulaWidget::DISPLAY_TABLE, 'current_month', [
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'count',
+                'filters' => [],
+            ],
+            'table' => [
+                'mode' => 'rows',
+                'row_limit' => 10,
+            ],
+        ]);
+
+        $this->assertTrue(true);
+    }
+
+    #[Test]
+    public function it_requires_group_by_for_aggregate_tables(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->validator->validate(FormulaWidget::DISPLAY_TABLE, 'current_month', [
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'sum_abs',
+                'filters' => [],
+            ],
+            'table' => [
+                'mode' => 'aggregate',
+                'row_limit' => 10,
+            ],
+        ]);
+    }
 }

@@ -1,11 +1,15 @@
-# Alert spese → semaforo
+# Tabular formula widgets (liste + aggregate)
 
-- [x] Progress `variant: traffic_light` + soglia numerica (`number` param / `threshold_amount`)
-- [x] UI semaforo (verde/arancio/rosso) — niente più 0/1 €
-- [x] Scenario + migration one-shot legacy IF→MAX + widget progress
-- [x] `make test` + `make pint-check` + `make build` + E2E formula-widgets green
+## Plan
+- [x] Migration `display_type` VARCHAR + `DISPLAY_TABLE` + `chart_types.table`
+- [x] `metric_queries`: investment_pacs, list_columns, group_by_fields, limits
+- [x] List/group builders + MetricQueryService + PayloadBuilder `buildTable` + validator
+- [x] Create recipe tabular + FE mode/datasource/group_by + FormulaTableWidget
+- [x] Preset ufficiali (tx, PAC, spese per categoria) + unit/feature + E2E smoke
+- [x] Verify: `make test` → `make pint-check` → `make build` → `make playwright` (1 flake pin-chooser ritentato OK; test hardening)
 
 ## Review
-- Bande default: warn 70%, danger 100%
-- Soglia editabile in wizard avanzato e in dashboard runtime
-- Recipe «Obiettivo / soglia» + card Alert → progress semaforo automatico
+- `display_type` string(32) in create migration (SQLite CHECK non blocca `table`); MySQL widen migration resta per DB legacy ENUM
+- Template ufficiali: `ultime_transazioni`, `pac_attivi`, `spese_per_categoria` (count da config nei test)
+- Create recipe «Tabella / lista»: mode rows|aggregate, datasource, group_by, row_limit
+- E2E: `table-widget.spec.ts`; create metric-query tollera redirect pin `aggiungi`

@@ -38,7 +38,10 @@ class FormulaWidgetReleaseBootstrapTest extends TestCase
         $exitCode = Artisan::call('formula-widgets:release-bootstrap', ['--user' => $user->id]);
 
         $this->assertSame(0, $exitCode);
-        $this->assertSame(10, FormulaWidget::query()->where('is_official_template', true)->count());
+        $this->assertSame(
+            count(config('formula_widget_templates')),
+            FormulaWidget::query()->where('is_official_template', true)->count()
+        );
         $this->assertGreaterThan(0, FormulaWidget::query()->where('user_id', $user->id)->count());
 
         $layout = DashboardLayout::query()->where('user_id', $user->id)->first();
@@ -54,6 +57,9 @@ class FormulaWidgetReleaseBootstrapTest extends TestCase
     public function fresh_migrate_runs_one_shot_release_backfill(): void
     {
         // RefreshDatabase already executed all migrations, including the release backfill.
-        $this->assertSame(10, FormulaWidget::query()->where('is_official_template', true)->count());
+        $this->assertSame(
+            count(config('formula_widget_templates')),
+            FormulaWidget::query()->where('is_official_template', true)->count()
+        );
     }
 }

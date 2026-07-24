@@ -41,10 +41,15 @@ const LINKED_VARIABLE_CHART_TYPES = new Set(['line', 'area']);
 
 export function formulaWidgetRequiresPeriod(displayType: string, chartConfig: FormulaChartConfigLike): boolean {
     const hasMetricQuery = Boolean((chartConfig as { metric_query?: unknown }).metric_query);
+    const metricDatasource = (chartConfig as { metric_query?: { datasource?: string } }).metric_query?.datasource;
+
+    if (displayType === 'table' && metricDatasource && metricDatasource !== 'transactions') {
+        return false;
+    }
 
     return (
         hasMetricQuery ||
-        ['line', 'area', 'stacked_bar', 'progress'].includes(displayType) ||
+        ['line', 'area', 'stacked_bar', 'progress', 'table'].includes(displayType) ||
         (displayType === 'kpi' && Boolean(chartConfig.show_delta))
     );
 }

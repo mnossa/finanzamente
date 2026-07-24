@@ -342,6 +342,11 @@ return [
             'description' => 'Barra di progresso verso una soglia.',
             'guide' => 'Scegli valore attuale e soglia tra le variabili di sistema (es. entrate vs obiettivo).',
         ],
+        'table' => [
+            'label' => 'Tabella / lista',
+            'description' => 'Elenco righe o totali raggruppati (transazioni, PAC, debiti).',
+            'guide' => 'Scegli lista o aggregato, la sorgente dati e i filtri. Utile per ultime spese, PAC attivi o totali per categoria.',
+        ],
     ],
 
     'guest_preview_defaults' => [

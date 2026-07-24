@@ -42,16 +42,21 @@ test.describe('Formula widgets — metriche dinamiche', () => {
                 if (/\/widget-formule$/.test(page.url())) {
                     return 'saved';
                 }
+                if (/\/widget-formule\/.+\/aggiungi/.test(page.url()) || await page.getByText(/Dove vuoi aggiungere/).count()) {
+                    return 'pin_choose';
+                }
                 if (await page.getByText('Già pronto').count()) {
                     return 'duplicate';
                 }
 
                 return 'pending';
-            }, { timeout: 10000 })
+            }, { timeout: 15000 })
             .not.toBe('pending');
 
         if (await page.getByText('Già pronto').isVisible()) {
             await page.getByRole('link', { name: 'Vai ai miei widget' }).click();
+        } else if (await page.getByText(/Dove vuoi aggiungere/).isVisible()) {
+            await page.getByRole('link', { name: 'Annulla' }).click();
         }
 
         await expect(page).toHaveURL(/\/widget-formule$/);

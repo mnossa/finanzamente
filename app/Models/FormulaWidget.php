@@ -32,6 +32,8 @@ class FormulaWidget extends Model
 
     public const DISPLAY_PROGRESS = 'progress';
 
+    public const DISPLAY_TABLE = 'table';
+
     /** @return list<string> */
     public static function displayTypes(): array
     {
@@ -45,6 +47,7 @@ class FormulaWidget extends Model
             self::DISPLAY_PIE,
             self::DISPLAY_TREEMAP,
             self::DISPLAY_PROGRESS,
+            self::DISPLAY_TABLE,
         ];
     }
 

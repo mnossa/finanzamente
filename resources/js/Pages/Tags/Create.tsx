@@ -43,6 +43,7 @@ export default function Create() {
                 header={
                     <PageHeader
                         title="Nuovo Tag"
+                        mobileTitle="Tag"
                         backLink={route('tags.index')}
                     />
                 }

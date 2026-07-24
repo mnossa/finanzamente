@@ -8,6 +8,7 @@ const DISPLAY_LABELS: Record<string, string> = {
     pie: 'Torta',
     treemap: 'Treemap',
     progress: 'Avanzamento',
+    table: 'Tabella',
 };
 
 const DISPLAY_BADGE_LABELS: Record<string, string> = {
@@ -20,6 +21,7 @@ const DISPLAY_BADGE_LABELS: Record<string, string> = {
     pie: 'Torta',
     treemap: 'Tree',
     progress: 'Obiettivo',
+    table: 'Tabella',
 };
 
 export function formulaWidgetDisplayLabel(displayType: string): string {

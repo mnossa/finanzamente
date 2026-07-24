@@ -34,10 +34,37 @@ class MobilePrimaryFabRoutesExistTest extends TestCase
             'investment-pacs.create',
             'investment-assets.create',
             'formula-widgets.create',
+            'households.create',
         ];
 
         foreach ($names as $name) {
             $this->assertTrue(Route::has($name), 'Route mancante per mobile FAB: '.$name);
+        }
+    }
+
+    #[Test]
+    public function test_guided_create_route_names_are_registered(): void
+    {
+        // Allineato a resources/js/utils/guidedCreate.ts GUIDED_CREATE_ROUTE_NAMES
+        $names = [
+            'transactions.create',
+            'accounts.create',
+            'categories.create',
+            'tags.create',
+            'budgets.create',
+            'financial-goals.create',
+            'recurring-transactions.create',
+            'debts-credits.create',
+            'transfers.create',
+            'refunds.create',
+            'inter-household-transfers.create',
+            'investments.create',
+            'investment-assets.create',
+            'households.create',
+        ];
+
+        foreach ($names as $name) {
+            $this->assertTrue(Route::has($name), 'Route mancante per guided create chrome: '.$name);
         }
     }
 }

@@ -164,4 +164,85 @@ return [
             'formula_string' => '(([period_income] - [period_expenses]) / [period_income]) * 100',
         ],
     ],
+    [
+        'template_slug' => 'official.ultime_transazioni',
+        'name' => 'Ultime transazioni',
+        'display_type' => 'table',
+        'period_preset' => 'current_month',
+        'default_size' => 'lg',
+        'chart_config' => [
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'count',
+                'amount_field' => 'amount_base',
+                'filters' => [],
+            ],
+            'table' => [
+                'mode' => 'rows',
+                'row_limit' => 10,
+                'sort' => ['field' => 'date', 'direction' => 'desc'],
+            ],
+        ],
+        'variable' => [
+            'code' => 'table_tx_placeholder',
+            'name' => 'Placeholder tabella transazioni',
+            'type' => 'formula',
+            'formula_string' => '[period_net]',
+        ],
+    ],
+    [
+        'template_slug' => 'official.pac_attivi',
+        'name' => 'PAC attivi',
+        'display_type' => 'table',
+        'period_preset' => null,
+        'default_size' => 'md',
+        'chart_config' => [
+            'metric_query' => [
+                'datasource' => 'investment_pacs',
+                'measure' => 'count',
+                'filters' => [
+                    ['field' => 'status', 'operator' => 'eq', 'value' => 'active'],
+                ],
+            ],
+            'table' => [
+                'mode' => 'rows',
+                'row_limit' => 10,
+                'sort' => ['field' => 'start_date', 'direction' => 'desc'],
+            ],
+        ],
+        'variable' => [
+            'code' => 'table_pac_placeholder',
+            'name' => 'Placeholder tabella PAC',
+            'type' => 'formula',
+            'formula_string' => '[total_investments]',
+        ],
+    ],
+    [
+        'template_slug' => 'official.spese_per_categoria',
+        'name' => 'Spese per categoria',
+        'display_type' => 'table',
+        'period_preset' => 'current_month',
+        'default_size' => 'lg',
+        'chart_config' => [
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'sum_abs',
+                'amount_field' => 'amount_base',
+                'filters' => [
+                    ['field' => 'transaction_type', 'operator' => 'eq', 'value' => 'expense'],
+                ],
+            ],
+            'table' => [
+                'mode' => 'aggregate',
+                'group_by' => 'category',
+                'row_limit' => 15,
+            ],
+        ],
+        'variable' => [
+            'code' => 'table_cat_placeholder',
+            'name' => 'Placeholder tabella categorie',
+            'type' => 'formula',
+            'formula_string' => '[period_expenses]',
+        ],
+    ],
 ];

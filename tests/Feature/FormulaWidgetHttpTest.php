@@ -327,7 +327,7 @@ class FormulaWidgetHttpTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('FormulaWidgets/Marketplace')
-                ->has('officialTemplates', 10));
+                ->has('officialTemplates', count(config('formula_widget_templates'))));
 
         $this->actingAs($this->user)
             ->post(route('formula-marketplace.install-template', 'official.saldo_liquidita'))
@@ -1114,5 +1114,64 @@ class FormulaWidgetHttpTest extends TestCase
             'user_id' => $this->user->id,
             'name' => 'Conteggio spese',
         ]);
+    }
+
+    #[Test]
+    public function preview_and_store_support_table_widget(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[period_net]')->create();
+
+        $chartConfig = [
+            'metric_query' => [
+                'datasource' => 'transactions',
+                'measure' => 'count',
+                'amount_field' => 'amount_base',
+                'filters' => [],
+            ],
+            'table' => [
+                'mode' => 'rows',
+                'row_limit' => 5,
+                'sort' => ['field' => 'date', 'direction' => 'desc'],
+            ],
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-widgets.preview'), [
+                'financial_variable_id' => $variable->id,
+                'display_type' => 'table',
+                'period_preset' => 'current_month',
+                'chart_config' => $chartConfig,
+            ])
+            ->assertOk()
+            ->assertJsonPath('payload.type', 'table')
+            ->assertJsonPath('payload.mode', 'rows')
+            ->assertJsonStructure(['payload' => ['columns', 'rows', 'groups']]);
+
+        $this->actingAs($this->user)
+            ->post(route('formula-widgets.store'), [
+                'name' => 'Ultime spese tabella',
+                'financial_variable_id' => $variable->id,
+                'display_type' => 'table',
+                'period_preset' => 'current_month',
+                'chart_config' => $chartConfig,
+                'default_size' => 'lg',
+                'pin_to_dashboard' => false,
+            ])
+            ->assertRedirect(route('formula-widgets.index'));
+
+        $this->assertDatabaseHas('formula_widgets', [
+            'user_id' => $this->user->id,
+            'name' => 'Ultime spese tabella',
+            'display_type' => 'table',
+        ]);
+    }
+
+    #[Test]
+    public function marketplace_index_exposes_table_chart_type(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('formula-marketplace.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->has('chartTypes.table.label'));
     }
 }

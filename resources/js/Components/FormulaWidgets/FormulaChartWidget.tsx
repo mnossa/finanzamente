@@ -32,7 +32,7 @@ const CHART_HEIGHT_MOBILE = 200;
 
 const DEFAULT_COLORS = ['#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ef4444'];
 
-type ChartPayload = Exclude<FormulaWidgetPayload, { type: 'kpi' } | { type: 'progress' }>;
+type ChartPayload = Exclude<FormulaWidgetPayload, { type: 'kpi' } | { type: 'progress' } | { type: 'table' }>;
 
 interface FormulaChartWidgetProps {
     payload: ChartPayload;

@@ -13,7 +13,7 @@ export const RUNTIME_CONTROL_CATALOG: FormulaWidgetParameterDefinition[] = [
     { key: 'threshold', type: 'number', label: 'Soglia (€)', default: '1000' },
 ];
 
-export type WidgetRecipeId = 'single_value' | 'trend' | 'comparison' | 'goal';
+export type WidgetRecipeId = 'single_value' | 'trend' | 'comparison' | 'goal' | 'tabular';
 
 /** Preset periodo su cui ha senso lo scorrimento mese-per-mese in dashboard. */
 export function periodSupportsMonthNavigation(periodPreset: string): boolean {
@@ -79,6 +79,10 @@ export function availableRuntimeControls(input: {
         available.push(RUNTIME_CONTROL_CATALOG.find((entry) => entry.key === 'debt_credit_selected')!);
     }
 
+    if (datasource === 'investment_pacs' || (hasMetricQuery && datasource === 'transactions')) {
+        // account already added above when applicable
+    }
+
     return available.filter(Boolean);
 }
 
@@ -115,6 +119,13 @@ const RECIPE_SCENARIO_IDS: Record<WidgetRecipeId, string[] | null> = {
         'when_positive_net',
         'if_expense_alert',
         'investment_purchases',
+    ],
+    tabular: [
+        'period_income',
+        'period_expenses',
+        'period_net',
+        'investment_purchases',
+        'when_positive_net',
     ],
 };
 

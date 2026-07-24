@@ -44,6 +44,7 @@ class FormulaWidgetPayloadBuilder
             FormulaWidget::DISPLAY_TREEMAP => $this->buildTreemap($widget, $user, $period, $chartConfig, $context),
             FormulaWidget::DISPLAY_STACKED_BAR => $this->buildStackedBar($widget, $user, $period, $chartConfig, $context),
             FormulaWidget::DISPLAY_PROGRESS => $this->buildProgress($widget, $user, $period, $chartConfig, $context),
+            FormulaWidget::DISPLAY_TABLE => $this->buildTable($widget, $user, $period, $chartConfig, $context),
             default => throw new \InvalidArgumentException('Unsupported display type'),
         };
 
@@ -93,6 +94,24 @@ class FormulaWidgetPayloadBuilder
                 'bands' => ($chartConfig['variant'] ?? null) === 'traffic_light'
                     ? ['warn' => 70.0, 'danger' => 100.0]
                     : null,
+                'parameters' => [],
+            ],
+            FormulaWidget::DISPLAY_TABLE => [
+                'type' => 'table',
+                'name' => $widget->name,
+                'mode' => ($chartConfig['table']['mode'] ?? 'rows') === 'aggregate' ? 'aggregate' : 'rows',
+                'datasource' => (string) ($chartConfig['metric_query']['datasource'] ?? 'transactions'),
+                'columns' => [
+                    ['key' => 'date', 'label' => 'Data'],
+                    ['key' => 'description', 'label' => 'Descrizione'],
+                    ['key' => 'amount', 'label' => 'Importo'],
+                ],
+                'rows' => [
+                    ['id' => 1, 'date' => '2026-07-01', 'description' => 'Esempio spesa', 'amount' => -42.5],
+                    ['id' => 2, 'date' => '2026-07-02', 'description' => 'Esempio entrata', 'amount' => 100.0],
+                ],
+                'groups' => [],
+                'periodLabel' => 'Anteprima demo',
                 'parameters' => [],
             ],
             default => [
@@ -507,6 +526,131 @@ class FormulaWidgetPayloadBuilder
         }
 
         return $payload;
+    }
+
+    /**
+     * @param  array{start: Carbon, end: Carbon, label: string}  $period
+     * @param  array<string, mixed>  $chartConfig
+     * @return array<string, mixed>
+     */
+    private function buildTable(
+        FormulaWidget $widget,
+        User $user,
+        array $period,
+        array $chartConfig,
+        FormulaWidgetRuntimeContext $context,
+    ): array {
+        $metricQuery = is_array($chartConfig['metric_query'] ?? null) ? $chartConfig['metric_query'] : null;
+        $tableConfig = is_array($chartConfig['table'] ?? null) ? $chartConfig['table'] : [];
+        $mode = (($tableConfig['mode'] ?? 'rows') === 'aggregate') ? 'aggregate' : 'rows';
+        $datasource = (string) ($metricQuery['datasource'] ?? 'transactions');
+        $resolved = $context->parameters;
+
+        $defaultLimit = (int) config('metric_queries.default_row_limit', 10);
+        $maxLimit = (int) config('metric_queries.max_row_limit', 50);
+        $rowLimit = (int) ($tableConfig['row_limit'] ?? $defaultLimit);
+        $rowLimit = max(1, min($maxLimit, $rowLimit));
+
+        $columnKeys = config("metric_queries.datasources.{$datasource}.list_columns", []);
+        if (is_array($tableConfig['columns'] ?? null) && $tableConfig['columns'] !== []) {
+            $columnKeys = array_values(array_intersect($tableConfig['columns'], $columnKeys));
+        }
+
+        $columns = array_map(
+            fn (string $key) => ['key' => $key, 'label' => $this->tableColumnLabel($key)],
+            $columnKeys,
+        );
+
+        $sort = is_array($tableConfig['sort'] ?? null) ? $tableConfig['sort'] : null;
+
+        if ($mode === 'aggregate') {
+            $groupBy = (string) ($tableConfig['group_by'] ?? '');
+            $groups = $this->metricQueryService->aggregateTable(
+                $user,
+                $metricQuery,
+                $groupBy,
+                $period['start'],
+                $period['end'],
+                $resolved,
+                $context,
+                $rowLimit,
+            );
+
+            return [
+                'type' => 'table',
+                'name' => $widget->name,
+                'mode' => 'aggregate',
+                'datasource' => $datasource,
+                'groupBy' => $groupBy,
+                'columns' => [
+                    ['key' => 'label', 'label' => $this->tableGroupLabel($groupBy)],
+                    ['key' => 'value', 'label' => 'Valore'],
+                ],
+                'rows' => [],
+                'groups' => $groups,
+                'periodLabel' => $period['label'],
+            ];
+        }
+
+        $rows = $this->metricQueryService->listRows(
+            $user,
+            $metricQuery,
+            $period['start'],
+            $period['end'],
+            $resolved,
+            $context,
+            $rowLimit,
+            $sort,
+            $columnKeys,
+        );
+
+        return [
+            'type' => 'table',
+            'name' => $widget->name,
+            'mode' => 'rows',
+            'datasource' => $datasource,
+            'columns' => $columns,
+            'rows' => $rows,
+            'groups' => [],
+            'periodLabel' => $period['label'],
+        ];
+    }
+
+    private function tableColumnLabel(string $key): string
+    {
+        return match ($key) {
+            'date' => 'Data',
+            'description' => 'Descrizione',
+            'amount' => 'Importo',
+            'category' => 'Categoria',
+            'account' => 'Conto',
+            'counterparty' => 'Controparte',
+            'type' => 'Tipo',
+            'status' => 'Stato',
+            'remaining' => 'Residuo',
+            'due_date' => 'Scadenza',
+            'currency' => 'Valuta',
+            'asset' => 'Asset',
+            'frequency' => 'Frequenza',
+            'start_date' => 'Inizio',
+            default => ucfirst(str_replace('_', ' ', $key)),
+        };
+    }
+
+    private function tableGroupLabel(string $groupBy): string
+    {
+        return match ($groupBy) {
+            'category' => 'Categoria',
+            'account' => 'Conto',
+            'tag' => 'Tag',
+            'currency' => 'Valuta',
+            'transaction_type' => 'Tipo',
+            'type' => 'Tipo',
+            'status' => 'Stato',
+            'frequency' => 'Frequenza',
+            'asset' => 'Asset',
+            default => 'Gruppo',
+        };
     }
 
     /**

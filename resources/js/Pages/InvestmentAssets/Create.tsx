@@ -45,6 +45,7 @@ export default function Create({ currencies, types, typeIcons, allocationClasses
                 header={
                     <PageHeader
                         title="Nuovo Asset"
+                        mobileTitle="Asset"
                         backLink={route('investment-assets.index')}
                     />
                 }

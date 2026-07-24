@@ -65,6 +65,160 @@ class TransactionMetricQueryBuilder
         return $series;
     }
 
+    /**
+     * @param  array<string, string|int|null>  $resolvedParameters
+     * @param  array{field?: string, direction?: string}|null  $sort
+     * @param  list<string>|null  $columns
+     * @return list<array<string, mixed>>
+     */
+    public function listRows(
+        User $user,
+        MetricQueryDefinition $definition,
+        Carbon $startDate,
+        Carbon $endDate,
+        array $resolvedParameters = [],
+        ?FormulaWidgetRuntimeContext $context = null,
+        int $limit = 10,
+        ?array $sort = null,
+        ?array $columns = null,
+    ): array {
+        $query = $this->baseQuery($user, $startDate, $endDate, $context);
+        $this->applyFilters($query, $user, $definition, $resolvedParameters, $context);
+
+        $allowedSort = config('metric_queries.datasources.transactions.sort_fields', ['date']);
+        $sortField = is_array($sort) && in_array($sort['field'] ?? '', $allowedSort, true)
+            ? (string) $sort['field']
+            : 'date';
+        $sortDirection = strtolower((string) ($sort['direction'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $query->with(['category:id,name,color,icon', 'account:id,name,currency_code'])
+            ->orderBy($sortField === 'amount' ? 'amount' : ($sortField === 'description' ? 'description' : 'date'), $sortDirection)
+            ->limit(max(1, $limit));
+
+        $allowedColumns = config('metric_queries.datasources.transactions.list_columns', []);
+        $selectedColumns = is_array($columns) && $columns !== []
+            ? array_values(array_intersect($columns, $allowedColumns))
+            : $allowedColumns;
+
+        if ($selectedColumns === []) {
+            $selectedColumns = $allowedColumns;
+        }
+
+        return $query->get()->map(function (Transaction $tx) use ($selectedColumns, $definition) {
+            $amountCol = $definition->amountField === 'amount' ? (float) $tx->amount : (float) ($tx->amount_base ?? $tx->amount);
+            $row = [
+                'id' => $tx->id,
+                'date' => $tx->date?->format('Y-m-d'),
+                'description' => $tx->description,
+                'amount' => round($amountCol, 2),
+                'category' => $tx->category?->name,
+                'account' => $tx->account?->name,
+                'currency' => $tx->account?->currency_code ?? $tx->currency_code,
+            ];
+
+            return array_intersect_key($row, array_flip([...$selectedColumns, 'id', 'currency']));
+        })->values()->all();
+    }
+
+    /**
+     * @param  array<string, string|int|null>  $resolvedParameters
+     * @return list<array{key: string, label: string, value: float}>
+     */
+    public function aggregateGroups(
+        User $user,
+        MetricQueryDefinition $definition,
+        string $groupBy,
+        Carbon $startDate,
+        Carbon $endDate,
+        array $resolvedParameters = [],
+        ?FormulaWidgetRuntimeContext $context = null,
+        int $limit = 50,
+    ): array {
+        $allowed = config('metric_queries.datasources.transactions.group_by_fields', []);
+        if (! in_array($groupBy, $allowed, true)) {
+            return [];
+        }
+
+        $query = $this->baseQuery($user, $startDate, $endDate, $context);
+        $this->applyFilters($query, $user, $definition, $resolvedParameters, $context);
+
+        $amountCol = $definition->amountField === 'amount' ? 'transactions.amount' : 'transactions.amount_base';
+        $measureExpr = match ($definition->measure) {
+            'count' => 'COUNT(*)',
+            'sum' => "SUM({$amountCol})",
+            'sum_abs' => "SUM(ABS({$amountCol}))",
+            'avg' => "AVG({$amountCol})",
+            'min' => "MIN({$amountCol})",
+            'max' => "MAX({$amountCol})",
+            'net' => "SUM({$amountCol})",
+            default => 'COUNT(*)',
+        };
+
+        if ($groupBy === 'tag') {
+            $rows = (clone $query)
+                ->join('transaction_tag', 'transactions.id', '=', 'transaction_tag.transaction_id')
+                ->join('tags', 'tags.id', '=', 'transaction_tag.tag_id')
+                ->selectRaw("tags.id as group_key, tags.name as group_label, {$measureExpr} as aggregate_value")
+                ->groupBy('tags.id', 'tags.name')
+                ->orderByDesc('aggregate_value')
+                ->limit(max(1, $limit))
+                ->get();
+
+            return $rows->map(fn ($row) => [
+                'key' => (string) $row->group_key,
+                'label' => (string) ($row->group_label ?: 'Senza nome'),
+                'value' => round((float) $row->aggregate_value, 2),
+            ])->all();
+        }
+
+        if ($groupBy === 'category') {
+            $rows = (clone $query)
+                ->leftJoin('categories', 'categories.id', '=', 'transactions.category_id')
+                ->selectRaw("COALESCE(categories.id, 0) as group_key, COALESCE(categories.name, 'Senza categoria') as group_label, {$measureExpr} as aggregate_value")
+                ->groupByRaw('COALESCE(categories.id, 0), COALESCE(categories.name, \'Senza categoria\')')
+                ->orderByDesc('aggregate_value')
+                ->limit(max(1, $limit))
+                ->get();
+        } elseif ($groupBy === 'account') {
+            $rows = (clone $query)
+                ->join('accounts', 'accounts.id', '=', 'transactions.account_id')
+                ->selectRaw("accounts.id as group_key, accounts.name as group_label, {$measureExpr} as aggregate_value")
+                ->groupBy('accounts.id', 'accounts.name')
+                ->orderByDesc('aggregate_value')
+                ->limit(max(1, $limit))
+                ->get();
+        } elseif ($groupBy === 'currency') {
+            $rows = (clone $query)
+                ->selectRaw("transactions.currency_code as group_key, transactions.currency_code as group_label, {$measureExpr} as aggregate_value")
+                ->groupBy('transactions.currency_code')
+                ->orderByDesc('aggregate_value')
+                ->limit(max(1, $limit))
+                ->get();
+        } else {
+            // transaction_type
+            $expenseQ = (clone $query)->where('transactions.amount', '<', 0);
+            $incomeQ = (clone $query)->where('transactions.amount', '>', 0);
+            $groups = [];
+            $expenseVal = $this->aggregate($expenseQ, $definition);
+            $incomeVal = $this->aggregate($incomeQ, $definition);
+            if ($expenseVal != 0.0) {
+                $groups[] = ['key' => 'expense', 'label' => 'Uscite', 'value' => $expenseVal];
+            }
+            if ($incomeVal != 0.0) {
+                $groups[] = ['key' => 'income', 'label' => 'Entrate', 'value' => $incomeVal];
+            }
+            usort($groups, fn ($a, $b) => $b['value'] <=> $a['value']);
+
+            return array_slice($groups, 0, max(1, $limit));
+        }
+
+        return $rows->map(fn ($row) => [
+            'key' => (string) $row->group_key,
+            'label' => (string) ($row->group_label ?: '—'),
+            'value' => round((float) $row->aggregate_value, 2),
+        ])->all();
+    }
+
     private function baseQuery(
         User $user,
         Carbon $startDate,

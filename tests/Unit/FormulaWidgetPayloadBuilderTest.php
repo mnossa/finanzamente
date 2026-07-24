@@ -208,4 +208,39 @@ class FormulaWidgetPayloadBuilderTest extends TestCase
         $this->assertSame(3000.0, $ok['threshold']);
         $this->assertSame('ok', $ok['status']);
     }
+
+    #[Test]
+    public function it_builds_table_rows_payload(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('[period_net]')->create([
+            'code' => 'table_tx',
+            'name' => 'Table tx',
+        ]);
+
+        $widget = FormulaWidget::factory()->for($this->user)->for($variable, 'financialVariable')->create([
+            'name' => 'Ultime',
+            'display_type' => FormulaWidget::DISPLAY_TABLE,
+            'period_preset' => 'current_month',
+            'chart_config' => [
+                'metric_query' => [
+                    'datasource' => 'transactions',
+                    'measure' => 'count',
+                    'amount_field' => 'amount_base',
+                    'filters' => [],
+                ],
+                'table' => [
+                    'mode' => 'rows',
+                    'row_limit' => 5,
+                    'sort' => ['field' => 'date', 'direction' => 'desc'],
+                ],
+            ],
+        ]);
+
+        $payload = $this->builder->build($widget, $this->user);
+
+        $this->assertSame('table', $payload['type']);
+        $this->assertSame('rows', $payload['mode']);
+        $this->assertNotEmpty($payload['columns']);
+        $this->assertIsArray($payload['rows']);
+    }
 }

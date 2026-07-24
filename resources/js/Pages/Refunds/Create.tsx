@@ -92,6 +92,7 @@ export default function Create({ originalTransaction, refundableTransactions, to
                 header={
                     <PageHeader
                         title="Nuovo Rimborso"
+                        mobileTitle="Rimborso"
                         backLink={route('refunds.index')}
                     />
                 }

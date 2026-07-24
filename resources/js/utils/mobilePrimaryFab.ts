@@ -4,6 +4,8 @@
  * {@link FM_MOBILE_PRIMARY_FORM_ID}.
  * Tenere allineato con i test PHP che verificano Route::has sui nomi usati.
  */
+import { shouldHideMobileChromeForGuidedCreate } from '@/utils/guidedCreate';
+
 export const FM_MOBILE_PRIMARY_FORM_ID = 'fm-mobile-primary-form';
 
 export const MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW = 'investment-analyses-new';
@@ -119,8 +121,11 @@ function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
 
 /**
  * Risolve href/etichetta del FAB floating mobile/tablet (non nella sticky bar).
+ * @param features Prop Inertia `features` (per escludere submit FAB sulle create guidate).
  */
-export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
+export function resolveMobilePrimaryFab(
+    features?: Record<string, boolean>,
+): MobilePrimaryFab | null {
     if (typeof route !== 'function') {
         return defaultFab();
     }
@@ -132,6 +137,11 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
     const current = route().current();
     if (!current || typeof current !== 'string') {
         return defaultFab();
+    }
+
+    // Guided create: CTA Avanti/Salva solo in-card (no FAB Salva sopra Avanti).
+    if (shouldHideMobileChromeForGuidedCreate(features, current)) {
+        return null;
     }
 
     const submitFab = tryResolveMobileSubmitFab(current);

@@ -201,4 +201,53 @@ class MetricQueryServiceTest extends TestCase
         $this->assertSame(1.0, $validator->evaluateNumericExpression('IF(1500 > 1000, 1, 0)'));
         $this->assertSame(0.0, $validator->evaluateNumericExpression('WHEN(0 > 1, 99)'));
     }
+
+    #[Test]
+    public function it_lists_transaction_rows_for_table_widgets(): void
+    {
+        $service = app(MetricQueryService::class);
+        $rows = $service->listRows(
+            $this->user,
+            [
+                'datasource' => 'transactions',
+                'measure' => 'count',
+                'amount_field' => 'amount_base',
+                'filters' => [],
+            ],
+            Carbon::today()->startOfDay(),
+            Carbon::today()->endOfDay(),
+            [],
+            null,
+            10,
+            ['field' => 'date', 'direction' => 'desc'],
+        );
+
+        $this->assertGreaterThanOrEqual(3, count($rows));
+        $this->assertArrayHasKey('date', $rows[0]);
+        $this->assertArrayHasKey('amount', $rows[0]);
+    }
+
+    #[Test]
+    public function it_aggregates_transactions_by_category(): void
+    {
+        $service = app(MetricQueryService::class);
+        $groups = $service->aggregateTable(
+            $this->user,
+            [
+                'datasource' => 'transactions',
+                'measure' => 'sum_abs',
+                'amount_field' => 'amount_base',
+                'filters' => [
+                    ['field' => 'transaction_type', 'operator' => 'eq', 'value' => 'expense'],
+                ],
+            ],
+            'category',
+            Carbon::today()->startOfDay(),
+            Carbon::today()->endOfDay(),
+        );
+
+        $this->assertNotEmpty($groups);
+        $this->assertArrayHasKey('label', $groups[0]);
+        $this->assertArrayHasKey('value', $groups[0]);
+    }
 }

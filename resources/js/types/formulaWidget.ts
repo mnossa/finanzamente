@@ -7,7 +7,8 @@ export type FormulaWidgetDisplayType =
     | 'stacked_bar'
     | 'pie'
     | 'treemap'
-    | 'progress';
+    | 'progress'
+    | 'table';
 
 export interface FormulaWidgetCategorySlice {
     label: string;
@@ -63,10 +64,18 @@ export interface MetricQueryFilter {
 }
 
 export interface MetricQueryDefinition {
-    datasource: 'transactions' | 'debts_credits';
+    datasource: 'transactions' | 'debts_credits' | 'investment_pacs';
     measure: string;
     amount_field?: 'amount_base' | 'amount';
     filters?: MetricQueryFilter[];
+}
+
+export interface FormulaWidgetTableConfig {
+    mode: 'rows' | 'aggregate';
+    row_limit?: number;
+    group_by?: string;
+    columns?: string[];
+    sort?: { field: string; direction: 'asc' | 'desc' };
 }
 
 export interface FormulaWidgetChartConfig {
@@ -84,6 +93,7 @@ export interface FormulaWidgetChartConfig {
     parameters?: FormulaWidgetParameterDefinition[];
     series?: FormulaChartSeriesEntry[];
     metric_query?: MetricQueryDefinition;
+    table?: FormulaWidgetTableConfig;
 }
 
 export type FormulaDeltaPolarity = 'higher_is_better' | 'lower_is_better';
@@ -150,12 +160,31 @@ export interface FormulaWidgetStackedBarPayload {
     parameters?: FormulaWidgetRuntimeParameter[];
 }
 
+export interface FormulaWidgetTableColumn {
+    key: string;
+    label: string;
+}
+
+export interface FormulaWidgetTablePayload {
+    type: 'table';
+    name: string;
+    mode: 'rows' | 'aggregate';
+    datasource: string;
+    groupBy?: string;
+    columns: FormulaWidgetTableColumn[];
+    rows: Array<Record<string, unknown>>;
+    groups: Array<{ key: string; label: string; value: number }>;
+    periodLabel: string;
+    parameters?: FormulaWidgetRuntimeParameter[];
+}
+
 export type FormulaWidgetPayload =
     | FormulaWidgetKpiPayload
     | FormulaWidgetProgressPayload
     | FormulaWidgetLinePayload
     | FormulaWidgetBarPayload
-    | FormulaWidgetStackedBarPayload;
+    | FormulaWidgetStackedBarPayload
+    | FormulaWidgetTablePayload;
 
 export interface FinancialVariableSummary {
     id: number;

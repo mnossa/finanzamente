@@ -123,7 +123,7 @@ export default function TransferCreateGuided({ accounts }: Props) {
                 subtitle={stepMeta.subtitle}
             >
                 {visualStep === 0 && (
-                    <div className="space-y-2">
+                    <div className="max-h-[min(40vh,16rem)] space-y-2 overflow-y-auto">
                         {accounts
                             .filter((a) => a.id !== Number(data.destination_account_id))
                             .map((account) => (
@@ -149,7 +149,7 @@ export default function TransferCreateGuided({ accounts }: Props) {
                 )}
 
                 {visualStep === 1 && (
-                    <div className="space-y-2">
+                    <div className="max-h-[min(40vh,16rem)] space-y-2 overflow-y-auto">
                         {accounts
                             .filter((a) => a.id !== Number(data.source_account_id))
                             .map((account) => (

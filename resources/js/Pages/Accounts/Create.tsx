@@ -44,7 +44,13 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
     if (isGuidedCreateEnabled(features)) {
         return (
             <AuthenticatedLayout
-                header={<PageHeader title="Nuovo conto" backLink={route('accounts.index')} />}
+                header={
+                    <PageHeader
+                        title="Nuovo conto"
+                        mobileTitle="Conto"
+                        backLink={route('accounts.index')}
+                    />
+                }
             >
                 <Head title="Nuovo Conto" />
                 <PageContent maxWidth="3xl">

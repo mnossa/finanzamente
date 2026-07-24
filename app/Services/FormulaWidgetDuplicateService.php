@@ -192,8 +192,48 @@ class FormulaWidgetDuplicateService
                 'series' => $this->normalizeSeries($chartConfig['series'] ?? []),
                 'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
             ],
+            FormulaWidget::DISPLAY_TABLE => array_filter([
+                'metric_query' => $this->normalizeMetricQuery($chartConfig['metric_query'] ?? null),
+                'table' => $this->normalizeTableConfig($chartConfig['table'] ?? null),
+                'parameters' => $this->normalizeParameters($chartConfig['parameters'] ?? []),
+            ], fn ($value) => $value !== null && $value !== []),
             default => [],
         };
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $table
+     * @return array<string, mixed>|null
+     */
+    private function normalizeTableConfig(mixed $table): ?array
+    {
+        if (! is_array($table) || ! isset($table['mode'])) {
+            return null;
+        }
+
+        $mode = ($table['mode'] === 'aggregate') ? 'aggregate' : 'rows';
+        $normalized = ['mode' => $mode];
+
+        if (isset($table['row_limit']) && is_numeric($table['row_limit'])) {
+            $normalized['row_limit'] = (int) $table['row_limit'];
+        }
+
+        if (isset($table['group_by']) && is_string($table['group_by']) && $table['group_by'] !== '') {
+            $normalized['group_by'] = $table['group_by'];
+        }
+
+        if (isset($table['columns']) && is_array($table['columns'])) {
+            $normalized['columns'] = array_values(array_filter($table['columns'], 'is_string'));
+        }
+
+        if (isset($table['sort']) && is_array($table['sort']) && isset($table['sort']['field'])) {
+            $normalized['sort'] = [
+                'field' => (string) $table['sort']['field'],
+                'direction' => (($table['sort']['direction'] ?? 'desc') === 'asc') ? 'asc' : 'desc',
+            ];
+        }
+
+        return $normalized;
     }
 
     /**

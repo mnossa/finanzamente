@@ -45,6 +45,7 @@ export default function Create({ accounts }: CreateProps) {
                 header={
                     <PageHeader
                         title="Nuovo Trasferimento"
+                        mobileTitle="Trasferimento"
                         backLink={route('transfers.index')}
                     />
                 }

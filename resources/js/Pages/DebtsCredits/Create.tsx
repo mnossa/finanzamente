@@ -41,6 +41,7 @@ export default function Create({ currencies, types }: CreateProps) {
                 header={
                     <PageHeader
                         title="Nuovo Debito/Credito"
+                        mobileTitle="Debito"
                         backLink={route('debts-credits.index')}
                     />
                 }

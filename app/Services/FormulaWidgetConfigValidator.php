@@ -36,7 +36,14 @@ class FormulaWidgetConfigValidator
             FormulaWidget::DISPLAY_AREA,
             FormulaWidget::DISPLAY_STACKED_BAR,
             FormulaWidget::DISPLAY_PROGRESS,
+            FormulaWidget::DISPLAY_TABLE,
         ], true) || ($chartConfig['show_delta'] ?? false);
+
+        // Table with non-period datasource (PAC / debts) can omit period.
+        if ($displayType === FormulaWidget::DISPLAY_TABLE) {
+            $mqDatasource = $chartConfig['metric_query']['datasource'] ?? 'transactions';
+            $requiresPeriod = (bool) (config("metric_queries.datasources.{$mqDatasource}.requires_period") ?? true);
+        }
 
         if ($requiresPeriod && ($periodPreset === null || $periodPreset === '')) {
             throw ValidationException::withMessages([
@@ -57,6 +64,7 @@ class FormulaWidgetConfigValidator
             FormulaWidget::DISPLAY_TREEMAP => $this->validateSeries($chartConfig ?? [], 2),
             FormulaWidget::DISPLAY_STACKED_BAR => $this->validateSeries($chartConfig ?? [], 2),
             FormulaWidget::DISPLAY_PROGRESS => $this->validateProgressConfig($chartConfig ?? []),
+            FormulaWidget::DISPLAY_TABLE => $this->validateTableConfig($chartConfig ?? []),
             default => null,
         };
 
@@ -152,6 +160,77 @@ class FormulaWidgetConfigValidator
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $chartConfig
+     */
+    private function validateTableConfig(array $chartConfig): void
+    {
+        $metricQuery = $chartConfig['metric_query'] ?? null;
+        if (! is_array($metricQuery) || ! isset($metricQuery['datasource'], $metricQuery['measure'])) {
+            throw ValidationException::withMessages([
+                'chart_config' => 'Il widget tabella richiede una metric_query con sorgente e misura.',
+            ]);
+        }
+
+        $table = $chartConfig['table'] ?? null;
+        if (! is_array($table)) {
+            throw ValidationException::withMessages([
+                'chart_config' => 'Il widget tabella richiede la configurazione table (mode).',
+            ]);
+        }
+
+        $mode = $table['mode'] ?? null;
+        if (! in_array($mode, ['rows', 'aggregate'], true)) {
+            throw ValidationException::withMessages([
+                'chart_config' => 'La modalità tabella deve essere «rows» o «aggregate».',
+            ]);
+        }
+
+        $datasource = (string) $metricQuery['datasource'];
+        $meta = config("metric_queries.datasources.{$datasource}", []);
+
+        $maxLimit = (int) config('metric_queries.max_row_limit', 50);
+        if (isset($table['row_limit'])) {
+            $limit = (int) $table['row_limit'];
+            if ($limit < 1 || $limit > $maxLimit) {
+                throw ValidationException::withMessages([
+                    'chart_config' => "Il limite righe deve essere tra 1 e {$maxLimit}.",
+                ]);
+            }
+        }
+
+        if ($mode === 'aggregate') {
+            $groupBy = $table['group_by'] ?? null;
+            $allowedGroups = $meta['group_by_fields'] ?? [];
+            if (! is_string($groupBy) || ! in_array($groupBy, $allowedGroups, true)) {
+                throw ValidationException::withMessages([
+                    'chart_config' => 'Seleziona un raggruppamento valido per la tabella aggregata.',
+                ]);
+            }
+        }
+
+        if (isset($table['columns']) && is_array($table['columns'])) {
+            $allowedColumns = $meta['list_columns'] ?? [];
+            foreach ($table['columns'] as $column) {
+                if (! is_string($column) || ! in_array($column, $allowedColumns, true)) {
+                    throw ValidationException::withMessages([
+                        'chart_config' => "La colonna «{$column}» non è consentita.",
+                    ]);
+                }
+            }
+        }
+
+        if (isset($table['sort']) && is_array($table['sort'])) {
+            $sortField = $table['sort']['field'] ?? null;
+            $allowedSort = $meta['sort_fields'] ?? [];
+            if (! is_string($sortField) || ! in_array($sortField, $allowedSort, true)) {
+                throw ValidationException::withMessages([
+                    'chart_config' => 'Il campo di ordinamento non è valido.',
+                ]);
+            }
+        }
     }
 
     private function assertResolvableCode(string $code): void

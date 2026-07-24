@@ -37,6 +37,7 @@ export default function Create({ currencies, suggestedIcons }: CreateProps) {
                 header={
                     <PageHeader
                         title="Nuovo Obiettivo"
+                        mobileTitle="Obiettivo"
                         backLink={route('financial-goals.index')}
                     />
                 }

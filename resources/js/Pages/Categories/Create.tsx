@@ -41,6 +41,7 @@ export default function Create({ categoryTypes }: CreateProps) {
                 header={
                     <PageHeader
                         title="Nuova Categoria"
+                        mobileTitle="Categoria"
                         backLink={route('categories.index')}
                     />
                 }

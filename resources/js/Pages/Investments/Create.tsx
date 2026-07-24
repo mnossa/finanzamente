@@ -57,6 +57,7 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
                 header={
                     <PageHeader
                         title="Nuovo Investimento"
+                        mobileTitle="Investimento"
                         backLink={route('investments.index')}
                     />
                 }

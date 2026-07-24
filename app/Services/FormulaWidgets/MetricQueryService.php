@@ -12,6 +12,7 @@ class MetricQueryService
     public function __construct(
         private readonly TransactionMetricQueryBuilder $transactionBuilder,
         private readonly DebtCreditMetricQueryBuilder $debtCreditBuilder,
+        private readonly InvestmentPacMetricQueryBuilder $investmentPacBuilder,
     ) {}
 
     /**
@@ -42,6 +43,14 @@ class MetricQueryService
                 $context,
             ),
             'debts_credits' => $this->debtCreditBuilder->evaluate(
+                $user,
+                $definition,
+                $startDate,
+                $endDate,
+                $resolvedParameters,
+                $context,
+            ),
+            'investment_pacs' => $this->investmentPacBuilder->evaluate(
                 $user,
                 $definition,
                 $startDate,
@@ -80,6 +89,71 @@ class MetricQueryService
             $resolvedParameters,
             $context,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $metricQueryRaw
+     * @param  array<string, string|int|null>  $resolvedParameters
+     * @param  array{field?: string, direction?: string}|null  $sort
+     * @param  list<string>|null  $columns
+     * @return list<array<string, mixed>>
+     */
+    public function listRows(
+        User $user,
+        ?array $metricQueryRaw,
+        Carbon $startDate,
+        Carbon $endDate,
+        array $resolvedParameters = [],
+        ?FormulaWidgetRuntimeContext $context = null,
+        int $limit = 10,
+        ?array $sort = null,
+        ?array $columns = null,
+    ): array {
+        $definition = MetricQueryDefinition::fromChartConfig($metricQueryRaw);
+
+        if ($definition === null) {
+            return [];
+        }
+
+        $args = [$user, $definition, $startDate, $endDate, $resolvedParameters, $context, $limit, $sort, $columns];
+
+        return match ($definition->datasource) {
+            'transactions' => $this->transactionBuilder->listRows(...$args),
+            'debts_credits' => $this->debtCreditBuilder->listRows(...$args),
+            'investment_pacs' => $this->investmentPacBuilder->listRows(...$args),
+            default => [],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $metricQueryRaw
+     * @param  array<string, string|int|null>  $resolvedParameters
+     * @return list<array{key: string, label: string, value: float}>
+     */
+    public function aggregateTable(
+        User $user,
+        ?array $metricQueryRaw,
+        string $groupBy,
+        Carbon $startDate,
+        Carbon $endDate,
+        array $resolvedParameters = [],
+        ?FormulaWidgetRuntimeContext $context = null,
+        int $limit = 50,
+    ): array {
+        $definition = MetricQueryDefinition::fromChartConfig($metricQueryRaw);
+
+        if ($definition === null) {
+            return [];
+        }
+
+        $args = [$user, $definition, $groupBy, $startDate, $endDate, $resolvedParameters, $context, $limit];
+
+        return match ($definition->datasource) {
+            'transactions' => $this->transactionBuilder->aggregateGroups(...$args),
+            'debts_credits' => $this->debtCreditBuilder->aggregateGroups(...$args),
+            'investment_pacs' => $this->investmentPacBuilder->aggregateGroups(...$args),
+            default => [],
+        };
     }
 
     public function hasMetricQuery(?array $chartConfig): bool

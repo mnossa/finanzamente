@@ -42,6 +42,7 @@ export default function Create({ categories, currencies }: CreateProps) {
                 header={
                     <PageHeader
                         title="Nuovo Budget"
+                        mobileTitle="Budget"
                         backLink={route('budgets.index')}
                     />
                 }

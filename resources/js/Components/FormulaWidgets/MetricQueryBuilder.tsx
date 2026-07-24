@@ -43,7 +43,9 @@ export default function MetricQueryBuilder({ value, config, onChange }: MetricQu
                         className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
                         value={metricQuery.datasource}
                         onChange={(e) =>
-                            onChange(createEmptyMetricQuery(e.target.value as 'transactions' | 'debts_credits'))
+                            onChange(createEmptyMetricQuery(
+                                e.target.value as 'transactions' | 'debts_credits' | 'investment_pacs',
+                            ))
                         }
                     >
                         {Object.entries(config.datasources).map(([key, meta]) => (

@@ -6,6 +6,9 @@ return [
     | Datasource disponibili per metric_query nei widget a formula.
     |--------------------------------------------------------------------------
     */
+    'default_row_limit' => 10,
+    'max_row_limit' => 50,
+
     'datasources' => [
         'transactions' => [
             'label' => 'Transazioni',
@@ -16,12 +19,30 @@ return [
                 'transaction_type', 'tax_deductible', 'amount_min', 'amount_max',
                 'has_tag', 'is_private', 'is_split',
             ],
+            'list_columns' => ['date', 'description', 'amount', 'category', 'account'],
+            'group_by_fields' => ['category', 'account', 'tag', 'currency', 'transaction_type'],
+            'sort_fields' => ['date', 'amount', 'description'],
+            'default_sort' => ['field' => 'date', 'direction' => 'desc'],
         ],
         'debts_credits' => [
             'label' => 'Debiti e crediti',
             'requires_period' => false,
             'measures' => ['count', 'sum_remaining', 'sum_initial', 'sum_paid'],
             'filter_fields' => ['type', 'status', 'currency', 'counterparty'],
+            'list_columns' => ['counterparty', 'type', 'status', 'remaining', 'due_date', 'currency'],
+            'group_by_fields' => ['type', 'status', 'currency'],
+            'sort_fields' => ['due_date', 'amount', 'counterparty', 'created_at'],
+            'default_sort' => ['field' => 'due_date', 'direction' => 'asc'],
+        ],
+        'investment_pacs' => [
+            'label' => 'PAC',
+            'requires_period' => false,
+            'measures' => ['count', 'sum'],
+            'filter_fields' => ['status', 'frequency', 'account', 'asset'],
+            'list_columns' => ['asset', 'amount', 'frequency', 'status', 'account', 'start_date'],
+            'group_by_fields' => ['status', 'frequency', 'asset', 'account'],
+            'sort_fields' => ['start_date', 'amount', 'created_at'],
+            'default_sort' => ['field' => 'start_date', 'direction' => 'desc'],
         ],
     ],
 

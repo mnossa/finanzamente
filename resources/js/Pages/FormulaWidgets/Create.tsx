@@ -31,6 +31,7 @@ import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 import type { FinancialVariableSummary, FormulaWidgetChartConfig, FormulaWidgetParameterType, FormulaWidgetSummary, MetricQueryDefinition, SystemVariableMeta } from '@/types/formulaWidget';
 import type { MetricQueryConfig } from '@/utils/metricQueryForm';
 import {
+    GROUP_BY_LABELS,
     METRIC_QUERY_PRESETS,
     QUICK_FILTER_PRESETS,
     createEmptyMetricQuery,
@@ -46,7 +47,7 @@ import {
 } from '@/utils/formulaWidgetRuntimeControls';
 import type { PageProps } from '@/types';
 
-const PRIMARY_DISPLAY_TYPES = ['kpi', 'line', 'area', 'bar', 'progress'] as const;
+const PRIMARY_DISPLAY_TYPES = ['kpi', 'line', 'area', 'bar', 'progress', 'table'] as const;
 
 interface ChartTypeMeta {
     label: string;
@@ -158,6 +159,13 @@ const WIDGET_RECIPES: Array<{
         suggestedName: 'Avanzamento obiettivo',
         recommendedDisplayType: 'progress',
     },
+    {
+        id: 'tabular',
+        title: 'Tabella / lista',
+        description: 'Ultime transazioni, PAC o totali per categoria con gli stessi filtri degli altri widget.',
+        suggestedName: 'Elenco movimenti',
+        recommendedDisplayType: 'table',
+    },
 ];
 
 function buildInitialForm(
@@ -196,6 +204,7 @@ function buildInitialForm(
                 }))
                 : undefined,
             metric_query: (chartConfig.metric_query as MetricQueryDefinition | undefined) ?? undefined,
+            table: (chartConfig.table as FormulaWidgetChartConfig['table'] | undefined) ?? undefined,
         },
     };
 }
@@ -601,6 +610,28 @@ export default function Create({
                 };
             }
 
+            if (recipeId === 'tabular') {
+                next.period_preset = current.period_preset || 'current_month';
+                next.chart_config = {
+                    ...next.chart_config,
+                    metric_query: createEmptyMetricQuery('transactions'),
+                    table: {
+                        mode: 'rows',
+                        row_limit: 10,
+                        sort: { field: 'date', direction: 'desc' },
+                    },
+                    parameters: upsertRuntimeParameter(next.chart_config.parameters, ACCOUNT_PARAMETER),
+                };
+                setFiltersOpen(true);
+            }
+
+            if (recipeId !== 'tabular' && next.chart_config.table) {
+                next.chart_config = {
+                    ...next.chart_config,
+                    table: undefined,
+                };
+            }
+
             if (recipeId !== 'goal' && next.chart_config.variant === 'traffic_light') {
                 next.chart_config = {
                     ...next.chart_config,
@@ -955,7 +986,38 @@ export default function Create({
                                                 key={key}
                                                 type="button"
                                                 aria-pressed={data.display_type === key}
-                                                onClick={() => setData('display_type', key)}
+                                                onClick={() => {
+                                                    setData((current) => {
+                                                        if (key !== 'table') {
+                                                            return {
+                                                                ...current,
+                                                                display_type: key,
+                                                                chart_config: {
+                                                                    ...current.chart_config,
+                                                                    table: undefined,
+                                                                },
+                                                            };
+                                                        }
+
+                                                        return {
+                                                            ...current,
+                                                            display_type: 'table',
+                                                            chart_config: {
+                                                                ...current.chart_config,
+                                                                metric_query: current.chart_config.metric_query
+                                                                    ?? createEmptyMetricQuery('transactions'),
+                                                                table: current.chart_config.table ?? {
+                                                                    mode: 'rows',
+                                                                    row_limit: 10,
+                                                                    sort: { field: 'date', direction: 'desc' },
+                                                                },
+                                                            },
+                                                        };
+                                                    });
+                                                    if (key === 'table') {
+                                                        setFiltersOpen(true);
+                                                    }
+                                                }}
                                                 className={clsx(
                                                     'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
                                                     data.display_type === key
@@ -989,6 +1051,115 @@ export default function Create({
                                     </p>
                                     <InputError message={errors.display_type} className="mt-1" />
                                 </div>
+
+                                {data.display_type === 'table' ? (
+                                    <div className="space-y-4 rounded-xl border border-surface-200 p-4 dark:border-gray-700">
+                                        <div>
+                                            <InputLabel value="Modalità tabella" />
+                                            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Modalità tabella">
+                                                {(['rows', 'aggregate'] as const).map((mode) => (
+                                                    <button
+                                                        key={mode}
+                                                        type="button"
+                                                        aria-pressed={(data.chart_config.table?.mode ?? 'rows') === mode}
+                                                        onClick={() => {
+                                                            setData((current) => ({
+                                                                ...current,
+                                                                chart_config: {
+                                                                    ...current.chart_config,
+                                                                    metric_query: current.chart_config.metric_query
+                                                                        ?? createEmptyMetricQuery('transactions'),
+                                                                    table: {
+                                                                        mode,
+                                                                        row_limit: current.chart_config.table?.row_limit ?? 10,
+                                                                        group_by: mode === 'aggregate'
+                                                                            ? (current.chart_config.table?.group_by
+                                                                                ?? metricQueryConfig?.datasources[
+                                                                                    current.chart_config.metric_query?.datasource
+                                                                                        ?? 'transactions'
+                                                                                ]?.group_by_fields?.[0])
+                                                                            : undefined,
+                                                                        sort: current.chart_config.table?.sort
+                                                                            ?? { field: 'date', direction: 'desc' },
+                                                                    },
+                                                                },
+                                                            }));
+                                                            setFiltersOpen(true);
+                                                        }}
+                                                        className={clsx(
+                                                            'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                                            (data.chart_config.table?.mode ?? 'rows') === mode
+                                                                ? 'border-primary-500 bg-primary-50 text-primary-800 ring-1 ring-primary-500 dark:border-primary-400 dark:bg-primary-950/40 dark:text-primary-100'
+                                                                : 'border-surface-200 bg-white text-gray-700 hover:border-primary-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200',
+                                                        )}
+                                                    >
+                                                        {mode === 'rows' ? 'Lista righe' : 'Aggregata'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {(data.chart_config.table?.mode ?? 'rows') === 'aggregate' ? (
+                                            <div>
+                                                <InputLabel value="Raggruppa per" />
+                                                <select
+                                                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                                                    value={data.chart_config.table?.group_by ?? ''}
+                                                    onChange={(e) => {
+                                                        const groupBy = e.target.value;
+                                                        setData((current) => ({
+                                                            ...current,
+                                                            chart_config: {
+                                                                ...current.chart_config,
+                                                                table: {
+                                                                    mode: 'aggregate',
+                                                                    row_limit: current.chart_config.table?.row_limit ?? 10,
+                                                                    group_by: groupBy,
+                                                                },
+                                                            },
+                                                        }));
+                                                    }}
+                                                >
+                                                    {(metricQueryConfig?.datasources[
+                                                        data.chart_config.metric_query?.datasource ?? 'transactions'
+                                                    ]?.group_by_fields ?? []).map((field) => (
+                                                        <option key={field} value={field}>
+                                                            {GROUP_BY_LABELS[field] ?? field}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : null}
+
+                                        <div>
+                                            <InputLabel htmlFor="table_row_limit" value="Numero righe" />
+                                            <TextInput
+                                                id="table_row_limit"
+                                                type="number"
+                                                min={1}
+                                                max={metricQueryConfig?.max_row_limit ?? 50}
+                                                className="mt-1 block w-full"
+                                                value={data.chart_config.table?.row_limit ?? metricQueryConfig?.default_row_limit ?? 10}
+                                                onChange={(e) => {
+                                                    const rowLimit = Number(e.target.value) || 10;
+                                                    setData((current) => ({
+                                                        ...current,
+                                                        chart_config: {
+                                                            ...current.chart_config,
+                                                            table: {
+                                                                mode: current.chart_config.table?.mode ?? 'rows',
+                                                                row_limit: rowLimit,
+                                                                group_by: current.chart_config.table?.group_by,
+                                                                sort: current.chart_config.table?.sort,
+                                                                columns: current.chart_config.table?.columns,
+                                                            },
+                                                        },
+                                                    }));
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : null}
                             </div>
                         </SectionCard>
 

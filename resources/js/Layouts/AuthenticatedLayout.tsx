@@ -19,6 +19,7 @@ import { useMobileBottomNavSlots } from '@/hooks/useMobileBottomNav';
 import { renderHubTabIcon } from '@/utils/hubTabIcons';
 import type { MobileBottomNavDestination } from '@/config/mobileBottomNav';
 import { FM_MOBILE_PRIMARY_FORM_ID, dispatchMobileFabAction, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
+import { shouldHideMobileChromeForGuidedCreate } from '@/utils/guidedCreate';
 
 /** FAB azione primaria: floating sopra sticky bar (solo viewport < lg). Non in header né nel centro bar. */
 const MOBILE_FLOATING_FAB_CLASSES =
@@ -587,7 +588,7 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const { auth, activeHousehold, notifications: sharedNotifications, plan: planData, isAdmin, privacy } = usePage<PageProps>().props;
     const { notifications } = useHeaderNotifications(sharedNotifications);
-    const features = usePage<PageProps & { features?: Record<string, boolean> }>().props.features ?? {};
+    const features = usePage<PageProps & { features?: Record<string, boolean> }>().props.features;
     const user = auth.user;
     const { isModuleEnabled, isPro } = useModules();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -595,6 +596,9 @@ export default function Authenticated({
     const [navSearch, setNavSearch] = useState('');
     const notifRef = useRef<HTMLDivElement>(null);
     const analyticsSyncInFlight = useRef(false);
+
+    const currentRoute = typeof route === 'function' ? route().current() : null;
+    const hideMobileChrome = shouldHideMobileChromeForGuidedCreate(features, currentRoute);
 
     const handleLogout = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -1036,7 +1040,14 @@ export default function Authenticated({
                     <PlanAlertBanner />
 
                     {/* Scrollable Content */}
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto p-2 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:p-4 md:p-6 lg:p-8 lg:pb-8">
+                    <main
+                        className={clsx(
+                            'flex-1 overflow-x-hidden overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8 lg:pb-8',
+                            hideMobileChrome
+                                ? 'pb-2'
+                                : 'pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]',
+                        )}
+                    >
                         <div className="mx-auto min-w-0 max-w-7xl">
                             <HubPageTransition>
                                 {children}
@@ -1046,9 +1057,11 @@ export default function Authenticated({
                 </div>
             </div>
 
-            {/* Bottom nav + FAB azione — solo mobile/tablet (lg:hidden). Desktop: CTA in header. */}
-            <MobileBottomNav isRouteActive={isRouteActive} onMenuOpen={() => setSidebarOpen(true)} />
-            <MobilePrimaryFab />
+            {/* Bottom nav + FAB — nascosti su create guidate (CTA in-card). */}
+            {!hideMobileChrome && (
+                <MobileBottomNav isRouteActive={isRouteActive} onMenuOpen={() => setSidebarOpen(true)} />
+            )}
+            <MobilePrimaryFab features={features} />
             <PwaInstallBanner />
         </>
         </OfflineGate>
@@ -1150,8 +1163,8 @@ function MobileFabSaveIcon() {
  * Azione primaria (crea/salva): floating bottom-right sopra la sticky bar.
  * Solo mobile/tablet — su desktop la CTA resta nell'header pagina.
  */
-function MobilePrimaryFab() {
-    const primaryFab = resolveMobilePrimaryFab();
+function MobilePrimaryFab({ features }: { features?: Record<string, boolean> }) {
+    const primaryFab = resolveMobilePrimaryFab(features);
 
     if (!primaryFab) {
         return null;

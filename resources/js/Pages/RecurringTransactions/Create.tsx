@@ -61,6 +61,7 @@ export default function Create({ accounts, categories, frequencies, debtsCredits
                 header={
                     <PageHeader
                         title="Nuova Transazione Ricorrente"
+                        mobileTitle="Ricorrenza"
                     />
                 }
             >

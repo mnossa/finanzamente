@@ -54,6 +54,7 @@ export default function Create({ sourceAccounts, userHouseholds, activeHousehold
                 header={
                     <PageHeader
                         title="Nuovo Trasferimento tra Households"
+                        mobileTitle="Trasferimento"
                         backLink={route('inter-household-transfers.index')}
                     />
                 }

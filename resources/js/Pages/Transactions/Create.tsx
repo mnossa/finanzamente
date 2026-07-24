@@ -104,6 +104,7 @@ export default function Create({
                 header={
                     <PageHeader
                         title="Nuova transazione"
+                        mobileTitle="Nuova"
                         backLink={route('transactions.index')}
                     />
                 }

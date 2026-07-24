@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('financial_variable_id')->constrained('financial_variables')->cascadeOnDelete();
             $table->string('name', 120);
-            $table->enum('display_type', ['kpi', 'line', 'area', 'bar', 'stacked_bar', 'progress'])->default('kpi');
+            $table->string('display_type', 32)->default('kpi');
             $table->string('period_preset', 32)->nullable();
             $table->json('chart_config')->nullable();
             $table->enum('default_size', ['sm', 'md', 'lg', 'xl'])->default('md');

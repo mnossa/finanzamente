@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import clsx from 'clsx';
 import FormulaKpiWidget from '@/Components/FormulaWidgets/FormulaKpiWidget';
+import FormulaTableWidget from '@/Components/FormulaWidgets/FormulaTableWidget';
 import FormulaWidgetParameterControls from '@/Components/FormulaWidgets/FormulaWidgetParameterControls';
 import { FORMULA_CHART_RESERVED_H } from '@/utils/formulaWidgetSkeletonClass';
 import type { FormulaWidgetPayload } from '@/types/formulaWidget';
@@ -64,6 +65,18 @@ export default function CustomFormulaWidget({
                 <div className="relative">
                     {refreshing && <RefreshingOverlay />}
                     <FormulaKpiWidget payload={payload} embedded={embedded} />
+                </div>
+            </div>
+        );
+    }
+
+    if (payload.type === 'table') {
+        return (
+            <div className={clsx('h-full w-full', className)}>
+                {parameterControls}
+                <div className="relative min-h-[12rem]">
+                    {refreshing && <RefreshingOverlay />}
+                    <FormulaTableWidget payload={payload} embedded={embedded} />
                 </div>
             </div>
         );
