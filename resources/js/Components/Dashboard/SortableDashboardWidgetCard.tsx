@@ -53,7 +53,7 @@ export default function SortableDashboardWidgetCard({
             style={style}
             className={clsx(
                 getWidgetColSpanClass(widget.size),
-                'flex flex-col',
+                'flex min-w-0 flex-col',
                 isDragging && 'opacity-90 shadow-2xl ring-2 ring-emerald-400 rounded-xl',
                 isEditing && !isDragging && 'rounded-xl outline-dashed outline-2 outline-emerald-400/50 dark:outline-emerald-600/50',
                 isEditing && !widget.visible && 'opacity-50',

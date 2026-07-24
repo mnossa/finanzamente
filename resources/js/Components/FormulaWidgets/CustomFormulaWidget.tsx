@@ -72,9 +72,9 @@ export default function CustomFormulaWidget({
 
     if (payload.type === 'table') {
         return (
-            <div className={clsx('h-full w-full', className)}>
+            <div className={clsx('h-full w-full min-w-0', className)}>
                 {parameterControls}
-                <div className="relative min-h-[12rem]">
+                <div className="relative min-h-[12rem] min-w-0">
                     {refreshing && <RefreshingOverlay />}
                     <FormulaTableWidget payload={payload} embedded={embedded} />
                 </div>
