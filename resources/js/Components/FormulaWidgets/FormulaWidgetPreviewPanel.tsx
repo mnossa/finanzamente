@@ -43,7 +43,7 @@ export default function FormulaWidgetPreviewPanel({
     return (
         <div
             className={clsx(
-                'sticky top-4 rounded-xl border border-surface-200 bg-surface-50 p-4 dark:border-gray-700 dark:bg-gray-900/40',
+                'sticky top-4 min-w-0 rounded-xl border border-surface-200 bg-surface-50 p-4 dark:border-gray-700 dark:bg-gray-900/40',
                 className,
             )}
         >

@@ -1,15 +1,15 @@
-# Tabular formula widgets (liste + aggregate)
+# Fix overflow widget tabellare su mobile
 
 ## Plan
-- [x] Migration `display_type` VARCHAR + `DISPLAY_TABLE` + `chart_types.table`
-- [x] `metric_queries`: investment_pacs, list_columns, group_by_fields, limits
-- [x] List/group builders + MetricQueryService + PayloadBuilder `buildTable` + validator
-- [x] Create recipe tabular + FE mode/datasource/group_by + FormulaTableWidget
-- [x] Preset ufficiali (tx, PAC, spese per categoria) + unit/feature + E2E smoke
-- [x] Verify: `make test` → `make pint-check` → `make build` → `make playwright` (1 flake pin-chooser ritentato OK; test hardening)
+- [x] `FormulaTableWidget`: `table-fixed`, truncate affidabile, colonne secondarie `hidden sm:table-cell`, wrapper `min-w-0 overflow-x-auto`
+- [x] Containment: `min-w-0` su preview panel, aside Create, wrapper table in `CustomFormulaWidget`
+- [x] Evitare doppio padding list-body sul table (shell già padda)
+- [x] E2E mobile: anteprima tabella non allarga `documentElement` oltre viewport
+- [x] Verify: `make test` → `make pint-check` → `make playwright` (markup React)
 
 ## Review
-- `display_type` string(32) in create migration (SQLite CHECK non blocca `table`); MySQL widen migration resta per DB legacy ENUM
-- Template ufficiali: `ultime_transazioni`, `pac_attivi`, `spese_per_categoria` (count da config nei test)
-- Create recipe «Tabella / lista»: mode rows|aggregate, datasource, group_by, row_limit
-- E2E: `table-widget.spec.ts`; create metric-query tollera redirect pin `aggiungi`
+- Root cause: `table-layout: auto` + 5 colonne + `min-width: auto` su grid/flex → overflow pagina su mobile in Anteprima «Elenco movimenti»
+- Fix: `table-fixed` + colonne secondarie nascoste `< sm` + `min-w-0` sulla catena (preview, Create, card dashboard, ContentPanelShell)
+- E2E: `table-widget.spec.ts` assert overflow + header secondari assenti su mobile
+- Side fix: assert FAB desktop usa `toBeHidden()` (era `toHaveCount(0)` su nodo `lg:hidden`)
+- Gates: `make test` 1058 passed; `make pint-check` PASS; table-widget + bottom-nav E2E green (suite full: 267 passed prima del fix FAB)

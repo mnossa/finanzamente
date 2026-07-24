@@ -693,8 +693,8 @@ export default function Create({
                     </div>
                 ) : null}
 
-                <div className={clsx('grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] xl:grid-cols-[minmax(0,1fr)_24rem]')}>
-                    <aside className="order-first space-y-4 lg:order-last lg:self-start">
+                <div className={clsx('grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] xl:grid-cols-[minmax(0,1fr)_24rem]')}>
+                    <aside className="order-first min-w-0 space-y-4 lg:order-last lg:self-start">
                         <FormulaWidgetCreateGuide
                             displayType={data.display_type}
                             chartTypes={chartTypes}
@@ -713,12 +713,12 @@ export default function Create({
                                 isFetching={previewFetching}
                                 hasRuntimeParameters={previewHasRuntimeParameters}
                                 formulaString={selectedVariable?.formula_string}
-                                className="z-10 sticky top-16 lg:top-4"
+                                className="z-10 sticky top-16 min-w-0 lg:top-4"
                             />
                         ) : null}
                     </aside>
 
-                    <form onSubmit={submit} className="order-last space-y-6 lg:order-first">
+                    <form onSubmit={submit} className="order-last min-w-0 space-y-6 lg:order-first">
                         {useWizard ? (
                             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                                 <span className={clsx(wizardStep === 1 && 'text-primary-700 dark:text-primary-300')}>1. Obiettivo</span>

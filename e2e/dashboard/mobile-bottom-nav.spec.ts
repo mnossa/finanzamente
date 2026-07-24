@@ -22,7 +22,8 @@ test.describe('Bottom navigation mobile', () => {
         await page.goto('/dashboard');
 
         await expect(page.getByRole('navigation', { name: 'Navigazione rapida' })).toHaveCount(0);
-        await expect(page.getByTestId('mobile-primary-fab')).toHaveCount(0);
+        // FAB resta nel DOM con `lg:hidden` — su desktop deve essere nascosto, non assente.
+        await expect(page.getByTestId('mobile-primary-fab')).toBeHidden();
     });
     test('Altro apre il menu laterale', async ({ page }) => {
         await page.goto('/dashboard');

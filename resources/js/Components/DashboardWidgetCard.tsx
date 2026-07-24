@@ -159,7 +159,7 @@ export default function DashboardWidgetCard({
                 </div>
             )}
 
-            <div className={clsx('flex-1 [&>*]:h-full', !widget.visible && isEditing && 'pointer-events-none select-none')}>
+            <div className={clsx('min-w-0 flex-1 [&>*]:h-full', !widget.visible && isEditing && 'pointer-events-none select-none')}>
                 {children}
             </div>
         </>
@@ -173,7 +173,7 @@ export default function DashboardWidgetCard({
         <div
             className={clsx(
                 SIZE_COL_CLASSES[widget.size],
-                'flex flex-col',
+                'flex min-w-0 flex-col',
                 isEditing && 'rounded-xl outline-dashed outline-2 outline-emerald-400/50 dark:outline-emerald-600/50',
                 isEditing && !widget.visible && 'opacity-50',
                 className,
