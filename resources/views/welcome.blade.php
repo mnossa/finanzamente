@@ -67,7 +67,7 @@
                     Tutto quello che serve, niente di superfluo
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Strumenti concreti per tenere traccia delle finanze e analizzarle — senza fingere di essere una banca
+                    Strumenti concreti per tenere traccia delle finanze e analizzarle
                 </p>
             </div>
 
@@ -159,7 +159,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Finanze condivise</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Tieni i conti di famiglia o coinquilini in un household condiviso. Ognuno vede ciò che gli compete; puoi anche registrare movimenti tra nuclei diversi (solo nel tracker, non sono bonifici reali).
+                        Tieni i conti di famiglia o coinquilini in un household condiviso. Ognuno vede ciò che gli compete; puoi anche registrare movimenti tra nuclei diversi.
                     </p>
                 </div>
 
@@ -172,7 +172,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Import CSV</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Carichi un file CSV esportato dalla tua banca e lo importi nell’app. Rilevamento duplicati e layout salvabili per istituto: niente Open Banking né connessione automatica al conto.
+                        Carichi un file CSV esportato dalla tua banca e lo importi nell’app. Rilevamento duplicati e layout salvabili per istituto.
                     </p>
                 </div>
 
@@ -334,7 +334,7 @@
                     <div>
                         <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Aggiungi conti e movimenti</h3>
                         <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                            Inserisci a mano conti, carte, contanti e — se li hai — gli investimenti. In alternativa puoi caricare un CSV esportato dalla banca: è un file, non un collegamento al conto.
+                            Inserisci a mano conti, carte, contanti e — se li hai — gli investimenti. In alternativa puoi caricare un CSV esportato dalla banca.
                         </p>
                     </div>
                 </div>
@@ -362,7 +362,7 @@
                     Perché scegliere Finanzamente?
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Un tracker di finanze personali con strumenti di analisi: per capire dove sta andando il tuo denaro, senza operazioni bancarie.
+                    Un tracker di finanze personali con strumenti di analisi: per capire dove sta andando il tuo denaro.
                 </p>
             </div>
 
