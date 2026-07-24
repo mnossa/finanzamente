@@ -416,7 +416,7 @@ function FlashMessages() {
                 {undo && undoSecondsLeft > 0 ? (
                     <button
                         type="button"
-                        className="ml-3 inline-flex font-semibold underline hover:no-underline"
+                        className="ml-3 inline-flex items-baseline text-sm font-semibold underline hover:no-underline"
                         onClick={() => {
                             router.post(route('formula-widgets.restore', undo.widget_id), {}, {
                                 onFinish: () => {
@@ -426,7 +426,10 @@ function FlashMessages() {
                             });
                         }}
                     >
-                        Annulla ({undoSecondsLeft}s)
+                        Annulla{' '}
+                        <span className="ml-1 text-xs font-medium tabular-nums opacity-90">
+                            ({undoSecondsLeft}s)
+                        </span>
                     </button>
                 ) : null}
                 <button

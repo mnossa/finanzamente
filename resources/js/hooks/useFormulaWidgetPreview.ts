@@ -103,7 +103,8 @@ export function useFormulaWidgetPreview(input: FormulaWidgetPreviewInput) {
     );
 
     const liveKey = useMemo(() => stablePreviewKey(liveRequest), [liveRequest]);
-    const debouncedRequest = useDebouncedValue(liveRequest, 250);
+    // Debounce breve: anteprima quasi istantanea senza martellare l’API a ogni keystroke.
+    const debouncedRequest = useDebouncedValue(liveRequest, 80);
     const debouncedKey = useMemo(() => stablePreviewKey(debouncedRequest), [debouncedRequest]);
     const debouncedRequestRef = useRef(debouncedRequest);
     debouncedRequestRef.current = debouncedRequest;

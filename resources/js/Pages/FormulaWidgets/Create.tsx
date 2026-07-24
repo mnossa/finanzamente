@@ -43,11 +43,35 @@ import {
 import {
     availableRuntimeControls,
     pruneRuntimeParameters,
+    scenarioMatchesRecipe,
     type WidgetRecipeId,
 } from '@/utils/formulaWidgetRuntimeControls';
+import {
+    displayTypesForRecipe,
+    recipeAllowsDisplayType,
+    recipeStepHint,
+    syncChartConfigToMetric,
+} from '@/utils/formulaWidgetRecipe';
 import type { PageProps } from '@/types';
 
 const PRIMARY_DISPLAY_TYPES = ['kpi', 'line', 'area', 'bar', 'progress', 'table'] as const;
+
+function recipeFromDisplayType(displayType: string): WidgetRecipeId {
+    if (displayType === 'table') {
+        return 'tabular';
+    }
+    if (displayType === 'progress') {
+        return 'goal';
+    }
+    if (['bar', 'horizontal_bar', 'stacked_bar', 'pie', 'treemap'].includes(displayType)) {
+        return 'comparison';
+    }
+    if (['line', 'area'].includes(displayType)) {
+        return 'trend';
+    }
+
+    return 'single_value';
+}
 
 interface ChartTypeMeta {
     label: string;
@@ -173,28 +197,38 @@ function buildInitialForm(
     editingWidget?: FormulaWidgetSummary | null,
 ): CreateWidgetForm {
     const chartConfig = editingWidget?.chart_config ?? {};
+    const displayType = editingWidget?.display_type ?? 'kpi';
+    const usesSeries = formulaWidgetUsesSeries(displayType);
+    const defaultSeries = usesSeries
+        ? (Array.isArray(chartConfig.series) && chartConfig.series.length > 0
+            ? chartConfig.series.map((entry) => ({
+                code: String((entry as { code?: string }).code ?? ''),
+                label: (entry as { label?: string }).label,
+                color: (entry as { color?: string }).color,
+            }))
+            : DEFAULT_CHART_CONFIG.series)
+        : (Array.isArray(chartConfig.series) && chartConfig.series.length > 0
+            ? chartConfig.series.map((entry) => ({
+                code: String((entry as { code?: string }).code ?? ''),
+                label: (entry as { label?: string }).label,
+                color: (entry as { color?: string }).color,
+            }))
+            : undefined);
 
     return {
         name: editingWidget?.name ?? '',
         financial_variable_id: editingWidget?.financial_variable?.id ?? variables[0]?.id ?? '',
-        display_type: editingWidget?.display_type ?? 'kpi',
+        display_type: displayType,
         period_preset: editingWidget?.period_preset ?? '',
         default_size: editingWidget?.default_size ?? 'md',
         is_public: editingWidget?.is_public ?? false,
         pin_to_dashboard: editingWidget == null,
         chart_config: {
-            ...DEFAULT_CHART_CONFIG,
-            show_delta: Boolean(chartConfig.show_delta),
+            show_delta: Boolean(chartConfig.show_delta ?? (displayType === 'kpi' ? DEFAULT_CHART_CONFIG.show_delta : false)),
             format: String(chartConfig.format ?? DEFAULT_CHART_CONFIG.format),
             value_code: String(chartConfig.value_code ?? DEFAULT_CHART_CONFIG.value_code),
             threshold_code: String(chartConfig.threshold_code ?? DEFAULT_CHART_CONFIG.threshold_code),
-            series: Array.isArray(chartConfig.series) && chartConfig.series.length > 0
-                ? chartConfig.series.map((entry) => ({
-                    code: String((entry as { code?: string }).code ?? ''),
-                    label: (entry as { label?: string }).label,
-                    color: (entry as { color?: string }).color,
-                }))
-                : DEFAULT_CHART_CONFIG.series,
+            series: defaultSeries,
             parameters: Array.isArray(chartConfig.parameters)
                 ? chartConfig.parameters.map((entry) => ({
                     key: String((entry as { key?: string }).key ?? ''),
@@ -205,6 +239,9 @@ function buildInitialForm(
                 : undefined,
             metric_query: (chartConfig.metric_query as MetricQueryDefinition | undefined) ?? undefined,
             table: (chartConfig.table as FormulaWidgetChartConfig['table'] | undefined) ?? undefined,
+            variant: chartConfig.variant as FormulaWidgetChartConfig['variant'] | undefined,
+            threshold_amount: chartConfig.threshold_amount as number | undefined,
+            bands: chartConfig.bands as FormulaWidgetChartConfig['bands'] | undefined,
         },
     };
 }
@@ -262,13 +299,20 @@ export default function Create({
     const [metricError, setMetricError] = useState<string | null>(null);
     const [duplicateDismissed, setDuplicateDismissed] = useState(false);
     const [advancedOpen, setAdvancedOpen] = useState(isEditing);
-    const [activeRecipe, setActiveRecipe] = useState<WidgetRecipeId>('single_value');
+    const [activeRecipe, setActiveRecipe] = useState<WidgetRecipeId>(() =>
+        isEditing && editingWidget
+            ? recipeFromDisplayType(editingWidget.display_type)
+            : 'single_value',
+    );
     const useWizard = !isEditing;
     const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(isEditing ? 3 : 1);
     const [filtersOpen, setFiltersOpen] = useState(
-        Boolean((editingWidget?.chart_config as FormulaWidgetChartConfig | undefined)?.metric_query),
+        Boolean((editingWidget?.chart_config as FormulaWidgetChartConfig | undefined)?.metric_query)
+        || (isEditing && editingWidget?.display_type === 'table'),
     );
     const [showAllChartTypes, setShowAllChartTypes] = useState(false);
+    const allowedDisplayTypes = displayTypesForRecipe(activeRecipe);
+    const canBrowseAllChartTypes = activeRecipe === 'single_value' || isEditing;
     const [defaultAccountId, setDefaultAccountId] = useState(() =>
         defaultAccountFromParameters(editingWidget?.chart_config?.parameters as CreateWidgetForm['chart_config']['parameters']),
     );
@@ -281,6 +325,29 @@ export default function Create({
     const { data, setData, post, put, processing, errors } = useForm<CreateWidgetForm>(() =>
         buildInitialForm(variables, editingWidget),
     );
+
+    // Evita checkbox / campi “del widget precedente” quando si passa da una modifica all’altra.
+    useEffect(() => {
+        if (!editingWidget) {
+            return;
+        }
+
+        const nextForm = buildInitialForm(variables, editingWidget);
+        setData(nextForm);
+        setLocalVariables(variables);
+        setActiveRecipe(recipeFromDisplayType(editingWidget.display_type));
+        setFiltersOpen(
+            Boolean(nextForm.chart_config.metric_query) || editingWidget.display_type === 'table',
+        );
+        setAdvancedOpen(true);
+        setShowAllChartTypes(false);
+        setDefaultAccountId(defaultAccountFromParameters(nextForm.chart_config.parameters));
+        setMetricNotice(null);
+        setMetricError(null);
+        setDuplicateDismissed(false);
+        // Solo al cambio widget in modifica: non rinizializzare a ogni refresh props.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: editingWidget.id
+    }, [editingWidget?.id]);
 
     const usesSeries = formulaWidgetUsesSeries(data.display_type);
     const selectedVariable = localVariables.find((variable) => variable.id === data.financial_variable_id);
@@ -359,25 +426,26 @@ export default function Create({
             // Aggiorna nome solo se ancora “auto” (vuoto o uguale alla metrica precedente).
             const nameStillAuto = !current.name || (previousVariable != null && current.name === previousVariable.name);
 
+            let displayType = current.display_type;
+            // Solo per obiettivo/soglia: i widgetDefaults possono forzare progress/semaforo.
+            // Mai sovrascrivere tabella o altre ricette con un display incompatibile.
+            if (
+                scenario?.widgetDefaults
+                && activeRecipe === 'goal'
+                && recipeAllowsDisplayType(activeRecipe, scenario.widgetDefaults.displayType)
+            ) {
+                displayType = scenario.widgetDefaults.displayType;
+            }
+
             let next: CreateWidgetForm = {
                 ...current,
                 financial_variable_id: variable.id,
                 period_preset: nextPeriod,
                 name: nameStillAuto ? variable.name : current.name,
+                display_type: displayType,
             };
 
-            if (scenario?.widgetDefaults) {
-                const defaults = scenario.widgetDefaults;
-                next = {
-                    ...next,
-                    display_type: defaults.displayType,
-                    chart_config: {
-                        ...next.chart_config,
-                        ...defaults.chartConfig,
-                        parameters: defaults.chartConfig.parameters ?? next.chart_config.parameters,
-                    },
-                };
-            } else if (next.chart_config.variant === 'traffic_light') {
+            if (!(scenario?.widgetDefaults && activeRecipe === 'goal') && next.chart_config.variant === 'traffic_light') {
                 // Uscita dall’alert: togli semaforo e soglia numerica.
                 const { variant: _variant, threshold_amount: _amount, bands: _bands, ...restConfig } = next.chart_config;
                 next = {
@@ -388,6 +456,17 @@ export default function Create({
                     },
                 };
             }
+
+            next = {
+                ...next,
+                chart_config: syncChartConfigToMetric({
+                    displayType: next.display_type,
+                    recipeId: activeRecipe,
+                    formulaString: variable.formula_string,
+                    scenario,
+                    chartConfig: next.chart_config,
+                }),
+            };
 
             return next;
         });
@@ -502,21 +581,34 @@ export default function Create({
             return;
         }
 
-        setData((current) => ({
-            ...current,
-            name: current.name || preset.suggestedName,
-            display_type: preset.displayType,
-            period_preset: current.period_preset || 'current_month',
-            chart_config: {
-                ...current.chart_config,
-                format: preset.format,
-                metric_query: preset.metricQuery,
-                parameters: syncRuntimeParametersFromMetricQuery(
-                    preset.metricQuery,
-                    current.chart_config.parameters,
-                ),
-            },
-        }));
+        setData((current) => {
+            // Tabella / ricetta tabular: non sovrascrivere la vista con KPI del preset.
+            const keepTable = activeRecipe === 'tabular' || current.display_type === 'table';
+            const nextDisplayType = keepTable ? 'table' : preset.displayType;
+
+            return {
+                ...current,
+                name: current.name || preset.suggestedName,
+                display_type: nextDisplayType,
+                period_preset: current.period_preset || 'current_month',
+                chart_config: {
+                    ...current.chart_config,
+                    format: preset.format,
+                    metric_query: preset.metricQuery,
+                    table: keepTable
+                        ? (current.chart_config.table ?? {
+                            mode: 'rows' as const,
+                            row_limit: 10,
+                            sort: { field: 'date', direction: 'desc' as const },
+                        })
+                        : current.chart_config.table,
+                    parameters: syncRuntimeParametersFromMetricQuery(
+                        preset.metricQuery,
+                        current.chart_config.parameters,
+                    ),
+                },
+            };
+        });
         setAdvancedOpen(true);
         setFiltersOpen(true);
     };
@@ -563,6 +655,8 @@ export default function Create({
 
     const applyRecipe = (recipeId: WidgetRecipeId) => {
         setActiveRecipe(recipeId);
+        setShowAllChartTypes(false);
+        setMetricNotice(null);
 
         const selectedRecipe = WIDGET_RECIPES.find((recipe) => recipe.id === recipeId);
         if (!selectedRecipe) {
@@ -570,7 +664,10 @@ export default function Create({
         }
 
         setData((current) => {
-            const next: CreateWidgetForm = {
+            const selectedVariable = localVariables.find((entry) => entry.id === current.financial_variable_id);
+            const scenario = findScenarioByFormula(selectedVariable?.formula_string);
+
+            let next: CreateWidgetForm = {
                 ...current,
                 name: current.name || selectedRecipe.suggestedName,
                 display_type: selectedRecipe.recommendedDisplayType,
@@ -623,13 +720,14 @@ export default function Create({
                     parameters: upsertRuntimeParameter(next.chart_config.parameters, ACCOUNT_PARAMETER),
                 };
                 setFiltersOpen(true);
-            }
-
-            if (recipeId !== 'tabular' && next.chart_config.table) {
+            } else {
+                // Lasciando la tabella: pulisci query/table e filtri aperti per evitare checkbox “fantasma”.
                 next.chart_config = {
                     ...next.chart_config,
+                    metric_query: undefined,
                     table: undefined,
                 };
+                setFiltersOpen(false);
             }
 
             if (recipeId !== 'goal' && next.chart_config.variant === 'traffic_light') {
@@ -640,6 +738,23 @@ export default function Create({
                     bands: undefined,
                     parameters: (next.chart_config.parameters ?? []).filter((parameter) => parameter.key !== 'threshold'),
                 };
+            }
+
+            // Se la metrica corrente non è compatibile con la nuova ricetta, la deselezioniamo.
+            if (scenario && !scenarioMatchesRecipe(scenario, recipeId)) {
+                next = {
+                    ...next,
+                    financial_variable_id: '',
+                    name: selectedRecipe.suggestedName,
+                };
+            } else {
+                next.chart_config = syncChartConfigToMetric({
+                    displayType: next.display_type,
+                    recipeId,
+                    formulaString: selectedVariable?.formula_string,
+                    scenario,
+                    chartConfig: next.chart_config,
+                });
             }
 
             return next;
@@ -701,6 +816,7 @@ export default function Create({
                             systemVariables={systemVariables}
                             metricQueryConfig={metricQueryConfig}
                             hasMetricQuery={Boolean(data.chart_config.metric_query)}
+                            recipeId={activeRecipe}
                             className="mb-0 hidden lg:block"
                         />
                         {(showStep2 || showStep3 || isEditing) ? (
@@ -739,7 +855,7 @@ export default function Create({
                                     Cosa vuoi vedere in dashboard?
                                 </h2>
                                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                    Scegli il risultato. Impostiamo grafico e opzioni consigliate.
+                                    {recipeStepHint(activeRecipe, 1)}
                                 </p>
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2">
@@ -777,6 +893,9 @@ export default function Create({
                                 <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
                                     Scegli metrica e periodo
                                 </h2>
+                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                    {recipeStepHint(activeRecipe, 2)}
+                                </p>
                             </div>
                             <div className="space-y-4">
                                 <div>
@@ -945,6 +1064,9 @@ export default function Create({
                                 <h2 className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
                                     Nome e visualizzazione
                                 </h2>
+                                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                    {recipeStepHint(activeRecipe, 3)}
+                                </p>
                             </div>
                             <div className="space-y-4">
                                 <div>
@@ -967,14 +1089,18 @@ export default function Create({
                                         role="group"
                                         aria-label="Tipo di visualizzazione"
                                     >
-                                        {(showAllChartTypes
+                                        {(canBrowseAllChartTypes && showAllChartTypes
                                             ? Object.keys(chartTypes)
                                             : (() => {
-                                                const keys = PRIMARY_DISPLAY_TYPES.filter((key) => chartTypes[key] != null) as string[];
+                                                const recipeKeys = allowedDisplayTypes.filter((key) => chartTypes[key] != null) as string[];
+                                                const keys = recipeKeys.length > 0
+                                                    ? [...recipeKeys]
+                                                    : (PRIMARY_DISPLAY_TYPES.filter((key) => chartTypes[key] != null) as string[]);
                                                 if (
                                                     data.display_type
                                                     && chartTypes[data.display_type]
                                                     && !keys.includes(data.display_type)
+                                                    && (isEditing || recipeAllowsDisplayType(activeRecipe, data.display_type))
                                                 ) {
                                                     keys.unshift(data.display_type);
                                                 }
@@ -988,35 +1114,45 @@ export default function Create({
                                                 aria-pressed={data.display_type === key}
                                                 onClick={() => {
                                                     setData((current) => {
-                                                        if (key !== 'table') {
-                                                            return {
-                                                                ...current,
-                                                                display_type: key,
-                                                                chart_config: {
-                                                                    ...current.chart_config,
-                                                                    table: undefined,
-                                                                },
-                                                            };
-                                                        }
+                                                        const selectedVariable = localVariables.find(
+                                                            (entry) => entry.id === current.financial_variable_id,
+                                                        );
+                                                        const scenario = findScenarioByFormula(selectedVariable?.formula_string);
+                                                        let chartConfig = { ...current.chart_config };
 
-                                                        return {
-                                                            ...current,
-                                                            display_type: 'table',
-                                                            chart_config: {
-                                                                ...current.chart_config,
-                                                                metric_query: current.chart_config.metric_query
+                                                        if (key === 'table') {
+                                                            chartConfig = {
+                                                                ...chartConfig,
+                                                                metric_query: chartConfig.metric_query
                                                                     ?? createEmptyMetricQuery('transactions'),
-                                                                table: current.chart_config.table ?? {
+                                                                table: chartConfig.table ?? {
                                                                     mode: 'rows',
                                                                     row_limit: 10,
                                                                     sort: { field: 'date', direction: 'desc' },
                                                                 },
-                                                            },
+                                                            };
+                                                            setFiltersOpen(true);
+                                                        } else {
+                                                            chartConfig = {
+                                                                ...chartConfig,
+                                                                table: undefined,
+                                                            };
+                                                        }
+
+                                                        chartConfig = syncChartConfigToMetric({
+                                                            displayType: key,
+                                                            recipeId: activeRecipe,
+                                                            formulaString: selectedVariable?.formula_string,
+                                                            scenario,
+                                                            chartConfig,
+                                                        });
+
+                                                        return {
+                                                            ...current,
+                                                            display_type: key,
+                                                            chart_config: chartConfig,
                                                         };
                                                     });
-                                                    if (key === 'table') {
-                                                        setFiltersOpen(true);
-                                                    }
                                                 }}
                                                 className={clsx(
                                                     'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
@@ -1029,7 +1165,7 @@ export default function Create({
                                             </button>
                                         ))}
                                     </div>
-                                    {!showAllChartTypes && Object.keys(chartTypes).length > PRIMARY_DISPLAY_TYPES.length ? (
+                                    {canBrowseAllChartTypes && !showAllChartTypes && Object.keys(chartTypes).length > allowedDisplayTypes.length ? (
                                         <button
                                             type="button"
                                             className="mt-2 text-xs font-medium text-primary-700 hover:underline dark:text-primary-300"
@@ -1037,7 +1173,7 @@ export default function Create({
                                         >
                                             Mostra tutti ({Object.keys(chartTypes).length})
                                         </button>
-                                    ) : showAllChartTypes ? (
+                                    ) : canBrowseAllChartTypes && showAllChartTypes ? (
                                         <button
                                             type="button"
                                             className="mt-2 text-xs font-medium text-gray-500 hover:underline dark:text-gray-400"

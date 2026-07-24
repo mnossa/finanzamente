@@ -2,6 +2,7 @@ import SystemVariableReferenceList from '@/Components/FormulaWidgets/SystemVaria
 import clsx from 'clsx';
 import type { SystemVariableMeta } from '@/types/formulaWidget';
 import { formulaWidgetUsesLinkedVariableSeries, formulaWidgetUsesSeries } from '@/utils/formulaWidgetForm';
+import type { WidgetRecipeId } from '@/utils/formulaWidgetRuntimeControls';
 import type { MetricQueryConfig } from '@/utils/metricQueryForm';
 
 interface ChartTypeMeta {
@@ -16,6 +17,7 @@ interface FormulaWidgetCreateGuideProps {
     systemVariables: SystemVariableMeta[];
     metricQueryConfig?: MetricQueryConfig;
     hasMetricQuery?: boolean;
+    recipeId?: WidgetRecipeId;
     className?: string;
 }
 
@@ -25,9 +27,12 @@ export default function FormulaWidgetCreateGuide({
     systemVariables,
     metricQueryConfig,
     hasMetricQuery = false,
+    recipeId = 'single_value',
     className,
 }: FormulaWidgetCreateGuideProps) {
     const chartGuide = chartTypes[displayType]?.guide;
+    const isTable = displayType === 'table' || recipeId === 'tabular';
+    const isComparison = recipeId === 'comparison' || formulaWidgetUsesSeries(displayType);
 
     return (
         <div
@@ -39,35 +44,35 @@ export default function FormulaWidgetCreateGuide({
             <h3 className="font-semibold text-primary-900 dark:text-primary-100">Guida rapida</h3>
             <ol className="mt-2 list-decimal space-y-2 pl-4 text-gray-700 dark:text-gray-300">
                 <li>
-                    Collega una <strong>variabile personalizzata</strong> (formula o valore fisso) oppure creane una al volo.
+                    Scegli un <strong>obiettivo</strong>, poi una <strong>metrica</strong> compatibile (solo quelle usabili per quel widget).
                 </li>
-                {hasMetricQuery ? (
+                {hasMetricQuery || isTable ? (
                     <li>
-                        Oppure attiva una <strong>query dinamica</strong> su transazioni/tag/categorie: i filtri runtime si cambiano in dashboard.
+                        Per le tabelle regola <strong>filtri e sorgente dati</strong>: puoi cambiare i filtri anche in dashboard.
                     </li>
                 ) : null}
-                <li>
-                    Scegli il <strong>tipo di grafico</strong>: KPI, linea, barre, torta, treemap, avanzamento e altri formati Recharts.
-                </li>
-                {formulaWidgetUsesLinkedVariableSeries(displayType) && (
+                {isTable ? (
                     <li>
-                        Per linea e area il grafico usa la <strong>variabile collegata</strong> o la query dinamica aggregata per mese.
+                        La visualizzazione è una <strong>tabella / lista</strong>: non serve scegliere grafici a barre o linee.
+                    </li>
+                ) : (
+                    <li>
+                        In aspetto vedi solo le <strong>viste compatibili</strong> con l’obiettivo (KPI, linea, barre, avanzamento…).
                     </li>
                 )}
-                {formulaWidgetUsesSeries(displayType) && (
+                {formulaWidgetUsesLinkedVariableSeries(displayType) && (
                     <li>
-                        Per questo grafico configura <strong>almeno due serie</strong> con variabili di sistema (liquidità, entrate, uscite…).
+                        Linea e area usano la <strong>metrica collegata</strong> (o la query dinamica aggregata per mese).
+                    </li>
+                )}
+                {isComparison && !isTable && (
+                    <li>
+                        Le barre confrontano le <strong>serie di periodo</strong> (incassato, speso, risparmiato), allineate alla metrica scelta.
                     </li>
                 )}
                 {chartGuide && <li>{chartGuide}</li>}
                 <li>
-                    Usa <strong>IF/WHEN</strong> nelle formule per condizioni: es. <code className="font-mono text-xs">IF([period_expenses] &gt; 1000, 1, 0)</code>.
-                </li>
-                <li>
-                    Per importi cross-conto usa <strong>EUR normalizzato</strong> (<code className="font-mono text-xs">amount_base</code>) nelle query dinamiche.
-                </li>
-                <li>
-                    Controlla l&apos;<strong>anteprima</strong> a destra: se qualcosa non va, vedrai un messaggio di errore prima del salvataggio.
+                    Controlla l&apos;<strong>anteprima</strong> a destra: si aggiorna mentre cambi metrica, periodo e vista.
                 </li>
             </ol>
 
@@ -98,15 +103,12 @@ export default function FormulaWidgetCreateGuide({
             {metricQueryConfig ? (
                 <details className="mt-3">
                     <summary className="cursor-pointer font-medium text-primary-800 dark:text-primary-200">
-                        Funzioni formula avanzate
+                        Query dinamica (avanzate)
                     </summary>
-                    <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-400">
-                        {Object.entries(metricQueryConfig.formula_functions).map(([name, hint]) => (
-                            <li key={name}>
-                                <code className="font-mono text-xs">{name}</code> — {hint}
-                            </li>
-                        ))}
-                    </ul>
+                    <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                        Per importi cross-conto usa EUR normalizzato (<code className="font-mono">amount_base</code>).
+                        Formule condizionali: <code className="font-mono">IF([period_expenses] &gt; 1000, 1, 0)</code>.
+                    </p>
                 </details>
             ) : null}
         </div>
