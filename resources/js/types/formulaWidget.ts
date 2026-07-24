@@ -29,7 +29,8 @@ export type FormulaWidgetParameterType =
     | 'category'
     | 'currency'
     | 'debt_credit'
-    | 'transaction_type';
+    | 'transaction_type'
+    | 'number';
 
 export interface FormulaWidgetParameterOption {
     value: string;
@@ -73,12 +74,21 @@ export interface FormulaWidgetChartConfig {
     format?: string;
     value_code?: string;
     threshold_code?: string;
+    /** Soglia numerica fissa (es. alert spese); override da parametro runtime `threshold`. */
+    threshold_amount?: number;
+    variant?: string;
+    bands?: {
+        warn?: number;
+        danger?: number;
+    };
     parameters?: FormulaWidgetParameterDefinition[];
     series?: FormulaChartSeriesEntry[];
     metric_query?: MetricQueryDefinition;
 }
 
 export type FormulaDeltaPolarity = 'higher_is_better' | 'lower_is_better';
+
+export type FormulaTrafficLightStatus = 'ok' | 'warn' | 'danger';
 
 export interface FormulaWidgetKpiPayload {
     type: 'kpi';
@@ -104,6 +114,12 @@ export interface FormulaWidgetProgressPayload {
     threshold: number;
     percentage: number;
     periodLabel: string;
+    variant?: 'traffic_light';
+    status?: FormulaTrafficLightStatus;
+    bands?: {
+        warn: number;
+        danger: number;
+    };
     parameters?: FormulaWidgetRuntimeParameter[];
 }
 
@@ -151,6 +167,8 @@ export interface FinancialVariableSummary {
     is_public?: boolean;
     share_token?: string | null;
     downloads_count?: number;
+    source_id?: number | null;
+    is_official_origin?: boolean;
 }
 
 export type SystemVariableCategory = 'financial' | 'context';

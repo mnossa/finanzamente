@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\FinancialVariable;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +30,35 @@ class FormulaTokenParser
             throw ValidationException::withMessages([
                 'code' => 'Il codice variabile non è valido. Usa lettere, numeri e underscore.',
             ]);
+        }
+
+        return $code;
+    }
+
+    public function normalizeFormula(string $formula): string
+    {
+        $collapsed = preg_replace('/\s+/', '', trim($formula));
+
+        return $collapsed ?? '';
+    }
+
+    public function uniqueCodeForUser(int $userId, string $preferredCode): string
+    {
+        $base = $preferredCode !== '' && $this->isValidCode($preferredCode)
+            ? $preferredCode
+            : 'metrica';
+
+        $code = $base;
+        $suffix = 2;
+
+        while (
+            FinancialVariable::query()
+                ->where('user_id', $userId)
+                ->where('code', $code)
+                ->exists()
+        ) {
+            $code = $base.'_'.$suffix;
+            $suffix++;
         }
 
         return $code;

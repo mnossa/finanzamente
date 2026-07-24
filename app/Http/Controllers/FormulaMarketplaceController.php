@@ -138,14 +138,26 @@ class FormulaMarketplaceController extends Controller
             ->with('installedWidgetId', $cloned->id);
     }
 
-    public function uninstallTemplate(string $templateSlug): RedirectResponse
+    public function uninstallTemplate(string $templateSlug, FormulaWidgetRemovalService $removalService): RedirectResponse
     {
-        FormulaWidget::query()
+        $user = Auth::user();
+
+        $official = FormulaWidget::query()
             ->where('template_slug', $templateSlug)
             ->where('is_official_template', true)
             ->firstOrFail();
 
-        abort(403, 'I template ufficiali non possono essere rimossi dalla libreria.');
+        $installed = FormulaWidget::query()
+            ->where('user_id', $user->id)
+            ->where('source_id', $official->id)
+            ->firstOrFail();
+
+        $undo = $removalService->remove($user, $installed);
+
+        return redirect()
+            ->route('formula-marketplace.index')
+            ->with('success', 'Template rimosso dalla tua libreria. Puoi annullare entro 30 secondi.')
+            ->with('undoFormulaWidget', $undo);
     }
 
     public function uninstallWidget(FormulaWidget $formulaWidget, FormulaWidgetRemovalService $removalService): RedirectResponse
@@ -156,8 +168,8 @@ class FormulaMarketplaceController extends Controller
             abort(404);
         }
 
-        if ($formulaWidget->isOfficialProtected()) {
-            abort(403, 'I widget ufficiali non possono essere rimossi.');
+        if ($formulaWidget->is_official_template) {
+            abort(404);
         }
 
         $installed = FormulaWidget::query()
@@ -229,7 +241,7 @@ class FormulaMarketplaceController extends Controller
         return redirect()
             ->back()
             ->withErrors([
-                'widget' => 'Hai già un widget equivalente nella libreria. Usa quello esistente invece di installarne un altro dalla galleria.',
+                'widget' => 'Già pronto: hai un widget equivalente in libreria. Usalo invece di installarne un altro dalla galleria.',
             ])
             ->with('duplicateWidget', FormulaWidgetController::formatWidget($duplicate));
     }

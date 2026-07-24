@@ -19,7 +19,7 @@ const EMPTY_DRAFT: FinancialVariableDraft = {
     name: '',
     code: '',
     type: 'formula',
-    formula_string: '[period_net]',
+    formula_string: '',
     static_value: '',
 };
 
@@ -33,6 +33,7 @@ export default function CreateFinancialVariableModal({
     const [draft, setDraft] = useState<FinancialVariableDraft>(EMPTY_DRAFT);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [builderKey, setBuilderKey] = useState(0);
 
     useEffect(() => {
         if (!open) {
@@ -41,6 +42,7 @@ export default function CreateFinancialVariableModal({
 
         setDraft(EMPTY_DRAFT);
         setErrors({});
+        setBuilderKey((current) => current + 1);
     }, [open]);
 
     const submit: FormEventHandler = (e) => {
@@ -50,14 +52,13 @@ export default function CreateFinancialVariableModal({
 
         axios
             .post(
-                route('formula-variables.store'),
+                route('formula-variables.ensure'),
                 {
                     name: draft.name,
                     code: draft.code || undefined,
                     type: draft.type,
                     formula_string: draft.type === 'formula' ? draft.formula_string : undefined,
                     static_value: draft.type === 'static' ? draft.static_value : undefined,
-                    is_public: false,
                 },
                 { headers: { Accept: 'application/json' } },
             )
@@ -74,7 +75,7 @@ export default function CreateFinancialVariableModal({
                     });
                     setErrors(flat);
                 } else {
-                    setErrors({ form: 'Non sono riuscito a creare la variabile. Riprova.' });
+                    setErrors({ form: 'Non sono riuscito a creare la metrica. Riprova.' });
                 }
             })
             .finally(() => setProcessing(false));
@@ -93,19 +94,21 @@ export default function CreateFinancialVariableModal({
                 onClick={onClose}
             />
             <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl dark:bg-gray-800">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Crea variabile personalizzata</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Formula personalizzata</h2>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Esplora scenari, componi la formula con drag &amp; drop o scrivila in modalità avanzata.
+                    Componi come in Excel: variabili, operatori e IF/WHEN. Oppure parti da uno scenario sotto «Esplora scenari».
                 </p>
 
                 <form onSubmit={submit} className="mt-4 space-y-4">
                     <FinancialVariableBuilder
+                        key={builderKey}
                         draft={draft}
                         onChange={setDraft}
                         systemVariables={systemVariables}
                         userVariables={userVariables}
                         errors={errors}
                         idPrefix="modal-var"
+                        initialTab="compose"
                     />
 
                     <InputError message={errors.form} className="mt-1" />

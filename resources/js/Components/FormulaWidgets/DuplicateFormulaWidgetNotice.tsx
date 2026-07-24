@@ -41,26 +41,26 @@ export default function DuplicateFormulaWidgetNotice({
         });
     }
 
-    const title = isMarketplace ? 'Widget già in galleria' : 'Widget già presente';
+    const title = isMarketplace ? 'Già in galleria' : 'Già pronto';
     const defaultMessage = isMarketplace
-        ? 'Esiste già un widget condiviso con la stessa formula e configurazione grafica.'
-        : 'Hai già un widget con la stessa formula e la stessa configurazione grafica.';
+        ? 'Esiste già un widget condiviso con la stessa formula e lo stesso aspetto. Puoi riusarlo subito.'
+        : 'Hai già questo widget (stessa formula e stesso aspetto). Puoi usarlo subito in dashboard.';
     const primaryLabel = isMarketplace
         ? widget.installed
-            ? 'Vai alla galleria'
+            ? 'Apri galleria'
             : widget.template_slug
                 ? 'Installa template'
                 : 'Installa widget condiviso'
-        : 'Usa quello esistente in dashboard';
+        : 'Apri in dashboard';
 
     return (
         <div
-            className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100"
-            role="alert"
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-100"
+            role="status"
         >
             <p className="font-medium">{title}</p>
             <p className="mt-1">{message ?? defaultMessage}</p>
-            <p className="mt-2 text-amber-900/90 dark:text-amber-100/90">
+            <p className="mt-2 text-emerald-900/90 dark:text-emerald-100/90">
                 {isMarketplace ? 'In galleria' : 'Esistente'}:{' '}
                 <span className="font-semibold">{widget.name}</span> · {displayLabel}
                 {widget.is_official_template ? ' · Ufficiale' : null}
@@ -68,13 +68,13 @@ export default function DuplicateFormulaWidgetNotice({
             <div className="mt-3 flex flex-wrap gap-2">
                 {isMarketplace && widget.installed ? (
                     <LinkButton href={route('formula-marketplace.index')} size="sm">
-                        Vai alla galleria
+                        Apri galleria
                     </LinkButton>
                 ) : (
                     <button
                         type="button"
                         onClick={useExistingWidget}
-                        className="rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800 dark:bg-amber-600 dark:hover:bg-amber-500"
+                        className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500"
                     >
                         {primaryLabel}
                     </button>
@@ -84,13 +84,13 @@ export default function DuplicateFormulaWidgetNotice({
                     variant="secondary"
                     size="sm"
                 >
-                    {isMarketplace ? 'Apri galleria' : 'Vai ai miei widget'}
+                    {isMarketplace ? 'Vai alla galleria' : 'Vai ai miei widget'}
                 </LinkButton>
                 {onDismiss ? (
                     <button
                         type="button"
                         onClick={onDismiss}
-                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-emerald-100 dark:text-emerald-100 dark:hover:bg-emerald-900/40"
                     >
                         Chiudi
                     </button>

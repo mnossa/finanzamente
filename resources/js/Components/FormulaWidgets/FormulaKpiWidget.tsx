@@ -150,6 +150,10 @@ function ProgressView({
     payload: Extract<FormulaWidgetPayload, { type: 'progress' }>;
     embedded: boolean;
 }) {
+    if (payload.variant === 'traffic_light') {
+        return <TrafficLightProgressView payload={payload} embedded={embedded} />;
+    }
+
     if (embedded) {
         return (
             <div className="flex h-full min-h-[6.5rem] flex-col justify-center">
@@ -185,6 +189,80 @@ function ProgressView({
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 {payload.percentage.toLocaleString('it-IT', { maximumFractionDigits: 1 })}% della soglia
             </p>
+        </div>
+    );
+}
+
+const TRAFFIC_LIGHT_META: Record<
+    NonNullable<Extract<FormulaWidgetPayload, { type: 'progress' }>['status']>,
+    { label: string; toneClass: string; lampClass: string }
+> = {
+    ok: {
+        label: 'Nella norma',
+        toneClass: 'text-emerald-700 dark:text-emerald-300',
+        lampClass: 'bg-emerald-500 shadow-emerald-500/40',
+    },
+    warn: {
+        label: 'Vicino alla soglia',
+        toneClass: 'text-amber-700 dark:text-amber-300',
+        lampClass: 'bg-amber-500 shadow-amber-500/40',
+    },
+    danger: {
+        label: 'Soglia superata',
+        toneClass: 'text-red-700 dark:text-red-300',
+        lampClass: 'bg-red-500 shadow-red-500/40',
+    },
+};
+
+function TrafficLightProgressView({
+    payload,
+    embedded,
+}: {
+    payload: Extract<FormulaWidgetPayload, { type: 'progress' }>;
+    embedded: boolean;
+}) {
+    const status = payload.status ?? 'ok';
+    const meta = TRAFFIC_LIGHT_META[status];
+    const isExceeded = status === 'danger';
+
+    const body = (
+        <div className={clsx('flex h-full min-h-[6.5rem] flex-col justify-center', !embedded && 'mt-2')}>
+            <div className="flex items-center gap-3">
+                <span
+                    className={clsx('h-10 w-10 shrink-0 rounded-full shadow-md', meta.lampClass)}
+                    aria-hidden="true"
+                />
+                <div className="min-w-0">
+                    <p className={clsx('text-lg font-semibold', meta.toneClass)}>{meta.label}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Speso{' '}
+                        <span className={moneyTabular}>{formatCurrency(payload.value)}</span>
+                        {' '}di{' '}
+                        <span className={moneyTabular}>{formatCurrency(payload.threshold)}</span>
+                    </p>
+                </div>
+            </div>
+            <div className="mt-4">
+                <ProgressBar
+                    percentage={Math.min(100, payload.percentage)}
+                    isExceeded={isExceeded}
+                />
+            </div>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {payload.percentage.toLocaleString('it-IT', { maximumFractionDigits: 1 })}% della soglia
+            </p>
+        </div>
+    );
+
+    if (embedded) {
+        return body;
+    }
+
+    return (
+        <div className="rounded-xl bg-white p-5 shadow-sm dark:bg-gray-800">
+            <h3 className="font-semibold text-gray-900 dark:text-white">{payload.name}</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{payload.periodLabel}</p>
+            {body}
         </div>
     );
 }

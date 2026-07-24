@@ -122,6 +122,18 @@ class FinancialVariableCloneService
                     $this->cloneVariableTree($installer, $dependency, $variableMap);
                 }
             }
+
+            // Solo system token → riusa formula già in libreria (evita Uscite 30g + Speso).
+            if ($this->formulaUsesOnlySystemTokens((string) $source->formula_string)) {
+                $reusable = app(FinancialVariableLibraryService::class)
+                    ->findReusableByFormula($installer, (string) $source->formula_string);
+
+                if ($reusable !== null) {
+                    $variableMap[$source->id] = $reusable;
+
+                    return $reusable;
+                }
+            }
         }
 
         $newCode = $this->uniqueCodeForUser($installer, $source->code);
@@ -143,6 +155,17 @@ class FinancialVariableCloneService
         $variableMap[$source->id] = $clone;
 
         return $clone;
+    }
+
+    private function formulaUsesOnlySystemTokens(string $formula): bool
+    {
+        foreach ($this->tokenParser->extract($formula) as $token) {
+            if (! $this->systemVariableResolver->isSystemCode($token)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function uniqueCodeForUser(User $user, string $baseCode): string

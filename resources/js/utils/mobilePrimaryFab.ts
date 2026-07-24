@@ -91,7 +91,10 @@ function investmentPacFab(): MobilePrimaryFab {
  * Pagine con più form principali: nessun FAB submit (resta il link di default dopo i `when`).
  */
 function isExcludedFromMobileSubmitFab(current: string): boolean {
-    return current === 'profile.edit';
+    // Wizard formule: CTA = Continua/Crea in FormActionsBar (FAB submit orfano confonde).
+    return current === 'profile.edit'
+        || current === 'formula-widgets.create'
+        || current === 'formula-widgets.edit';
 }
 
 function tryResolveMobileSubmitFab(current: string): MobilePrimaryFab | null {
@@ -145,6 +148,8 @@ export function resolveMobilePrimaryFab(): MobilePrimaryFab | null {
         'asset-allocation.*',
         'telegram.link.*',
         'bank-import-layouts.*',
+        'formula-widgets.create',
+        'formula-widgets.edit',
     ] as const;
 
     for (const pattern of routePatternsWithoutFab) {

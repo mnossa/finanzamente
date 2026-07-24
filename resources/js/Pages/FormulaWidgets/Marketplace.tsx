@@ -64,13 +64,15 @@ function filterMarketplaceWidgets(
 function MarketplaceCard({
     widget,
     onPreview,
+    onInstall,
     onUninstall,
-    previewLabel,
+    installing,
 }: {
     widget: FormulaWidgetSummary;
     onPreview: () => void;
+    onInstall: () => void;
     onUninstall: () => void;
-    previewLabel: string;
+    installing: boolean;
 }) {
     return (
         <CardBox className="flex h-full flex-col gap-3 p-4 shadow-sm">
@@ -89,34 +91,34 @@ function MarketplaceCard({
                 {widget.description ? (
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{widget.description}</p>
                 ) : null}
-                {widget.financial_variable?.formula_string && (
-                    <p className="mt-2 hidden font-mono text-xs text-gray-500 dark:text-gray-400 sm:block">
-                        {widget.financial_variable.formula_string}
-                    </p>
-                )}
             </div>
             {widget.installed ? (
-                widget.is_official_template ? (
-                    <p className="rounded-lg border border-surface-200 bg-surface-50 px-3 py-2.5 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300 sm:py-2">
-                        Installato · i template ufficiali non si possono rimuovere
-                    </p>
-                ) : (
-                    <button
-                        type="button"
-                        onClick={onUninstall}
-                        className="w-full rounded-lg border border-red-200 bg-white px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 sm:py-2"
-                    >
-                        Rimuovi
-                    </button>
-                )
-            ) : (
                 <button
                     type="button"
-                    onClick={onPreview}
-                    className="w-full rounded-lg bg-primary-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 sm:py-2"
+                    onClick={onUninstall}
+                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/50 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20 sm:py-2"
                 >
-                    {previewLabel}
+                    Disinstalla
                 </button>
+            ) : (
+                <div className="flex flex-col gap-2">
+                    <button
+                        type="button"
+                        onClick={onInstall}
+                        disabled={installing}
+                        className="w-full rounded-lg bg-primary-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-60 sm:py-2"
+                    >
+                        {installing ? 'Installazione…' : 'Installa'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onPreview}
+                        disabled={installing}
+                        className="w-full rounded-lg px-3 py-1.5 text-sm font-medium text-gray-500 underline-offset-2 transition-colors hover:text-gray-800 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                        Anteprima
+                    </button>
+                </div>
             )}
         </CardBox>
     );
@@ -130,7 +132,7 @@ export default function Marketplace({
     const { flash, errors } = usePage<PageProps>().props;
     const [previewWidget, setPreviewWidget] = useState<FormulaWidgetSummary | null>(null);
     const [installLabel, setInstallLabel] = useState('Installa nella dashboard');
-    const [installing, setInstalling] = useState(false);
+    const [installingId, setInstallingId] = useState<number | null>(null);
     const [search, setSearch] = useState('');
     const [displayTypeFilter, setDisplayTypeFilter] = useState('');
     const [duplicateDismissed, setDuplicateDismissed] = useState(false);
@@ -150,18 +152,18 @@ export default function Marketplace({
     };
 
     const closePreview = () => {
-        if (installing) {
+        if (installingId !== null) {
             return;
         }
 
         setPreviewWidget(null);
     };
 
-    const installFromPreview = (widget: FormulaWidgetSummary) => {
-        setInstalling(true);
+    const installWidget = (widget: FormulaWidgetSummary) => {
+        setInstallingId(widget.id);
 
         const finishInstall = (page: { props: PageProps }) => {
-            setInstalling(false);
+            setInstallingId(null);
 
             if (page.props.flash?.duplicateWidget || page.props.flash?.success) {
                 setPreviewWidget(null);
@@ -173,7 +175,7 @@ export default function Marketplace({
                 route('formula-marketplace.install-template', widget.template_slug),
                 { pin: true },
                 {
-                    onFinish: () => setInstalling(false),
+                    onFinish: () => setInstallingId(null),
                     onSuccess: finishInstall,
                 },
             );
@@ -182,7 +184,7 @@ export default function Marketplace({
         }
 
         router.post(route('formula-marketplace.install-widget', widget.id), undefined, {
-            onFinish: () => setInstalling(false),
+            onFinish: () => setInstallingId(null),
             onSuccess: finishInstall,
         });
     };
@@ -288,7 +290,11 @@ export default function Marketplace({
                                 <MarketplaceCard
                                     key={widget.id}
                                     widget={widget}
-                                    previewLabel="Anteprima"
+                                    installing={installingId === widget.id}
+                                    onInstall={() => {
+                                        if (widget.installed) return;
+                                        installWidget(widget);
+                                    }}
                                     onPreview={() => {
                                         if (widget.installed) return;
                                         openPreview(widget, 'Installa template');
@@ -322,7 +328,11 @@ export default function Marketplace({
                                     <MarketplaceCard
                                         key={widget.id}
                                         widget={widget}
-                                        previewLabel="Anteprima"
+                                        installing={installingId === widget.id}
+                                        onInstall={() => {
+                                            if (widget.installed) return;
+                                            installWidget(widget);
+                                        }}
                                         onPreview={() => {
                                             if (widget.installed) return;
                                             openPreview(widget, 'Installa widget');
@@ -343,8 +353,8 @@ export default function Marketplace({
                 widget={previewWidget}
                 installLabel={installLabel}
                 onClose={closePreview}
-                onInstall={installFromPreview}
-                installing={installing}
+                onInstall={installWidget}
+                installing={previewWidget !== null && installingId === previewWidget.id}
             />
         </AuthenticatedLayout>
     );

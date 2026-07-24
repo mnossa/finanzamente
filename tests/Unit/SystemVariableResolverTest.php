@@ -24,4 +24,14 @@ class SystemVariableResolverTest extends TestCase
         $this->assertNotNull($daysElapsed);
         $this->assertStringContainsString('[days_elapsed_in_month]', (string) $daysElapsed['example']);
     }
+
+    #[Test]
+    public function it_hides_partita_iva_tax_variables_from_formula_palette(): void
+    {
+        $codes = collect(app(SystemVariableResolver::class)->listMetadata())->pluck('code');
+
+        $this->assertFalse($codes->contains('inps_amount'));
+        $this->assertFalse($codes->contains('estimated_taxes'));
+        $this->assertFalse($codes->contains('flat_tax_amount'));
+    }
 }

@@ -104,16 +104,54 @@ class FormulaWidgetConfigValidator
      */
     private function validateProgressConfig(array $chartConfig): void
     {
-        foreach (['value_code', 'threshold_code'] as $key) {
-            $code = $chartConfig[$key] ?? null;
-            if (! is_string($code) || $code === '') {
-                throw ValidationException::withMessages([
-                    'chart_config' => 'La configurazione di avanzamento richiede value_code e threshold_code.',
-                ]);
+        $valueCode = $chartConfig['value_code'] ?? null;
+        if (! is_string($valueCode) || $valueCode === '') {
+            throw ValidationException::withMessages([
+                'chart_config' => 'La configurazione di avanzamento richiede value_code.',
+            ]);
+        }
+
+        $this->assertResolvableCode($valueCode);
+
+        if ($this->hasLiteralProgressThreshold($chartConfig)) {
+            return;
+        }
+
+        $thresholdCode = $chartConfig['threshold_code'] ?? null;
+        if (! is_string($thresholdCode) || $thresholdCode === '') {
+            throw ValidationException::withMessages([
+                'chart_config' => 'La configurazione di avanzamento richiede threshold_code oppure una soglia numerica.',
+            ]);
+        }
+
+        $this->assertResolvableCode($thresholdCode);
+    }
+
+    /**
+     * @param  array<string, mixed>  $chartConfig
+     */
+    private function hasLiteralProgressThreshold(array $chartConfig): bool
+    {
+        if (isset($chartConfig['threshold_amount']) && is_numeric($chartConfig['threshold_amount'])) {
+            return true;
+        }
+
+        $parameters = $chartConfig['parameters'] ?? [];
+        if (! is_array($parameters)) {
+            return false;
+        }
+
+        foreach ($parameters as $parameter) {
+            if (! is_array($parameter)) {
+                continue;
             }
 
-            $this->assertResolvableCode($code);
+            if (($parameter['type'] ?? null) === 'number' && ($parameter['key'] ?? null) === 'threshold') {
+                return true;
+            }
         }
+
+        return false;
     }
 
     private function assertResolvableCode(string $code): void

@@ -52,13 +52,31 @@ class InvestmentLedgerService
      */
     public function unsyncedPurchasesInPeriod(User $user, Carbon $startDate, Carbon $endDate): array
     {
-        $investments = Investment::query()
+        return $this->purchasesInPeriod($user, $startDate, $endDate, onlyUnsynced: true);
+    }
+
+    /**
+     * Versamenti/acquisti investimenti nel periodo (tutti gli asset: PAC e singoli).
+     *
+     * @return array{amount: float, items: array<int, array{name: string, amount: float}>}
+     */
+    public function purchasesInPeriod(
+        User $user,
+        Carbon $startDate,
+        Carbon $endDate,
+        bool $onlyUnsynced = false,
+    ): array {
+        $query = Investment::query()
             ->with('asset:id,name')
             ->where('household_id', $user->active_household_id)
             ->whereBetween('buy_date', [$startDate, $endDate])
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
-            ->whereDoesntHave('transactions')
-            ->get();
+            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id));
+
+        if ($onlyUnsynced) {
+            $query->whereDoesntHave('transactions');
+        }
+
+        $investments = $query->get();
 
         $amount = 0.0;
         $items = [];

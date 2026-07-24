@@ -397,6 +397,133 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
+    public function ensure_financial_variable_creates_then_reuses_same_formula(): void
+    {
+        $first = $this->actingAs($this->user)
+            ->postJson(route('formula-variables.ensure'), [
+                'name' => 'Speso nel periodo',
+                'code' => 'speso_periodo',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => '[period_expenses]',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('created', true)
+            ->assertJsonPath('variable.name', 'Speso nel periodo')
+            ->json('variable.id');
+
+        $this->assertSame(1, FinancialVariable::query()->where('user_id', $this->user->id)->count());
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-variables.ensure'), [
+                'name' => 'Speso nel periodo',
+                'code' => 'speso_periodo',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => ' [period_expenses] ',
+            ])
+            ->assertOk()
+            ->assertJsonPath('created', false)
+            ->assertJsonPath('variable.id', $first);
+
+        $this->assertSame(1, FinancialVariable::query()->where('user_id', $this->user->id)->count());
+    }
+
+    #[Test]
+    public function ensure_financial_variable_generates_unique_code_when_preferred_exists(): void
+    {
+        FinancialVariable::factory()->for($this->user)->formula('[period_income]')->create([
+            'code' => 'speso_periodo',
+            'name' => 'Altro',
+        ]);
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-variables.ensure'), [
+                'name' => 'Speso nel periodo',
+                'code' => 'speso_periodo',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => '[period_expenses]',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('created', true)
+            ->assertJsonPath('variable.code', 'speso_periodo_2');
+    }
+
+    #[Test]
+    public function ensure_reuses_official_origin_clone_with_same_formula(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $official = FinancialVariable::query()
+            ->where('is_official_template', true)
+            ->where('formula_string', '[period_expenses]')
+            ->first();
+
+        $this->assertNotNull($official);
+
+        $clone = FinancialVariable::factory()->for($this->user)->formula('[period_expenses]')->create([
+            'name' => 'Uscite 30 giorni',
+            'code' => 'uscite_30',
+            'source_id' => $official->id,
+        ]);
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-variables.ensure'), [
+                'name' => 'Speso nel periodo',
+                'code' => 'speso_periodo',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => '[period_expenses]',
+            ])
+            ->assertOk()
+            ->assertJsonPath('created', false)
+            ->assertJsonPath('variable.id', $clone->id);
+
+        $this->assertSame(1, FinancialVariable::query()->where('user_id', $this->user->id)->count());
+    }
+
+    #[Test]
+    public function ensure_repairs_scenario_name_with_wrong_formula(): void
+    {
+        $broken = FinancialVariable::factory()->for($this->user)->formula('[totale_investimenti]')->create([
+            'name' => 'Versamenti PAC mensili',
+            'code' => 'pac_mensile_broken',
+        ]);
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-variables.ensure'), [
+                'name' => 'Versamenti PAC mensili',
+                'code' => 'pac_mensile',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => '[pac_monthly_total]',
+            ])
+            ->assertOk()
+            ->assertJsonPath('created', false)
+            ->assertJsonPath('variable.id', $broken->id)
+            ->assertJsonPath('variable.formula_string', '[pac_monthly_total]');
+
+        $this->assertSame('[pac_monthly_total]', $broken->fresh()->formula_string);
+        $this->assertSame(1, FinancialVariable::query()->where('user_id', $this->user->id)->count());
+    }
+
+    #[Test]
+    public function ensure_applies_formula_alias_totale_investimenti(): void
+    {
+        $existing = FinancialVariable::factory()->for($this->user)->formula('[total_investments]')->create([
+            'name' => 'Totale investimenti',
+            'code' => 'totale_investimenti',
+        ]);
+
+        $this->actingAs($this->user)
+            ->postJson(route('formula-variables.ensure'), [
+                'name' => 'Totale investimenti',
+                'code' => 'totale_investimenti',
+                'type' => FinancialVariable::TYPE_FORMULA,
+                'formula_string' => '[totale_investimenti]',
+            ])
+            ->assertOk()
+            ->assertJsonPath('created', false)
+            ->assertJsonPath('variable.id', $existing->id);
+    }
+
+    #[Test]
     public function preview_accepts_runtime_params_for_account_filter(): void
     {
         $accountA = Account::factory()->for($this->household)->for($this->user, 'owner')->create([
@@ -469,12 +596,13 @@ class FormulaWidgetHttpTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['payload' => ['type', 'name', 'value']])
             ->assertJsonPath('payload.type', 'kpi')
-            ->assertJsonPath('payload.name', 'Saldo conti');
+            ->assertJsonPath('payload.name', 'Liquidità attuale');
     }
 
     #[Test]
-    public function marketplace_cannot_uninstall_official_template(): void
+    public function marketplace_can_uninstall_installed_official_template(): void
     {
+        Queue::fake();
         $this->seed(FormulaWidgetTemplateSeeder::class);
 
         $this->actingAs($this->user)
@@ -488,12 +616,20 @@ class FormulaWidgetHttpTest extends TestCase
 
         $this->assertNotNull($installed);
 
+        $official = FormulaWidget::query()
+            ->where('template_slug', 'official.saldo_liquidita')
+            ->where('is_official_template', true)
+            ->firstOrFail();
+
         $this->actingAs($this->user)
             ->delete(route('formula-marketplace.uninstall-template', 'official.saldo_liquidita'))
-            ->assertForbidden();
+            ->assertRedirect(route('formula-marketplace.index'))
+            ->assertSessionHas('undoFormulaWidget.widget_id', $installed->id);
 
+        $this->assertSoftDeleted('formula_widgets', ['id' => $installed->id]);
         $this->assertDatabaseHas('formula_widgets', [
-            'id' => $installed->id,
+            'id' => $official->id,
+            'is_official_template' => true,
             'deleted_at' => null,
         ]);
     }
@@ -566,8 +702,9 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
-    public function destroy_rejects_official_origin_clone(): void
+    public function destroy_allows_official_origin_clone_but_keeps_catalog_template(): void
     {
+        Queue::fake();
         $this->seed(FormulaWidgetTemplateSeeder::class);
 
         $this->actingAs($this->user)
@@ -579,12 +716,20 @@ class FormulaWidgetHttpTest extends TestCase
             ->where('is_official_template', false)
             ->firstOrFail();
 
-        $this->actingAs($this->user)
-            ->delete(route('formula-widgets.destroy', $installed))
-            ->assertForbidden();
+        $official = FormulaWidget::query()
+            ->where('template_slug', 'official.saldo_liquidita')
+            ->where('is_official_template', true)
+            ->firstOrFail();
 
+        $this->actingAs($this->user)
+            ->from(route('formula-widgets.index'))
+            ->delete(route('formula-widgets.destroy', $installed))
+            ->assertRedirect(route('formula-widgets.index'));
+
+        $this->assertSoftDeleted('formula_widgets', ['id' => $installed->id]);
         $this->assertDatabaseHas('formula_widgets', [
-            'id' => $installed->id,
+            'id' => $official->id,
+            'is_official_template' => true,
             'deleted_at' => null,
         ]);
     }

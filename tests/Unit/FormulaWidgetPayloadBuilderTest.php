@@ -82,11 +82,11 @@ class FormulaWidgetPayloadBuilderTest extends TestCase
     {
         $variable = FinancialVariable::factory()->for($this->user)->formula('[household_balance]')->create([
             'code' => 'saldo_liquidita',
-            'name' => 'Saldo conti',
+            'name' => 'Liquidità attuale',
         ]);
 
         $widget = FormulaWidget::factory()->for($this->user)->for($variable, 'financialVariable')->create([
-            'name' => 'Saldo conti',
+            'name' => 'Liquidità attuale',
             'display_type' => FormulaWidget::DISPLAY_KPI,
             'period_preset' => null,
             'chart_config' => ['format' => 'currency', 'variant' => 'balance_summary'],
@@ -163,5 +163,49 @@ class FormulaWidgetPayloadBuilderTest extends TestCase
 
         $this->assertSame('kpi', $payload['type']);
         $this->assertArrayHasKey('value', $payload);
+    }
+
+    #[Test]
+    public function it_builds_traffic_light_progress_with_editable_threshold(): void
+    {
+        $variable = FinancialVariable::factory()->for($this->user)->formula('MAX([period_expenses], 0)')->create([
+            'code' => 'alert_spese_elevate',
+            'name' => 'Alert spese elevate',
+        ]);
+
+        $widget = FormulaWidget::factory()->for($this->user)->for($variable, 'financialVariable')->create([
+            'name' => 'Alert spese elevate',
+            'display_type' => FormulaWidget::DISPLAY_PROGRESS,
+            'period_preset' => 'current_month',
+            'chart_config' => [
+                'variant' => 'traffic_light',
+                'value_code' => 'household_balance',
+                'threshold_amount' => 1000,
+                'bands' => ['warn' => 70, 'danger' => 100],
+                'parameters' => [
+                    [
+                        'key' => 'threshold',
+                        'type' => 'number',
+                        'label' => 'Soglia (€)',
+                        'default' => '1000',
+                    ],
+                ],
+            ],
+        ]);
+
+        $atLimit = $this->builder->build($widget, $this->user);
+        $this->assertSame('progress', $atLimit['type']);
+        $this->assertSame('traffic_light', $atLimit['variant']);
+        $this->assertSame(1000.0, $atLimit['threshold']);
+        $this->assertSame(1500.0, $atLimit['value']);
+        $this->assertSame('danger', $atLimit['status']);
+
+        $warn = $this->builder->build($widget, $this->user, ['threshold' => '2000']);
+        $this->assertSame(2000.0, $warn['threshold']);
+        $this->assertSame('warn', $warn['status']);
+
+        $ok = $this->builder->build($widget, $this->user, ['threshold' => '3000']);
+        $this->assertSame(3000.0, $ok['threshold']);
+        $this->assertSame('ok', $ok['status']);
     }
 }

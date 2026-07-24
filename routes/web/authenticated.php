@@ -110,6 +110,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
 
     Route::get('/widget-formule/variabili', [FinancialVariableController::class, 'index'])->name('formula-variables.index');
     Route::post('/widget-formule/variabili', [FinancialVariableController::class, 'store'])->name('formula-variables.store');
+    Route::post('/widget-formule/variabili/assicurati', [FinancialVariableController::class, 'ensure'])->name('formula-variables.ensure');
     Route::patch('/widget-formule/variabili/{financial_variable}', [FinancialVariableController::class, 'update'])->name('formula-variables.update');
     Route::delete('/widget-formule/variabili/{financial_variable}', [FinancialVariableController::class, 'destroy'])->name('formula-variables.destroy');
 

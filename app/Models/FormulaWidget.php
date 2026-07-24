@@ -97,9 +97,18 @@ class FormulaWidget extends Model
     }
 
     /**
-     * Template ufficiale o clone installato da un template ufficiale: non eliminabile.
+     * Solo i template ufficiali di catalogo non sono eliminabili.
+     * I clone installati dall'utente si possono disinstallare (soft delete).
      */
     public function isOfficialProtected(): bool
+    {
+        return (bool) $this->is_official_template;
+    }
+
+    /**
+     * Widget derivato da un template ufficiale (per etichette UI), incluso il catalogo stesso.
+     */
+    public function isOfficialOrigin(): bool
     {
         if ($this->is_official_template) {
             return true;

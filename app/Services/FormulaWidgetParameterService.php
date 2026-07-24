@@ -20,6 +20,8 @@ class FormulaWidgetParameterService
 
     public const PERIOD_NAV_MAX_OFFSET = 0;
 
+    public const NUMBER_TYPE = 'number';
+
     /** @var list<string> */
     public const SUPPORTED_TYPES = [
         'account',
@@ -29,6 +31,7 @@ class FormulaWidgetParameterService
         'currency',
         'debt_credit',
         'transaction_type',
+        self::NUMBER_TYPE,
     ];
 
     /** @var list<string> */
@@ -141,6 +144,7 @@ class FormulaWidgetParameterService
 
         return match ($definition['type']) {
             self::PERIOD_NAV_TYPE => (string) self::PERIOD_NAV_MAX_OFFSET,
+            self::NUMBER_TYPE => '0',
             'category' => 'none',
             default => self::ACCOUNT_ALL,
         };
@@ -348,6 +352,16 @@ class FormulaWidgetParameterService
             $offset = max(self::PERIOD_NAV_MIN_OFFSET, min(self::PERIOD_NAV_MAX_OFFSET, $offset));
 
             return (string) $offset;
+        }
+
+        if ($definition['type'] === self::NUMBER_TYPE) {
+            if (! is_numeric($value)) {
+                return $this->defaultValue($definition);
+            }
+
+            $amount = max(0.0, (float) $value);
+
+            return rtrim(rtrim(number_format($amount, 2, '.', ''), '0'), '.') ?: '0';
         }
 
         $options = $this->buildOptions($user, $definition);

@@ -64,6 +64,7 @@ class FormulaWidgetController extends Controller
         $variables = FinancialVariable::query()
             ->where('user_id', $user->id)
             ->where('is_official_template', false)
+            ->with('source:id,is_official_template')
             ->orderBy('name')
             ->get()
             ->map(fn (FinancialVariable $v) => FinancialVariableController::formatVariable($v));
@@ -176,6 +177,7 @@ class FormulaWidgetController extends Controller
         $variables = FinancialVariable::query()
             ->where('user_id', $user->id)
             ->where('is_official_template', false)
+            ->with('source:id,is_official_template')
             ->orderBy('name')
             ->get()
             ->map(fn (FinancialVariable $v) => FinancialVariableController::formatVariable($v));
@@ -376,7 +378,7 @@ class FormulaWidgetController extends Controller
             'downloads_count' => $widget->downloads_count,
             'source_id' => $widget->source_id,
             'is_official_template' => $widget->is_official_template,
-            'is_official_origin' => $widget->isOfficialProtected(),
+            'is_official_origin' => $widget->isOfficialOrigin(),
             'can_delete' => ! $widget->isOfficialProtected(),
             'clones_count' => (int) ($widget->clones_count ?? $widget->clones()->count()),
             'financial_variable' => $widget->relationLoaded('financialVariable') && $widget->financialVariable
@@ -417,7 +419,7 @@ class FormulaWidgetController extends Controller
 
     private function redirectOwnDuplicate(
         FormulaWidget $duplicate,
-        string $message = 'Hai già un widget con la stessa formula e configurazione grafica.',
+        string $message = 'Già pronto: hai questo widget (stessa formula e stesso aspetto).',
     ): RedirectResponse {
         return redirect()
             ->back()
@@ -434,7 +436,7 @@ class FormulaWidgetController extends Controller
             ->back()
             ->withInput()
             ->withErrors([
-                'widget' => "Esiste già un {$label} con la stessa formula e configurazione grafica.",
+                'widget' => "Già in galleria: esiste già un {$label} con la stessa formula e lo stesso aspetto.",
             ])
             ->with(
                 'duplicateMarketplaceWidget',

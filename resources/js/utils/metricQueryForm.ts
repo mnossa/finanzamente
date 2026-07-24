@@ -20,6 +20,12 @@ export const FILTER_FIELD_LABELS: Record<string, string> = {
     tax_deductible: 'Detraibile',
     amount_min: 'Importo minimo',
     amount_max: 'Importo massimo',
+    has_tag: 'Ha un tag',
+    is_private: 'Privata',
+    is_split: 'Suddivisa',
+    type: 'Tipo',
+    status: 'Stato',
+    counterparty: 'Controparte',
 };
 
 export const MEASURE_LABELS: Record<string, string> = {
@@ -71,6 +77,34 @@ export function removeMetricFilter(
 
         return operator !== undefined && entry.operator !== operator;
     });
+}
+
+/** Preset 1-tap sopra il builder (non sostituiscono METRIC_QUERY_PRESETS). */
+export const QUICK_FILTER_PRESETS: Array<{
+    id: string;
+    title: string;
+    filter: MetricQueryFilter;
+}> = [
+    {
+        id: 'this_account',
+        title: 'Questo conto',
+        filter: { field: 'account', operator: 'in', runtime_key: 'account_selected' },
+    },
+    {
+        id: 'hide_private',
+        title: 'Nascondi privati',
+        filter: { field: 'is_private', operator: 'eq', value: false },
+    },
+];
+
+export function metricQueryHasFilter(
+    metricQuery: MetricQueryDefinition | undefined,
+    field: string,
+    operator: string,
+): boolean {
+    return (metricQuery?.filters ?? []).some(
+        (entry) => entry.field === field && entry.operator === operator,
+    );
 }
 
 export function runtimeParamKeyForFilter(field: string, operator: string): string {

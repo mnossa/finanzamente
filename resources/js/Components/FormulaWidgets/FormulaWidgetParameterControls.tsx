@@ -83,6 +83,33 @@ function PeriodNavControl({
     );
 }
 
+function NumberControl({
+    parameter,
+    disabled,
+    onChange,
+}: {
+    parameter: FormulaWidgetRuntimeParameter;
+    disabled: boolean;
+    onChange: (key: string, value: string) => void;
+}) {
+    return (
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+            <span className="font-medium">{parameter.label}</span>
+            <input
+                type="number"
+                min={0}
+                step={50}
+                inputMode="decimal"
+                className="w-24 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                value={parameter.value}
+                disabled={disabled}
+                onChange={(event) => onChange(parameter.key, event.target.value)}
+                aria-label={parameter.label}
+            />
+        </label>
+    );
+}
+
 export default function FormulaWidgetParameterControls({
     parameters = [],
     disabled = false,
@@ -95,23 +122,38 @@ export default function FormulaWidgetParameterControls({
 
     return (
         <div className={clsx('flex flex-wrap items-center gap-x-3 gap-y-2', className)}>
-            {parameters.map((parameter) =>
-                parameter.type === 'period_nav' ? (
-                    <PeriodNavControl
-                        key={parameter.key}
-                        parameter={parameter}
-                        disabled={disabled}
-                        onChange={onChange}
-                    />
-                ) : (
+            {parameters.map((parameter) => {
+                if (parameter.type === 'period_nav') {
+                    return (
+                        <PeriodNavControl
+                            key={parameter.key}
+                            parameter={parameter}
+                            disabled={disabled}
+                            onChange={onChange}
+                        />
+                    );
+                }
+
+                if (parameter.type === 'number') {
+                    return (
+                        <NumberControl
+                            key={parameter.key}
+                            parameter={parameter}
+                            disabled={disabled}
+                            onChange={onChange}
+                        />
+                    );
+                }
+
+                return (
                     <SelectControl
                         key={parameter.key}
                         parameter={parameter}
                         disabled={disabled}
                         onChange={onChange}
                     />
-                ),
-            )}
+                );
+            })}
         </div>
     );
 }

@@ -3,14 +3,14 @@
 return [
     [
         'template_slug' => 'official.saldo_liquidita',
-        'name' => 'Saldo conti',
+        'name' => 'Liquidità attuale',
         'display_type' => 'kpi',
         'period_preset' => null,
         'default_size' => 'xl',
         'chart_config' => ['format' => 'currency', 'variant' => 'balance_summary'],
         'variable' => [
             'code' => 'saldo_liquidita',
-            'name' => 'Saldo conti',
+            'name' => 'Liquidità attuale',
             'type' => 'formula',
             'formula_string' => '[household_balance]',
         ],

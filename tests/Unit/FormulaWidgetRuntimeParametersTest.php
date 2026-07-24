@@ -238,6 +238,25 @@ class FormulaWidgetRuntimeParametersTest extends TestCase
     }
 
     #[Test]
+    public function number_threshold_is_normalized_and_defaults_on_invalid(): void
+    {
+        $service = app(FormulaWidgetParameterService::class);
+        $config = [
+            'parameters' => [
+                ['key' => 'threshold', 'type' => 'number', 'label' => 'Soglia (€)', 'default' => '1000'],
+            ],
+        ];
+
+        $resolved = $service->resolveValues($this->user, $config, ['threshold' => '750.5']);
+        $invalid = $service->resolveValues($this->user, $config, ['threshold' => 'abc']);
+        $negative = $service->resolveValues($this->user, $config, ['threshold' => '-10']);
+
+        $this->assertSame('750.5', $resolved['threshold']);
+        $this->assertSame('1000', $invalid['threshold']);
+        $this->assertSame('0', $negative['threshold']);
+    }
+
+    #[Test]
     public function public_widgets_cannot_include_account_parameters(): void
     {
         $this->expectException(ValidationException::class);

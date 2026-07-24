@@ -84,10 +84,15 @@ class FormulaWidgetPayloadBuilder
             FormulaWidget::DISPLAY_PROGRESS => [
                 'type' => 'progress',
                 'name' => $widget->name,
-                'value' => $defaults['period_income'] ?? 2800.0,
-                'threshold' => $defaults['period_expenses'] ?? 1950.0,
-                'percentage' => 49.4,
+                'value' => $defaults['period_expenses'] ?? 1200.0,
+                'threshold' => (float) ($chartConfig['threshold_amount'] ?? 1000),
+                'percentage' => 120.0,
                 'periodLabel' => 'Anteprima demo',
+                'variant' => ($chartConfig['variant'] ?? null) === 'traffic_light' ? 'traffic_light' : null,
+                'status' => ($chartConfig['variant'] ?? null) === 'traffic_light' ? 'danger' : null,
+                'bands' => ($chartConfig['variant'] ?? null) === 'traffic_light'
+                    ? ['warn' => 70.0, 'danger' => 100.0]
+                    : null,
                 'parameters' => [],
             ],
             default => [
@@ -472,13 +477,11 @@ class FormulaWidgetPayloadBuilder
         FormulaWidgetRuntimeContext $context,
     ): array {
         $valueCode = $chartConfig['value_code'] ?? 'period_income';
-        $thresholdCode = $chartConfig['threshold_code'] ?? 'period_expenses';
-
         $value = $this->formulaResolverService->resolveCode($user, $valueCode, $period['start'], $period['end'], 0, [], $context);
-        $threshold = $this->formulaResolverService->resolveCode($user, $thresholdCode, $period['start'], $period['end'], 0, [], $context);
+        $threshold = $this->resolveProgressThreshold($user, $period, $chartConfig, $context);
         $percentage = $threshold > 0 ? round(($value / $threshold) * 100, 1) : 0.0;
 
-        return [
+        $payload = [
             'type' => 'progress',
             'name' => $widget->name,
             'value' => $value,
@@ -486,6 +489,56 @@ class FormulaWidgetPayloadBuilder
             'percentage' => $percentage,
             'periodLabel' => $period['label'],
         ];
+
+        $variant = $chartConfig['variant'] ?? null;
+        if ($variant === 'traffic_light') {
+            $bands = is_array($chartConfig['bands'] ?? null) ? $chartConfig['bands'] : [];
+            $warnAt = isset($bands['warn']) && is_numeric($bands['warn']) ? (float) $bands['warn'] : 70.0;
+            $dangerAt = isset($bands['danger']) && is_numeric($bands['danger']) ? (float) $bands['danger'] : 100.0;
+
+            $payload['variant'] = 'traffic_light';
+            $payload['bands'] = [
+                'warn' => $warnAt,
+                'danger' => $dangerAt,
+            ];
+            $payload['status'] = $percentage >= $dangerAt
+                ? 'danger'
+                : ($percentage >= $warnAt ? 'warn' : 'ok');
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array{start: Carbon, end: Carbon, label: string}  $period
+     * @param  array<string, mixed>  $chartConfig
+     */
+    private function resolveProgressThreshold(
+        User $user,
+        array $period,
+        array $chartConfig,
+        FormulaWidgetRuntimeContext $context,
+    ): float {
+        $fromParam = $context->getParameter('threshold');
+        if ($fromParam !== null && is_numeric($fromParam)) {
+            return max(0.0, (float) $fromParam);
+        }
+
+        if (isset($chartConfig['threshold_amount']) && is_numeric($chartConfig['threshold_amount'])) {
+            return max(0.0, (float) $chartConfig['threshold_amount']);
+        }
+
+        $thresholdCode = $chartConfig['threshold_code'] ?? 'period_expenses';
+
+        return $this->formulaResolverService->resolveCode(
+            $user,
+            $thresholdCode,
+            $period['start'],
+            $period['end'],
+            0,
+            [],
+            $context,
+        );
     }
 
     private function resolveDeltaComparisonLabel(?string $periodPreset): string

@@ -52,4 +52,22 @@ class FinancialVariableCloneServiceTest extends TestCase
         $this->assertNull(FinancialVariable::query()->find($officialVariableId));
         $this->assertNull($clonedVariable->fresh()->source_id);
     }
+
+    #[Test]
+    public function install_reuses_existing_user_formula_with_only_system_tokens(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $installer = User::factory()->create();
+        $existing = FinancialVariable::factory()->for($installer)->formula('[household_balance]')->create([
+            'name' => 'Liquidità attuale',
+            'code' => 'liquidita',
+        ]);
+
+        $cloned = app(FinancialVariableCloneService::class)
+            ->installTemplate($installer, 'official.saldo_liquidita');
+
+        $this->assertSame($existing->id, $cloned->financial_variable_id);
+        $this->assertSame(1, FinancialVariable::query()->where('user_id', $installer->id)->count());
+    }
 }

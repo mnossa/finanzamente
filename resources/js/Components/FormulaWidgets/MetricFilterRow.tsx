@@ -12,7 +12,7 @@ interface MetricFilterRowProps {
 }
 
 const OPERATOR_LABELS: Record<string, string> = {
-    in: 'include',
+    in: 'includi',
     not_in: 'escludi',
     eq: 'uguale a',
     neq: 'diverso da',
@@ -20,6 +20,8 @@ const OPERATOR_LABELS: Record<string, string> = {
     gte: 'maggiore o uguale',
     lt: 'minore di',
     lte: 'minore o uguale',
+    is_null: 'è vuoto',
+    is_not_null: 'non è vuoto',
 };
 
 const BOOLEAN_FIELDS = ['tax_deductible', 'is_private', 'is_split', 'has_tag'];

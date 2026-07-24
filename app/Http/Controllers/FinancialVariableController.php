@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\EnsureFinancialVariableRequest;
 use App\Http\Requests\StoreFinancialVariableRequest;
 use App\Http\Requests\UpdateFinancialVariableRequest;
 use App\Models\FinancialVariable;
+use App\Services\FinancialVariableLibraryService;
 use App\Services\FormulaResolverService;
+use App\Support\FormulaTokenParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,6 +68,74 @@ class FinancialVariableController extends Controller
         return redirect()
             ->route('formula-variables.index')
             ->with('success', 'Variabile creata con successo.');
+    }
+
+    /**
+     * Excel-like: scegli una metrica → riusa se stessa formula, altrimenti crea e restituisci subito.
+     */
+    public function ensure(EnsureFinancialVariableRequest $request): JsonResponse
+    {
+        $this->authorize('create', FinancialVariable::class);
+
+        $user = Auth::user();
+        $data = $request->validated();
+        $parser = app(FormulaTokenParser::class);
+        $library = app(FinancialVariableLibraryService::class);
+
+        if (($data['type'] ?? null) === FinancialVariable::TYPE_FORMULA) {
+            $rawFormula = (string) ($data['formula_string'] ?? '');
+            $formula = $library->applyFormulaAlias($rawFormula);
+            $normalized = $parser->normalizeFormula($formula);
+
+            if ($normalized !== '') {
+                $existing = $library->findReusableByFormula($user, $formula);
+
+                if ($existing !== null) {
+                    return response()->json([
+                        'variable' => self::formatVariable($existing),
+                        'created' => false,
+                        'message' => 'Metrica già in libreria: selezionata.',
+                    ]);
+                }
+
+                $repaired = $library->repairByScenarioName($user, (string) $data['name'], $formula);
+                if ($repaired !== null) {
+                    return response()->json([
+                        'variable' => self::formatVariable($repaired),
+                        'created' => false,
+                        'message' => 'Metrica riparata e selezionata.',
+                    ]);
+                }
+
+                $data['formula_string'] = $formula;
+            }
+        }
+
+        $preferredCode = (string) ($data['code'] ?? '');
+        if ($preferredCode === '' || ! $parser->isValidCode($preferredCode)) {
+            try {
+                $preferredCode = $parser->sanitizeCode($data['name']);
+            } catch (ValidationException) {
+                $preferredCode = 'metrica';
+            }
+        }
+
+        $variable = FinancialVariable::create([
+            'user_id' => $user->id,
+            'code' => $parser->uniqueCodeForUser((int) $user->id, $preferredCode),
+            'name' => $data['name'],
+            'type' => $data['type'],
+            'static_value' => $data['type'] === FinancialVariable::TYPE_STATIC ? ($data['static_value'] ?? 0) : null,
+            'formula_string' => $data['type'] === FinancialVariable::TYPE_FORMULA ? ($data['formula_string'] ?? null) : null,
+            'is_public' => false,
+            'share_token' => null,
+        ]);
+
+        return response()->json([
+            'variable' => self::formatVariable($variable),
+            'created' => true,
+            'message' => 'Metrica creata e selezionata.',
+        ], 201);
     }
 
     public function update(UpdateFinancialVariableRequest $request, FinancialVariable $financialVariable): RedirectResponse
@@ -129,7 +201,29 @@ class FinancialVariableController extends Controller
             'is_public' => $variable->is_public,
             'share_token' => $variable->share_token,
             'downloads_count' => $variable->downloads_count,
+            'source_id' => $variable->source_id,
+            'is_official_origin' => self::isOfficialOriginVariable($variable),
         ];
+    }
+
+    private static function isOfficialOriginVariable(FinancialVariable $variable): bool
+    {
+        if ($variable->is_official_template) {
+            return true;
+        }
+
+        if ($variable->source_id === null) {
+            return false;
+        }
+
+        if ($variable->relationLoaded('source')) {
+            return (bool) $variable->source?->is_official_template;
+        }
+
+        return FinancialVariable::query()
+            ->where('id', $variable->source_id)
+            ->where('is_official_template', true)
+            ->exists();
     }
 
     private function generateShareToken(): string

@@ -76,7 +76,7 @@ class SystemVariableResolver
             'portfolio_snapshot' => $this->resolvePortfolioField($user, $meta['field']),
             'portfolio_snapshot_at' => $this->resolvePortfolioFieldAt($user, $endDate, $meta['field']),
             'investment_purchases' => $this->investmentLedgerService
-                ->unsyncedPurchasesInPeriod($user, $startDate, $endDate)['amount'],
+                ->purchasesInPeriod($user, $startDate, $endDate)['amount'],
             'period_stats' => $this->resolvePeriodStatsField($user, $startDate, $endDate, $meta['field'], $context),
             'expense_distribution' => $this->resolveExpenseDistributionField($user, $startDate, $endDate, $meta['field']),
             'linked_investments_at' => $this->investmentLedgerService->linkedInvestedValueAt($user, $endDate),

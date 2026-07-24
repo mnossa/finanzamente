@@ -36,6 +36,8 @@ interface FinancialVariableBuilderProps {
     userVariables?: FinancialVariableSummary[];
     errors?: Record<string, string>;
     idPrefix?: string;
+    /** Tab iniziale. Modal «Formula personalizzata» apre su Componi. */
+    initialTab?: BuilderTab;
 }
 
 const DRAG_MIME = 'application/x-finanzamente-formula-var';
@@ -85,11 +87,25 @@ export default function FinancialVariableBuilder({
     userVariables = [],
     errors = {},
     idPrefix = 'var',
+    initialTab = 'explore',
 }: FinancialVariableBuilderProps) {
-    const [tab, setTab] = useState<BuilderTab>('explore');
+    const [tab, setTab] = useState<BuilderTab>(initialTab);
     const [activeCategory, setActiveCategory] = useState<FinancialVariableScenarioCategory>('bilancio_conto');
-    const [composerTokens, setComposerTokens] = useState<ComposerToken[]>([]);
-    const [composerSynced, setComposerSynced] = useState(false);
+    const [composerTokens, setComposerTokens] = useState<ComposerToken[]>(() =>
+        initialTab === 'compose' || initialTab === 'advanced'
+            ? formulaToTokens(draft.formula_string, [
+                ...systemVariables.map(systemVariableToFormulaSuggestion),
+                ...userVariables.map((variable) => ({
+                    code: variable.code,
+                    label: variable.name,
+                    hint: 'Tua variabile',
+                })),
+            ])
+            : [],
+    );
+    const [composerSynced, setComposerSynced] = useState(
+        initialTab === 'compose' || initialTab === 'advanced',
+    );
 
     const formulaSuggestions = useMemo<FormulaSuggestion[]>(
         () => [
@@ -174,11 +190,17 @@ export default function FinancialVariableBuilder({
         }
     };
 
-    const tabs: Array<{ id: BuilderTab; label: string }> = [
-        { id: 'explore', label: 'Esplora scenari' },
-        { id: 'compose', label: 'Componi' },
-        { id: 'advanced', label: 'Formula avanzata' },
-    ];
+    const tabs: Array<{ id: BuilderTab; label: string }> = initialTab === 'compose' || initialTab === 'advanced'
+        ? [
+            { id: 'compose', label: 'Componi' },
+            { id: 'advanced', label: 'Formula avanzata' },
+            { id: 'explore', label: 'Esplora scenari' },
+        ]
+        : [
+            { id: 'explore', label: 'Esplora scenari' },
+            { id: 'compose', label: 'Componi' },
+            { id: 'advanced', label: 'Formula avanzata' },
+        ];
 
     return (
         <div className="space-y-5">

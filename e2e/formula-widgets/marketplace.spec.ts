@@ -8,8 +8,9 @@ test.describe('Galleria widget — mobile', () => {
         await expect(page).toHaveURL(/\/widget-formule\/galleria/);
     });
 
-    test('mostra toolbar mobile e pulsante anteprima a tutta larghezza', async ({ page }) => {
+    test('mostra toolbar mobile e pulsante Installa a tutta larghezza', async ({ page }) => {
         await expect(page.getByRole('link', { name: 'I miei widget' }).first()).toBeVisible();
+        await expect(page.getByRole('button', { name: /^installa$/i }).first()).toBeVisible();
         await expect(page.getByRole('button', { name: /^anteprima$/i }).first()).toBeVisible();
     });
 

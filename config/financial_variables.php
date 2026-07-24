@@ -48,18 +48,6 @@ return [
             'resolver' => 'financial_metrics',
             'field' => 'effective_expenses',
         ],
-        'estimated_taxes' => [
-            'label' => 'Tasse stimate',
-            'requires_period' => true,
-            'resolver' => 'financial_metrics',
-            'field' => 'estimated_taxes',
-        ],
-        'inps_amount' => [
-            'label' => 'Contributi INPS',
-            'requires_period' => true,
-            'resolver' => 'financial_metrics',
-            'field' => 'inps_amount',
-        ],
         'lifestyle_score' => [
             'label' => 'Lifestyle Inflation Score',
             'requires_period' => true,
@@ -67,7 +55,7 @@ return [
             'field' => 'lifestyle_score',
         ],
         'household_balance' => [
-            'label' => 'Saldo conti (liquidità)',
+            'label' => 'Liquidità attuale',
             'requires_period' => false,
             'resolver' => 'household_balance',
         ],
@@ -96,7 +84,7 @@ return [
             'field' => 'totalValue',
         ],
         'investment_purchases' => [
-            'label' => 'Acquisti investimenti nel periodo',
+            'label' => 'Versamenti investimenti nel periodo',
             'requires_period' => true,
             'resolver' => 'investment_purchases',
         ],
@@ -275,8 +263,6 @@ return [
         'total_expenses' => '[total_expenses] / [days_in_period]',
         'net_income' => '[net_income]',
         'effective_expenses' => '[effective_expenses] + [expense_wants]',
-        'estimated_taxes' => '[estimated_taxes]',
-        'inps_amount' => '[inps_amount]',
         'lifestyle_score' => '[lifestyle_score]',
         'household_balance' => '[household_balance]',
         'total_investments' => '[household_balance] + [total_investments]',

@@ -48,7 +48,7 @@ function WidgetCard({
                     {widget.financial_variable ? ` · ${widget.financial_variable.name}` : ''}
                 </p>
                 {widget.is_official_origin ? (
-                    <p className="mt-1 text-xs text-primary-700 dark:text-primary-300">Template ufficiale · non eliminabile</p>
+                    <p className="mt-1 text-xs text-primary-700 dark:text-primary-300">Template ufficiale</p>
                 ) : widget.source_id ? (
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Installato dalla galleria</p>
                 ) : null}

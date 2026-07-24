@@ -20,7 +20,7 @@ class FormulaWidgetRemovalServiceTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function official_template_and_clone_are_protected(): void
+    public function only_catalog_official_template_is_protected_clone_can_uninstall(): void
     {
         $this->seed(FormulaWidgetTemplateSeeder::class);
 
@@ -30,11 +30,13 @@ class FormulaWidgetRemovalServiceTest extends TestCase
             ->firstOrFail();
 
         $this->assertTrue($official->isOfficialProtected());
+        $this->assertTrue($official->isOfficialOrigin());
 
         $user = User::factory()->create();
         $clone = app(FinancialVariableCloneService::class)->installTemplate($user, 'official.saldo_liquidita');
 
-        $this->assertTrue($clone->isOfficialProtected());
+        $this->assertFalse($clone->isOfficialProtected());
+        $this->assertTrue($clone->isOfficialOrigin());
     }
 
     #[Test]

@@ -43,6 +43,26 @@ class FormulaWidgetConfigValidatorTest extends TestCase
     }
 
     #[Test]
+    public function it_accepts_progress_with_literal_threshold(): void
+    {
+        $this->validator->validate(FormulaWidget::DISPLAY_PROGRESS, 'current_month', [
+            'value_code' => 'period_expenses',
+            'threshold_amount' => 1000,
+            'variant' => 'traffic_light',
+            'parameters' => [
+                [
+                    'key' => 'threshold',
+                    'type' => 'number',
+                    'label' => 'Soglia (€)',
+                    'default' => '1000',
+                ],
+            ],
+        ]);
+
+        $this->assertTrue(true);
+    }
+
+    #[Test]
     public function it_accepts_valid_bar_configuration(): void
     {
         $this->validator->validate(FormulaWidget::DISPLAY_BAR, null, [

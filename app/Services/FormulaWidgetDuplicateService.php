@@ -170,10 +170,16 @@ class FormulaWidgetDuplicateService
                 'metric_query' => $this->normalizeMetricQuery($chartConfig['metric_query'] ?? null),
                 'parameters' => $this->normalizeParameters($chartConfig['parameters'] ?? []),
             ], fn ($value) => $value !== null && $value !== []),
-            FormulaWidget::DISPLAY_PROGRESS => [
+            FormulaWidget::DISPLAY_PROGRESS => array_filter([
                 'value_code' => (string) ($chartConfig['value_code'] ?? ''),
-                'threshold_code' => (string) ($chartConfig['threshold_code'] ?? ''),
-            ],
+                'threshold_code' => isset($chartConfig['threshold_code']) ? (string) $chartConfig['threshold_code'] : null,
+                'threshold_amount' => isset($chartConfig['threshold_amount']) && is_numeric($chartConfig['threshold_amount'])
+                    ? (float) $chartConfig['threshold_amount']
+                    : null,
+                'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
+                'bands' => is_array($chartConfig['bands'] ?? null) ? $chartConfig['bands'] : null,
+                'parameters' => $this->normalizeParameters($chartConfig['parameters'] ?? []),
+            ], fn ($value) => $value !== null && $value !== []),
             FormulaWidget::DISPLAY_LINE,
             FormulaWidget::DISPLAY_AREA => array_filter([
                 'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
