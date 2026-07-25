@@ -22,20 +22,20 @@ class WelcomeController extends Controller
 
     public function index(): View
     {
-        SEOMeta::setTitle('Finanzamente - Gestisci le tue finanze con intelligenza');
-        SEOMeta::setDescription('Finanzamente è la webapp di gestione finanziaria personale pensata per chi vive in Italia. Controlla le tue spese, pianifica il futuro e raggiungi i tuoi obiettivi finanziari con semplicità.');
-        SEOMeta::setKeywords(['gestione finanze', 'budget personale', 'risparmio', 'spese', 'finanza personale', 'vivere in Italia', 'webapp finanze']);
+        SEOMeta::setTitle('Finanzamente - Tracker e analisi per le tue finanze');
+        SEOMeta::setDescription('Finanzamente è un tracker di finanze personali per chi vive in Italia: registri spese e entrate, segui budget e patrimonio, e usi strumenti di analisi. Nessuna connessione bancaria.');
+        SEOMeta::setKeywords(['tracker finanze', 'gestione finanze', 'budget personale', 'risparmio', 'spese', 'finanza personale', 'analisi spese', 'vivere in Italia']);
         SEOMeta::setCanonical(url('/'));
 
-        OpenGraph::setTitle('Finanzamente - Gestisci le tue finanze con intelligenza');
-        OpenGraph::setDescription('Prendi il controllo totale delle tue finanze. Gestisci ogni transazione, pianifica il tuo budget e raggiungi i tuoi obiettivi finanziari. Per tutti chi vive in Italia.');
+        OpenGraph::setTitle('Finanzamente - Tracker e analisi per le tue finanze');
+        OpenGraph::setDescription('Registra e analizza le tue finanze personali: transazioni, budget, patrimonio e obiettivi. Per chi vive in Italia. Nessuna connessione bancaria.');
         OpenGraph::setUrl(url('/'));
         OpenGraph::addProperty('type', 'website');
         OpenGraph::addProperty('site_name', 'Finanzamente');
         OpenGraph::addProperty('locale', 'it_IT');
 
-        TwitterCard::setTitle('Finanzamente - Gestisci le tue finanze');
-        TwitterCard::setDescription('Webapp di gestione finanziaria personale per chi vive in Italia.');
+        TwitterCard::setTitle('Finanzamente - Tracker e analisi finanze');
+        TwitterCard::setDescription('Tracker di finanze personali con strumenti di analisi, per chi vive in Italia.');
         TwitterCard::addValue('card', 'summary_large_image');
 
         $this->structuredDataService->forHomepage();

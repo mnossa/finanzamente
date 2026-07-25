@@ -15,7 +15,7 @@ test.describe('Simulazioni pubbliche', () => {
         await page.getByRole('navigation').getByRole('link', { name: 'Home' }).click();
         await expect(page).toHaveURL(/\/$/);
         await expect(page).toHaveTitle(/Finanzamente/i);
-        await expect(page.getByRole('heading', { level: 1 })).toContainText(/quadro finanziario completo/i);
+        await expect(page.getByRole('heading', { level: 1 })).toContainText(/quadro finanziario sotto controllo/i);
         await expect(page.getByRole('navigation').getByRole('link', { name: /^accedi$/i })).toBeVisible();
     });
 

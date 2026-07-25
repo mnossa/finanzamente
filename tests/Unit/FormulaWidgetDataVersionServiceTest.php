@@ -69,6 +69,24 @@ class FormulaWidgetDataVersionServiceTest extends TestCase
     }
 
     #[Test]
+    public function version_changes_when_transaction_date_changes(): void
+    {
+        $user = $this->user;
+        $account = Account::factory()->for($this->household)->create();
+        $transaction = Transaction::factory()->for($account)->create([
+            'date' => '2026-05-01',
+        ]);
+
+        $before = $this->service->resolveForUser($user);
+
+        $transaction->update(['date' => '2026-06-15']);
+
+        $after = $this->service->resolveForUser($user->fresh());
+
+        $this->assertNotSame($before, $after);
+    }
+
+    #[Test]
     public function version_changes_when_formula_widget_is_added(): void
     {
         $user = $this->user;

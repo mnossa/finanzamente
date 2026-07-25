@@ -924,7 +924,7 @@ class FormulaWidgetHttpTest extends TestCase
         $first->assertOk();
         $cacheControl = (string) $first->headers->get('Cache-Control');
         $this->assertStringContainsString('private', $cacheControl);
-        $this->assertStringContainsString('max-age=300', $cacheControl);
+        $this->assertStringContainsString('no-cache', $cacheControl);
         $this->assertNotEmpty($first->headers->get('ETag'));
 
         $etag = $first->headers->get('ETag');

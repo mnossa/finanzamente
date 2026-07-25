@@ -21,6 +21,9 @@ test.describe('Widget a formula — tabella', () => {
         ).first()).toBeVisible();
         await expect(page.getByRole('button', { name: 'Lista righe' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Aggregata' })).toBeVisible();
+        // Ricetta tabellare: niente scelta grafici incompatibili (barre/linea/KPI).
+        const vistaGroup = page.getByRole('group', { name: 'Tipo di visualizzazione' });
+        await expect(vistaGroup.getByRole('button', { name: /Indicatore|Linea|Barre|Avanzamento/i })).toHaveCount(0);
     });
 
     test('anteprima tabella non overflowa orizzontalmente su mobile', async ({ page }, testInfo) => {

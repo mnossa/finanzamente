@@ -12,12 +12,12 @@
         <div class="relative container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-4xl mx-auto text-center">
                 <h1 id="hero-title" class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-surface-900 leading-tight mb-4 sm:mb-6">
-                    Il tuo quadro finanziario completo,
-                    <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">tutto in un posto</span>
+                    Il tuo quadro finanziario sotto controllo,
+                    <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">con analisi chiare</span>
                 </h1>
 
                 <p class="text-base sm:text-lg md:text-xl text-surface-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Dal conto corrente agli investimenti, dai debiti agli obiettivi di risparmio: Finanzamente ti dà una visione chiara e completa del tuo patrimonio, con privacy totale e senza complicazioni.
+                    Finanzamente è un tracker di finanze personali: registri entrate e spese, segui budget e patrimonio, e usi strumenti di analisi per capire dove vanno i soldi. Nessuna operazione bancaria reale e nessun conto da collegare.
                 </p>
 
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12">
@@ -67,7 +67,7 @@
                     Tutto quello che serve, niente di superfluo
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Funzionalità concrete per ogni aspetto della tua vita finanziaria
+                    Strumenti concreti per tenere traccia delle finanze e analizzarle
                 </p>
             </div>
 
@@ -159,7 +159,7 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Finanze condivise</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Gestisci le finanze di famiglia o coinquilini in un household condiviso. Ognuno vede solo ciò che gli compete, con trasferimenti tra nuclei diversi.
+                        Tieni i conti di famiglia o coinquilini in un household condiviso. Ognuno vede ciò che gli compete; puoi anche registrare movimenti tra nuclei diversi.
                     </p>
                 </div>
 
@@ -170,9 +170,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
                     </div>
-                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Import da banca</h3>
+                    <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Import CSV</h3>
                     <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                        Importa i movimenti dal CSV della tua banca con rilevamento automatico dei duplicati. Salva i layout personalizzati per ogni istituto con un click.
+                        Carichi un file CSV esportato dalla tua banca e lo importi nell’app. Rilevamento duplicati e layout salvabili per istituto.
                     </p>
                 </div>
 
@@ -332,9 +332,9 @@
                         2
                     </div>
                     <div>
-                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Aggiungi conti e portafoglio</h3>
+                        <h3 class="text-lg sm:text-xl font-semibold text-surface-900 mb-2">Aggiungi conti e movimenti</h3>
                         <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
-                            Inserisci i tuoi conti correnti, carte, contanti e — se li hai — i tuoi investimenti. Puoi anche importare i movimenti dal CSV della tua banca.
+                            Inserisci a mano conti, carte, contanti e — se li hai — gli investimenti. In alternativa puoi caricare un CSV esportato dalla banca.
                         </p>
                     </div>
                 </div>
@@ -362,7 +362,7 @@
                     Perché scegliere Finanzamente?
                 </h2>
                 <p class="text-base sm:text-lg text-surface-600">
-                    Non è un altro tracker di spese. È la gestione finanziaria completa per chi vuole capire davvero dove sta andando il suo denaro.
+                    Un tracker di finanze personali con strumenti di analisi: per capire dove sta andando il tuo denaro.
                 </p>
             </div>
 

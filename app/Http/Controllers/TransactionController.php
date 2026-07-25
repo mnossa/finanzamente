@@ -1000,9 +1000,11 @@ class TransactionController extends Controller
                             ? ($linkedOldAmount / abs($oldAmount)) * abs($newAmount)
                             : abs($newAmount);
 
-                        // Aggiorna descrizione e privacy, mantieni segno originale dell'importo
+                        // Allinea anche la data: le due gambe del trasferimento devono restare sullo stesso giorno
+                        // (periodo dashboard/widget e saldi storici dipendono da transactions.date).
                         $linkedTransaction->update([
                             'amount' => $linkedNewAmount,
+                            'date' => $validated['date'],
                             'description' => $validated['description'] ?? null,
                             'is_private' => $validated['is_private'] ?? false,
                         ]);

@@ -26,6 +26,7 @@ class FormulaWidgetDataVersionService
             ->where('accounts.household_id', $householdId)
             ->selectRaw('COUNT(transactions.id) as transaction_count')
             ->selectRaw('MAX(transactions.updated_at) as max_transaction_updated_at')
+            ->selectRaw('MAX(transactions.date) as max_transaction_date')
             ->first();
 
         $widgetStats = FormulaWidget::query()
@@ -38,6 +39,8 @@ class FormulaWidgetDataVersionService
             (string) $householdId,
             (string) ($transactionStats->transaction_count ?? 0),
             (string) $this->timestampFromDate($transactionStats->max_transaction_updated_at ?? null),
+            // Include la data contabile: spostare un movimento (es. trasferimento) deve invalidare i payload periodo.
+            (string) ($transactionStats->max_transaction_date ?? '0'),
             (string) ($widgetStats->widget_count ?? 0),
             (string) $this->timestampFromDate($widgetStats->max_widget_updated_at ?? null),
         ];

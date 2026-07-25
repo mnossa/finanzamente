@@ -300,7 +300,7 @@ class DashboardController extends Controller
         if ($widgetIds === []) {
             return response()
                 ->json(['payloads' => [], 'dataVersion' => $dataVersion])
-                ->header('Cache-Control', 'private, max-age=300');
+                ->header('Cache-Control', 'private, no-cache');
         }
 
         $requestedIds = $this->resolveRequestedFormulaWidgetIds($request, $widgetIds);
@@ -318,7 +318,7 @@ class DashboardController extends Controller
                 ->noContent(304)
                 ->header('ETag', $etag)
                 ->header('X-Formula-Widget-Data-Version', $dataVersion)
-                ->header('Cache-Control', 'private, max-age=300');
+                ->header('Cache-Control', 'private, no-cache');
         }
 
         return response()
@@ -338,7 +338,7 @@ class DashboardController extends Controller
             ])
             ->header('ETag', $etag)
             ->header('X-Formula-Widget-Data-Version', $dataVersion)
-            ->header('Cache-Control', 'private, max-age=300');
+            ->header('Cache-Control', 'private, no-cache');
     }
 
     /**

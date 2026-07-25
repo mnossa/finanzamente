@@ -7,11 +7,12 @@ import {
     type FinancialVariableScenarioCategory,
 } from '@/utils/financialVariableScenarios';
 import {
+    recipeRestrictsScenarios,
     scenarioMatchesRecipe,
     type WidgetRecipeId,
 } from '@/utils/formulaWidgetRuntimeControls';
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { FinancialVariableSummary } from '@/types/formulaWidget';
 
 interface MetricScenarioPickerProps {
@@ -40,28 +41,22 @@ export default function MetricScenarioPicker({
     onSelectVariable,
     onOpenCustomFormula,
 }: MetricScenarioPickerProps) {
-    const [showAllMetrics, setShowAllMetrics] = useState(false);
     const selectedVariable = variables.find((variable) => variable.id === selectedVariableId);
     const selectedScenario = findScenarioByFormula(selectedVariable?.formula_string);
     const readyScenarios = readyMetricScenarios();
     const customVariables = variables.filter(isTrueCustomPickerVariable);
+    const restricted = recipeRestrictsScenarios(recipeId);
 
-    const filteredScenarios = useMemo(() => {
-        if (showAllMetrics) {
-            return readyScenarios;
-        }
-
-        return readyScenarios.filter((scenario) => scenarioMatchesRecipe(scenario, recipeId));
-    }, [readyScenarios, recipeId, showAllMetrics]);
-
-    const hiddenCount = readyScenarios.length - filteredScenarios.length;
-    const recipeFiltered = !showAllMetrics && hiddenCount > 0;
+    const filteredScenarios = useMemo(
+        () => readyScenarios.filter((scenario) => scenarioMatchesRecipe(scenario, recipeId)),
+        [readyScenarios, recipeId],
+    );
 
     return (
         <div className="space-y-4" data-testid="metric-scenario-picker">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-                {recipeFiltered
-                    ? 'Metriche in linea con l’obiettivo scelto. Un tap e la metrica è pronta.'
+                {restricted
+                    ? 'Solo metriche compatibili con l’obiettivo scelto. Un tap e la metrica è pronta.'
                     : 'Scegli cosa mettere nel widget — come scegli le celle per un grafico in Excel. Un tap e la metrica è pronta.'}
             </p>
 
@@ -113,24 +108,6 @@ export default function MetricScenarioPicker({
                     </div>
                 );
             })}
-
-            {recipeFiltered ? (
-                <button
-                    type="button"
-                    className="text-xs font-medium text-primary-700 hover:underline dark:text-primary-300"
-                    onClick={() => setShowAllMetrics(true)}
-                >
-                    Mostra tutte le metriche ({readyScenarios.length})
-                </button>
-            ) : showAllMetrics && recipeId !== 'single_value' ? (
-                <button
-                    type="button"
-                    className="text-xs font-medium text-gray-500 hover:underline dark:text-gray-400"
-                    onClick={() => setShowAllMetrics(false)}
-                >
-                    Solo metriche per l’obiettivo
-                </button>
-            ) : null}
 
             {customVariables.length > 0 ? (
                 <div>

@@ -95,7 +95,11 @@ export function pruneRuntimeParameters(
     return (parameters ?? []).filter((parameter) => allowedKeys.has(parameter.key));
 }
 
-/** Scenario ids consigliati per ricetta step 1. null = tutte. */
+/**
+ * Scenario ids ammessi per ricetta step 1.
+ * null = tutte le metriche pronte (tranne custom vuota).
+ * Lista chiusa = solo queste (niente “mostra tutte” incompatibili).
+ */
 const RECIPE_SCENARIO_IDS: Record<WidgetRecipeId, string[] | null> = {
     single_value: null,
     trend: [
@@ -128,6 +132,10 @@ const RECIPE_SCENARIO_IDS: Record<WidgetRecipeId, string[] | null> = {
         'when_positive_net',
     ],
 };
+
+export function recipeRestrictsScenarios(recipeId: WidgetRecipeId): boolean {
+    return scenarioIdsForRecipe(recipeId) !== null;
+}
 
 export function scenarioIdsForRecipe(recipeId: WidgetRecipeId): string[] | null {
     return RECIPE_SCENARIO_IDS[recipeId] ?? null;

@@ -1,15 +1,19 @@
-# Fix overflow widget tabellare su mobile
+# Widget wizard, transfer date sync, homepage honesty
 
 ## Plan
-- [x] `FormulaTableWidget`: `table-fixed`, truncate affidabile, colonne secondarie `hidden sm:table-cell`, wrapper `min-w-0 overflow-x-auto`
-- [x] Containment: `min-w-0` su preview panel, aside Create, wrapper table in `CustomFormulaWidget`
-- [x] Evitare doppio padding list-body sul table (shell già padda)
-- [x] E2E mobile: anteprima tabella non allarga `documentElement` oltre viewport
-- [x] Verify: `make test` → `make pint-check` → `make playwright` (markup React)
+- [x] Widget wizard: filter display types by recipe (tabular → only table; no chart ask)
+- [x] Widget wizard: hard-filter metrics by recipe/display; no soft “show all” for incompatible
+- [x] Sync selected metric → series / value_code / metric_query so preview + save respect choice
+- [x] Fix checkbox/state bleed between recipe changes and edit sessions
+- [x] Faster / clearer preview updates + better step guidance
+- [x] Undo toast: slightly smaller countdown font
+- [x] Transfer date edit: sync date to linked transaction + tests
+- [x] Ensure dashboard/widget cache invalidates on transfer-linked tx date change
+- [x] Homepage copy: honest tracker/analysis language (no bank-ops illusion)
+- [x] Tests + simulate scenarios; gates `make test` → `make pint-check` (playwright bloccato da rete DinD)
 
 ## Review
-- Root cause: `table-layout: auto` + 5 colonne + `min-width: auto` su grid/flex → overflow pagina su mobile in Anteprima «Elenco movimenti»
-- Fix: `table-fixed` + colonne secondarie nascoste `< sm` + `min-w-0` sulla catena (preview, Create, card dashboard, ContentPanelShell)
-- E2E: `table-widget.spec.ts` assert overflow + header secondari assenti su mobile
-- Side fix: assert FAB desktop usa `toBeHidden()` (era `toHaveCount(0)` su nodo `lg:hidden`)
-- Gates: `make test` 1058 passed; `make pint-check` PASS; table-widget + bottom-nav E2E green (suite full: 267 passed prima del fix FAB)
+- Wizard: `formulaWidgetRecipe.ts` + Create/MetricScenarioPicker/Guide; tabular non propone barre; metriche hard-filter
+- Transfer: `TransactionController` sync `date` sulla gamba collegata; versione widget include `MAX(date)`; HTTP `no-cache`
+- Home: welcome + SEO onesti (tracker + analisi, CSV file, no Open Banking)
+- Verifica host: PHPUnit green (1063 passed), pint OK, tsc OK; E2E nuovi specs aggiunti ma suite Playwright non eseguibile qui (bridge Docker senza ping tra container)
