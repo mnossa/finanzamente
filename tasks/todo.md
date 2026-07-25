@@ -65,7 +65,8 @@ Nessuna allusione a operazioni bancarie **e** nessuna formula difensiva tipo "se
 - [x] Test: Feature test copy/flag homepage + aggiornamento E2E specs
 - [x] Gate `make test` (equivalente host: PHPUnit su SQLite)
 - [x] Gate `make pint-check`
-- [ ] Gate `make playwright` — non eseguibile: VM senza Docker (vedi Review)
+- [x] Gate Playwright su tutte e tre le modalità (normal, waitlist, prelaunch)
+- [x] Scansione axe-core WCAG 2.1 AA e correzione dei contrasti insufficienti
 
 ## Review
 ### Cosa è cambiato
@@ -76,6 +77,11 @@ Nessuna allusione a operazioni bancarie **e** nessuna formula difensiva tipo "se
 - **Flag preservati**: `$preLaunchMode`, `$waitlistEnabled`, `$proEnabled`, `Route::has('plan.select'|'register'|'login')`, magazine nav/footer — invariati nella logica, solo copy dei label toccata dove necessario.
 
 ### Verifica
-- PHPUnit: verde sull'host (SQLite in-memory come da `.env.testing`).
-- Pint: verde.
-- Playwright: la VM di questo agente non ha Docker né PHP-FPM/Nginx, quindi l'istanza E2E su :8081 non è avviabile. Gli spec sono stati aggiornati per il nuovo copy (`e2e/public/welcome.spec.ts`, `e2e/public/simulations.spec.ts`) e la copertura è stata duplicata a livello di Feature test PHPUnit, che gira in CI insieme al workflow Playwright.
+- **PHPUnit**: 1084 test verdi (4559 asserzioni), di cui 21 nuovi in `HomepageContentTest`. I test sul vocabolario proibito girano su data provider, così una regressione di ton of voice fallisce con un messaggio esplicito.
+- **Pint**: verde.
+- **Playwright**: la VM non ha Docker, quindi l'istanza E2E su :8081 è stata ricreata con `php artisan serve` su SQLite più build Vite reale, e i test sono stati lanciati con `PLAYWRIGHT_BASE_URL`. Progetto `pubblico` verde: 20 test in modalità normale, più `modes.spec.ts` rieseguito con `PRO_WAITLIST_ENABLED=true` e con `PRE_LAUNCH_MODE=true` per dimostrare che waitlist e pre-lancio funzionano ancora dopo il redesign (invio form waitlist dalla home incluso).
+- **Accessibilità**: scansione axe-core su `wcag2a/2aa/21a/21aa`. Le violazioni di contrasto introdotte o presenti nella sezione prezzi sono state corrette (`text-surface-400` → `500`, badge `bg-primary-500` → `600`). Gerarchia dei titoli lineare: un solo H1, H2 di sezione, H3 di card.
+
+### Follow-up noti (fuori scope)
+- `#analytics-consent-accept` in `layouts/guest.blade.php` ha contrasto insufficiente (`bg-emerald-600` con testo bianco, ~3.8:1). È nel layout condiviso da tutte le pagine pubbliche, quindi non toccato qui.
+- Le 7 landing page `/per-*` usano ancora il badge "Nessun conto bancario da collegare" e `partials/landing/cta-finale.blade.php` ha lo stesso claim come default: se il nuovo ton of voice va esteso, servono in quel giro.

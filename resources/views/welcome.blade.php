@@ -307,7 +307,7 @@
                             <span class="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-bold">4 / 7 — Moderato</span>
                         </div>
                     </div>
-                    <p class="mt-4 text-xs text-surface-400">Dati di esempio a scopo illustrativo.</p>
+                    <p class="mt-4 text-xs text-surface-500">Dati di esempio a scopo illustrativo.</p>
                 </div>
             </div>
         </div>
@@ -330,16 +330,16 @@
                     <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-soft-lg border border-surface-200">
                         <p class="text-xs text-surface-500 uppercase font-semibold tracking-wider mb-4">Spese fisse sul netto</p>
                         <div class="flex items-end gap-2 h-24" aria-hidden="true">
-                            <div class="flex-1 bg-primary-200 rounded-t" style="height: 55%"></div>
+                            <div class="flex-1 bg-primary-300 rounded-t" style="height: 55%"></div>
                             <div class="flex-1 bg-primary-300 rounded-t" style="height: 70%"></div>
-                            <div class="flex-1 bg-primary-400 rounded-t" style="height: 48%"></div>
-                            <div class="flex-1 bg-primary-500 rounded-t" style="height: 62%"></div>
-                            <div class="flex-1 bg-primary-600 rounded-t" style="height: 41%"></div>
-                            <div class="flex-1 bg-primary-700 rounded-t" style="height: 52%"></div>
+                            <div class="flex-1 bg-primary-300 rounded-t" style="height: 48%"></div>
+                            <div class="flex-1 bg-primary-300 rounded-t" style="height: 62%"></div>
+                            <div class="flex-1 bg-primary-300 rounded-t" style="height: 41%"></div>
+                            <div class="flex-1 bg-primary-600 rounded-t" style="height: 52%"></div>
                         </div>
-                        <p class="mt-3 text-xs text-surface-500">Ultimi 6 mesi</p>
+                        <p class="mt-3 text-xs text-surface-500">Ultimi 6 mesi, in evidenza quello in corso</p>
                     </div>
-                    <p class="text-xs text-surface-400">Dati di esempio a scopo illustrativo.</p>
+                    <p class="text-xs text-surface-500">Dati di esempio a scopo illustrativo.</p>
                 </div>
 
                 <div class="order-1 lg:order-2">
