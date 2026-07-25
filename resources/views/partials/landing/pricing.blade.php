@@ -48,7 +48,7 @@
                         <span id="{{ $thumbId }}"
                             class="inline-block h-4 w-4 transform rounded-full bg-white shadow translate-x-1 transition-transform duration-200"></span>
                     </button>
-                    <span id="{{ $labelAnnualId }}" class="text-sm font-medium text-surface-400">
+                    <span id="{{ $labelAnnualId }}" class="text-sm font-medium text-surface-500">
                         Annuale
                         <span
                             class="ml-1.5 bg-accent-100 text-accent-700 text-xs font-semibold px-2 py-0.5 rounded-full">-{{ $discount }}%</span>
@@ -64,7 +64,7 @@
                     class="bg-white rounded-2xl border-2 border-primary-500 p-6 sm:p-8 shadow-soft-md relative flex flex-col">
                     <div class="absolute -top-3 left-1/2 -translate-x-1/2">
                         <span
-                            class="bg-primary-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Gratuito</span>
+                            class="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Gratuito</span>
                     </div>
                     <div class="text-center mb-6">
                         <h3 class="text-xl font-bold text-surface-900 mb-1">Finanzamente Base</h3>

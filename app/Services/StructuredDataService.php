@@ -13,6 +13,7 @@ use Artesaos\SEOTools\Facades\JsonLdMulti;
  * Schemi implementati:
  *  - WebSite           → homepage
  *  - SoftwareApplication → homepage + tutte le landing page
+ *  - FAQPage           → homepage (se la pagina espone delle FAQ)
  *  - BreadcrumbList    → landing page target (/per-*, /crescita-personale)
  */
 class StructuredDataService
@@ -20,26 +21,42 @@ class StructuredDataService
     public function __construct(private readonly PlanService $planService) {}
 
     /**
-     * Homepage: WebSite + SoftwareApplication con offers dei piani disponibili.
+     * Homepage: WebSite + SoftwareApplication con offers dei piani disponibili,
+     * più FAQPage quando la pagina mostra una sezione di domande frequenti.
+     *
+     * @param  list<array{question: string, answer: string}>  $faqs
      */
-    public function forHomepage(): void
+    public function forHomepage(array $faqs = []): void
     {
         JsonLdMulti::newJsonLd();
         JsonLdMulti::setType('WebSite');
         JsonLdMulti::setTitle('Finanzamente');
         JsonLdMulti::addValue('url', url('/'));
-        JsonLdMulti::addValue('description', 'Webapp di gestione finanziaria personale per chi vive in Italia.');
+        JsonLdMulti::addValue('description', 'App di finanza personale per chi vive in Italia: movimenti, budget, patrimonio, investimenti e detrazioni.');
         JsonLdMulti::addValue('inLanguage', 'it-IT');
 
         JsonLdMulti::newJsonLd();
         JsonLdMulti::setType('SoftwareApplication');
         JsonLdMulti::setTitle('Finanzamente');
         JsonLdMulti::addValue('url', url('/'));
-        JsonLdMulti::addValue('description', 'Webapp di gestione finanziaria personale per chi vive in Italia. Controlla le tue spese, pianifica il budget e raggiungi i tuoi obiettivi finanziari.');
+        JsonLdMulti::addValue('description', 'App di finanza personale per chi vive in Italia. Registra i movimenti, imposta i budget, segui patrimonio, investimenti e spese detraibili in un unico quadro.');
         JsonLdMulti::addValue('applicationCategory', 'FinanceApplication');
         JsonLdMulti::addValue('operatingSystem', 'Web');
         JsonLdMulti::addValue('inLanguage', 'it-IT');
         JsonLdMulti::addValue('offers', $this->buildOffers());
+
+        if ($faqs !== []) {
+            JsonLdMulti::newJsonLd();
+            JsonLdMulti::setType('FAQPage');
+            JsonLdMulti::addValue('mainEntity', array_map(fn (array $faq): array => [
+                '@type' => 'Question',
+                'name' => $faq['question'],
+                'acceptedAnswer' => [
+                    '@type' => 'Answer',
+                    'text' => $faq['answer'],
+                ],
+            ], $faqs));
+        }
     }
 
     /**

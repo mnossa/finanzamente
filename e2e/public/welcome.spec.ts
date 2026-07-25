@@ -17,7 +17,7 @@ test.describe('Homepage pubblica', () => {
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     });
 
-    test('mostra il link "Inizia gratis ora" che punta a /select-plan', async ({ page }) => {
+    test('mostra il link "Inizia gratis" che punta alla scelta del piano', async ({ page }) => {
         await page.goto('/');
         // Prende il primo link corrispondente (possono esisterne più di uno nella pagina)
         const cta = page.getByRole('link', { name: /inizia gratis/i }).first();
@@ -32,6 +32,34 @@ test.describe('Homepage pubblica', () => {
         await expect(loginLink).toBeVisible();
         await loginLink.click();
         await expect(page).toHaveURL('/accedi');
+    });
+
+    test('mostra i quattro pilastri funzionali', async ({ page }) => {
+        await page.goto('/');
+        await expect(page.getByRole('heading', { name: /Quattro aree, un unico quadro/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Registra senza perderci tempo/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Conti chiari anche in due/i })).toBeVisible();
+    });
+
+    test('la FAQ si apre al click e mostra la risposta', async ({ page }) => {
+        await page.goto('/');
+        const question = page.getByRole('group').filter({ hasText: /Cosa posso fare con il piano gratuito/i }).first();
+        await expect(question).toBeVisible();
+        await question.getByText(/Cosa posso fare con il piano gratuito/i).click();
+        await expect(question.getByText(/Movimenti illimitati/i)).toBeVisible();
+    });
+
+    test('il pulsante delle simulazioni porta alla pagina pubblica', async ({ page }) => {
+        await page.goto('/');
+        await page.getByRole('link', { name: /Apri le simulazioni/i }).click();
+        await expect(page).toHaveURL(/\/simulazioni$/);
+    });
+
+    test('la homepage non nomina le operazioni bancarie', async ({ page }) => {
+        await page.goto('/');
+        const main = await page.locator('main').innerText();
+        expect(main).not.toMatch(/banc(a|he|ari|aria|arie)/i);
+        expect(main).not.toMatch(/sincronizzazione/i);
     });
 
     test('robots.txt è accessibile e restituisce 200', async ({ page }) => {

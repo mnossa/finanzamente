@@ -22,23 +22,25 @@ class WelcomeController extends Controller
 
     public function index(): View
     {
-        SEOMeta::setTitle('Finanzamente - Tracker e analisi per le tue finanze');
-        SEOMeta::setDescription('Finanzamente è un tracker di finanze personali per chi vive in Italia: registri spese e entrate, segui budget e patrimonio, e usi strumenti di analisi. Nessuna connessione bancaria.');
-        SEOMeta::setKeywords(['tracker finanze', 'gestione finanze', 'budget personale', 'risparmio', 'spese', 'finanza personale', 'analisi spese', 'vivere in Italia']);
+        $faqs = $this->faqs();
+
+        SEOMeta::setTitle('Finanzamente - Finanza personale, dalle spese al patrimonio');
+        SEOMeta::setDescription('App di finanza personale per chi vive in Italia: registri i movimenti, imposti i budget, segui patrimonio, investimenti e detrazioni. Piano gratuito senza scadenza.');
+        SEOMeta::setKeywords(['finanza personale', 'gestione spese', 'budget mensile', 'patrimonio netto', 'asset allocation', 'detrazioni fiscali', 'risparmio', 'app italiana']);
         SEOMeta::setCanonical(url('/'));
 
-        OpenGraph::setTitle('Finanzamente - Tracker e analisi per le tue finanze');
-        OpenGraph::setDescription('Registra e analizza le tue finanze personali: transazioni, budget, patrimonio e obiettivi. Per chi vive in Italia. Nessuna connessione bancaria.');
+        OpenGraph::setTitle('Finanzamente - Finanza personale, dalle spese al patrimonio');
+        OpenGraph::setDescription('Movimenti, budget, patrimonio, investimenti e detrazioni in un unico quadro. Pensata per chi vive in Italia, con un piano gratuito senza scadenza.');
         OpenGraph::setUrl(url('/'));
         OpenGraph::addProperty('type', 'website');
         OpenGraph::addProperty('site_name', 'Finanzamente');
         OpenGraph::addProperty('locale', 'it_IT');
 
-        TwitterCard::setTitle('Finanzamente - Tracker e analisi finanze');
-        TwitterCard::setDescription('Tracker di finanze personali con strumenti di analisi, per chi vive in Italia.');
+        TwitterCard::setTitle('Finanzamente - Dalle spese al patrimonio');
+        TwitterCard::setDescription('Finanza personale per chi vive in Italia: movimenti, budget, patrimonio e detrazioni in un unico quadro.');
         TwitterCard::addValue('card', 'summary_large_image');
 
-        $this->structuredDataService->forHomepage();
+        $this->structuredDataService->forHomepage($faqs);
 
         return view('welcome', [
             'plans' => $this->planService->getPlansForFrontend(),
@@ -46,6 +48,45 @@ class WelcomeController extends Controller
             'annualDiscountPercent' => $this->planService->getAnnualDiscountPercent(),
             'waitlistEnabled' => config('prelaunch.waitlist_enabled', false),
             'preLaunchMode' => config('prelaunch.enabled', false),
+            'faqs' => $faqs,
         ]);
+    }
+
+    /**
+     * Domande frequenti della homepage.
+     *
+     * Unica fonte per la sezione FAQ e per lo schema JSON-LD FAQPage:
+     * le risposte devono restare allineate ai limiti reali in config/plans.php.
+     *
+     * @return list<array{question: string, answer: string}>
+     */
+    private function faqs(): array
+    {
+        return [
+            [
+                'question' => 'Cosa posso fare con il piano gratuito?',
+                'answer' => 'Movimenti illimitati, budget mensili, categorie e tag tuoi, fino a 5 conti, un obiettivo di risparmio e l\'import da file. Non scade e non chiede la carta.',
+            ],
+            [
+                'question' => 'Devo inserire ogni spesa a mano?',
+                'answer' => 'Puoi farlo, ed è il modo più preciso per accorgerti di come spendi. Ma le voci ricorrenti si ripresentano da sole alla scadenza, uno storico lo carichi da un file CSV o Excel, e Finanzamente ti propone le ricorrenze che riconosce nei movimenti che hai già registrato.',
+            ],
+            [
+                'question' => 'Posso usarlo con il partner o con i coinquilini?',
+                'answer' => 'Sì. Create un nucleo condiviso e scegliete come gestirlo: portafoglio comune, oppure conti separati con percentuali di ripartizione sulle spese fisse. I movimenti che segni come privati restano visibili solo a te. Invitare altri membri richiede il piano Pro.',
+            ],
+            [
+                'question' => 'Serve anche per gli investimenti?',
+                'answer' => 'Sì, nel piano Pro: ETF, azioni, obbligazioni, crypto, piani di accumulo, asset allocation con indice di rischio da 1 a 7 e analisi di redditività. Se non investi, la sezione resta spenta e non ti intralcia.',
+            ],
+            [
+                'question' => 'Funziona dal telefono?',
+                'answer' => 'È pensata prima per il telefono. La installi dal browser come una normale app, e la barra di navigazione in basso la configuri con le sezioni che usi davvero.',
+            ],
+            [
+                'question' => 'Che fine fanno i miei dati?',
+                'answer' => 'Restano tuoi. Puoi esportarli in qualsiasi momento o cancellare l\'account, e i consensi li gestisci uno per uno dal profilo. Nessuna pubblicità.',
+            ],
+        ];
     }
 }
