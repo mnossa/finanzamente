@@ -53,9 +53,9 @@ return [
                 'Dashboard e panoramica finanziaria',
                 'Transazioni illimitate',
                 'Budget mensile',
-                'Import bancario da CSV/XLS',
+                'Import movimenti da CSV/XLS',
                 'Categorie personalizzate',
-                'Fino a 5 conti bancari',
+                'Fino a 5 conti',
                 // --- espandibili ---
                 'Tag per le transazioni',
                 'Trasferimenti tra conti',
@@ -81,7 +81,7 @@ return [
                 'Household illimitate con membri',
                 'Lifestyle Inflation Score',
                 // --- espandibili ---
-                'Conti bancari illimitati',
+                'Conti illimitati',
                 'Transazioni ricorrenti illimitate',
                 'Rimborsi illimitati',
                 'Debiti e crediti illimitati',
