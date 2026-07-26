@@ -7,6 +7,7 @@ use App\Models\Household;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Passkeys\Support\WebAuthn;
 use Tests\TestCase;
 use Webauthn\AuthenticatorSelectionCriteria;
 
@@ -94,6 +95,15 @@ class PasskeyAuthenticationTest extends TestCase
         $response->assertOk();
         $response->assertJsonStructure(['options']);
         $this->assertNotEmpty(session('passkey.registration_options'));
+
+        $options = $response->json('options');
+        $this->assertSame('platform', data_get($options, 'authenticatorSelection.authenticatorAttachment'));
+        $this->assertSame('required', data_get($options, 'authenticatorSelection.residentKey'));
+        $this->assertTrue((bool) data_get($options, 'authenticatorSelection.requireResidentKey'));
+        $this->assertSame('required', data_get($options, 'authenticatorSelection.userVerification'));
+        $this->assertSame(['client-device'], data_get($options, 'hints'));
+        $this->assertSame(config('app.name'), data_get($options, 'rp.name'));
+        $this->assertNotSame('', data_get($options, 'user.displayName'));
     }
 
     public function test_user_can_delete_own_passkey(): void
@@ -133,6 +143,38 @@ class PasskeyAuthenticationTest extends TestCase
             AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_PLATFORM,
             $options->authenticatorSelection?->authenticatorAttachment
         );
+        $this->assertTrue($options->authenticatorSelection?->requireResidentKey);
+        $this->assertSame(['client-device'], $options->hints);
+        $this->assertSame(config('app.name'), $options->rp->name);
+
+        $browser = WebAuthn::toBrowserArray($options);
+        $this->assertSame('platform', data_get($browser, 'authenticatorSelection.authenticatorAttachment'));
+        $this->assertTrue((bool) data_get($browser, 'authenticatorSelection.requireResidentKey'));
+    }
+
+    public function test_blank_user_name_still_produces_non_empty_passkey_display_name(): void
+    {
+        $user = $this->createUserWithActiveHousehold();
+        $user->forceFill(['name' => ''])->save();
+
+        $options = app(GeneratePlatformRegistrationOptions::class)($user->fresh());
+
+        $this->assertNotSame('', $options->user->displayName);
+        $this->assertNotSame('', $options->user->name);
+    }
+
+    public function test_allowed_origins_include_www_sibling_of_app_url(): void
+    {
+        config([
+            'app.url' => 'https://finanzamente.it',
+        ]);
+
+        // Reload passkeys config with the new app URL.
+        $config = require base_path('config/passkeys.php');
+
+        $this->assertContains('https://finanzamente.it', $config['allowed_origins']);
+        $this->assertContains('https://www.finanzamente.it', $config['allowed_origins']);
+        $this->assertSame('finanzamente.it', $config['relying_party_id']);
     }
 
     private function createUserWithActiveHousehold(): User

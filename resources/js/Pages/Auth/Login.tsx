@@ -4,8 +4,8 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { passkeyErrorMessage } from '@/utils/passkeyErrors';
 import { shouldOfferBiometricLoginUi } from '@/utils/pwaDisplayMode';
-import { UserCancelledError } from '@laravel/passkeys';
 import { usePasskeyVerify } from '@laravel/passkeys/react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
@@ -39,11 +39,12 @@ export default function Login({
             window.location.href = redirect || route('dashboard');
         },
         onError: (err) => {
-            if (err instanceof UserCancelledError) {
-                setBiometricError(null);
-                return;
-            }
-            setBiometricError(err.message || 'Accesso con biometria non riuscito. Usa email e password.');
+            setBiometricError(
+                passkeyErrorMessage(
+                    err,
+                    'Accesso con biometria non riuscito. Usa email e password.',
+                ),
+            );
         },
     });
 

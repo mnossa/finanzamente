@@ -1,12 +1,14 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import {
+    defaultPasskeyDeviceName,
+    isPlatformAuthenticatorReady,
+    passkeyErrorMessage,
+} from '@/utils/passkeyErrors';
 import { shouldOfferBiometricLoginUi } from '@/utils/pwaDisplayMode';
-import { UserCancelledError } from '@laravel/passkeys';
 import { usePasskeyRegister } from '@laravel/passkeys/react';
 import { Link, router } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type PasskeySummary = {
     id: number;
@@ -25,7 +27,6 @@ export default function PasskeyAuthenticationForm({
     manageMode?: boolean;
     className?: string;
 }) {
-    const [name, setName] = useState('Questo dispositivo');
     const [localError, setLocalError] = useState<string | null>(null);
     const [showBiometricHint, setShowBiometricHint] = useState(false);
     const { register, isLoading, error, isSupported } = usePasskeyRegister({
@@ -34,11 +35,12 @@ export default function PasskeyAuthenticationForm({
             router.reload({ only: ['passkeys', 'successMessage'] });
         },
         onError: (err) => {
-            if (err instanceof UserCancelledError) {
-                setLocalError(null);
-                return;
-            }
-            setLocalError(err.message || 'Registrazione della chiave di accesso non riuscita.');
+            setLocalError(
+                passkeyErrorMessage(
+                    err,
+                    'Registrazione della chiave di accesso non riuscita. Riprova oppure usa email e password.',
+                ),
+            );
         },
     });
 
@@ -46,15 +48,25 @@ export default function PasskeyAuthenticationForm({
         setShowBiometricHint(shouldOfferBiometricLoginUi());
     }, []);
 
-    const submitRegister: FormEventHandler = (e) => {
-        e.preventDefault();
+    const startRegister = async () => {
         setLocalError(null);
-        const trimmed = name.trim();
-        if (!trimmed) {
-            setLocalError('Inserisci un nome per questa chiave di accesso.');
+
+        if (!isSupported) {
+            setLocalError(
+                'Questo browser non supporta le chiavi di accesso. Usa un telefono o un browser aggiornato.',
+            );
             return;
         }
-        void register(trimmed);
+
+        const platformReady = await isPlatformAuthenticatorReady();
+        if (!platformReady) {
+            setLocalError(
+                'Su questo dispositivo non risulta disponibile lo sblocco biometrico. Imposta un PIN, un\'impronta o Face ID e riprova.',
+            );
+            return;
+        }
+
+        void register(defaultPasskeyDeviceName());
     };
 
     const deletePasskey = (passkeyId: number) => {
@@ -128,26 +140,25 @@ export default function PasskeyAuthenticationForm({
             )}
 
             {manageMode ? (
-                <form onSubmit={submitRegister} className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-gray-700">
+                <div className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-gray-700">
                     {!isSupported && (
                         <p className="text-sm text-amber-800 dark:text-amber-200">
                             Questo browser non supporta le chiavi di accesso. Usa un telefono o un browser aggiornato.
                         </p>
                     )}
-                    <InputLabel htmlFor="passkey_name" value="Nome della chiave" />
-                    <TextInput
-                        id="passkey_name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="block w-full"
-                        placeholder="Es. iPhone di Mario"
-                        maxLength={100}
-                    />
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Tocca il pulsante qui sotto: il telefono chiederà l&apos;impronta o Face ID. Non serve
+                        scegliere un nome.
+                    </p>
                     <InputError message={displayError ?? undefined} />
-                    <PrimaryButton type="submit" disabled={isLoading || !isSupported}>
-                        {isLoading ? 'Registrazione…' : 'Registra chiave di accesso'}
+                    <PrimaryButton
+                        type="button"
+                        disabled={isLoading || !isSupported}
+                        onClick={() => void startRegister()}
+                    >
+                        {isLoading ? 'Registrazione…' : 'Registra sblocco biometrico'}
                     </PrimaryButton>
-                </form>
+                </div>
             ) : (
                 <Link
                     href={route('profile.passkeys.manage')}
