@@ -31,6 +31,7 @@ use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\MobileBottomNavPreferenceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\PasskeyManagementController;
 use App\Http\Controllers\PatrimonioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
@@ -165,6 +166,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::post('/profilo/sicurezza/mfa/conferma', [TwoFactorAuthenticationController::class, 'confirm'])->name('profile.two-factor.confirm');
         Route::post('/profilo/sicurezza/mfa/disabilita', [TwoFactorAuthenticationController::class, 'disable'])->name('profile.two-factor.disable');
         Route::post('/profilo/sicurezza/mfa/codici-recupero', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('profile.two-factor.recovery-codes');
+        Route::get('/profilo/sicurezza/passkey', [PasskeyManagementController::class, 'edit'])->name('profile.passkeys.manage');
     });
 
     // Preferenze tema utente

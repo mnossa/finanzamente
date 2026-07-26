@@ -63,6 +63,19 @@ class ProfileController extends Controller
             'twoFactorEnabled' => $user->two_factor_confirmed_at !== null,
             'twoFactorEnabledAt' => $user->two_factor_confirmed_at?->format('d/m/Y'),
             'twoFactorRecoveryCodes' => session('two_factor_recovery_codes', []),
+            'passkeys' => $user->passkeys()
+                ->orderByDesc('last_used_at')
+                ->orderByDesc('created_at')
+                ->get(['id', 'name', 'last_used_at', 'created_at', 'credential'])
+                ->map(fn ($passkey) => [
+                    'id' => $passkey->id,
+                    'name' => $passkey->name,
+                    'authenticator' => $passkey->authenticator,
+                    'last_used_at' => $passkey->last_used_at?->format('d/m/Y H:i'),
+                    'created_at' => $passkey->created_at?->format('d/m/Y'),
+                ])
+                ->values()
+                ->all(),
             'sharing' => [
                 'households_count' => $user->households->count(),
                 'active_household' => $activeHousehold ? [

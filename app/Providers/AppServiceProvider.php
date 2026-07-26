@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Actions\Passkeys\GeneratePlatformRegistrationOptions;
+use App\Http\Responses\PasskeyLoginResponse as AppPasskeyLoginResponse;
 use App\Models\BankImportLayout;
 use App\Models\Household;
 use App\Models\Investment;
+use App\Models\User;
 use App\Observers\HouseholdObserver;
 use App\Observers\InvestmentObserver;
 use App\Policies\BankImportLayoutPolicy;
@@ -15,6 +18,9 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Passkeys\Actions\GenerateRegistrationOptions;
+use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
+use Laravel\Passkeys\Passkeys;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
@@ -35,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         AliasLoader::getInstance()->alias('JsonLdMulti', JsonLdMulti::class);
+
+        $this->app->bind(GenerateRegistrationOptions::class, GeneratePlatformRegistrationOptions::class);
+        $this->app->singleton(PasskeyLoginResponse::class, AppPasskeyLoginResponse::class);
     }
 
     /**
@@ -42,6 +51,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Passkeys::useUserModel(User::class);
+
         Vite::prefetch(concurrency: 1);
         // Customizza il rendering dei link Markdown per aggiungere rel="nofollow" ai link esterni
         Str::macro('markdownWithNofollow', function ($string, $options = []) {
