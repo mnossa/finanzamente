@@ -4,8 +4,11 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import { shouldOfferBiometricLoginUi } from '@/utils/pwaDisplayMode';
+import { UserCancelledError } from '@laravel/passkeys';
+import { usePasskeyVerify } from '@laravel/passkeys/react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect, useState } from 'react';
 
 export default function Login({
     status,
@@ -23,6 +26,30 @@ export default function Login({
         password: '',
         remember: false as boolean,
     });
+    const [showBiometric, setShowBiometric] = useState(false);
+    const [biometricError, setBiometricError] = useState<string | null>(null);
+
+    const { verify, isLoading: biometricLoading, isSupported } = usePasskeyVerify({
+        autofill: true,
+        onSuccess: (response) => {
+            const redirect =
+                response && typeof response === 'object' && 'redirect' in response
+                    ? String((response as { redirect?: string }).redirect ?? '')
+                    : '';
+            window.location.href = redirect || route('dashboard');
+        },
+        onError: (err) => {
+            if (err instanceof UserCancelledError) {
+                setBiometricError(null);
+                return;
+            }
+            setBiometricError(err.message || 'Accesso con biometria non riuscito. Usa email e password.');
+        },
+    });
+
+    useEffect(() => {
+        setShowBiometric(shouldOfferBiometricLoginUi());
+    }, []);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -30,6 +57,11 @@ export default function Login({
         post(route('login'), {
             onFinish: () => reset('password'),
         });
+    };
+
+    const startBiometricLogin = () => {
+        setBiometricError(null);
+        void verify();
     };
 
     return (
@@ -48,6 +80,25 @@ export default function Login({
                 </div>
             )}
 
+            {showBiometric && isSupported && (
+                <div className="mb-6 space-y-3">
+                    <PrimaryButton
+                        type="button"
+                        className="w-full"
+                        disabled={biometricLoading}
+                        onClick={startBiometricLogin}
+                    >
+                        {biometricLoading ? 'Verifica in corso…' : 'Accedi con impronta o Face ID'}
+                    </PrimaryButton>
+                    {biometricError && (
+                        <p className="text-sm text-red-600 dark:text-red-400">{biometricError}</p>
+                    )}
+                    <div className="relative py-1 text-center text-xs uppercase tracking-wide text-gray-400">
+                        <span className="bg-white px-2 dark:bg-gray-800">oppure</span>
+                    </div>
+                </div>
+            )}
+
             <form onSubmit={submit}>
                 <div>
                     <InputLabel htmlFor="email" value="Email" />
@@ -58,7 +109,7 @@ export default function Login({
                         name="email"
                         value={data.email}
                         className="mt-1 block w-full"
-                        autoComplete="username"
+                        autoComplete="username webauthn"
                         isFocused={true}
                         onChange={(e) => setData('email', e.target.value)}
                     />

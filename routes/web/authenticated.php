@@ -48,6 +48,7 @@ use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TwoFactorAuthenticationController;
+use App\Http\Controllers\PasskeyManagementController;
 use Illuminate\Support\Facades\Route;
 
 // Rotte che richiedono autenticazione ma NON household attiva
@@ -165,6 +166,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::post('/profilo/sicurezza/mfa/conferma', [TwoFactorAuthenticationController::class, 'confirm'])->name('profile.two-factor.confirm');
         Route::post('/profilo/sicurezza/mfa/disabilita', [TwoFactorAuthenticationController::class, 'disable'])->name('profile.two-factor.disable');
         Route::post('/profilo/sicurezza/mfa/codici-recupero', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('profile.two-factor.recovery-codes');
+        Route::get('/profilo/sicurezza/passkey', [PasskeyManagementController::class, 'edit'])->name('profile.passkeys.manage');
     });
 
     // Preferenze tema utente

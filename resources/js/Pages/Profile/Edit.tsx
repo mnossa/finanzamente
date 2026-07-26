@@ -11,6 +11,7 @@ import NotificationPreferencesForm from './Partials/NotificationPreferencesForm'
 import MobileBottomNavPreferencesForm from './Partials/MobileBottomNavPreferencesForm';
 import SharingAndDataCard from './Partials/SharingAndDataCard';
 import TwoFactorAuthenticationForm from './Partials/TwoFactorAuthenticationForm';
+import PasskeyAuthenticationForm, { PasskeySummary } from './Partials/PasskeyAuthenticationForm';
 import PageHeader from '@/Components/PageHeader';
 import SectionCard from '@/Components/SectionCard';
 
@@ -46,6 +47,7 @@ export default function Edit({
     twoFactorEnabled = false,
     twoFactorEnabledAt,
     twoFactorRecoveryCodes = [],
+    passkeys = [],
     sharing,
     proPlanFeatures = [],
     currentPlan = 'base',
@@ -66,6 +68,7 @@ export default function Edit({
     twoFactorEnabled?: boolean;
     twoFactorEnabledAt?: string | null;
     twoFactorRecoveryCodes?: string[];
+    passkeys?: PasskeySummary[];
     sharing: {
         households_count: number;
         active_household: SharingHousehold | null;
@@ -177,6 +180,13 @@ export default function Edit({
                             enabled={twoFactorEnabled}
                             enabledAt={twoFactorEnabledAt}
                             recoveryCodes={twoFactorRecoveryCodes}
+                            className="w-full"
+                        />
+                    </SectionCard>
+
+                    <SectionCard className="lg:col-span-2">
+                        <PasskeyAuthenticationForm
+                            passkeys={passkeys}
                             className="w-full"
                         />
                     </SectionCard>
