@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Passkeys\GeneratePlatformRegistrationOptions;
 use App\Models\Household;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Webauthn\AuthenticatorSelectionCriteria;
 
 class PasskeyAuthenticationTest extends TestCase
 {
@@ -125,10 +127,10 @@ class PasskeyAuthenticationTest extends TestCase
     public function test_platform_registration_options_require_platform_authenticator(): void
     {
         $user = $this->createUserWithActiveHousehold();
-        $options = app(\App\Actions\Passkeys\GeneratePlatformRegistrationOptions::class)($user);
+        $options = app(GeneratePlatformRegistrationOptions::class)($user);
 
         $this->assertSame(
-            \Webauthn\AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_PLATFORM,
+            AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_PLATFORM,
             $options->authenticatorSelection?->authenticatorAttachment
         );
     }

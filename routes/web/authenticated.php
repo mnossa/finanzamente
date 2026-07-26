@@ -31,6 +31,7 @@ use App\Http\Controllers\LifestyleScoreController;
 use App\Http\Controllers\MobileBottomNavPreferenceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\PasskeyManagementController;
 use App\Http\Controllers\PatrimonioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileQuizController;
@@ -48,7 +49,6 @@ use App\Http\Controllers\TransactionExportController;
 use App\Http\Controllers\TransactionImportController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TwoFactorAuthenticationController;
-use App\Http\Controllers\PasskeyManagementController;
 use Illuminate\Support\Facades\Route;
 
 // Rotte che richiedono autenticazione ma NON household attiva
