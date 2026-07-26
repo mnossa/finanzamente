@@ -18,7 +18,7 @@ test.describe('Widget a formula — ricette e metriche', () => {
         await page.getByRole('button', { name: 'Continua' }).click();
 
         const vistaGroup = page.getByRole('group', { name: 'Tipo di visualizzazione' });
-        await expect(vistaGroup.getByRole('button', { name: /Barre/i })).toBeVisible();
+        await expect(vistaGroup.getByRole('button', { name: /Barre/i }).first()).toBeVisible();
         await expect(vistaGroup.getByRole('button', { name: /Indicatore|Linea|Tabella|Avanzamento/i })).toHaveCount(0);
     });
 });
