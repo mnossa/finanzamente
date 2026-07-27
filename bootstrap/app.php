@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureProfileCompleted;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\OwnerMiddleware;
 use App\Http\Middleware\PreLaunchMiddleware;
+use App\Http\Middleware\RecordSlowProductAnalytics;
 use App\Http\Middleware\RequiresPro;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            RecordSlowProductAnalytics::class,
         ]);
 
         $middleware->alias([

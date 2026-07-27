@@ -1,31 +1,28 @@
-# Fix PWA biometric / passkey registration
+# WFI-115 — Product analytics privacy-first
 
 ## Goal
-Far funzionare registrazione impronta da PWA (NotReadableError Android CM).
+Dashboard ops per usage/friction/bottlenecks; zero PII; Telescope solo non-prod; retention+purge.
 
 ## Plan
-- [x] Soften UV a `preferred`; mode `?compatibility=1` (no platform preference)
-- [x] Client `registerDevicePasskey` con retry compatibility
-- [x] UI PWA: CTA «Apri in browser» + copy Android (Google Password Manager)
-- [x] Workbox NetworkOnly esplicito su `/user/passkeys` e `/passkeys/`
-- [x] Test PHP aggiornati + make test/pint/playwright
+- [x] Migration `product_analytics_daily` + retention policy seed
+- [x] `ProductAnalyticsRecorder` (sanitize + upsert aggregati)
+- [x] Ingest endpoint (consent `analytics_tracking`) + dual-write da `analytics.ts`
+- [x] Admin Inertia dashboard (`owner` middleware) + audit access
+- [x] Retention command + schedule
+- [x] Telescope require-dev gated (`!production` + `TELESCOPE_ENABLED`)
+- [x] Privacy policy bump + first-party in tabella servizi
+- [x] Tests Feature/Unit
+- [x] `make test` → `make pint-check` → `make playwright`
+- [x] Aggiorna Jira WFI-115 → Completato
 
 ## Review
-### Cosa cambiato
-- Backend: UV preferred; `?compatibility=1` senza attachment platform
-- `registerPasskey.ts`: create + store custom, retry su NotReadableError
-- Form: CTA «Apri in browser» in standalone; hint Google Password Manager
-- SW: NetworkOnly per API passkey
-- Errori IT più actionable
+### Cosa
+- First-party aggregates `product_analytics_daily` + recorder sanitizer
+- Ingest + admin dashboard + slow-route middleware
+- Telescope require-dev, local/staging only
+- Privacy `2026-07-27-v1`, docs/product-analytics.md
 
 ### Verifica
-- PHPUnit: green (incluso PasskeyAuthenticationTest)
-- Pint: green
-- Playwright: green
-- Build: green (nuovo SW)
-
-### Come riprovare sul telefono
-1. Deploy / aggiorna PWA → banner «Ricarica» o reinstall
-2. Profilo → Configura sblocco biometrico
-3. Se fallisce dall’app: «Apri in browser» e registra da Chrome
-4. Android: gestore password preferito = Google Password Manager
+- PHPUnit: 1095 passed
+- Pint: pass
+- Playwright: 277 passed / 9 skipped

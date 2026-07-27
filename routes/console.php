@@ -65,6 +65,11 @@ Schedule::command('magazine:link-suggestions')->sundays()->at('03:00');
 Schedule::command('consents:enforce-retention')->dailyAt('03:30');
 
 /**
+ * Purge aggregati product analytics oltre la retention policy.
+ */
+Schedule::command('product-analytics:enforce-retention')->dailyAt('03:40');
+
+/**
  * Insight di cohort anonimi (Extra vs mediana profili simili) tramite servizio Python.
  * Dati inviati al servizio Python sono solo bucket numerici, senza accesso al DB.
  */

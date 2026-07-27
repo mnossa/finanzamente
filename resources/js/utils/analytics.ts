@@ -19,12 +19,103 @@
 
 type EventPayload = Record<string, string | number | boolean | null | undefined>;
 
+type QueuedEvent = { name: string; data: EventPayload };
+
+const FIRST_PARTY_QUEUE: QueuedEvent[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let csrfTokenCache: string | null = null;
+
+function readCsrfToken(): string | null {
+    if (csrfTokenCache) {
+        return csrfTokenCache;
+    }
+    if (typeof document === 'undefined') {
+        return null;
+    }
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    csrfTokenCache = meta?.getAttribute('content') ?? null;
+    return csrfTokenCache;
+}
+
+function analyticsConsentGranted(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    // Shared Inertia prop mirrored on window by AuthenticatedLayout when present.
+    const flag = (window as Window & { __fmAnalyticsEnabled?: boolean }).__fmAnalyticsEnabled;
+    return flag === true;
+}
+
+function enqueueFirstParty(name: string, data: EventPayload): void {
+    if (typeof window === 'undefined' || !analyticsConsentGranted()) {
+        return;
+    }
+
+    FIRST_PARTY_QUEUE.push({ name, data });
+    if (FIRST_PARTY_QUEUE.length >= 10) {
+        void flushFirstPartyQueue();
+        return;
+    }
+
+    if (flushTimer) {
+        return;
+    }
+
+    flushTimer = setTimeout(() => {
+        flushTimer = null;
+        void flushFirstPartyQueue();
+    }, 1500);
+}
+
+async function flushFirstPartyQueue(): Promise<void> {
+    if (FIRST_PARTY_QUEUE.length === 0 || !analyticsConsentGranted()) {
+        FIRST_PARTY_QUEUE.length = 0;
+        return;
+    }
+
+    const batch = FIRST_PARTY_QUEUE.splice(0, 20);
+    const token = readCsrfToken();
+    if (!token) {
+        return;
+    }
+
+    try {
+        await fetch('/product-analytics/events', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': token,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({
+                events: batch.map((event) => ({
+                    name: event.name,
+                    data: event.data,
+                })),
+            }),
+        });
+    } catch {
+        // Best-effort: non bloccare UX se ingest fallisce.
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+        void flushFirstPartyQueue();
+    });
+}
+
 /**
- * Primitiva di tracking: invia un evento a Umami se disponibile.
+ * Primitiva di tracking: invia un evento a Umami se disponibile,
+ * e in parallelo agli aggregati first-party (se consenso analytics).
  * In dev logga sulla console senza richiedere il consenso.
  */
 export function trackEvent(name: string, data: EventPayload = {}): void {
     if (typeof window === 'undefined') return;
+
+    enqueueFirstParty(name, data);
 
     const umami = (window as Window & { umami?: { track: (n: string, d?: EventPayload) => void } }).umami;
 

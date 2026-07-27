@@ -44,6 +44,17 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(GenerateRegistrationOptions::class, GeneratePlatformRegistrationOptions::class);
         $this->app->singleton(PasskeyLoginResponse::class, AppPasskeyLoginResponse::class);
+
+        // Telescope: require-dev, solo local/staging e TELESCOPE_ENABLED=true. Mai in produzione pubblica.
+        // class_exists con stringa: evita autoload fallito se package assente (composer --no-dev).
+        if (
+            class_exists('Laravel\\Telescope\\TelescopeApplicationServiceProvider')
+            && $this->app->environment(['local', 'staging'])
+            && filter_var(env('TELESCOPE_ENABLED', false), FILTER_VALIDATE_BOOLEAN)
+        ) {
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(TelescopeServiceProvider::class);
+        }
     }
 
     /**

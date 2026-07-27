@@ -6,6 +6,6 @@ use App\Providers\EventServiceProvider;
 
 return [
     AppServiceProvider::class,
-    EventServiceProvider::class,
     AuthServiceProvider::class,
+    EventServiceProvider::class,
 ];
