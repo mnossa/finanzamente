@@ -17,9 +17,9 @@ import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
 import { Head, router, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
+import { useState } from 'react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
-import { moneyKpiGrid2 } from '@/utils/moneyGridClasses';
 
 interface Currency {
     code: string;
@@ -30,6 +30,8 @@ interface DebtCredit {
     id: number;
     counterparty: string;
     amount: number;
+    initial_amount: number;
+    paid_amount: number;
     remaining_amount: number;
     currency: Currency;
     type: string;
@@ -65,8 +67,13 @@ interface IndexProps {
 
 import { formatCurrency, formatDate } from '@/utils/format';
 import { StatusBadge } from '@/Components/StatusBadge';
+import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
+import { ProgressBar } from '@/Components/ProgressBar';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 
 function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: boolean }) {
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
     const handleClose = () => {
         if (confirm('Vuoi segnare questo elemento come chiuso/saldato?')) {
             router.post(route('debts-credits.close', item.id));
@@ -78,14 +85,16 @@ function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: bool
     };
 
     const handleDelete = () => {
-        if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
-            router.delete(route('debts-credits.destroy', item.id));
-        }
+        router.delete(route('debts-credits.destroy', item.id));
+        setShowDeleteDialog(false);
     };
 
     const isDebt = item.type === 'debt';
+    const initialAmount = item.initial_amount || item.amount;
+    const paidPercent = initialAmount > 0 ? Math.min(100, (item.paid_amount / initialAmount) * 100) : 0;
 
     return (
+        <>
         <IndexEntityCard
             href={route('debts-credits.show', item.id)}
             dimmed={item.status === 'closed'}
@@ -116,11 +125,24 @@ function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: bool
             }
             amountClassName={isDebt ? 'text-red-500' : 'text-emerald-500'}
             extra={
-                item.description ? (
-                    <p className="line-clamp-1 text-xs text-gray-500 dark:text-gray-400">
-                        {item.description}
-                    </p>
-                ) : undefined
+                <div className="space-y-1.5">
+                    {item.status !== 'closed' && initialAmount > 0 && (
+                        <div className="flex items-center gap-2">
+                            <ProgressBar
+                                percentage={paidPercent}
+                                color={paidPercent >= 100 ? 'bg-emerald-500' : isDebt ? 'bg-red-400' : 'bg-emerald-400'}
+                                height="0.375rem"
+                                className="flex-1"
+                            />
+                            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{paidPercent.toFixed(0)}%</span>
+                        </div>
+                    )}
+                    {item.description && (
+                        <p className="line-clamp-1 text-xs text-gray-500 dark:text-gray-400">
+                            {item.description}
+                        </p>
+                    )}
+                </div>
             }
             footer={
                 canModify ? (
@@ -146,7 +168,7 @@ function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: bool
                             <PencilIcon size={16} />
                         </IndexEntityCardFooterLink>
                         <IndexEntityCardFooterButton
-                            onClick={handleDelete}
+                            onClick={() => setShowDeleteDialog(true)}
                             title="Elimina"
                             className="hover:text-red-600 dark:hover:text-red-400"
                         >
@@ -157,6 +179,12 @@ function DebtCreditCard({ item, canModify }: { item: DebtCredit; canModify: bool
             }
             footerClassName="flex items-center justify-end gap-0.5"
         />
+        <ConfirmDeleteDialog
+            open={showDeleteDialog}
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteDialog(false)}
+        />
+        </>
     );
 }
 
@@ -205,23 +233,19 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                     ) : (
                         <>
                             {/* Riepilogo */}
-                            <div className="flex flex-col gap-2 sm:gap-3">
-                                <div className={clsx(moneyKpiGrid2, 'gap-2 sm:gap-3')}>
-                                    <IndexKpiCell
-                                        label="Debiti aperti"
-                                        value={formatCurrency(summary.total_debts)}
-                                        detail="Soldi che devi"
-                                        valueClassName="text-red-600 dark:text-red-400"
-                                        className="!p-3 sm:!p-4"
-                                    />
-                                    <IndexKpiCell
-                                        label="Crediti aperti"
-                                        value={formatCurrency(summary.total_credits)}
-                                        detail="Soldi che ti devono"
-                                        valueClassName="text-emerald-600 dark:text-emerald-400"
-                                        className="!p-3 sm:!p-4"
-                                    />
-                                </div>
+                            <IndexKpiStrip columns={3}>
+                                <IndexKpiCell
+                                    label="Debiti aperti"
+                                    value={formatCurrency(summary.total_debts)}
+                                    detail="Soldi che devi"
+                                    valueClassName="text-red-600 dark:text-red-400"
+                                />
+                                <IndexKpiCell
+                                    label="Crediti aperti"
+                                    value={formatCurrency(summary.total_credits)}
+                                    detail="Soldi che ti devono"
+                                    valueClassName="text-emerald-600 dark:text-emerald-400"
+                                />
                                 <IndexKpiCell
                                     label="Bilancio netto"
                                     value={formatCurrency(summary.total_credits - summary.total_debts)}
@@ -235,15 +259,14 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                                             ? 'text-emerald-600 dark:text-emerald-400'
                                             : 'text-amber-600 dark:text-amber-400',
                                     )}
-                                    className="!p-3 sm:!p-4"
                                 />
-                            </div>
+                            </IndexKpiStrip>
 
                             {/* Elementi Aperti */}
                             {openItems.length > 0 && (
                                 <div>
-                                    <h3 className="mb-2 text-sm font-semibold text-gray-900 sm:mb-3 sm:text-base dark:text-white">
-                                        Aperti ({openItems.length})
+                                    <h3 className="mb-4 font-medium text-gray-900 dark:text-white">
+                                        📋 Aperti ({openItems.length})
                                     </h3>
                                     <IndexCardGrid className="gap-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-3">
                                         {openItems.map((item) => (
@@ -256,8 +279,8 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
                             {/* Elementi Chiusi */}
                             {closedItems.length > 0 && (
                                 <div>
-                                    <h3 className="mb-2 text-sm font-semibold text-gray-500 sm:mb-3 sm:text-base dark:text-gray-400">
-                                        Chiusi ({closedItems.length})
+                                    <h3 className="mb-4 font-medium text-gray-500 dark:text-gray-400">
+                                        ✓ Chiusi ({closedItems.length})
                                     </h3>
                                     <IndexCardGrid className="gap-2 lg:grid-cols-2 xl:grid-cols-3 sm:gap-3">
                                         {closedItems.map((item) => (

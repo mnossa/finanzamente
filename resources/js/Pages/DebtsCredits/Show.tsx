@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import LinkButton from '@/Components/LinkButton';
+import PrimaryButton from '@/Components/PrimaryButton';
+import TextInput from '@/Components/TextInput';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -8,6 +10,8 @@ import { PageProps } from '@/types';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { StatusBadge } from '@/Components/StatusBadge';
+import { ProgressBar } from '@/Components/ProgressBar';
+import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import PageHeader from '@/Components/PageHeader';
 import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
@@ -79,11 +83,12 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
     const paidPercent = initialAmount > 0 ? Math.min(100, (debtCredit.paid_amount / initialAmount) * 100) : 0;
     const [adjustmentAmount, setAdjustmentAmount] = useState('');
     const [adjustmentReason, setAdjustmentReason] = useState('');
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [confirmClose, setConfirmClose] = useState(false);
 
     const handleClose = () => {
-        if (confirm('Vuoi segnare questo elemento come chiuso/saldato?')) {
-            router.post(route('debts-credits.close', debtCredit.id));
-        }
+        router.post(route('debts-credits.close', debtCredit.id));
+        setConfirmClose(false);
     };
 
     const handleReopen = () => {
@@ -91,9 +96,8 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
     };
 
     const handleDelete = () => {
-        if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
-            router.delete(route('debts-credits.destroy', debtCredit.id));
-        }
+        router.delete(route('debts-credits.destroy', debtCredit.id));
+        setConfirmDelete(false);
     };
 
     const handleNonMonetaryReduction = () => {
@@ -181,17 +185,11 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                                 <span>Pagato: <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(debtCredit.paid_amount, debtCredit.currency.code)}</span></span>
                                 <span className="font-medium text-gray-900 dark:text-white">{paidPercent.toFixed(0)}%</span>
                             </div>
-                            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                                <div
-                                    className={clsx(
-                                        'h-3 rounded-full transition-all duration-500',
-                                        paidPercent >= 100
-                                            ? 'bg-emerald-500'
-                                            : isDebt ? 'bg-red-400' : 'bg-emerald-400'
-                                    )}
-                                    style={{ width: `${paidPercent}%` }}
-                                />
-                            </div>
+                            <ProgressBar
+                                percentage={paidPercent}
+                                color={paidPercent >= 100 ? 'bg-emerald-500' : isDebt ? 'bg-red-400' : 'bg-emerald-400'}
+                                height="0.75rem"
+                            />
                         </div>
 
                         {/* Interessi */}
@@ -255,31 +253,31 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                     {canModify && (
                     <div className="flex flex-wrap justify-center gap-3">
                         {debtCredit.status !== 'closed' && (
-                            <Link
-                                href={`${route('transactions.create')}?debt_credit_id=${debtCredit.id}`}
-                                className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-purple-700 transition-colors"
-                            >
-                                💳 Registra pagamento
-                            </Link>
+                            <LinkButton href={`${route('transactions.create')}?debt_credit_id=${debtCredit.id}`} icon={<span>💳</span>}>
+                                Registra pagamento
+                            </LinkButton>
                         )}
                         {debtCredit.status !== 'closed' ? (
-                            <button
-                                onClick={handleClose}
-                                className="inline-flex items-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+                            <PrimaryButton
+                                type="button"
+                                onClick={() => setConfirmClose(true)}
+                                className="bg-emerald-600 hover:bg-emerald-700"
                             >
                                 ✓ Segna come {isDebt ? 'saldato' : 'incassato'}
-                            </button>
+                            </PrimaryButton>
                         ) : (
-                            <button
+                            <PrimaryButton
+                                type="button"
                                 onClick={handleReopen}
-                                className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                                className="bg-blue-600 hover:bg-blue-700 shadow-none"
                             >
                                 ↩ Riapri
-                            </button>
+                            </PrimaryButton>
                         )}
                         <button
-                            onClick={handleDelete}
-                            className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+                            type="button"
+                            onClick={() => setConfirmDelete(true)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors"
                         >
                             <TrashIcon size={16} /> Elimina
                         </button>
@@ -291,9 +289,43 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Riduzione non monetaria</h3>
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Usa questo flusso per ridurre il debito senza una transazione di conto (es. cessione bene).</p>
                             <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                                <input value={adjustmentAmount} onChange={(e) => setAdjustmentAmount(e.target.value)} type="number" min="0.01" step="0.01" placeholder="Importo" className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800" />
-                                <input value={adjustmentReason} onChange={(e) => setAdjustmentReason(e.target.value)} type="text" placeholder="Motivo (opzionale)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800" />
-                                <button type="button" onClick={handleNonMonetaryReduction} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700">Registra riduzione</button>
+                                <TextInput value={adjustmentAmount} onChange={(e) => setAdjustmentAmount(e.target.value)} type="number" min="0.01" step="0.01" placeholder="Importo" />
+                                <TextInput value={adjustmentReason} onChange={(e) => setAdjustmentReason(e.target.value)} type="text" placeholder="Motivo (opzionale)" />
+                                <PrimaryButton type="button" onClick={handleNonMonetaryReduction}>
+                                    Registra riduzione
+                                </PrimaryButton>
+                            </div>
+                        </CardBox>
+                    )}
+
+                    {/* Storico riduzioni */}
+                    {debtCredit.adjustments.length > 0 && (
+                        <CardBox className="overflow-hidden shadow-sm">
+                            <div className="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">
+                                    Riduzioni non monetarie
+                                    <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                        {debtCredit.adjustments.length}
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                {debtCredit.adjustments.map((adj) => (
+                                    <div key={adj.id} className="flex items-center justify-between px-6 py-3">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {adj.reason || 'Riduzione'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                {new Date(adj.effective_date).toLocaleDateString('it-IT')}
+                                                {adj.user && ` · ${adj.user}`}
+                                            </p>
+                                        </div>
+                                        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                            −{formatCurrency(adj.amount, debtCredit.currency.code)}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
                         </CardBox>
                     )}
@@ -304,7 +336,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             <h3 className="font-semibold text-gray-900 dark:text-white">
                                 Transazioni collegate
                                 {transactions.length > 0 && (
-                                    <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                    <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                                         {transactions.length}
                                     </span>
                                 )}
@@ -312,7 +344,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             {debtCredit.status !== 'closed' && (
                                 <Link
                                     href={`${route('transactions.create')}?debt_credit_id=${debtCredit.id}`}
-                                    className="text-sm font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200"
+                                    className="text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
                                 >
                                     + Aggiungi
                                 </Link>
@@ -328,7 +360,7 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                                 {debtCredit.status !== 'closed' && (
                                     <Link
                                         href={`${route('transactions.create')}?debt_credit_id=${debtCredit.id}`}
-                                        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400"
+                                        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400"
                                     >
                                         Registra il primo pagamento →
                                     </Link>
@@ -373,6 +405,22 @@ export default function Show({ debtCredit, transactions, types, statuses }: Show
                             </div>
                         )}
                     </CardBox>
+                    <ConfirmDeleteDialog
+                        open={confirmDelete}
+                        title="Elimina posizione"
+                        description="Sei sicuro di voler eliminare questo elemento? Questa azione non può essere annullata."
+                        onConfirm={handleDelete}
+                        onCancel={() => setConfirmDelete(false)}
+                    />
+                    <ConfirmDeleteDialog
+                        open={confirmClose}
+                        title={isDebt ? 'Segna come saldato' : 'Segna come incassato'}
+                        description={`Vuoi segnare questo elemento come ${isDebt ? 'saldato' : 'incassato'}?`}
+                        confirmLabel="Conferma"
+                        variant="info"
+                        onConfirm={handleClose}
+                        onCancel={() => setConfirmClose(false)}
+                    />
             </PageContent>
         </AuthenticatedLayout>
     );

@@ -21,6 +21,15 @@ export function passkeyErrorMessage(
     const name = err instanceof Error ? err.name : '';
     const haystack = `${name} ${message}`.toLowerCase();
 
+    // Non-secure context (HTTP on non-localhost) → WebAuthn unavailable
+    if (
+        typeof window !== 'undefined' &&
+        window.location.protocol === 'http:' &&
+        !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+    ) {
+        return "Le chiavi di accesso richiedono una connessione sicura (HTTPS). Apri l'app dall'indirizzo ufficiale con HTTPS e riprova.";
+    }
+
     if (
         haystack.includes('credential manager') ||
         haystack.includes('notreadableerror') ||
