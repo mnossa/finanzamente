@@ -42,16 +42,34 @@ class GeneratePlatformRegistrationOptions extends GenerateRegistrationOptions
     /**
      * Prefer platform authenticators (impronta / Face ID / Windows Hello).
      *
-     * All four authenticatorSelection fields are set explicitly: Google Password
-     * Manager on Android is known to fail create() when the object is incomplete.
+     * Fields set explicitly: Google Password Manager on Android can fail create()
+     * when authenticatorSelection is incomplete. UV is "preferred" (not required):
+     * "required" often surfaces as NotReadableError with Credential Manager in
+     * installed PWAs. Pass ?compatibility=1 for a looser second attempt.
      */
     public function authenticatorSelection(): AuthenticatorSelectionCriteria
     {
+        if ($this->wantsCompatibilityMode()) {
+            return AuthenticatorSelectionCriteria::create(
+                authenticatorAttachment: AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_NO_PREFERENCE,
+                userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_REQUIRED,
+            );
+        }
+
         return AuthenticatorSelectionCriteria::create(
             authenticatorAttachment: AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_PLATFORM,
-            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
+            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
             residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_REQUIRED,
         );
+    }
+
+    /**
+     * Looser options for a second create() attempt after Android CM NotReadableError.
+     */
+    protected function wantsCompatibilityMode(): bool
+    {
+        return request()->boolean('compatibility');
     }
 
     /**

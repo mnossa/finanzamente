@@ -151,6 +151,7 @@ export function resolveMobilePrimaryFab(
 
     /** Pagine strumento / prevalentemente lettura: nessun FAB */
     const routePatternsWithoutFab = [
+        'profile.*',
         'simulations.*',
         'recurrence-detection.*',
         'tax-deductions.*',

@@ -114,6 +114,14 @@ export default defineConfig(({ mode, command }) => {
                     globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,woff2}'],
                     runtimeCaching: [
                         {
+                            // Passkey XHR must never hit SW cache / offline fallback.
+                            urlPattern: ({ url, sameOrigin }) =>
+                                sameOrigin &&
+                                (url.pathname.startsWith('/user/passkeys') ||
+                                    url.pathname.startsWith('/passkeys/')),
+                            handler: 'NetworkOnly',
+                        },
+                        {
                             urlPattern: ({ request, sameOrigin }) =>
                                 sameOrigin && request.mode === 'navigate',
                             handler: 'NetworkFirst',

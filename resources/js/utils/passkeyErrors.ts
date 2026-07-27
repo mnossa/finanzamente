@@ -47,7 +47,7 @@ export function passkeyErrorMessage(
         haystack.includes('notreadableerror') ||
         name === 'NotReadableError'
     ) {
-        return 'Impossibile completare lo sblocco biometrico su questo dispositivo. Verifica di avere un blocco schermo (PIN/impronta/Face ID), un account Google o iCloud attivo per le chiavi di accesso, e riprova. In alternativa continua con email e password.';
+        return 'Impossibile completare lo sblocco biometrico. Verifica blocco schermo (PIN/impronta/Face ID), un account Google o iCloud, e che il gestore password predefinito supporti le passkey (su Android preferisci Google Password Manager). Se sei nell\'app installata, prova «Apri in browser».';
     }
 
     if (haystack.includes('not supported') || name === 'NotSupportedError') {

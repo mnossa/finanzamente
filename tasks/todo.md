@@ -1,30 +1,31 @@
-# Remove P.IVA + operational stats filters
+# Fix PWA biometric / passkey registration
 
 ## Goal
-1. Rimuovere termometro tasse e riferimenti prodotto Partita IVA
-2. Applicare filtri operativi (no transfer, no investment, IH-safe) a budget/notifiche/tag/lifestyle/analisi
+Far funzionare registrazione impronta da PWA (NotReadableError Android CM).
 
 ## Plan
-- [x] Kill `getTaxThermometerData` + prop + TaxThermometerVisibilityTest + TaxCalculatorLogicTest + docs
-- [x] Strip Lifestyle P.IVA tax path (FinancialMetricsService, FAQ, export)
-- [x] Remove `vat_management` module; stop quiz writing has_vat/tax_rate/inps_rate
-- [x] Add `tax_thermometer`/`annual_revenue` to REMOVED_WIDGET_IDS
-- [x] `Transaction::scopeOperationalStats()` + apply budgets/notify/tags
-- [x] FinancialMetrics: hard whereNull(investment_id)
-- [x] 50/30/20 + analytics: excludeInterHouseholdStats
-- [x] Dedup getPeriodStats → DashboardPeriodStatsService
-- [x] Tests + pint-check
+- [x] Soften UV a `preferred`; mode `?compatibility=1` (no platform preference)
+- [x] Client `registerDevicePasskey` con retry compatibility
+- [x] UI PWA: CTA «Apri in browser» + copy Android (Google Password Manager)
+- [x] Workbox NetworkOnly esplicito su `/user/passkeys` e `/passkeys/`
+- [x] Test PHP aggiornati + make test/pint/playwright
 
 ## Review
 ### Cosa cambiato
-- P.IVA prodotto: termometro backend morto; lifestyle sempre persona (no tax); auth force persona; quiz senza has_vat/tax/inps; modulo vat_management rimosso
-- `Transaction::operationalStats()` = no transfer + no investment + IH-safe
-- Budget spent (lista/dettaglio/widget/notifiche) + entrate mese: filtri operativi + abs spent
-- Tag show, notifica spese mensili, fixed expenses, analytics, formula metric query
-- 50/30/20: exclude IH (investimenti restano nel bucket)
-- Dashboard periodStats → `DashboardPeriodStatsService` unico
+- Backend: UV preferred; `?compatibility=1` senza attachment platform
+- `registerPasskey.ts`: create + store custom, retry su NotReadableError
+- Form: CTA «Apri in browser» in standalone; hint Google Password Manager
+- SW: NetworkOnly per API passkey
+- Errori IT più actionable
 
 ### Verifica
-- PHPUnit: 1083 passed
+- PHPUnit: green (incluso PasskeyAuthenticationTest)
 - Pint: green
-- Playwright: in corso
+- Playwright: green
+- Build: green (nuovo SW)
+
+### Come riprovare sul telefono
+1. Deploy / aggiorna PWA → banner «Ricarica» o reinstall
+2. Profilo → Configura sblocco biometrico
+3. Se fallisce dall’app: «Apri in browser» e registra da Chrome
+4. Android: gestore password preferito = Google Password Manager

@@ -42,6 +42,13 @@ test.describe('Profilo utente', () => {
         await expect(page).toHaveTitle(/Profilo/i);
     });
 
+    test('su mobile non mostra FAB nuova transazione', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/profilo');
+
+        await expect(page.getByTestId('mobile-primary-fab')).toHaveCount(0);
+    });
+
     test('il form profilo ha i campi nome ed email', async ({ page }) => {
         await expect(page.locator('input[name="name"]')).toBeVisible();
         await expect(page.locator('input[name="email"]')).toBeVisible();

@@ -1,13 +1,19 @@
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import {
     defaultPasskeyDeviceName,
     isPlatformAuthenticatorReady,
     passkeyErrorMessage,
 } from '@/utils/passkeyErrors';
-import { shouldOfferBiometricLoginUi } from '@/utils/pwaDisplayMode';
-import { usePasskeyRegister } from '@laravel/passkeys/react';
+import { isStandaloneDisplayMode, shouldOfferBiometricLoginUi } from '@/utils/pwaDisplayMode';
+import {
+    isCredentialManagerFailure,
+    openPasskeySetupInBrowser,
+    registerDevicePasskey,
+} from '@/utils/registerPasskey';
 import { Link, router } from '@inertiajs/react';
+import { browserSupportsWebAuthn } from '@simplewebauthn/browser';
 import { useEffect, useState } from 'react';
 
 export type PasskeySummary = {
@@ -28,28 +34,21 @@ export default function PasskeyAuthenticationForm({
     className?: string;
 }) {
     const [localError, setLocalError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [showBiometricHint, setShowBiometricHint] = useState(false);
-    const { register, isLoading, errorInstance, isSupported } = usePasskeyRegister({
-        onSuccess: () => {
-            setLocalError(null);
-            router.reload({ only: ['passkeys', 'successMessage'] });
-        },
-        onError: (err) => {
-            setLocalError(
-                passkeyErrorMessage(
-                    err,
-                    'Registrazione della chiave di accesso non riuscita. Riprova oppure usa email e password.',
-                ),
-            );
-        },
-    });
+    const [isStandalone, setIsStandalone] = useState(false);
+    const [showBrowserFallback, setShowBrowserFallback] = useState(false);
+    const [isSupported, setIsSupported] = useState(true);
 
     useEffect(() => {
         setShowBiometricHint(shouldOfferBiometricLoginUi());
+        setIsStandalone(isStandaloneDisplayMode());
+        setIsSupported(browserSupportsWebAuthn());
     }, []);
 
     const startRegister = async () => {
         setLocalError(null);
+        setShowBrowserFallback(false);
 
         if (!isSupported) {
             setLocalError(
@@ -66,7 +65,24 @@ export default function PasskeyAuthenticationForm({
             return;
         }
 
-        void register(defaultPasskeyDeviceName());
+        setIsLoading(true);
+        try {
+            await registerDevicePasskey(defaultPasskeyDeviceName());
+            setLocalError(null);
+            router.reload({ only: ['passkeys', 'successMessage'] });
+        } catch (err) {
+            setLocalError(
+                passkeyErrorMessage(
+                    err,
+                    'Registrazione della chiave di accesso non riuscita. Riprova oppure usa email e password.',
+                ),
+            );
+            if (isStandalone && isCredentialManagerFailure(err)) {
+                setShowBrowserFallback(true);
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const deletePasskey = (passkeyId: number) => {
@@ -81,16 +97,6 @@ export default function PasskeyAuthenticationForm({
             },
         });
     };
-
-    // Never show the package's raw English `error` string (e.g. cancel message).
-    const displayError =
-        localError ??
-        (errorInstance
-            ? passkeyErrorMessage(
-                  errorInstance,
-                  'Registrazione della chiave di accesso non riuscita. Riprova oppure usa email e password.',
-              )
-            : null);
 
     return (
         <section className={className}>
@@ -158,7 +164,25 @@ export default function PasskeyAuthenticationForm({
                         Tocca il pulsante qui sotto: il telefono chiederà l&apos;impronta o Face ID. Non serve
                         scegliere un nome.
                     </p>
-                    <InputError message={displayError ?? undefined} />
+                    {isStandalone && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Su Android, se la registrazione dall&apos;app installata fallisce, apri la stessa
+                            pagina in Chrome (non nell&apos;app) e riprova. Imposta Google Password Manager come
+                            servizio preferito per le passkey.
+                        </p>
+                    )}
+                    <InputError message={localError ?? undefined} />
+                    {(showBrowserFallback || (isStandalone && localError)) && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/40">
+                            <p className="mb-2 text-sm text-amber-900 dark:text-amber-100">
+                                Prova la configurazione dal browser di sistema: su molti telefoni funziona meglio
+                                che dall&apos;app installata.
+                            </p>
+                            <SecondaryButton type="button" onClick={() => openPasskeySetupInBrowser()}>
+                                Apri in browser
+                            </SecondaryButton>
+                        </div>
+                    )}
                     <PrimaryButton
                         type="button"
                         disabled={isLoading || !isSupported}

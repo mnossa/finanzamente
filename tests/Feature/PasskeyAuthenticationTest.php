@@ -100,10 +100,27 @@ class PasskeyAuthenticationTest extends TestCase
         $this->assertSame('platform', data_get($options, 'authenticatorSelection.authenticatorAttachment'));
         $this->assertSame('required', data_get($options, 'authenticatorSelection.residentKey'));
         $this->assertTrue((bool) data_get($options, 'authenticatorSelection.requireResidentKey'));
-        $this->assertSame('required', data_get($options, 'authenticatorSelection.userVerification'));
+        $this->assertSame('preferred', data_get($options, 'authenticatorSelection.userVerification'));
         $this->assertTrue(empty(data_get($options, 'hints')));
         $this->assertSame(config('app.name'), data_get($options, 'rp.name'));
         $this->assertNotSame('', data_get($options, 'user.displayName'));
+    }
+
+    public function test_registration_options_compatibility_mode_relaxes_authenticator_attachment(): void
+    {
+        $user = $this->createUserWithActiveHousehold();
+
+        $response = $this->actingAs($user)
+            ->withSession(['auth.password_confirmed_at' => time()])
+            ->getJson('/user/passkeys/options?compatibility=1');
+
+        $response->assertOk();
+
+        $options = $response->json('options');
+        $attachment = data_get($options, 'authenticatorSelection.authenticatorAttachment');
+        $this->assertTrue($attachment === null || $attachment === 'null' || $attachment === '');
+        $this->assertSame('required', data_get($options, 'authenticatorSelection.residentKey'));
+        $this->assertSame('preferred', data_get($options, 'authenticatorSelection.userVerification'));
     }
 
     public function test_user_can_delete_own_passkey(): void
@@ -144,12 +161,17 @@ class PasskeyAuthenticationTest extends TestCase
             $options->authenticatorSelection?->authenticatorAttachment
         );
         $this->assertTrue($options->authenticatorSelection?->requireResidentKey);
+        $this->assertSame(
+            AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+            $options->authenticatorSelection?->userVerification
+        );
         $this->assertTrue($options->hints === null || $options->hints === []);
         $this->assertSame(config('app.name'), $options->rp->name);
 
         $browser = WebAuthn::toBrowserArray($options);
         $this->assertSame('platform', data_get($browser, 'authenticatorSelection.authenticatorAttachment'));
         $this->assertTrue((bool) data_get($browser, 'authenticatorSelection.requireResidentKey'));
+        $this->assertSame('preferred', data_get($browser, 'authenticatorSelection.userVerification'));
     }
 
     public function test_blank_user_name_still_produces_non_empty_passkey_display_name(): void
