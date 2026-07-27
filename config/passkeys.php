@@ -1,5 +1,24 @@
 <?php
 
+$appUrl = rtrim((string) config('app.url'), '/');
+$appHost = parse_url($appUrl, PHP_URL_HOST) ?: null;
+$scheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'https';
+
+$originVariants = [$appUrl];
+
+if (is_string($appHost) && $appHost !== '') {
+    if (str_starts_with($appHost, 'www.')) {
+        $originVariants[] = $scheme.'://'.substr($appHost, 4);
+    } else {
+        $originVariants[] = $scheme.'://www.'.$appHost;
+    }
+}
+
+$envOrigins = array_values(array_filter(array_map(
+    static fn (string $origin): string => rtrim(trim($origin), '/'),
+    explode(',', (string) env('PASSKEYS_ALLOWED_ORIGINS', '')),
+)));
+
 return [
 
     /*
@@ -13,7 +32,7 @@ return [
     |
     */
 
-    'relying_party_id' => parse_url(config('app.url'), PHP_URL_HOST),
+    'relying_party_id' => env('PASSKEYS_RP_ID', $appHost),
 
     /*
     |--------------------------------------------------------------------------
@@ -22,13 +41,15 @@ return [
     |
     | The origins permitted to complete WebAuthn ceremonies. Passkeys bound
     | to the relying party ID above will only verify when the browser
-    | reports one of these origins. Defaults to your application URL.
+    | reports one of these origins. Defaults to your application URL plus a
+    | www/apex sibling when applicable.
     |
     */
 
-    'allowed_origins' => [
-        config('app.url'),
-    ],
+    'allowed_origins' => array_values(array_unique(array_filter([
+        ...$envOrigins,
+        ...$originVariants,
+    ]))),
 
     /*
     |--------------------------------------------------------------------------

@@ -1,29 +1,24 @@
-# Passkey / sblocco biometrico PWA
+# Fix passkey / impronta
 
 ## Goal
-Login con WebAuthn platform authenticator (impronta / Face ID) sulla PWA mobile, senza Capacitor. Desktop: form password resta primario; UI biometrica gated su mobile/PWA.
+1. Registrazione trasparente: niente campo "Nome della chiave"
+2. Ridurre/gestire errore Credential Manager in registrazione biometrica
 
 ## Plan
-- [x] Install `laravel/passkeys` + `@laravel/passkeys`
-- [x] Publish migration/config; User implementa `PasskeyUser`
-- [x] Custom: solo platform authenticator; redirect dashboard; post-login inviti household
-- [x] UI profilo: gestione chiavi di accesso (IT copy)
-- [x] UI login: CTA biometrica (standalone PWA / viewport mobile)
-- [x] Feature tests (≥1) + `make test` + `make pint-check`
-- [x] `make playwright` (273 passed; fix locator formula-widgets preesistente)
-- [x] Commit / push / PR
+- [x] UI: rimuovere input nome; auto-nome dispositivo; CTA unica
+- [x] Map errori WebAuthn/Credential Manager → italiano actionable
+- [x] Hardening options: RP name app, hints client-device, displayName non vuoto
+- [x] Config origins/RP ID più robusta; Permissions-Policy publickey; .well-known
+- [x] Test feature + make test + pint-check + playwright
 
 ## Review
 ### Cosa è cambiato
-- Package ufficiale `laravel/passkeys` + client `@laravel/passkeys`
-- Registrazione solo **platform** authenticator (`GeneratePlatformRegistrationOptions`)
-- Profilo: sezione chiavi + pagina manage dietro `password.confirm`
-- Login: CTA “Accedi con impronta o Face ID” se PWA/mobile + WebAuthn supportato
-- Post-login passkey: redirect dashboard + pending household invites
-- Fix E2E: locator `/Barre/i` → `.first()` (strict mode, 3 bottoni barre)
+- Form manage: niente nome chiave; CTA “Registra sblocco biometrico”; nome auto (`Android`/`iPhone`/…)
+- `GeneratePlatformRegistrationOptions`: hints `client-device`, RP name = APP_NAME, displayName fallback, excludeCredentials resiliente
+- Errori IT via `passkeyErrors.ts` (Credential Manager / NotReadableError)
+- Origins www/apex + env overrides; Permissions-Policy publickey; `/.well-known/` in prod nginx
 
 ### Verifica
-- PHPUnit: 1088 passed (incl. `PasskeyAuthenticationTest`)
-- Pint: green
-- Build frontend: OK
-- Playwright: 273 passed, 9 skipped (dopo fix locator)
+- PHPUnit: 1090 passed (PasskeyAuthenticationTest 9/9)
+- Pint: green (708 files)
+- Playwright: 275 passed, 9 skipped
