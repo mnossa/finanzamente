@@ -735,6 +735,50 @@ class FormulaWidgetHttpTest extends TestCase
     }
 
     #[Test]
+    public function official_origin_clone_cannot_be_edited(): void
+    {
+        $this->seed(FormulaWidgetTemplateSeeder::class);
+
+        $this->actingAs($this->user)
+            ->post(route('formula-marketplace.install-template', 'official.entrate_30gg'))
+            ->assertRedirect();
+
+        $installed = FormulaWidget::query()
+            ->where('user_id', $this->user->id)
+            ->where('is_official_template', false)
+            ->with('source:id,is_official_template')
+            ->firstOrFail();
+
+        $this->assertTrue($installed->isOfficialOrigin());
+        $this->assertFalse($installed->isEditable());
+
+        $this->actingAs($this->user)
+            ->get(route('formula-widgets.edit', $installed))
+            ->assertForbidden();
+
+        $this->actingAs($this->user)
+            ->put(route('formula-widgets.update', $installed), [
+                'name' => 'Nome hackerato',
+                'financial_variable_id' => $installed->financial_variable_id,
+                'display_type' => $installed->display_type,
+                'period_preset' => $installed->period_preset,
+                'chart_config' => $installed->chart_config,
+                'default_size' => $installed->default_size,
+                'is_public' => false,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($this->user)
+            ->get(route('formula-widgets.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('FormulaWidgets/Index')
+                ->where('widgets.0.can_edit', false)
+                ->where('widgets.0.can_delete', true)
+                ->where('widgets.0.is_official_origin', true));
+    }
+
+    #[Test]
     public function destroy_soft_deletes_and_restore_within_window(): void
     {
         Queue::fake();

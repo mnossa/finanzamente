@@ -130,4 +130,12 @@ class FormulaWidget extends Model
             ->where('is_official_template', true)
             ->exists();
     }
+
+    /**
+     * I widget di sistema (catalogo o clone ufficiali) non sono modificabili.
+     */
+    public function isEditable(): bool
+    {
+        return ! $this->isOfficialOrigin();
+    }
 }

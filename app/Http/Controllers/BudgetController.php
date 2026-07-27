@@ -31,7 +31,7 @@ class BudgetController extends Controller
             ->get()
             ->map(function ($budget) use ($householdId) {
                 // Calcola la spesa effettiva per questo budget
-                $spent = Transaction::whereHas('account', function ($query) use ($householdId) {
+                $spent = abs((float) Transaction::whereHas('account', function ($query) use ($householdId) {
                     $query->where('household_id', $householdId);
                 })
                     ->where('category_id', $budget->category_id)
@@ -39,7 +39,8 @@ class BudgetController extends Controller
                         $query->where('type', 'expense');
                     })
                     ->whereBetween('date', [$budget->period_start, $budget->period_end])
-                    ->sum('amount');
+                    ->operationalStats()
+                    ->sum('amount'));
 
                 $percentage = $budget->amount > 0
                     ? min(100, round(($spent / $budget->amount) * 100, 1))
@@ -141,7 +142,7 @@ class BudgetController extends Controller
 
         $householdId = Auth::user()->active_household_id;
 
-        // Transazioni associate a questo budget
+        // Transazioni associate a questo budget (solo spese operative)
         $transactions = Transaction::whereHas('account', function ($query) use ($householdId) {
             $query->where('household_id', $householdId);
         })
@@ -150,6 +151,7 @@ class BudgetController extends Controller
                 $query->where('type', 'expense');
             })
             ->whereBetween('date', [$budget->period_start, $budget->period_end])
+            ->operationalStats()
             ->with(['account'])
             ->orderBy('date', 'desc')
             ->get()
@@ -161,7 +163,7 @@ class BudgetController extends Controller
                 'account' => $t->account->name,
             ]);
 
-        $spent = $transactions->sum('amount');
+        $spent = abs((float) $transactions->sum('amount'));
         $percentage = $budget->amount > 0
             ? min(100, round(($spent / $budget->amount) * 100, 1))
             : 0;
@@ -277,8 +279,7 @@ class BudgetController extends Controller
         return round((float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->where('amount', '>', 0)
-            ->whereNull('transfer_id')
-            ->excludeInterHouseholdStats()
+            ->operationalStats()
             ->whereBetween('date', [$start, $end])
             ->sum('amount'), 2);
     }

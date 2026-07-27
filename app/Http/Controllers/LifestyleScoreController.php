@@ -61,22 +61,6 @@ class LifestyleScoreController extends Controller
         // Riepilogo
         $writer->addRow(Row::fromValues(['RIEPILOGO']));
         $writer->addRow(Row::fromValues(['Reddito Lordo', number_format($data['gross_income'], 2, ',', '.').' €']));
-
-        if ($data['is_partita_iva']) {
-            $writer->addRow(Row::fromValues([
-                'Contributi INPS ('.$data['inps_rate'].'%)',
-                number_format($data['inps_amount'], 2, ',', '.').' €',
-            ]));
-            $writer->addRow(Row::fromValues([
-                'Flat Tax ('.$data['tax_rate'].'% su lordo−INPS)',
-                number_format($data['flat_tax_amount'], 2, ',', '.').' €',
-            ]));
-            $writer->addRow(Row::fromValues([
-                'Totale Tasse Stimate',
-                number_format($data['estimated_taxes'], 2, ',', '.').' €',
-            ]));
-        }
-
         $writer->addRow(Row::fromValues(['Reddito Netto', number_format($data['net_income'], 2, ',', '.').' €']));
         $writer->addRow(Row::fromValues(['Spese Totali', number_format($data['total_expenses'], 2, ',', '.').' €']));
         $writer->addRow(Row::fromValues(['Investimenti / Esclusi', number_format($data['excluded_expenses'], 2, ',', '.').' €']));

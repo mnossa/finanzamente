@@ -177,8 +177,8 @@ class InvestmentTransactionSyncTest extends TestCase
             ->get('/punteggio-stile-vita')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('metrics.total_expenses', 700)
-                ->where('metrics.excluded_expenses', 300)
+                ->where('metrics.total_expenses', 400)
+                ->where('metrics.excluded_expenses', 0)
                 ->where('metrics.effective_expenses', 400)
                 ->where('metrics.lifestyle_score', 80)
             );

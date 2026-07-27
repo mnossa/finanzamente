@@ -62,7 +62,8 @@ class TagController extends Controller
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->whereHas('tags', fn ($q) => $q->where('tags.id', $tag->id))
             ->whereDate('date', '>=', $month->toDateString())
-            ->whereDate('date', '<=', $monthEnd->toDateString());
+            ->whereDate('date', '<=', $monthEnd->toDateString())
+            ->operationalStats();
 
         $income = (float) (clone $baseQuery)->where('amount', '>', 0)->sum('amount');
         $expenses = (float) abs((float) (clone $baseQuery)->where('amount', '<', 0)->sum('amount'));

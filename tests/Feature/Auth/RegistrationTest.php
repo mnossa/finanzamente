@@ -129,7 +129,7 @@ class RegistrationTest extends TestCase
         ]);
     }
 
-    public function test_new_users_with_vat_can_register(): void
+    public function test_partita_iva_registration_is_rejected(): void
     {
         $response = $this->post('/registrati', [
             'name' => 'Test Company',
@@ -140,13 +140,10 @@ class RegistrationTest extends TestCase
             'vat_number' => '12345678901',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('verification.notice', absolute: false));
-
-        $this->assertDatabaseHas('users', [
+        $response->assertSessionHasErrors('user_type');
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', [
             'email' => 'company@example.com',
-            'user_type' => 'partita_iva',
-            'vat_number' => '12345678901',
         ]);
     }
 
@@ -167,17 +164,19 @@ class RegistrationTest extends TestCase
             'email' => 'test2@example.com',
             'user_type' => 'persona',
             'fiscal_code' => null,
+            'vat_number' => null,
         ]);
     }
 
-    public function test_new_users_can_register_without_vat_number(): void
+    public function test_vat_number_is_ignored_on_registration(): void
     {
         $response = $this->post('/registrati', [
-            'name' => 'Test Company',
+            'name' => 'Test User',
             'email' => 'company2@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-            'user_type' => 'partita_iva',
+            'user_type' => 'persona',
+            'vat_number' => '12345678901',
         ]);
 
         $this->assertAuthenticated();
@@ -185,7 +184,7 @@ class RegistrationTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email' => 'company2@example.com',
-            'user_type' => 'partita_iva',
+            'user_type' => 'persona',
             'vat_number' => null,
         ]);
     }
@@ -202,19 +201,5 @@ class RegistrationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('fiscal_code');
-    }
-
-    public function test_vat_number_format_is_validated(): void
-    {
-        $response = $this->post('/registrati', [
-            'name' => 'Test Company',
-            'email' => 'company@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-            'user_type' => 'partita_iva',
-            'vat_number' => 'INVALID',
-        ]);
-
-        $response->assertSessionHasErrors('vat_number');
     }
 }

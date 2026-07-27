@@ -253,8 +253,7 @@ class TransactionMetricQueryBuilder
             })
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->whereBetween('date', [$startDate, $effectiveEnd])
-            ->whereNull('transfer_id')
-            ->excludeInterHouseholdStats();
+            ->operationalStats();
 
         if ($accountId !== null) {
             $query->where('account_id', $accountId);

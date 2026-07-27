@@ -42,13 +42,12 @@ class DemoDataSeeder extends Seeder
             // Carica valuta EUR
             $this->eur = Currency::where('code', 'EUR')->firstOrFail();
 
-            // Crea utente con partita IVA
-            $this->command->info('👤 Creazione utente con Partita IVA...');
+            // Crea utenti demo (persona)
+            $this->command->info('👤 Creazione utente Mario Rossi...');
             $userVat = $this->createUser(
                 'Mario Rossi',
                 'mario.rossi@example.com',
-                'RSSMRA85M01H501Z',
-                '12345678901'
+                'RSSMRA85M01H501Z'
             );
 
             // Crea utente residenziale
@@ -56,12 +55,11 @@ class DemoDataSeeder extends Seeder
             $userResidential = $this->createUser(
                 'Laura Bianchi',
                 'laura.bianchi@example.com',
-                'BNCLRA90A41H501W',
-                null
+                'BNCLRA90A41H501W'
             );
 
-            // Crea 2 household per utente con P.IVA
-            $this->command->info('🏠 Creazione household per utente con P.IVA...');
+            // Crea 2 household per Mario
+            $this->command->info('🏠 Creazione household per Mario Rossi...');
             $household1Vat = $this->createHousehold($userVat, 'Famiglia Rossi', 'shared_wallet');
             $household2Vat = $this->createHousehold($userVat, 'Attività Professionale', 'debt_balancing');
 
@@ -112,7 +110,7 @@ class DemoDataSeeder extends Seeder
         }
     }
 
-    private function createUser(string $name, string $email, ?string $fiscalCode, ?string $vatNumber): User
+    private function createUser(string $name, string $email, ?string $fiscalCode): User
     {
         return User::create([
             'name' => $name,
@@ -120,8 +118,8 @@ class DemoDataSeeder extends Seeder
             'email_verified_at' => now(),
             'password' => Hash::make('password'),
             'fiscal_code' => $fiscalCode,
-            'vat_number' => $vatNumber,
-            'user_type' => ! is_null($vatNumber) ? 'partita_iva' : 'persona',
+            'vat_number' => null,
+            'user_type' => 'persona',
             'profile_completed' => true,
         ]);
     }

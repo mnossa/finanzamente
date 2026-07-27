@@ -22,6 +22,8 @@ class DashboardLayout extends Model
     /** @var list<string> Widget rimossi dal prodotto (strip silenzioso su load/save). */
     public const REMOVED_WIDGET_IDS = [
         'quick_actions',
+        'tax_thermometer',
+        'annual_revenue',
     ];
 
     protected $fillable = [

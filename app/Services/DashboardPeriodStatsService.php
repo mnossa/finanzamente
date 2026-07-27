@@ -46,7 +46,7 @@ class DashboardPeriodStatsService
                     ->orWhere('user_id', $user->id);
             })
             ->whereBetween('date', [$startDate, $effectiveEnd])
-            ->whereNull('transfer_id');
+            ->operationalStats();
 
         if ($accountId !== null) {
             $query->where('account_id', $accountId);

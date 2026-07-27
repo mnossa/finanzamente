@@ -4,13 +4,11 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { FormEventHandler } from 'react';
-import { PageProps } from '@/types';
 
 interface ProfileSettings {
-    has_vat: boolean;
     family_status: 'single' | 'couple' | 'family';
     tracks_investments: boolean;
 }
@@ -20,11 +18,7 @@ interface Props {
 }
 
 export default function Edit({ currentSettings }: Props) {
-    const { auth } = usePage<PageProps>().props;
-    const hasVat = auth.user.user_type === 'partita_iva' || (currentSettings?.has_vat ?? false);
-
     const { data, setData, patch, processing, errors } = useForm({
-        has_vat: hasVat,
         family_status: currentSettings?.family_status ?? ('single' as 'single' | 'couple' | 'family'),
         tracks_investments: currentSettings?.tracks_investments ?? false,
     });

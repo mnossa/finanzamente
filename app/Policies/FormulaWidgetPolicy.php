@@ -25,12 +25,12 @@ class FormulaWidgetPolicy
     public function update(User $user, FormulaWidget $formulaWidget): bool
     {
         return (int) $formulaWidget->user_id === (int) $user->id
-            && ! $formulaWidget->is_official_template;
+            && $formulaWidget->isEditable();
     }
 
     public function delete(User $user, FormulaWidget $formulaWidget): bool
     {
-        return $this->update($user, $formulaWidget)
+        return (int) $formulaWidget->user_id === (int) $user->id
             && ! $formulaWidget->isOfficialProtected();
     }
 

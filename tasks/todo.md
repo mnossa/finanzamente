@@ -1,24 +1,30 @@
-# Fix passkey / impronta
+# Remove P.IVA + operational stats filters
 
 ## Goal
-1. Registrazione trasparente: niente campo "Nome della chiave"
-2. Ridurre/gestire errore Credential Manager in registrazione biometrica
+1. Rimuovere termometro tasse e riferimenti prodotto Partita IVA
+2. Applicare filtri operativi (no transfer, no investment, IH-safe) a budget/notifiche/tag/lifestyle/analisi
 
 ## Plan
-- [x] UI: rimuovere input nome; auto-nome dispositivo; CTA unica
-- [x] Map errori WebAuthn/Credential Manager → italiano actionable
-- [x] Hardening options: RP name app, hints client-device, displayName non vuoto
-- [x] Config origins/RP ID più robusta; Permissions-Policy publickey; .well-known
-- [x] Test feature + make test + pint-check + playwright
+- [x] Kill `getTaxThermometerData` + prop + TaxThermometerVisibilityTest + TaxCalculatorLogicTest + docs
+- [x] Strip Lifestyle P.IVA tax path (FinancialMetricsService, FAQ, export)
+- [x] Remove `vat_management` module; stop quiz writing has_vat/tax_rate/inps_rate
+- [x] Add `tax_thermometer`/`annual_revenue` to REMOVED_WIDGET_IDS
+- [x] `Transaction::scopeOperationalStats()` + apply budgets/notify/tags
+- [x] FinancialMetrics: hard whereNull(investment_id)
+- [x] 50/30/20 + analytics: excludeInterHouseholdStats
+- [x] Dedup getPeriodStats → DashboardPeriodStatsService
+- [x] Tests + pint-check
 
 ## Review
-### Cosa è cambiato
-- Form manage: niente nome chiave; CTA “Registra sblocco biometrico”; nome auto (`Android`/`iPhone`/…)
-- `GeneratePlatformRegistrationOptions`: hints `client-device`, RP name = APP_NAME, displayName fallback, excludeCredentials resiliente
-- Errori IT via `passkeyErrors.ts` (Credential Manager / NotReadableError)
-- Origins www/apex + env overrides; Permissions-Policy publickey; `/.well-known/` in prod nginx
+### Cosa cambiato
+- P.IVA prodotto: termometro backend morto; lifestyle sempre persona (no tax); auth force persona; quiz senza has_vat/tax/inps; modulo vat_management rimosso
+- `Transaction::operationalStats()` = no transfer + no investment + IH-safe
+- Budget spent (lista/dettaglio/widget/notifiche) + entrate mese: filtri operativi + abs spent
+- Tag show, notifica spese mensili, fixed expenses, analytics, formula metric query
+- 50/30/20: exclude IH (investimenti restano nel bucket)
+- Dashboard periodStats → `DashboardPeriodStatsService` unico
 
 ### Verifica
-- PHPUnit: 1090 passed (PasskeyAuthenticationTest 9/9)
-- Pint: green (708 files)
-- Playwright: 275 passed, 9 skipped
+- PHPUnit: 1083 passed
+- Pint: green
+- Playwright: in corso

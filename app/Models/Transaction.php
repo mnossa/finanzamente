@@ -142,6 +142,17 @@ class Transaction extends Model
             ->whereNull('investment_id');
     }
 
+    /**
+     * Entrate/uscite operative (consumo): esclude trasferimenti e ledger investimenti.
+     */
+    public function scopeOperationalStats($query)
+    {
+        return $query
+            ->whereNull('transfer_id')
+            ->whereNull('investment_id')
+            ->excludeInterHouseholdStats();
+    }
+
     public function transfer()
     {
         return $this->belongsTo(Transfer::class);

@@ -36,14 +36,8 @@ class ProfileQuizController extends Controller
             return redirect()->route('households.select');
         }
 
-        // Pre-popola has_vat dal tipo utente dichiarato in registrazione
-        $currentSettings = $user->profile_settings ?? [];
-        if (empty($currentSettings)) {
-            $currentSettings['has_vat'] = $user->user_type === 'partita_iva';
-        }
-
         return Inertia::render('ProfileQuiz/Show', [
-            'currentSettings' => $currentSettings,
+            'currentSettings' => $user->profile_settings ?? [],
         ]);
     }
 
@@ -59,14 +53,10 @@ class ProfileQuizController extends Controller
 
         $user = $request->user();
 
-        // Deduciamo has_vat dal campo user_type (dichiarato in registrazione)
-        $hasVat = $user->user_type === 'partita_iva';
-
         // Salva le impostazioni del profilo
         $user->update([
             'profile_completed' => true,
             'profile_settings' => [
-                'has_vat' => $hasVat,
                 'family_status' => $validated['family_status'],
                 'tracks_investments' => $validated['tracks_investments'],
                 'completed_at' => now()->toISOString(),
@@ -92,11 +82,9 @@ class ProfileQuizController extends Controller
     {
         $user = $request->user();
 
-        // Se non ha profile_settings, deduciamo has_vat dal tipo utente
         $currentSettings = $user->profile_settings ?? [];
         if (empty($currentSettings)) {
             $currentSettings = [
-                'has_vat' => $user->user_type === 'partita_iva',
                 'family_status' => 'single',
                 'tracks_investments' => false,
             ];
@@ -113,25 +101,19 @@ class ProfileQuizController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'has_vat' => 'required|boolean',
             'family_status' => 'required|string|in:single,couple,family',
             'tracks_investments' => 'required|boolean',
-            'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'inps_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $user = $request->user();
 
-        // Aggiorna le impostazioni mantenendo la data di primo completamento e i flag notifiche
+        // Aggiorna le impostazioni mantenendo la data di primo completamento
         $currentSettings = $user->profile_settings ?? [];
 
         $user->update([
             'profile_settings' => [
-                'has_vat' => $validated['has_vat'],
                 'family_status' => $validated['family_status'],
                 'tracks_investments' => $validated['tracks_investments'],
-                'tax_rate' => $validated['tax_rate'] ?? ($currentSettings['tax_rate'] ?? 15),
-                'inps_rate' => $validated['inps_rate'] ?? ($currentSettings['inps_rate'] ?? 26.23),
                 'completed_at' => $currentSettings['completed_at'] ?? now()->toISOString(),
                 'updated_at' => now()->toISOString(),
             ],

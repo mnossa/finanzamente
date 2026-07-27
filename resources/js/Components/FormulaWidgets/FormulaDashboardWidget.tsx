@@ -38,6 +38,19 @@ function formulaWidgetEditAction(numericId: string, widgetName: string) {
     );
 }
 
+function formulaWidgetHeaderActions(
+    numericId: string,
+    widgetName: string,
+    editing: boolean,
+    meta?: FormulaWidgetMeta,
+): ReactNode {
+    if (editing || meta?.can_edit === false) {
+        return undefined;
+    }
+
+    return formulaWidgetEditAction(numericId, widgetName);
+}
+
 function formulaWidgetSkeleton(title: string, meta?: FormulaWidgetMeta): ReactNode {
     return (
         <FormulaWidgetSkeleton
@@ -103,7 +116,7 @@ export default function FormulaDashboardWidget({
             return <FormulaKpiWidget payload={payload} embedded />;
         }
 
-        const headerActions = !editing ? formulaWidgetEditAction(numericId, payload.name) : undefined;
+        const headerActions = formulaWidgetHeaderActions(numericId, payload.name, editing, meta);
 
         return (
             <DashboardWidgetShell
@@ -124,7 +137,7 @@ export default function FormulaDashboardWidget({
         );
     }
 
-    const headerActions = !editing ? formulaWidgetEditAction(numericId, payload.name) : undefined;
+    const headerActions = formulaWidgetHeaderActions(numericId, payload.name, editing, meta);
 
     return (
         <DeferredMount fallback={formulaWidgetSkeleton(payload.name, meta)} scheduleIdle>

@@ -43,7 +43,7 @@ class BudgetNotificationService
             ->get();
 
         foreach ($activeBudgets as $budget) {
-            $spent = Transaction::whereHas('account', function ($q) use ($householdId) {
+            $spent = abs((float) Transaction::whereHas('account', function ($q) use ($householdId) {
                 $q->where('household_id', $householdId);
             })
                 ->where('category_id', $budget->category_id)
@@ -51,9 +51,9 @@ class BudgetNotificationService
                     $q->where('type', 'expense');
                 })
                 ->whereBetween('date', [$budget->period_start, $budget->period_end])
-                ->sum('amount');
+                ->operationalStats()
+                ->sum('amount'));
 
-            $spent = abs((float) $spent);
             $percentage = $budget->amount > 0 ? ($spent / $budget->amount) * 100 : 0;
             $periodKey = Carbon::parse($budget->period_start)->format('Y-m');
 

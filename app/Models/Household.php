@@ -335,6 +335,7 @@ class Household extends Model
             )
                 ->where('category_id', $categoryId)
                 ->where('amount', '<', 0) // Solo spese (negative)
+                ->operationalStats()
                 ->sum('amount');
 
             $totalExpenses = abs($totalExpenses);
@@ -346,6 +347,7 @@ class Household extends Model
                 )
                     ->where('category_id', $categoryId)
                     ->where('amount', '<', 0) // Solo spese (negative)
+                    ->operationalStats()
                     ->sum('amount');
 
                 $userContribution = abs($userContribution);

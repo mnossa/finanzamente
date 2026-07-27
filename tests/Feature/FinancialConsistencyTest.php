@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\Budget;
 use App\Models\Category;
 use App\Models\Household;
 use App\Models\Investment;
@@ -186,8 +187,8 @@ class FinancialConsistencyTest extends TestCase
             ->get('/punteggio-stile-vita')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('metrics.total_expenses', 600)
-                ->where('metrics.excluded_expenses', 600)
+                ->where('metrics.total_expenses', 0)
+                ->where('metrics.excluded_expenses', 0)
                 ->where('metrics.effective_expenses', 0)
                 ->where('metrics.lifestyle_score', 100)
             );
@@ -196,7 +197,7 @@ class FinancialConsistencyTest extends TestCase
     }
 
     #[Test]
-    public function unsynced_investment_affects_expense_distribution_and_lifestyle_as_excluded(): void
+    public function unsynced_investment_affects_expense_distribution_but_not_lifestyle(): void
     {
         Carbon::setTestNow('2026-06-15');
 
@@ -235,8 +236,8 @@ class FinancialConsistencyTest extends TestCase
             ->get('/punteggio-stile-vita')
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('metrics.total_expenses', 800)
-                ->where('metrics.excluded_expenses', 800)
+                ->where('metrics.total_expenses', 0)
+                ->where('metrics.excluded_expenses', 0)
                 ->where('metrics.effective_expenses', 0)
                 ->where('metrics.lifestyle_score', 100)
             );
@@ -378,6 +379,204 @@ class FinancialConsistencyTest extends TestCase
                 ->where('periodStats.income', 0)
                 ->where('periodStats.expenses', 0)
                 ->where('periodStats.net', 0)
+            );
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function period_stats_and_expense_categories_exclude_investment_purchases(): void
+    {
+        Carbon::setTestNow('2026-06-15');
+
+        $realExpenseCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+            'name' => 'Spesa vera',
+        ]);
+
+        Transaction::factory()->create([
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
+            'category_id' => $realExpenseCategory->id,
+            'amount' => -50,
+            'date' => now()->subDays(2)->toDateString(),
+            'transfer_id' => null,
+            'investment_id' => null,
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'quantity' => 1,
+            'buy_price' => 1000,
+            'buy_date' => now()->subDays(1)->toDateString(),
+            'is_private' => false,
+        ]);
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('periodStats.income', 0)
+                ->where('periodStats.expenses', 50)
+                ->where('periodStats.net', -50)
+            );
+
+        $categories = $this->actingAs($this->user)
+            ->get(route('dashboard.deferred-widgets'))
+            ->assertOk()
+            ->json('expenseCategories');
+
+        $this->assertCount(1, $categories);
+        $this->assertSame('Spesa vera', $categories[0]['name']);
+        $this->assertEquals(50.0, $categories[0]['value']);
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function expense_category_widget_excludes_internal_transfers(): void
+    {
+        Carbon::setTestNow('2026-06-15');
+
+        $destAccount = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'type' => 'cash',
+            'initial_balance' => 0,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        $expenseCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+            'name' => 'Trasferimento uscita',
+        ]);
+        $incomeCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'income',
+            'name' => 'Trasferimento entrata',
+        ]);
+        $realExpenseCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+            'name' => 'Spesa vera',
+        ]);
+
+        app(TransferService::class)->createTransfer([
+            'source_account_id' => $this->account->id,
+            'destination_account_id' => $destAccount->id,
+            'source_amount' => 500,
+            'source_currency' => 'EUR',
+            'dest_currency' => 'EUR',
+            'source_category_id' => $expenseCategory->id,
+            'dest_category_id' => $incomeCategory->id,
+            'date' => now()->toDateString(),
+            'initiated_by' => $this->user->id,
+        ]);
+
+        Transaction::factory()->create([
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
+            'category_id' => $realExpenseCategory->id,
+            'amount' => -80,
+            'date' => now()->toDateString(),
+            'transfer_id' => null,
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('dashboard.deferred-widgets'))
+            ->assertOk();
+
+        $categories = $response->json('expenseCategories');
+        $this->assertCount(1, $categories);
+        $this->assertSame('Spesa vera', $categories[0]['name']);
+        $this->assertEquals(80.0, $categories[0]['value']);
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
+    public function budget_spent_excludes_transfers_and_investments(): void
+    {
+        Carbon::setTestNow('2026-06-15');
+
+        $category = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'expense',
+            'name' => 'Spesa budget',
+        ]);
+
+        $budget = Budget::create([
+            'household_id' => $this->household->id,
+            'user_id' => $this->user->id,
+            'category_id' => $category->id,
+            'amount' => 200,
+            'currency_code' => 'EUR',
+            'period_start' => now()->startOfMonth()->toDateString(),
+            'period_end' => now()->endOfMonth()->toDateString(),
+        ]);
+
+        Transaction::factory()->create([
+            'account_id' => $this->account->id,
+            'user_id' => $this->user->id,
+            'category_id' => $category->id,
+            'amount' => -40,
+            'date' => now()->toDateString(),
+            'transfer_id' => null,
+            'investment_id' => null,
+        ]);
+
+        $destAccount = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'type' => 'cash',
+            'initial_balance' => 0,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+        $incomeCategory = Category::factory()->create([
+            'household_id' => $this->household->id,
+            'type' => 'income',
+            'name' => 'Trasferimento entrata',
+        ]);
+        app(TransferService::class)->createTransfer([
+            'source_account_id' => $this->account->id,
+            'destination_account_id' => $destAccount->id,
+            'source_amount' => 100,
+            'source_currency' => 'EUR',
+            'dest_currency' => 'EUR',
+            'source_category_id' => $category->id,
+            'dest_category_id' => $incomeCategory->id,
+            'date' => now()->toDateString(),
+            'initiated_by' => $this->user->id,
+        ]);
+
+        $investment = Investment::create([
+            'user_id' => $this->user->id,
+            'household_id' => $this->household->id,
+            'account_id' => $this->account->id,
+            'asset_id' => $this->asset->id,
+            'quantity' => 1,
+            'buy_price' => 500,
+            'buy_date' => now()->toDateString(),
+            'is_private' => false,
+        ]);
+        app(InvestmentTransactionSyncService::class)->syncPurchase($investment);
+        Transaction::where('investment_id', $investment->id)->update(['category_id' => $category->id]);
+
+        $this->actingAs($this->user)
+            ->get(route('budgets.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('budgets.0.id', $budget->id)
+                ->where('budgets.0.spent', 40)
+                ->where('budgets.0.percentage', 20)
             );
 
         Carbon::setTestNow();

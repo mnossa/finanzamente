@@ -14,7 +14,7 @@ use App\Models\User;
  * I moduli sono organizzati in categorie:
  * - base: moduli sempre disponibili
  * - planning: pianificazione finanziaria
- * - fiscal: gestione fiscale (richiede has_vat)
+ * - fiscal: gestione fiscale (detrazioni 730)
  * - investments: investimenti (richiede tracks_investments)
  * - special: transazioni speciali
  */
@@ -142,14 +142,6 @@ class ModuleAccessService
             'requires' => [],
             'requires_plan' => 'pro',
         ],
-        'vat_management' => [
-            'id' => 'vat_management',
-            'name' => 'Gestione IVA',
-            'category' => 'fiscal',
-            'routes' => ['vat-management.*'],
-            'requires' => ['has_vat'],
-            'requires_plan' => 'pro',
-        ],
 
         // Moduli Pro — Investimenti
         'investments' => [
@@ -246,11 +238,6 @@ class ModuleAccessService
         $modules = [];
 
         foreach (self::MODULES as $moduleId => $module) {
-            // Non mostrare moduli con requisiti non configurabili (come has_vat per utenti persona)
-            if (in_array('has_vat', $module['requires']) && $user->user_type !== 'partita_iva') {
-                continue; // Salta questo modulo, non è rilevante per l'utente
-            }
-
             $canAccess = $this->canAccessModule($user, $module, $profileSettings);
             $missingRequirements = $this->getMissingRequirements($module, $profileSettings);
             $requiresPro = ($module['requires_plan'] ?? 'base') === 'pro';
@@ -336,15 +323,6 @@ class ModuleAccessService
 
         // Verifica requisiti dal profilo
         foreach ($module['requires'] as $requirement) {
-            // Gestione speciale per has_vat: controlla user_type invece di profile_settings
-            if ($requirement === 'has_vat') {
-                if ($user->user_type !== 'partita_iva') {
-                    return false;
-                }
-
-                continue;
-            }
-
             if (! ($profileSettings[$requirement] ?? false)) {
                 return false;
             }
@@ -358,15 +336,9 @@ class ModuleAccessService
      */
     private function getMissingRequirements(array $module, array $profileSettings): array
     {
-        // Non restituire mai 'has_vat' come requisito mancante
-        // perché non è attivabile dalle impostazioni del profilo
         $missing = [];
 
         foreach ($module['requires'] as $requirement) {
-            if ($requirement === 'has_vat') {
-                continue; // Skip, non è configurabile dall'utente
-            }
-
             if (! ($profileSettings[$requirement] ?? false)) {
                 $missing[] = $requirement;
             }

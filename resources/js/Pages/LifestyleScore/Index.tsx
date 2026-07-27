@@ -324,7 +324,7 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                     label="Spese Effettive"
                                     value={formatEur(metrics.effective_expenses)}
                                     color="text-orange-500"
-                                    sub="tasse + investimenti esclusi"
+                                    sub="categorie escluse sottratte"
                                 />
                             </div>
 
@@ -748,25 +748,6 @@ export default function Index({ metrics, trend, dateRangeLabel }: IndexProps) {
                                         <li><span className="font-semibold text-red-500">&lt; 10% — Critico:</span> le spese coprono quasi tutto il reddito netto. Rivedi il budget il prima possibile.</li>
                                     </ul>
                                 }
-                            />
-                            <FaqItem
-                                question="Perché per la Partita IVA il calcolo è diverso?"
-                                answer="I lavoratori autonomi in regime forfettario ricevono compensi lordi: devono versare INPS e flat tax prima di poter spendere. Lo score usa quindi il reddito netto stimato (dopo le tasse) per rispecchiare il reale potere d'acquisto. I dipendenti invece ricevono già lo stipendio netto in busta paga, quindi nessun calcolo fiscale viene applicato."
-                            />
-                            <FaqItem
-                                question="Come vengono calcolate le tasse per la Partita IVA?"
-                                answer={
-                                    <ol className="list-decimal pl-5 space-y-1">
-                                        <li><strong>INPS</strong> = Reddito Lordo × aliquota INPS (default 26,23%)</li>
-                                        <li><strong>Flat Tax</strong> = (Reddito Lordo − INPS) × aliquota flat tax (default 15%)<br /><span className="text-gray-500 text-xs">I contributi INPS sono deducibili dalla base imponibile fiscale (art. 1 c. 64 L. 190/2014).</span></li>
-                                        <li><strong>Tasse totali</strong> = INPS + Flat Tax</li>
-                                        <li><strong>Reddito Netto</strong> = Reddito Lordo − Tasse Totali</li>
-                                    </ol>
-                                }
-                            />
-                            <FaqItem
-                                question="Posso personalizzare le aliquote?"
-                                answer="Sì. Nelle impostazioni del tuo profilo puoi modificare l'aliquota INPS e la flat tax per adattarle alla tua situazione specifica (es. regime ordinario, aliquota INPS ridotta al 5% per nuove aperture, ecc.)."
                             />
                             <FaqItem
                                 question="Cosa si intende per «spese escluse»?"

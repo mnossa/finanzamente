@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\AccountBalanceService;
 use App\Services\AssetClassificationService;
 use App\Services\DashboardCacheService;
+use App\Services\DashboardPeriodStatsService;
 use App\Services\FinancialMetricsService;
 use App\Services\FormulaWidgetBootstrapService;
 use App\Services\FormulaWidgetDataVersionService;
@@ -42,6 +43,7 @@ class DashboardController extends Controller
         private readonly FormulaWidgetLayoutNormalizer $formulaWidgetLayoutNormalizer,
         private readonly FormulaWidgetDataVersionService $formulaWidgetDataVersionService,
         private readonly DashboardCacheService $dashboardCacheService,
+        private readonly DashboardPeriodStatsService $dashboardPeriodStatsService,
         private readonly PacProjectionService $pacProjectionService,
         private readonly UpcomingCashflowService $upcomingCashflowService,
     ) {}
@@ -68,7 +70,6 @@ class DashboardController extends Controller
 
         $payload = $this->dashboardCacheService->rememberIndexPayload($user, function () use (
             $user,
-            $householdId,
             $startOfPeriod,
             $endOfPeriod,
             $startOfPrevious,
@@ -76,8 +77,8 @@ class DashboardController extends Controller
             $activeBoard,
         ) {
             return array_merge($this->buildIndexPayload($user, $activeBoard), [
-                'periodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPeriod, $endOfPeriod),
-                'previousPeriodStats' => $this->getPeriodStats($householdId, $user->id, $startOfPrevious, $endOfPrevious),
+                'periodStats' => $this->dashboardPeriodStatsService->calculate($user, $startOfPeriod, $endOfPeriod),
+                'previousPeriodStats' => $this->dashboardPeriodStatsService->calculate($user, $startOfPrevious, $endOfPrevious),
             ]);
         }, $activeBoard?->id);
 
@@ -184,7 +185,7 @@ class DashboardController extends Controller
             ->with(['category', 'currency'])
             ->get()
             ->map(function ($budget) use ($householdId) {
-                $spent = Transaction::whereHas('account', function ($query) use ($householdId) {
+                $spent = abs((float) Transaction::whereHas('account', function ($query) use ($householdId) {
                     $query->where('household_id', $householdId);
                 })
                     ->where('category_id', $budget->category_id)
@@ -192,7 +193,8 @@ class DashboardController extends Controller
                         $query->where('type', 'expense');
                     })
                     ->whereBetween('date', [$budget->period_start, $budget->period_end])
-                    ->sum('amount');
+                    ->operationalStats()
+                    ->sum('amount'));
 
                 $percentage = $budget->amount > 0
                     ? min(100, round(($spent / $budget->amount) * 100, 1))
@@ -254,7 +256,6 @@ class DashboardController extends Controller
             'activeBudgets' => $activeBudgets,
             'openDebtsCredits' => $openDebtsCredits,
             'debtsCreditsSummary' => $debtsCreditsSummary,
-            'taxThermometerData' => $this->getTaxThermometerData($user),
             'dashboardLayout' => $dashboardLayout,
             'formulaWidgetPayloads' => $formulaWidgetPayloads,
             'formulaWidgetMeta' => $formulaWidgetMeta,
@@ -342,83 +343,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Recupera i dati per il widget Termometro Tasse.
-     */
-    private function getTaxThermometerData(User $user): array
-    {
-        // Il termometro tasse è visibile solo agli utenti con Partita IVA
-        if ($user->user_type !== 'partita_iva') {
-            return [
-                'visible' => false,
-                'has_vat' => false,
-                'gross_income' => 0,
-                'tax_rate' => 15,
-                'inps_rate' => 26.23,
-            ];
-        }
-
-        $settings = $user->profile_settings ?? [];
-
-        // Calcola le entrate lorde dell'anno corrente
-        $year = Carbon::now()->year;
-        $startOfYear = Carbon::createFromDate($year, 1, 1)->startOfDay();
-        $endOfYear = Carbon::createFromDate($year, 12, 31)->endOfDay();
-        $householdId = $user->active_household_id;
-
-        $grossIncome = (float) Transaction::whereHas('account', function ($q) use ($householdId) {
-            $q->where('household_id', $householdId);
-        })
-            ->where('user_id', $user->id)
-            ->where('amount', '>', 0)
-            ->whereBetween('date', [$startOfYear, $endOfYear])
-            ->sum('amount');
-
-        return [
-            'visible' => true,
-            'has_vat' => true,
-            'gross_income' => $grossIncome,
-            'tax_rate' => (float) ($settings['tax_rate'] ?? 15),
-            'inps_rate' => (float) ($settings['inps_rate'] ?? 26.23),
-        ];
-    }
-
-    /**
-     * Calcola entrate, uscite e conteggio transazioni per un intervallo di date.
-     */
-    private function getPeriodStats(int $householdId, int $userId, Carbon $startDate, Carbon $endDate): array
-    {
-        $query = Transaction::whereHas('account', function ($query) use ($householdId) {
-            $query->where('household_id', $householdId)
-                ->where('active', true);
-        })
-            ->where(function ($query) use ($userId) {
-                $query->where('is_private', false)
-                    ->orWhere('user_id', $userId);
-            })
-            ->whereBetween('date', [$startDate, $endDate])
-            ->whereNull('transfer_id');
-
-        // Entrate (importi positivi)
-        $income = (clone $query)->where('amount', '>', 0)->sum('amount');
-
-        // Uscite (importi negativi, restituiti come valore assoluto)
-        $expenses = abs((clone $query)->where('amount', '<', 0)->sum('amount'));
-
-        // Saldo netto del periodo
-        $net = $income - $expenses;
-
-        // Numero di transazioni
-        $transactionCount = (clone $query)->count();
-
-        return [
-            'income' => (float) $income,
-            'expenses' => (float) $expenses,
-            'net' => (float) $net,
-            'transaction_count' => $transactionCount,
-        ];
-    }
-
-    /**
      * Calcola i dati per il widget Lifestyle Score (storico completo + trend 30 gg).
      *
      * Il widget si sblocca soltanto quando l'utente ha transazioni registrate in
@@ -438,7 +362,7 @@ class DashboardController extends Controller
                 'lifestyle_score' => null,
                 'net_income' => 0.0,
                 'effective_expenses' => 0.0,
-                'is_partita_iva' => $user->user_type === 'partita_iva',
+                'is_partita_iva' => false,
                 'top_categories' => [],
                 'trend' => [
                     'last30_score' => null,
@@ -456,7 +380,7 @@ class DashboardController extends Controller
             'account',
             fn ($q) => $q->where('household_id', $user->active_household_id)
         )
-            ->whereNull('transfer_id')
+            ->operationalStats()
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
             ->selectRaw("{$yearMonthExpr} as ym")
             ->distinct()
@@ -475,7 +399,7 @@ class DashboardController extends Controller
                 'lifestyle_score' => null,
                 'net_income' => 0.0,
                 'effective_expenses' => 0.0,
-                'is_partita_iva' => $user->user_type === 'partita_iva',
+                'is_partita_iva' => false,
                 'top_categories' => [],
                 'trend' => [
                     'last30_score' => null,
@@ -535,7 +459,7 @@ class DashboardController extends Controller
             'lifestyle_score' => $overall['lifestyle_score'],
             'net_income' => $overall['net_income'],
             'effective_expenses' => $overall['effective_expenses'],
-            'is_partita_iva' => $overall['is_partita_iva'],
+            'is_partita_iva' => false,
             'top_categories' => array_values($topCategories),
             'trend' => [
                 'last30_score' => $last30Score !== null ? round($last30Score, 1) : null,
@@ -900,6 +824,7 @@ class DashboardController extends Controller
                     'name' => $widget->name,
                     'display_type' => $widget->display_type,
                     'variant' => is_string($chartConfig['variant'] ?? null) ? $chartConfig['variant'] : null,
+                    'can_edit' => $widget->isEditable(),
                     'can_delete' => ! $widget->isOfficialProtected(),
                 ];
             });
@@ -1007,6 +932,7 @@ class DashboardController extends Controller
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->whereBetween('date', [$startDate, $endDate])
             ->where('amount', '<', 0)
+            ->operationalStats()
             ->whereNotNull('category_id')
             ->selectRaw('category_id, SUM(ABS(amount)) as total')
             ->groupBy('category_id')
@@ -1082,6 +1008,7 @@ class DashboardController extends Controller
             ->whereBetween('date', [$startDate, $endDate])
             ->where('amount', '<', 0)
             ->whereNull('transfer_id')
+            ->excludeInterHouseholdStats()
             ->whereNotNull('category_id')
             ->selectRaw('category_id, SUM(ABS(amount)) as total')
             ->groupBy('category_id')

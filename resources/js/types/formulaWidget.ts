@@ -225,6 +225,7 @@ export interface FormulaWidgetSummary {
     template_slug?: string | null;
     is_official_template?: boolean;
     is_official_origin?: boolean;
+    can_edit?: boolean;
     can_delete?: boolean;
     clones_count?: number;
     installed?: boolean;
@@ -245,5 +246,6 @@ export interface FormulaWidgetMeta {
     name: string;
     display_type: string;
     variant?: string | null;
+    can_edit?: boolean;
     can_delete?: boolean;
 }

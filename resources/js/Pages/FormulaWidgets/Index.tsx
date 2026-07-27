@@ -68,13 +68,15 @@ function WidgetCard({
                     </p>
                 )}
                 <div className="flex shrink-0 flex-col gap-2 sm:ml-auto sm:flex-row">
-                    <Link
-                        href={route('formula-widgets.edit', widget.id)}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-300 px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700/60 sm:w-auto sm:py-1.5"
-                    >
-                        <PencilIcon className="h-4 w-4" />
-                        Modifica
-                    </Link>
+                    {widget.can_edit !== false && (
+                        <Link
+                            href={route('formula-widgets.edit', widget.id)}
+                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-300 px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700/60 sm:w-auto sm:py-1.5"
+                        >
+                            <PencilIcon className="h-4 w-4" />
+                            Modifica
+                        </Link>
+                    )}
                     <button
                         type="button"
                         onClick={() => router.post(route('formula-widgets.pin', widget.id))}

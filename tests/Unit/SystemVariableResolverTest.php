@@ -26,7 +26,7 @@ class SystemVariableResolverTest extends TestCase
     }
 
     #[Test]
-    public function it_hides_partita_iva_tax_variables_from_formula_palette(): void
+    public function it_keeps_retired_partita_iva_tax_variables_out_of_formula_palette(): void
     {
         $codes = collect(app(SystemVariableResolver::class)->listMetadata())->pluck('code');
 

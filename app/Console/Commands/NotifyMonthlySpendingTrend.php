@@ -35,11 +35,13 @@ class NotifyMonthlySpendingTrend extends Command
                 $current = abs((float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $user->active_household_id))
                     ->where('user_id', $user->id)
                     ->where('amount', '<', 0)
+                    ->operationalStats()
                     ->whereBetween('date', [$currentStart->toDateString(), $today->toDateString()])
                     ->sum('amount'));
                 $previous = abs((float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $user->active_household_id))
                     ->where('user_id', $user->id)
                     ->where('amount', '<', 0)
+                    ->operationalStats()
                     ->whereBetween('date', [$prevStart->toDateString(), $prevEnd->toDateString()])
                     ->sum('amount'));
 

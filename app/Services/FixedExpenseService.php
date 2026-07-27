@@ -62,6 +62,7 @@ class FixedExpenseService
             )
                 ->where('category_id', $category->id)
                 ->where('amount', '<', 0) // Solo spese
+                ->operationalStats()
                 ->sum('amount');
 
             $categoryTotal = abs($categoryTotal);
@@ -74,6 +75,7 @@ class FixedExpenseService
                 )
                     ->where('category_id', $category->id)
                     ->where('amount', '<', 0) // Solo spese
+                    ->operationalStats()
                     ->sum('amount');
 
                 $userContribution = abs($userContribution);

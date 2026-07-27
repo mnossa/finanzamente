@@ -6,7 +6,6 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
 interface ProfileSettings {
-    has_vat: boolean;
     family_status: 'single' | 'couple' | 'family';
     tracks_investments: boolean;
 }

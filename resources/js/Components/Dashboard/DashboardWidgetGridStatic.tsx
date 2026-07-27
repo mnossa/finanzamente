@@ -8,6 +8,7 @@ export interface DashboardWidgetGridItem {
     formulaTitle?: string;
     formulaNumericId: string | null;
     formulaCanDelete?: boolean;
+    formulaCanEdit?: boolean;
     renderable: boolean;
 }
 
@@ -28,7 +29,7 @@ export default function DashboardWidgetGridStatic({
 }: DashboardWidgetGridStaticProps) {
     return (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-6 xl:gap-6">
-            {items.map(({ widget, content, formulaTitle, formulaNumericId, formulaCanDelete, renderable }) => {
+            {items.map(({ widget, content, formulaTitle, formulaNumericId, formulaCanDelete, formulaCanEdit, renderable }) => {
                 if (!renderable) {
                     return null;
                 }
@@ -48,7 +49,7 @@ export default function DashboardWidgetGridStatic({
                         onChangeSize={(size) => onChangeSize(widget.id, size)}
                         titleOverride={formulaTitle}
                         manageEditHref={
-                            isEditing && formulaNumericId
+                            isEditing && formulaNumericId && formulaCanEdit !== false
                                 ? route('formula-widgets.edit', formulaNumericId)
                                 : undefined
                         }

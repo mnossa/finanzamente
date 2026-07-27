@@ -732,6 +732,9 @@ export default function Dashboard({
                 formulaCanDelete: formulaNumericId
                     ? formulaWidgetMeta[formulaNumericId]?.can_delete !== false
                     : undefined,
+                formulaCanEdit: formulaNumericId
+                    ? formulaWidgetMeta[formulaNumericId]?.can_edit !== false
+                    : undefined,
                 renderable: isWidgetRenderable(widget.id),
             };
         }),

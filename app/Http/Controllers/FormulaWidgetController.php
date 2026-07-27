@@ -379,6 +379,7 @@ class FormulaWidgetController extends Controller
             'source_id' => $widget->source_id,
             'is_official_template' => $widget->is_official_template,
             'is_official_origin' => $widget->isOfficialOrigin(),
+            'can_edit' => $widget->isEditable(),
             'can_delete' => ! $widget->isOfficialProtected(),
             'clones_count' => (int) ($widget->clones_count ?? $widget->clones()->count()),
             'financial_variable' => $widget->relationLoaded('financialVariable') && $widget->financialVariable

@@ -35,7 +35,6 @@
 | File | Contenuto |
 |---|---|
 | [features/detrazioni-fiscali.md](features/detrazioni-fiscali.md) | Gestione detrazioni fiscali 730 |
-| [features/termometro-tasse.md](features/termometro-tasse.md) | Widget Termometro Tasse |
 | [features/recurring-transactions.md](features/recurring-transactions.md) | Sistema transazioni ricorrenti |
 | [features/inter-household-transfers.md](features/inter-household-transfers.md) | Trasferimenti tra household |
 | [features/debt-transaction-link.md](features/debt-transaction-link.md) | Collegamento transazioni a debiti/crediti |

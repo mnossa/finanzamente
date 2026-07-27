@@ -180,26 +180,17 @@ class LifestyleScoreTest extends TestCase
     }
 
     #[Test]
-    public function lifestyle_score_deducts_taxes_for_partita_iva(): void
+    public function lifestyle_score_uses_gross_as_net_for_persona(): void
     {
-        $this->user->update([
-            'user_type' => 'partita_iva',
-            'profile_settings' => [
-                'has_vat' => true,
-                'tax_rate' => 15,
-                'inps_rate' => 0,  // semplificazione per il test
-            ],
-        ]);
-
-        // Reddito 1000 €, 15% tasse → netto 850 €
-        // Spese 500 €, score = (850 - 500) / 850 * 100 ≈ 41.2%
+        // Reddito 1000 €, nessuna stima fiscale → netto 1000 €
+        // Spese 500 €, score = (1000 - 500) / 1000 * 100 = 50%
         Transaction::create([
             'user_id' => $this->user->id,
             'account_id' => $this->account->id,
             'category_id' => $this->incomeCategory->id,
             'amount' => 1000.00,
             'date' => now()->startOfMonth(),
-            'description' => 'Fattura',
+            'description' => 'Stipendio',
             'currency_code' => 'EUR',
         ]);
 
@@ -220,8 +211,10 @@ class LifestyleScoreTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('LifestyleScore/Index')
             ->where('metrics.gross_income', 1000)
-            ->where('metrics.estimated_taxes', 150)
-            ->where('metrics.net_income', 850)
+            ->where('metrics.estimated_taxes', 0)
+            ->where('metrics.net_income', 1000)
+            ->where('metrics.is_partita_iva', false)
+            ->where('metrics.lifestyle_score', 50)
         );
     }
 

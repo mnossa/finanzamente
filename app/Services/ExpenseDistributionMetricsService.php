@@ -34,6 +34,7 @@ class ExpenseDistributionMetricsService
             ->whereBetween('date', [$startDate, $endDate])
             ->where('amount', '<', 0)
             ->whereNull('transfer_id')
+            ->excludeInterHouseholdStats()
             ->whereNotNull('category_id')
             ->selectRaw('category_id, SUM(ABS(amount)) as total')
             ->groupBy('category_id')
