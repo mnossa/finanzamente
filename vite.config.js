@@ -107,6 +107,9 @@ export default defineConfig(({ mode, command }) => {
                         /^\/verify-email/,
                         /^\/sanctum/,
                         /^\/api\//,
+                        /^\/user\/passkeys/,
+                        /^\/passkeys\//,
+                        /^\/profilo\/sicurezza/,
                     ],
                     globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,woff2}'],
                     runtimeCaching: [

@@ -79,7 +79,7 @@ export default function ConsentPreferencesForm({ className = '', consents }: Pro
                     </p>
                 </div>
 
-                <FormActionsBar>
+                <FormActionsBar sticky={false}>
                     <PrimaryButton disabled={processing}>Salva preferenze privacy</PrimaryButton>
                     <button
                         type="button"

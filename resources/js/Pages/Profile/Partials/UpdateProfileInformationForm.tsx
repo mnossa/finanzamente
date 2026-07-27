@@ -85,7 +85,6 @@ export default function UpdateProfileInformation({
                         value={data.name}
                         onChange={(e) => setData('name', e.target.value)}
                         required
-                        isFocused
                         autoComplete="name"
                     />
 
@@ -200,7 +199,7 @@ export default function UpdateProfileInformation({
                     </div>
                 )}
 
-                <FormActionsBar>
+                <FormActionsBar sticky={false}>
                     <PrimaryButton disabled={processing}>Salva</PrimaryButton>
 
                     <Transition

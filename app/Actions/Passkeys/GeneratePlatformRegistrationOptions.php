@@ -36,7 +36,6 @@ class GeneratePlatformRegistrationOptions extends GenerateRegistrationOptions
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
             excludeCredentials: $this->excludedCredentials($user),
             timeout: Passkeys::timeout(),
-            hints: ['client-device'],
         );
     }
 

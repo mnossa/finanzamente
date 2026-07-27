@@ -29,7 +29,7 @@ export default function PasskeyAuthenticationForm({
 }) {
     const [localError, setLocalError] = useState<string | null>(null);
     const [showBiometricHint, setShowBiometricHint] = useState(false);
-    const { register, isLoading, error, isSupported } = usePasskeyRegister({
+    const { register, isLoading, errorInstance, isSupported } = usePasskeyRegister({
         onSuccess: () => {
             setLocalError(null);
             router.reload({ only: ['passkeys', 'successMessage'] });
@@ -82,7 +82,15 @@ export default function PasskeyAuthenticationForm({
         });
     };
 
-    const displayError = localError || error;
+    // Never show the package's raw English `error` string (e.g. cancel message).
+    const displayError =
+        localError ??
+        (errorInstance
+            ? passkeyErrorMessage(
+                  errorInstance,
+                  'Registrazione della chiave di accesso non riuscita. Riprova oppure usa email e password.',
+              )
+            : null);
 
     return (
         <section className={className}>

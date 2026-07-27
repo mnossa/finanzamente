@@ -101,7 +101,7 @@ class PasskeyAuthenticationTest extends TestCase
         $this->assertSame('required', data_get($options, 'authenticatorSelection.residentKey'));
         $this->assertTrue((bool) data_get($options, 'authenticatorSelection.requireResidentKey'));
         $this->assertSame('required', data_get($options, 'authenticatorSelection.userVerification'));
-        $this->assertSame(['client-device'], data_get($options, 'hints'));
+        $this->assertTrue(empty(data_get($options, 'hints')));
         $this->assertSame(config('app.name'), data_get($options, 'rp.name'));
         $this->assertNotSame('', data_get($options, 'user.displayName'));
     }
@@ -144,7 +144,7 @@ class PasskeyAuthenticationTest extends TestCase
             $options->authenticatorSelection?->authenticatorAttachment
         );
         $this->assertTrue($options->authenticatorSelection?->requireResidentKey);
-        $this->assertSame(['client-device'], $options->hints);
+        $this->assertTrue($options->hints === null || $options->hints === []);
         $this->assertSame(config('app.name'), $options->rp->name);
 
         $browser = WebAuthn::toBrowserArray($options);

@@ -139,7 +139,7 @@ export default function UpdatePasswordForm({
                     />
                 </div>
 
-                <FormActionsBar>
+                <FormActionsBar sticky={false}>
                     <PrimaryButton disabled={processing}>Salva</PrimaryButton>
 
                     <Transition

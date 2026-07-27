@@ -90,7 +90,7 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
                     </div>
                 )}
 
-                <FormActionsBar>
+                <FormActionsBar sticky={false}>
                     <Link href={route('profile.quiz-settings.edit')}>
                         <SecondaryButton>Modifica Impostazioni</SecondaryButton>
                     </Link>

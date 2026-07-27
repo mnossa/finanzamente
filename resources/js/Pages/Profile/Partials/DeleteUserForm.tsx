@@ -79,7 +79,7 @@ export default function DeleteUserForm({
                 </p>
             </header>
 
-            <FormActionsBar>
+            <FormActionsBar sticky={false}>
                 <DangerButton onClick={confirmUserDeletion} className="rounded-xl">
                     Elimina Account
                 </DangerButton>

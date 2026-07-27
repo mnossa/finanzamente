@@ -9,7 +9,7 @@ export function passkeyErrorMessage(
     fallback: string,
 ): string | null {
     if (err instanceof UserCancelledError) {
-        return null;
+        return 'Operazione annullata.';
     }
 
     if (err instanceof PasskeyExistsError) {
@@ -28,6 +28,18 @@ export function passkeyErrorMessage(
         !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
     ) {
         return "Le chiavi di accesso richiedono una connessione sicura (HTTPS). Apri l'app dall'indirizzo ufficiale con HTTPS e riprova.";
+    }
+
+    if (
+        name === 'NotAllowedError' ||
+        name === 'AbortError' ||
+        haystack.includes('was cancelled') ||
+        haystack.includes('was canceled') ||
+        haystack.includes('operation was cancelled') ||
+        haystack.includes('user cancelled') ||
+        haystack.includes('user canceled')
+    ) {
+        return 'Operazione annullata.';
     }
 
     if (
@@ -50,11 +62,15 @@ export function passkeyErrorMessage(
         return "Tempo scaduto. Riprova e conferma rapidamente con l'impronta o Face ID.";
     }
 
+    if (haystack.includes('securityerror') || name === 'SecurityError') {
+        return "Lo sblocco biometrico non è disponibile in questa sessione. Riapri l'app installata (PWA) dal dominio ufficiale con HTTPS e riprova.";
+    }
+
     if (message.trim() !== '') {
         // Prefer Italian fallback over opaque English OS strings.
         if (/^[A-Za-z0-9 ,.'’"()\-:/]+$/.test(message) && /[A-Za-z]{4,}/.test(message)) {
             const looksEnglish =
-                /\b(the|an|unknown|error|occurred|while|talking|credential|operation|not allowed|failed)\b/i.test(
+                /\b(the|an|unknown|error|occurred|while|talking|credential|operation|not allowed|failed|cancelled|canceled)\b/i.test(
                     message,
                 );
             if (looksEnglish) {
