@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Pulse\Facades\Pulse;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -69,7 +70,7 @@ class PulseDashboardTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
-        $resolved = \Laravel\Pulse\Facades\Pulse::resolveUsers(collect([$user->id]));
+        $resolved = Pulse::resolveUsers(collect([$user->id]));
         $payload = $resolved->find($user->id);
 
         $this->assertSame('Utente #'.$user->id, $payload->name);
