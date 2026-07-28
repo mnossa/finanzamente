@@ -56,12 +56,14 @@ class InvestmentAsset extends Model
         'coupon_frequency',
         'next_coupon_date',
         'coupon_rate_percent',
+        'coupon_rate_steps',
     ];
 
     protected $casts = [
         'extra_data' => 'array',
         'next_coupon_date' => 'date',
         'coupon_rate_percent' => 'decimal:4',
+        'coupon_rate_steps' => 'array',
     ];
 
     public function investments()

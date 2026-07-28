@@ -279,6 +279,7 @@ class InvestmentController extends Controller
                     'coupon_rate_percent' => $asset->coupon_rate_percent !== null
                         ? (float) $asset->coupon_rate_percent
                         : null,
+                    'coupon_rate_steps' => $this->investmentCouponService->normalizeRateSteps($asset->coupon_rate_steps),
                 ],
                 'account' => $investment->account ? [
                     'id' => $investment->account->id,
@@ -353,11 +354,24 @@ class InvestmentController extends Controller
         $asset = $investment->asset;
         abort_unless($asset !== null, 404);
 
-        $asset->update($request->validated());
+        $this->investmentCouponService->updateSchedule($asset, $request->validated());
 
         return redirect()
             ->route('investments.show', $investment)
             ->with('success', 'Calendario cedole aggiornato.');
+    }
+
+    public function destroyCouponSchedule(Investment $investment): RedirectResponse
+    {
+        $this->authorizeInvestment($investment);
+        $asset = $investment->asset;
+        abort_unless($asset !== null, 404);
+
+        $this->investmentCouponService->clearSchedule($asset);
+
+        return redirect()
+            ->route('investments.show', $investment)
+            ->with('success', 'Calendario cedole eliminato.');
     }
 
     /**

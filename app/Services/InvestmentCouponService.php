@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Account;
 use App\Models\Investment;
+use App\Models\InvestmentAsset;
 use App\Models\Transaction;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -39,28 +40,43 @@ class InvestmentCouponService
     }
 
     /**
-     * @return array{next_dates: list<string>, frequency: string|null, rate_percent: float|null}
+     * @return array{
+     *     next_dates: list<string>,
+     *     next_items: list<array{date: string, rate_percent: float|null}>,
+     *     frequency: string|null,
+     *     rate_percent: float|null,
+     *     rate_steps: list<float>,
+     *     is_step_up: bool
+     * }
      */
-    public function couponSchedulePreview(Investment $investment, int $count = 4): array
+    public function couponSchedulePreview(Investment $investment, int $count = 6): array
     {
         $investment->loadMissing('asset');
         $asset = $investment->asset;
         $frequency = $asset?->coupon_frequency;
         $next = $asset?->next_coupon_date;
         $rate = $asset?->coupon_rate_percent !== null ? (float) $asset->coupon_rate_percent : null;
+        $steps = $this->normalizeRateSteps($asset?->coupon_rate_steps);
+        $isStepUp = $steps !== [];
 
         if ($frequency === null || $next === null || ! in_array($frequency, self::FREQUENCIES, true)) {
             return [
                 'next_dates' => [],
+                'next_items' => [],
                 'frequency' => $frequency,
                 'rate_percent' => $rate,
+                'rate_steps' => $steps,
+                'is_step_up' => $isStepUp,
             ];
         }
 
         $cursor = Carbon::parse($next)->startOfDay();
-        $dates = [];
+        $items = [];
         for ($i = 0; $i < $count; $i++) {
-            $dates[] = $cursor->toDateString();
+            $items[] = [
+                'date' => $cursor->toDateString(),
+                'rate_percent' => $this->rateForStepIndex($i, $steps, $rate),
+            ];
             $cursor = match ($frequency) {
                 'monthly' => $cursor->copy()->addMonth(),
                 'quarterly' => $cursor->copy()->addMonths(3),
@@ -70,9 +86,12 @@ class InvestmentCouponService
         }
 
         return [
-            'next_dates' => $dates,
+            'next_dates' => array_column($items, 'date'),
+            'next_items' => $items,
             'frequency' => $frequency,
             'rate_percent' => $rate,
+            'rate_steps' => $steps,
+            'is_step_up' => $isStepUp,
         ];
     }
 
@@ -129,5 +148,80 @@ class InvestmentCouponService
         }
 
         $transaction->delete();
+    }
+
+    /**
+     * @param  array{
+     *     coupon_frequency?: string|null,
+     *     next_coupon_date?: string|null,
+     *     coupon_rate_percent?: float|int|string|null,
+     *     coupon_rate_steps?: list<float|int|string>|null
+     * }  $data
+     */
+    public function updateSchedule(InvestmentAsset $asset, array $data): void
+    {
+        $steps = $this->normalizeRateSteps($data['coupon_rate_steps'] ?? null);
+
+        $asset->update([
+            'coupon_frequency' => $data['coupon_frequency'] ?? null,
+            'next_coupon_date' => $data['next_coupon_date'] ?? null,
+            'coupon_rate_percent' => $steps === []
+                ? ($data['coupon_rate_percent'] ?? null)
+                : null,
+            'coupon_rate_steps' => $steps === [] ? null : $steps,
+        ]);
+    }
+
+    public function clearSchedule(InvestmentAsset $asset): void
+    {
+        $asset->update([
+            'coupon_frequency' => null,
+            'next_coupon_date' => null,
+            'coupon_rate_percent' => null,
+            'coupon_rate_steps' => null,
+        ]);
+    }
+
+    /**
+     * @return list<float>
+     */
+    public function normalizeRateSteps(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $steps = [];
+        foreach ($raw as $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (! is_numeric($value)) {
+                continue;
+            }
+            $rate = round((float) $value, 4);
+            if ($rate < 0 || $rate > 100) {
+                continue;
+            }
+            $steps[] = $rate;
+        }
+
+        return array_values($steps);
+    }
+
+    /**
+     * @param  list<float>  $steps
+     */
+    private function rateForStepIndex(int $index, array $steps, ?float $fallback): ?float
+    {
+        if ($steps === []) {
+            return $fallback;
+        }
+
+        if (isset($steps[$index])) {
+            return $steps[$index];
+        }
+
+        return $steps[array_key_last($steps)];
     }
 }

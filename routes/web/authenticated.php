@@ -347,6 +347,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
             Route::post('/investimenti/{investment}/cedole', [InvestmentController::class, 'storeCoupon'])->name('investments.coupons.store');
             Route::delete('/investimenti/{investment}/cedole/{transaction}', [InvestmentController::class, 'destroyCoupon'])->name('investments.coupons.destroy');
             Route::put('/investimenti/{investment}/calendario-cedole', [InvestmentController::class, 'updateCouponSchedule'])->name('investments.coupons.schedule');
+            Route::delete('/investimenti/{investment}/calendario-cedole', [InvestmentController::class, 'destroyCouponSchedule'])->name('investments.coupons.schedule.destroy');
             Route::delete('/investimenti/{investment}', [InvestmentController::class, 'destroy'])->name('investments.destroy');
         }); // fine requires-pro
     }); // fine can-modify

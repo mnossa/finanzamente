@@ -29,6 +29,7 @@ interface Asset {
     coupon_frequency: string | null;
     next_coupon_date: string | null;
     coupon_rate_percent: number | null;
+    coupon_rate_steps: number[];
 }
 
 interface Account {
@@ -49,10 +50,18 @@ interface CouponRow {
     account_id: number;
 }
 
+interface CouponScheduleItem {
+    date: string;
+    rate_percent: number | null;
+}
+
 interface CouponSchedule {
     next_dates: string[];
+    next_items: CouponScheduleItem[];
     frequency: string | null;
     rate_percent: number | null;
+    rate_steps: number[];
+    is_step_up: boolean;
 }
 
 interface Investment {
@@ -248,7 +257,13 @@ function SellModal({
 export default function Show({ investment, coupons, couponSchedule, accounts, valuationNote }: ShowProps) {
     const [showSellModal, setShowSellModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [rateMode, setRateMode] = useState<'fixed' | 'step_up'>(
+        (investment.asset.coupon_rate_steps?.length ?? 0) > 0 ? 'step_up' : 'fixed',
+    );
     const currencyCode = investment.asset.currency.code;
+    const hasSchedule = Boolean(
+        investment.asset.coupon_frequency && investment.asset.next_coupon_date,
+    );
 
     const couponForm = useForm({
         amount: '',
@@ -261,6 +276,9 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
         coupon_frequency: investment.asset.coupon_frequency ?? '',
         next_coupon_date: investment.asset.next_coupon_date ?? '',
         coupon_rate_percent: investment.asset.coupon_rate_percent?.toString() ?? '',
+        coupon_rate_steps: (investment.asset.coupon_rate_steps?.length
+            ? investment.asset.coupon_rate_steps
+            : ['']) as Array<number | string>,
     });
 
     const frequencyLabel = (value: string | null) => {
@@ -288,8 +306,36 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
 
     const submitSchedule: FormEventHandler = (e) => {
         e.preventDefault();
-        scheduleForm.put(route('investments.coupons.schedule', investment.id), {
+        router.put(route('investments.coupons.schedule', investment.id), {
+            coupon_frequency: scheduleForm.data.coupon_frequency || null,
+            next_coupon_date: scheduleForm.data.next_coupon_date || null,
+            coupon_rate_percent: rateMode === 'fixed'
+                ? (scheduleForm.data.coupon_rate_percent || null)
+                : null,
+            coupon_rate_steps: rateMode === 'step_up'
+                ? scheduleForm.data.coupon_rate_steps.filter((v) => v !== '' && v !== null)
+                : [],
+        }, {
             preserveScroll: true,
+            onError: (errors) => scheduleForm.setError(errors),
+        });
+    };
+
+    const handleDeleteSchedule = () => {
+        if (!window.confirm('Eliminare il calendario cedole? Gli stacchi già registrati restano.')) {
+            return;
+        }
+        router.delete(route('investments.coupons.schedule.destroy', investment.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setRateMode('fixed');
+                scheduleForm.setData({
+                    coupon_frequency: '',
+                    next_coupon_date: '',
+                    coupon_rate_percent: '',
+                    coupon_rate_steps: [''],
+                });
+            },
         });
     };
 
@@ -301,6 +347,21 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
 
     const handleDelete = () => {
         router.delete(route('investments.destroy', investment.id));
+    };
+
+    const addRateStep = () => {
+        scheduleForm.setData('coupon_rate_steps', [...scheduleForm.data.coupon_rate_steps, '']);
+    };
+
+    const updateRateStep = (index: number, value: string) => {
+        const next = [...scheduleForm.data.coupon_rate_steps];
+        next[index] = value;
+        scheduleForm.setData('coupon_rate_steps', next);
+    };
+
+    const removeRateStep = (index: number) => {
+        const next = scheduleForm.data.coupon_rate_steps.filter((_, i) => i !== index);
+        scheduleForm.setData('coupon_rate_steps', next.length > 0 ? next : ['']);
     };
 
     return (
@@ -586,62 +647,166 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                 </div>
                             </div>
 
-                            {investment.asset.isin && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    ISIN {investment.asset.isin}: calendario automatico non disponibile
-                                    senza servizi a pagamento. Imposta frequenza e prossima data qui sotto.
-                                </p>
-                            )}
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {investment.asset.isin
+                                    ? `Per ${investment.asset.isin}: imposta frequenza e prossima data qui sotto e vedrai subito le prossime stime di stacco.`
+                                    : 'Imposta frequenza e prossima data qui sotto: costruisci il calendario delle prossime cedole in un momento.'}
+                            </p>
 
-                            <form onSubmit={submitSchedule} className="grid gap-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40 sm:grid-cols-3">
-                                <div>
-                                    <InputLabel htmlFor="coupon_frequency" value="Frequenza" />
-                                    <select
-                                        id="coupon_frequency"
-                                        className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                                        value={scheduleForm.data.coupon_frequency}
-                                        onChange={(e) => scheduleForm.setData('coupon_frequency', e.target.value)}
-                                    >
-                                        <option value="">—</option>
-                                        <option value="annual">Annuale</option>
-                                        <option value="semi_annual">Semestrale</option>
-                                        <option value="quarterly">Trimestrale</option>
-                                        <option value="monthly">Mensile</option>
-                                    </select>
+                            <form onSubmit={submitSchedule} className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40">
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <InputLabel htmlFor="coupon_frequency" value="Frequenza" />
+                                        <select
+                                            id="coupon_frequency"
+                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                                            value={scheduleForm.data.coupon_frequency}
+                                            onChange={(e) => scheduleForm.setData('coupon_frequency', e.target.value)}
+                                        >
+                                            <option value="">—</option>
+                                            <option value="annual">Annuale</option>
+                                            <option value="semi_annual">Semestrale</option>
+                                            <option value="quarterly">Trimestrale</option>
+                                            <option value="monthly">Mensile</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <InputLabel htmlFor="next_coupon_date" value="Prossima cedola" />
+                                        <TextInput
+                                            id="next_coupon_date"
+                                            type="date"
+                                            className="mt-1 w-full"
+                                            value={scheduleForm.data.next_coupon_date}
+                                            onChange={(e) => scheduleForm.setData('next_coupon_date', e.target.value)}
+                                        />
+                                    </div>
                                 </div>
+
                                 <div>
-                                    <InputLabel htmlFor="next_coupon_date" value="Prossima cedola" />
-                                    <TextInput
-                                        id="next_coupon_date"
-                                        type="date"
-                                        className="mt-1 w-full"
-                                        value={scheduleForm.data.next_coupon_date}
-                                        onChange={(e) => scheduleForm.setData('next_coupon_date', e.target.value)}
-                                    />
+                                    <InputLabel value="Tipo tasso" />
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setRateMode('fixed')}
+                                            className={clsx(
+                                                'rounded-lg border px-3 py-1.5 text-sm',
+                                                rateMode === 'fixed'
+                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
+                                                    : 'border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300',
+                                            )}
+                                        >
+                                            Fisso
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRateMode('step_up')}
+                                            className={clsx(
+                                                'rounded-lg border px-3 py-1.5 text-sm',
+                                                rateMode === 'step_up'
+                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
+                                                    : 'border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300',
+                                            )}
+                                        >
+                                            Crescente (es. BTP Valore)
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <InputLabel htmlFor="coupon_rate_percent" value="Tasso % (opz.)" />
-                                    <TextInput
-                                        id="coupon_rate_percent"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        className="mt-1 w-full"
-                                        value={scheduleForm.data.coupon_rate_percent}
-                                        onChange={(e) => scheduleForm.setData('coupon_rate_percent', e.target.value)}
-                                    />
-                                </div>
-                                <div className="sm:col-span-3">
-                                    <PrimaryButton disabled={scheduleForm.processing}>
-                                        Salva calendario
-                                    </PrimaryButton>
-                                    {couponSchedule.next_dates.length > 0 && (
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                            Prossime stime ({frequencyLabel(couponSchedule.frequency)}):{' '}
-                                            {couponSchedule.next_dates.map((d) => formatDate(d)).join(' · ')}
+
+                                {rateMode === 'fixed' ? (
+                                    <div className="max-w-xs">
+                                        <InputLabel htmlFor="coupon_rate_percent" value="Tasso % (opz.)" />
+                                        <TextInput
+                                            id="coupon_rate_percent"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            className="mt-1 w-full"
+                                            value={scheduleForm.data.coupon_rate_percent}
+                                            onChange={(e) => scheduleForm.setData('coupon_rate_percent', e.target.value)}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <InputLabel value="Tassi previsti per stacco (%)" />
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            In ordine di scadenza: il primo vale per la prossima cedola, poi i successivi.
+                                            Se finiscono, resta l&apos;ultimo tasso.
                                         </p>
+                                        {scheduleForm.data.coupon_rate_steps.map((step, index) => (
+                                            <div key={`rate-step-${index}`} className="flex items-center gap-2">
+                                                <span className="w-16 shrink-0 text-xs text-gray-500">
+                                                    #{index + 1}
+                                                </span>
+                                                <TextInput
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    className="w-full max-w-[10rem]"
+                                                    value={step}
+                                                    onChange={(e) => updateRateStep(index, e.target.value)}
+                                                    placeholder="es. 3,25"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeRateStep(index)}
+                                                    className="text-sm text-red-600 hover:underline"
+                                                    disabled={scheduleForm.data.coupon_rate_steps.length <= 1}
+                                                >
+                                                    Rimuovi
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={addRateStep}
+                                            className="text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                                        >
+                                            + Aggiungi tasso
+                                        </button>
+                                        <InputError message={scheduleForm.errors.coupon_rate_steps} className="mt-1" />
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <PrimaryButton disabled={scheduleForm.processing}>
+                                        {hasSchedule ? 'Aggiorna calendario' : 'Salva calendario'}
+                                    </PrimaryButton>
+                                    {hasSchedule && (
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteSchedule}
+                                            className="text-sm text-red-600 hover:underline"
+                                        >
+                                            Elimina calendario
+                                        </button>
                                     )}
                                 </div>
+
+                                {(couponSchedule.next_items?.length ?? couponSchedule.next_dates.length) > 0 && (
+                                    <div className="border-t border-gray-200 pt-3 dark:border-gray-700">
+                                        <p className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                                            Prossime stime ({frequencyLabel(couponSchedule.frequency)})
+                                        </p>
+                                        <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                            {(couponSchedule.next_items?.length
+                                                ? couponSchedule.next_items
+                                                : couponSchedule.next_dates.map((d) => ({ date: d, rate_percent: couponSchedule.rate_percent }))
+                                            ).map((item) => (
+                                                <li key={item.date} className="flex flex-wrap gap-x-3">
+                                                    <span>{formatDate(item.date)}</span>
+                                                    {item.rate_percent !== null && (
+                                                        <span className="tabular-nums text-emerald-700 dark:text-emerald-400">
+                                                            {item.rate_percent.toLocaleString('it-IT', {
+                                                                minimumFractionDigits: 2,
+                                                                maximumFractionDigits: 4,
+                                                            })}%
+                                                        </span>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </form>
 
                             <form onSubmit={submitCoupon} className="grid gap-3 border-t border-gray-100 pt-4 dark:border-gray-700 sm:grid-cols-2">
