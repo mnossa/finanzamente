@@ -244,29 +244,45 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
             }
 
             $quote = $quotes[0];
+            $marketPrice = $quote['regularMarketPrice'] ?? null;
+            if (! is_numeric($marketPrice)) {
+                return ['error' => 'Prezzo di mercato non disponibile', 'price' => null];
+            }
+
+            $price = (float) $marketPrice;
+            if ($price <= 0) {
+                return ['error' => 'Prezzo di mercato non disponibile', 'price' => null];
+            }
 
             return [
                 'error' => null,
-                'symbol' => $quote['symbol'] ?? $symbol,
-                'price' => round((float) ($quote['regularMarketPrice'] ?? 0), 2),
-                'open' => round((float) ($quote['regularMarketOpen'] ?? 0), 2),
-                'high' => round((float) ($quote['regularMarketDayHigh'] ?? 0), 2),
-                'low' => round((float) ($quote['regularMarketDayLow'] ?? 0), 2),
-                'volume' => (int) ($quote['regularMarketVolume'] ?? 0),
-                'previous_close' => round((float) ($quote['regularMarketPreviousClose'] ?? 0), 2),
-                'change' => round((float) ($quote['regularMarketChange'] ?? 0), 2),
-                'change_percent' => round((float) ($quote['regularMarketChangePercent'] ?? 0), 2),
-                'currency' => $quote['currency'] ?? null,
-                'name' => $quote['shortName'] ?? $quote['longName'] ?? null,
+                'symbol' => is_string($quote['symbol'] ?? null) ? $quote['symbol'] : $symbol,
+                'price' => round($price, 2),
+                'open' => $this->safeFloat($quote['regularMarketOpen'] ?? null),
+                'high' => $this->safeFloat($quote['regularMarketDayHigh'] ?? null),
+                'low' => $this->safeFloat($quote['regularMarketDayLow'] ?? null),
+                'volume' => is_numeric($quote['regularMarketVolume'] ?? null) ? (int) $quote['regularMarketVolume'] : 0,
+                'previous_close' => $this->safeFloat($quote['regularMarketPreviousClose'] ?? null),
+                'change' => $this->safeFloat($quote['regularMarketChange'] ?? null),
+                'change_percent' => $this->safeFloat($quote['regularMarketChangePercent'] ?? null),
+                'currency' => is_string($quote['currency'] ?? null) ? $quote['currency'] : null,
+                'name' => is_string($quote['shortName'] ?? null)
+                    ? $quote['shortName']
+                    : (is_string($quote['longName'] ?? null) ? $quote['longName'] : null),
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Yahoo Finance get price error', [
                 'symbol' => $symbol,
                 'error' => $e->getMessage(),
             ]);
 
-            return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
+            return ['error' => 'Errore nel recupero del prezzo', 'price' => null];
         }
+    }
+
+    private function safeFloat(mixed $value): float
+    {
+        return is_numeric($value) ? round((float) $value, 2) : 0.0;
     }
 
     /**

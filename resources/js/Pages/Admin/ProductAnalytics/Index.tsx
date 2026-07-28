@@ -31,6 +31,12 @@ interface AnalyticsPayload {
 interface Props {
     analytics: AnalyticsPayload;
     days: number;
+    tools: {
+        pulse_url: string;
+        pulse_enabled: boolean;
+        telescope_enabled: boolean;
+        telescope_url: string;
+    };
 }
 
 const DAY_OPTIONS = [7, 14, 30, 90] as const;
@@ -110,7 +116,7 @@ function Section({
     );
 }
 
-export default function Index({ analytics, days }: Props) {
+export default function Index({ analytics, days, tools }: Props) {
     const setDays = (value: number) => {
         router.get(
             route('admin.product-analytics.index'),
@@ -124,13 +130,39 @@ export default function Index({ analytics, days }: Props) {
             header={
                 <PageHeader
                     title="Product analytics"
-                    subtitle="Utilizzo, frizione e colli di bottiglia (aggregati, senza dati personali)"
+                    subtitle="Utilizzo, frizione, errori server e colli di bottiglia (aggregati senza PII)"
                     backLink={route('dashboard')}
                 />
             }
         >
             <Head title="Product analytics" />
             <PageContent maxWidth="5xl">
+                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
+                    <p className="font-medium">Tool di debug runtime</p>
+                    <p className="mt-1 text-emerald-900/80 dark:text-emerald-100/80">
+                        Questa pagina è per trend di prodotto. Per eccezioni live, query lente e job
+                        usa Pulse (e Telescope in local/staging).
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {tools.pulse_enabled && (
+                            <a
+                                href={tools.pulse_url}
+                                className="rounded-lg bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800"
+                            >
+                                Apri Laravel Pulse
+                            </a>
+                        )}
+                        {tools.telescope_enabled && (
+                            <a
+                                href={tools.telescope_url}
+                                className="rounded-lg bg-slate-800 px-3 py-1.5 font-medium text-white hover:bg-slate-900 dark:bg-slate-200 dark:text-slate-900"
+                            >
+                                Apri Telescope
+                            </a>
+                        )}
+                    </div>
+                </div>
+
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-600 dark:text-slate-300">Periodo:</span>
                     {DAY_OPTIONS.map((option) => (

@@ -26,6 +26,13 @@ class ProductAnalyticsController extends Controller
         return Inertia::render('Admin/ProductAnalytics/Index', [
             'analytics' => $dashboard->build($from, $to),
             'days' => $days,
+            'tools' => [
+                'pulse_url' => url('/pulse'),
+                'pulse_enabled' => (bool) config('pulse.enabled'),
+                'telescope_enabled' => (bool) config('telescope.enabled')
+                    && app()->environment(['local', 'staging']),
+                'telescope_url' => url('/telescope'),
+            ],
         ]);
     }
 }

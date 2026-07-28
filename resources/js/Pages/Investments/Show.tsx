@@ -21,10 +21,14 @@ interface Asset {
     id: number;
     name: string;
     symbol: string | null;
+    isin: string | null;
     type: string;
     type_label: string;
     type_icon: string;
     currency: Currency;
+    coupon_frequency: string | null;
+    next_coupon_date: string | null;
+    coupon_rate_percent: number | null;
 }
 
 interface Account {
@@ -35,6 +39,20 @@ interface Account {
 interface User {
     id: number;
     name: string;
+}
+
+interface CouponRow {
+    id: number;
+    date: string;
+    amount: number;
+    description: string | null;
+    account_id: number;
+}
+
+interface CouponSchedule {
+    next_dates: string[];
+    frequency: string | null;
+    rate_percent: number | null;
 }
 
 interface Investment {
@@ -56,6 +74,9 @@ interface Investment {
     current_price: number | null;
     current_value: number | null;
     unrealized_profit: number | null;
+    coupons_total: number;
+    capital_profit: number | null;
+    total_return: number | null;
     is_sold: boolean;
     is_private: boolean;
     notes: string | null;
@@ -65,6 +86,9 @@ interface Investment {
 
 interface ShowProps {
     investment: Investment;
+    coupons: CouponRow[];
+    couponSchedule: CouponSchedule;
+    accounts: Account[];
     valuationNote: string;
 }
 
@@ -221,15 +245,63 @@ function SellModal({
     );
 }
 
-export default function Show({ investment, valuationNote }: ShowProps) {
+export default function Show({ investment, coupons, couponSchedule, accounts, valuationNote }: ShowProps) {
     const [showSellModal, setShowSellModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const currencyCode = investment.asset.currency.code;
+
+    const couponForm = useForm({
+        amount: '',
+        date: new Date().toISOString().split('T')[0],
+        description: '',
+        account_id: investment.account?.id?.toString() ?? (accounts[0]?.id?.toString() ?? ''),
+    });
+
+    const scheduleForm = useForm({
+        coupon_frequency: investment.asset.coupon_frequency ?? '',
+        next_coupon_date: investment.asset.next_coupon_date ?? '',
+        coupon_rate_percent: investment.asset.coupon_rate_percent?.toString() ?? '',
+    });
+
+    const frequencyLabel = (value: string | null) => {
+        switch (value) {
+            case 'monthly':
+                return 'Mensile';
+            case 'quarterly':
+                return 'Trimestrale';
+            case 'semi_annual':
+                return 'Semestrale';
+            case 'annual':
+                return 'Annuale';
+            default:
+                return 'Non impostata';
+        }
+    };
+
+    const submitCoupon: FormEventHandler = (e) => {
+        e.preventDefault();
+        couponForm.post(route('investments.coupons.store', investment.id), {
+            preserveScroll: true,
+            onSuccess: () => couponForm.reset('amount', 'description'),
+        });
+    };
+
+    const submitSchedule: FormEventHandler = (e) => {
+        e.preventDefault();
+        scheduleForm.put(route('investments.coupons.schedule', investment.id), {
+            preserveScroll: true,
+        });
+    };
+
+    const handleDeleteCoupon = (couponId: number) => {
+        router.delete(route('investments.coupons.destroy', [investment.id, couponId]), {
+            preserveScroll: true,
+        });
+    };
 
     const handleDelete = () => {
         router.delete(route('investments.destroy', investment.id));
     };
-
-    const currencyCode = investment.asset.currency.code;
 
     return (
         <AuthenticatedLayout
@@ -471,6 +543,201 @@ export default function Show({ investment, valuationNote }: ShowProps) {
                             </div>
                         </div>
                     )}
+
+                    {/* Cedole / dividendi */}
+                    <CardBox className="overflow-hidden shadow-sm">
+                        <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                                Cedole e dividendi
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Registra gli stacchi collegati a questa posizione. Il ritorno totale
+                                somma P/L di capitale e cedole.
+                            </p>
+                        </div>
+                        <div className="space-y-4 p-6">
+                            <div className={clsx(moneyKpiGrid2, 'gap-4')}>
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Totale cedole</p>
+                                    <p className={clsx('text-xl font-bold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
+                                        {formatCurrency(investment.coupons_total, currencyCode)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Ritorno complessivo</p>
+                                    <p className={clsx(
+                                        'text-xl font-bold',
+                                        moneyTabular,
+                                        (investment.total_return ?? 0) >= 0
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-red-600 dark:text-red-400',
+                                    )}>
+                                        {investment.total_return !== null
+                                            ? `${investment.total_return >= 0 ? '+' : ''}${formatCurrency(investment.total_return, currencyCode)}`
+                                            : '—'}
+                                    </p>
+                                    {investment.capital_profit !== null && (
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Capitale {investment.capital_profit >= 0 ? '+' : ''}
+                                            {formatCurrency(investment.capital_profit, currencyCode)}
+                                            {' + '}cedole {formatCurrency(investment.coupons_total, currencyCode)}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {investment.asset.isin && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    ISIN {investment.asset.isin}: calendario automatico non disponibile
+                                    senza servizi a pagamento. Imposta frequenza e prossima data qui sotto.
+                                </p>
+                            )}
+
+                            <form onSubmit={submitSchedule} className="grid gap-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40 sm:grid-cols-3">
+                                <div>
+                                    <InputLabel htmlFor="coupon_frequency" value="Frequenza" />
+                                    <select
+                                        id="coupon_frequency"
+                                        className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                                        value={scheduleForm.data.coupon_frequency}
+                                        onChange={(e) => scheduleForm.setData('coupon_frequency', e.target.value)}
+                                    >
+                                        <option value="">—</option>
+                                        <option value="annual">Annuale</option>
+                                        <option value="semi_annual">Semestrale</option>
+                                        <option value="quarterly">Trimestrale</option>
+                                        <option value="monthly">Mensile</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="next_coupon_date" value="Prossima cedola" />
+                                    <TextInput
+                                        id="next_coupon_date"
+                                        type="date"
+                                        className="mt-1 w-full"
+                                        value={scheduleForm.data.next_coupon_date}
+                                        onChange={(e) => scheduleForm.setData('next_coupon_date', e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="coupon_rate_percent" value="Tasso % (opz.)" />
+                                    <TextInput
+                                        id="coupon_rate_percent"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        className="mt-1 w-full"
+                                        value={scheduleForm.data.coupon_rate_percent}
+                                        onChange={(e) => scheduleForm.setData('coupon_rate_percent', e.target.value)}
+                                    />
+                                </div>
+                                <div className="sm:col-span-3">
+                                    <PrimaryButton disabled={scheduleForm.processing}>
+                                        Salva calendario
+                                    </PrimaryButton>
+                                    {couponSchedule.next_dates.length > 0 && (
+                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                                            Prossime stime ({frequencyLabel(couponSchedule.frequency)}):{' '}
+                                            {couponSchedule.next_dates.map((d) => formatDate(d)).join(' · ')}
+                                        </p>
+                                    )}
+                                </div>
+                            </form>
+
+                            <form onSubmit={submitCoupon} className="grid gap-3 border-t border-gray-100 pt-4 dark:border-gray-700 sm:grid-cols-2">
+                                <div>
+                                    <InputLabel htmlFor="coupon_amount" value="Importo stacco *" />
+                                    <TextInput
+                                        id="coupon_amount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        className="mt-1 w-full"
+                                        value={couponForm.data.amount}
+                                        onChange={(e) => couponForm.setData('amount', e.target.value)}
+                                        required
+                                    />
+                                    <InputError message={couponForm.errors.amount} className="mt-1" />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="coupon_date" value="Data *" />
+                                    <TextInput
+                                        id="coupon_date"
+                                        type="date"
+                                        className="mt-1 w-full"
+                                        value={couponForm.data.date}
+                                        onChange={(e) => couponForm.setData('date', e.target.value)}
+                                        required
+                                    />
+                                    <InputError message={couponForm.errors.date} className="mt-1" />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="coupon_account" value="Conto accredito" />
+                                    <select
+                                        id="coupon_account"
+                                        className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                                        value={couponForm.data.account_id}
+                                        onChange={(e) => couponForm.setData('account_id', e.target.value)}
+                                    >
+                                        {accounts.map((account) => (
+                                            <option key={account.id} value={account.id}>
+                                                {account.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <InputError message={couponForm.errors.account_id} className="mt-1" />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="coupon_description" value="Nota" />
+                                    <TextInput
+                                        id="coupon_description"
+                                        className="mt-1 w-full"
+                                        value={couponForm.data.description}
+                                        onChange={(e) => couponForm.setData('description', e.target.value)}
+                                        placeholder="Es. cedola maggio"
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <PrimaryButton disabled={couponForm.processing || accounts.length === 0}>
+                                        Registra cedola
+                                    </PrimaryButton>
+                                </div>
+                            </form>
+
+                            {coupons.length === 0 ? (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Nessuna cedola registrata.
+                                </p>
+                            ) : (
+                                <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {coupons.map((coupon) => (
+                                        <li key={coupon.id} className="flex items-center justify-between gap-3 py-3">
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">
+                                                    {formatDate(coupon.date)}
+                                                </p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {coupon.description || 'Cedola'}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className={clsx('font-semibold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
+                                                    {formatCurrency(coupon.amount, currencyCode)}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteCoupon(coupon.id)}
+                                                    className="text-sm text-red-600 hover:underline"
+                                                >
+                                                    Elimina
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </CardBox>
 
                     {/* Info aggiuntive */}
                     <CardBox className="overflow-hidden shadow-sm">

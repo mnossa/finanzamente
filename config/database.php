@@ -44,6 +44,17 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        /*
+         * Laravel Pulse: SQLite dedicato (evita generated column md5 incompatibile
+         * con MySQL 8.0.34+ / alcuni MariaDB). Solo metriche ops, zero dati utente.
+         */
+        'pulse' => [
+            'driver' => 'sqlite',
+            'database' => env('PULSE_DB_DATABASE', database_path('pulse.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => false,
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),

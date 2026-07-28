@@ -27,7 +27,12 @@ class InvestmentTransactionSyncService
 
         $transaction = Transaction::query()
             ->where('investment_id', $investment->id)
-            ->where('amount', '<', 0)
+            ->where(function ($q) {
+                $q->where('investment_event', 'purchase')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('investment_event')->where('amount', '<', 0);
+                    });
+            })
             ->first();
 
         $payload = [
@@ -39,6 +44,7 @@ class InvestmentTransactionSyncService
             'date' => $investment->buy_date,
             'description' => mb_substr($description, 0, 1000),
             'investment_id' => $investment->id,
+            'investment_event' => 'purchase',
             'is_private' => $investment->is_private,
         ];
 
@@ -65,7 +71,12 @@ class InvestmentTransactionSyncService
 
         $transaction = Transaction::query()
             ->where('investment_id', $investment->id)
-            ->where('amount', '>', 0)
+            ->where(function ($q) {
+                $q->where('investment_event', 'sale')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('investment_event')->where('amount', '>', 0);
+                    });
+            })
             ->first();
 
         $payload = [
@@ -77,6 +88,7 @@ class InvestmentTransactionSyncService
             'date' => $investment->sell_date,
             'description' => mb_substr($description, 0, 1000),
             'investment_id' => $investment->id,
+            'investment_event' => 'sale',
             'is_private' => $investment->is_private,
         ];
 
@@ -115,6 +127,10 @@ class InvestmentTransactionSyncService
             return;
         }
 
+        if ($transaction->investment_event === 'coupon') {
+            return;
+        }
+
         $investment = Investment::with('asset')->find($transaction->investment_id);
         if ($investment === null) {
             return;
@@ -144,6 +160,22 @@ class InvestmentTransactionSyncService
             InvestmentPac::where('id', $investment->investment_pac_id)
                 ->update(['last_executed_at' => $latestBuyDate]);
         }
+    }
+
+    public function resolveCouponCategory(int $householdId): Category
+    {
+        return Category::firstOrCreate(
+            [
+                'household_id' => $householdId,
+                'name' => 'Cedole e dividendi',
+                'type' => 'income',
+            ],
+            [
+                'color' => '#10b981',
+                'icon' => '💵',
+                'exclude_from_lifestyle_score' => false,
+            ]
+        );
     }
 
     private function resolveInvestmentCategory(int $householdId): Category

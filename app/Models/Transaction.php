@@ -52,6 +52,7 @@ class Transaction extends Model
         'recurring',
         'recurring_transaction_id',
         'investment_id',
+        'investment_event',
         'is_private',
         'transfer_id',
         'inter_household_transfer_id',
@@ -118,9 +119,20 @@ class Transaction extends Model
         return $this->investment_id !== null;
     }
 
+    public function isInvestmentCapitalLedger(): bool
+    {
+        return $this->investment_id !== null
+            && in_array($this->investment_event, [null, 'purchase', 'sale'], true);
+    }
+
+    public function isInvestmentCoupon(): bool
+    {
+        return $this->investment_id !== null && $this->investment_event === 'coupon';
+    }
+
     public function isPacLedger(): bool
     {
-        if ($this->investment_id === null) {
+        if ($this->investment_id === null || $this->investment_event === 'coupon') {
             return false;
         }
 
@@ -139,17 +151,24 @@ class Transaction extends Model
             ->whereNull('transfer_id')
             ->whereNull('refund_id')
             ->whereNull('inter_household_transfer_id')
-            ->whereNull('investment_id');
+            ->where(function ($q) {
+                $q->whereNull('investment_id')
+                    ->orWhere('investment_event', 'coupon');
+            });
     }
 
     /**
-     * Entrate/uscite operative (consumo): esclude trasferimenti e ledger investimenti.
+     * Entrate/uscite operative (consumo): esclude trasferimenti e capitale investimenti.
+     * Cedole/dividendi restano nel cashflow operativo.
      */
     public function scopeOperationalStats($query)
     {
         return $query
             ->whereNull('transfer_id')
-            ->whereNull('investment_id')
+            ->where(function ($q) {
+                $q->whereNull('investment_id')
+                    ->orWhere('investment_event', 'coupon');
+            })
             ->excludeInterHouseholdStats();
     }
 

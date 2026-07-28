@@ -9,6 +9,7 @@ use App\Http\Middleware\OwnerMiddleware;
 use App\Http\Middleware\PreLaunchMiddleware;
 use App\Http\Middleware\RecordSlowProductAnalytics;
 use App\Http\Middleware\RequiresPro;
+use App\Services\ProductAnalytics\ProductAnalyticsExceptionRecorder;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -48,5 +49,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->reportable(function (Throwable $e) {
+            try {
+                app(ProductAnalyticsExceptionRecorder::class)->record($e, request());
+            } catch (Throwable) {
+                // Mai far fallire il reporting per errori analytics.
+            }
+        });
     })->create();

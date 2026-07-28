@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Investment;
+use App\Models\Transaction;
 use Illuminate\Support\Collection;
 
 class InvestmentMetricsService
@@ -12,6 +13,37 @@ class InvestmentMetricsService
     public function totalCost(Investment $investment): float
     {
         return (float) $investment->total_buy_value + (float) ($investment->fees ?? 0);
+    }
+
+    public function totalCoupons(Investment $investment): float
+    {
+        return (float) Transaction::query()
+            ->where('investment_id', $investment->id)
+            ->where('investment_event', 'coupon')
+            ->sum('amount');
+    }
+
+    /**
+     * Ritorno complessivo = P/L capitale (realizzato o non) + cedole.
+     *
+     * @return array{
+     *     coupons_total: float,
+     *     capital_profit: float|null,
+     *     total_return: float|null
+     * }
+     */
+    public function totalReturnMetrics(Investment $investment, ?float $unrealizedProfit): array
+    {
+        $coupons = $this->totalCoupons($investment);
+        $capital = $investment->isSold()
+            ? ($investment->net_profit !== null ? (float) $investment->net_profit : null)
+            : $unrealizedProfit;
+
+        return [
+            'coupons_total' => round($coupons, 2),
+            'capital_profit' => $capital !== null ? round($capital, 2) : null,
+            'total_return' => $capital !== null ? round($capital + $coupons, 2) : ($coupons > 0 ? round($coupons, 2) : null),
+        ];
     }
 
     /**

@@ -1,28 +1,28 @@
-# WFI-115 — Product analytics privacy-first
+# WFI-116 — Cedole e dividendi collegati a investimento
 
 ## Goal
-Dashboard ops per usage/friction/bottlenecks; zero PII; Telescope solo non-prod; retention+purge.
+Associare stacchi cedola/dividendo a posizione investimento (BTP ecc.), totale ritorno, calendario manuale per ISIN (niente API a pagamento).
 
 ## Plan
-- [x] Migration `product_analytics_daily` + retention policy seed
-- [x] `ProductAnalyticsRecorder` (sanitize + upsert aggregati)
-- [x] Ingest endpoint (consent `analytics_tracking`) + dual-write da `analytics.ts`
-- [x] Admin Inertia dashboard (`owner` middleware) + audit access
-- [x] Retention command + schedule
-- [x] Telescope require-dev gated (`!production` + `TELESCOPE_ENABLED`)
-- [x] Privacy policy bump + first-party in tabella servizi
-- [x] Tests Feature/Unit
-- [x] `make test` → `make pint-check` → `make playwright`
-- [x] Aggiorna Jira WFI-115 → Completato
+- [x] Migration `investment_event` + schedule fields + backfill
+- [x] `InvestmentCouponService` + metrics total return
+- [x] Sync discriminato per event (coupon non sovrascritto da sale)
+- [x] Routes/controller store/destroy/schedule + Show props
+- [x] Show.tsx UI cedole + calendario
+- [x] Feature tests `InvestmentCouponTest`
+- [x] `make test` → `make pint-check` → `make playwright` (TS/UI)
+- [x] Jira WFI-116 → Completato
 
 ## Review
 ### Cosa
-- First-party aggregates `product_analytics_daily` + recorder sanitizer
-- Ingest + admin dashboard + slow-route middleware
-- Telescope require-dev, local/staging only
-- Privacy `2026-07-27-v1`, docs/product-analytics.md
+- `transactions.investment_event`: purchase | sale | coupon
+- Cedola = entrata categoria «Cedole e dividendi», nel cashflow operativo
+- Show: lista, registra, elimina, KPI totale cedole + ritorno complessivo
+- Calendario manuale su asset (frequenza / prossima data / tasso %); preview prossime date
+- Nessun feed ISIN free universale → niente calendario auto
 
 ### Verifica
-- PHPUnit: 1095 passed
+- PHPUnit: 1105 passed
 - Pint: pass
-- Playwright: 277 passed / 9 skipped
+- Playwright: green (exit 0)
+- Migrate + build OK

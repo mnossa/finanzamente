@@ -137,26 +137,31 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
                     return ['error' => 'Simbolo non trovato', 'price' => null];
                 }
 
+                $rawPrice = $quote['05. price'] ?? null;
+                if (! is_numeric($rawPrice) || (float) $rawPrice <= 0) {
+                    return ['error' => 'Prezzo di mercato non disponibile', 'price' => null];
+                }
+
                 return [
                     'error' => null,
                     'symbol' => $quote['01. symbol'] ?? $symbol,
-                    'price' => (float) ($quote['05. price'] ?? 0),
-                    'open' => (float) ($quote['02. open'] ?? 0),
-                    'high' => (float) ($quote['03. high'] ?? 0),
-                    'low' => (float) ($quote['04. low'] ?? 0),
-                    'volume' => (int) ($quote['06. volume'] ?? 0),
-                    'previous_close' => (float) ($quote['08. previous close'] ?? 0),
-                    'change' => (float) ($quote['09. change'] ?? 0),
-                    'change_percent' => str_replace('%', '', $quote['10. change percent'] ?? '0'),
+                    'price' => (float) $rawPrice,
+                    'open' => is_numeric($quote['02. open'] ?? null) ? (float) $quote['02. open'] : 0.0,
+                    'high' => is_numeric($quote['03. high'] ?? null) ? (float) $quote['03. high'] : 0.0,
+                    'low' => is_numeric($quote['04. low'] ?? null) ? (float) $quote['04. low'] : 0.0,
+                    'volume' => is_numeric($quote['06. volume'] ?? null) ? (int) $quote['06. volume'] : 0,
+                    'previous_close' => is_numeric($quote['08. previous close'] ?? null) ? (float) $quote['08. previous close'] : 0.0,
+                    'change' => is_numeric($quote['09. change'] ?? null) ? (float) $quote['09. change'] : 0.0,
+                    'change_percent' => str_replace('%', '', (string) ($quote['10. change percent'] ?? '0')),
                     'last_trading_day' => $quote['07. latest trading day'] ?? null,
                 ];
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Alpha Vantage get price error', [
                     'symbol' => $symbol,
                     'error' => $e->getMessage(),
                 ]);
 
-                return ['error' => 'Errore: '.$e->getMessage(), 'price' => null];
+                return ['error' => 'Errore nel recupero del prezzo', 'price' => null];
             }
         });
     }

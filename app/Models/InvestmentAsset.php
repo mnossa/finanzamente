@@ -52,10 +52,15 @@ class InvestmentAsset extends Model
         'name',
         'currency_code',
         'extra_data',
+        'coupon_frequency',
+        'next_coupon_date',
+        'coupon_rate_percent',
     ];
 
     protected $casts = [
         'extra_data' => 'array',
+        'next_coupon_date' => 'date',
+        'coupon_rate_percent' => 'decimal:4',
     ];
 
     public function investments()

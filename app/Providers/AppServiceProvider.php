@@ -114,5 +114,16 @@ class AppServiceProvider extends ServiceProvider
         Investment::observe(InvestmentObserver::class);
 
         Gate::policy(BankImportLayout::class, BankImportLayoutPolicy::class);
+
+        Gate::define('viewPulse', function (?User $user) {
+            if (! $user) {
+                return false;
+            }
+
+            $ownerEmail = config('prelaunch.magazine_admin_email', '');
+
+            return $ownerEmail !== ''
+                && strtolower($user->email) === strtolower($ownerEmail);
+        });
     }
 }

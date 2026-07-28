@@ -135,6 +135,7 @@ class ProductAnalyticsTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Admin/ProductAnalytics/Index')
                 ->has('analytics.top_features')
+                ->has('tools.pulse_url')
                 ->where('analytics.top_features.0.feature_key', 'transaction')
             );
     }

@@ -2,16 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreInvestmentCouponRequest;
 use App\Http\Requests\StoreInvestmentRequest;
+use App\Http\Requests\UpdateInvestmentCouponScheduleRequest;
 use App\Http\Requests\UpdateInvestmentRequest;
 use App\Models\Account;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
+use App\Models\Transaction;
 use App\Services\AssetPriceService;
+use App\Services\InvestmentCouponService;
 use App\Services\InvestmentMetricsService;
 use App\Services\InvestmentTransactionSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +26,7 @@ class InvestmentController extends Controller
         private readonly AssetPriceService $assetPriceService,
         private readonly InvestmentMetricsService $investmentMetricsService,
         private readonly InvestmentTransactionSyncService $investmentTransactionSyncService,
+        private readonly InvestmentCouponService $investmentCouponService,
     ) {}
 
     /**
@@ -223,27 +229,56 @@ class InvestmentController extends Controller
         $currentPrice = null;
         $symbol = $investment->asset?->symbol;
         if ($symbol && $investment->isOpen()) {
-            $priceResult = $this->assetPriceService->getCurrentPrice($symbol);
-            if (! $priceResult['error'] && isset($priceResult['price'])) {
-                $currentPrice = (float) $priceResult['price'];
+            try {
+                $priceResult = $this->assetPriceService->getCurrentPrice($symbol);
+                $price = $priceResult['price'] ?? null;
+                if (! ($priceResult['error'] ?? true) && is_numeric($price) && (float) $price > 0) {
+                    $currentPrice = (float) $price;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Investment show: market price unavailable', [
+                    'investment_id' => $investment->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
         $unrealized = $this->investmentMetricsService->unrealizedMetrics($investment, $currentPrice);
+        $returns = $this->investmentMetricsService->totalReturnMetrics(
+            $investment,
+            $unrealized['unrealized_profit']
+        );
+        $coupons = $this->investmentCouponService->listForInvestment($investment);
+        $schedule = $this->investmentCouponService->couponSchedulePreview($investment);
+
+        $asset = $investment->asset;
+        abort_unless($asset !== null, 404);
+
+        $user = Auth::user();
+        $accounts = Account::where('household_id', $user->active_household_id)
+            ->where('active', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         return Inertia::render('Investments/Show', [
             'investment' => [
                 'id' => $investment->id,
                 'asset' => [
-                    'id' => $investment->asset->id,
-                    'name' => $investment->asset->name,
-                    'symbol' => $investment->asset->symbol,
-                    'type' => $investment->asset->type,
-                    'type_label' => $investment->asset->type_label,
-                    'type_icon' => $investment->asset->type_icon,
+                    'id' => $asset->id,
+                    'name' => $asset->name,
+                    'symbol' => $asset->symbol,
+                    'isin' => $asset->isin,
+                    'type' => $asset->type,
+                    'type_label' => $asset->type_label,
+                    'type_icon' => $asset->type_icon,
                     'currency' => [
-                        'code' => $investment->asset->currency->code ?? $investment->asset->currency_code,
-                        'symbol' => $investment->asset->currency->symbol ?? '€',
+                        'code' => $asset->currency?->code ?? $asset->currency_code,
+                        'symbol' => $asset->currency?->symbol ?? '€',
                     ],
+                    'coupon_frequency' => $asset->coupon_frequency,
+                    'next_coupon_date' => $asset->next_coupon_date?->format('Y-m-d'),
+                    'coupon_rate_percent' => $asset->coupon_rate_percent !== null
+                        ? (float) $asset->coupon_rate_percent
+                        : null,
                 ],
                 'account' => $investment->account ? [
                     'id' => $investment->account->id,
@@ -266,6 +301,9 @@ class InvestmentController extends Controller
                 'current_value' => $unrealized['current_value'],
                 'unrealized_profit' => $unrealized['unrealized_profit'],
                 'total_cost' => $this->investmentMetricsService->totalCost($investment),
+                'coupons_total' => $returns['coupons_total'],
+                'capital_profit' => $returns['capital_profit'],
+                'total_return' => $returns['total_return'],
                 'is_sold' => $investment->isSold(),
                 'is_private' => $investment->is_private,
                 'notes' => $investment->notes,
@@ -275,8 +313,51 @@ class InvestmentController extends Controller
                     'name' => $investment->user->name,
                 ],
             ],
+            'coupons' => $coupons->map(fn (Transaction $tx) => [
+                'id' => $tx->id,
+                'date' => $tx->date->format('Y-m-d'),
+                'amount' => (float) $tx->amount,
+                'description' => $tx->description,
+                'account_id' => $tx->account_id,
+            ])->values()->all(),
+            'couponSchedule' => $schedule,
+            'accounts' => $accounts,
             'valuationNote' => $this->valuationNoteMessage(),
         ]);
+    }
+
+    public function storeCoupon(StoreInvestmentCouponRequest $request, Investment $investment): RedirectResponse
+    {
+        $this->authorizeInvestment($investment);
+
+        $this->investmentCouponService->record($investment, $request->validated());
+
+        return redirect()
+            ->route('investments.show', $investment)
+            ->with('success', 'Cedola registrata.');
+    }
+
+    public function destroyCoupon(Investment $investment, Transaction $transaction): RedirectResponse
+    {
+        $this->authorizeInvestment($investment);
+        $this->investmentCouponService->delete($investment, $transaction);
+
+        return redirect()
+            ->route('investments.show', $investment)
+            ->with('success', 'Cedola eliminata.');
+    }
+
+    public function updateCouponSchedule(UpdateInvestmentCouponScheduleRequest $request, Investment $investment): RedirectResponse
+    {
+        $this->authorizeInvestment($investment);
+        $asset = $investment->asset;
+        abort_unless($asset !== null, 404);
+
+        $asset->update($request->validated());
+
+        return redirect()
+            ->route('investments.show', $investment)
+            ->with('success', 'Calendario cedole aggiornato.');
     }
 
     /**

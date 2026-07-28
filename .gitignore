@@ -28,6 +28,8 @@ python-services/.pyright-deps/
 /storage/pail
 /storage/backups/
 /vendor
+/database/pulse.sqlite
+/database/pulse.sqlite-journal
 Homestead.json
 Homestead.yaml
 Thumbs.db
