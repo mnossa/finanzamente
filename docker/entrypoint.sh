@@ -17,6 +17,15 @@ if [ "${SKIP_INIT}" != "true" ]; then
         php artisan storage:link --force
     fi
 
+    # Laravel Pulse: SQLite dedicato (non in git/immagine). Su volume storage/ in prod.
+    PULSE_DB="${PULSE_DB_DATABASE:-/var/www/storage/pulse/pulse.sqlite}"
+    echo "    → pulse sqlite ensure (${PULSE_DB})"
+    mkdir -p "$(dirname "$PULSE_DB")"
+    if [ ! -f "$PULSE_DB" ]; then
+        touch "$PULSE_DB"
+    fi
+    chown -R www-data:www-data "$(dirname "$PULSE_DB")" 2>/dev/null || true
+
     # Esegue le migrazioni (safe: le migrazioni già eseguite vengono saltate).
     # Backfill dati one-shot → migration dedicata, NON comandi artisan qui sotto.
     echo "    → migrate"

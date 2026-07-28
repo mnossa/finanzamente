@@ -30,6 +30,7 @@ python-services/.pyright-deps/
 /vendor
 /database/pulse.sqlite
 /database/pulse.sqlite-journal
+# Pulse DB di default: storage/pulse/pulse.sqlite (volume storage in prod)
 Homestead.json
 Homestead.yaml
 Thumbs.db

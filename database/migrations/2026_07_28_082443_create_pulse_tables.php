@@ -25,6 +25,17 @@ return new class extends PulseMigration
             return;
         }
 
+        $database = Config::get('database.connections.'.$this->getConnection().'.database');
+        if (is_string($database) && $database !== '' && ! str_contains($database, ':memory:')) {
+            $dir = dirname($database);
+            if (! is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+            if (! file_exists($database)) {
+                touch($database);
+            }
+        }
+
         $schema = Schema::connection($this->getConnection());
         // migrate:fresh sul DB app non droppa il SQLite Pulse condiviso (local/e2e).
         if ($schema->hasTable('pulse_values')) {

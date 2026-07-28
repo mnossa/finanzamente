@@ -31,7 +31,7 @@ La dashboard custom **non** sostituisce Pulse/Flare: aggrega conteggi privacy-sa
 5. Retention: `product-analytics:enforce-retention` (default 90 giorni)
 
 ## Pulse
-- Storage: SQLite dedicato (`database/pulse.sqlite`, connection `pulse`) — evita bug MySQL generated `md5`
+- Storage: SQLite dedicato (`storage/pulse/pulse.sqlite`, connection `pulse`) — evita bug MySQL generated `md5`; in prod sul volume `storage`
 - Accesso: Gate `viewPulse` = email `MAGAZINE_ADMIN_EMAIL`
 - Env: `PULSE_ENABLED`, `PULSE_DB_CONNECTION=pulse`
 

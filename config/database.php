@@ -50,7 +50,8 @@ return [
          */
         'pulse' => [
             'driver' => 'sqlite',
-            'database' => env('PULSE_DB_DATABASE', database_path('pulse.sqlite')),
+            // Su volume storage/ in produzione (persistente tra recreate container).
+            'database' => env('PULSE_DB_DATABASE', storage_path('pulse/pulse.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => false,
         ],
