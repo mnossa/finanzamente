@@ -260,6 +260,7 @@ class AlphaVantageProvider implements AssetPriceProviderInterface
             'mutual fund' => 'etf',
             'index' => 'index',
             'cryptocurrency' => 'crypto',
+            'bond', 'fixed income' => 'bond',
             default => 'other',
         };
     }

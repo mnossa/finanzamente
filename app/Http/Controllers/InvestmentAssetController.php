@@ -39,8 +39,10 @@ class InvestmentAssetController extends Controller
                 ];
             });
 
-        // Raggruppa per tipo
-        $groupedAssets = $assets->groupBy('type');
+        // Raggruppa per tipo nell'ordine UX definito in TYPES
+        $groupedAssets = collect(InvestmentAsset::TYPES)
+            ->mapWithKeys(fn ($label, $type) => [$type => $assets->where('type', $type)->values()])
+            ->filter(fn ($items) => $items->isNotEmpty());
 
         // Statistiche
         $stats = [

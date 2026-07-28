@@ -59,11 +59,25 @@ class AssetClassificationServiceTest extends TestCase
     }
 
     #[Test]
-    public function suggest_allocation_uses_isin_in_inference(): void
+    public function bond_asset_is_classified_as_bonds(): void
     {
-        $this->assertSame(
-            'bonds',
-            AssetClassificationService::suggestAllocationClass('etf', 'UCITS ETF', 'BOND', 'IE00B4WXJD76')
-        );
+        $asset = new InvestmentAsset([
+            'type' => 'bond',
+            'name' => 'BTP Valore 2028',
+            'symbol' => 'IT0005538597',
+            'isin' => 'IT0005538597',
+        ]);
+
+        $this->assertSame('bonds', AssetClassificationService::resolveInvestmentAssetClass($asset));
+        $this->assertSame('bonds', AssetClassificationService::suggestAllocationClass('bond'));
+    }
+
+    #[Test]
+    public function asset_types_put_crypto_before_other_at_bottom(): void
+    {
+        $keys = array_keys(InvestmentAsset::TYPES);
+
+        $this->assertSame(['etf', 'stock', 'bond', 'insurance', 'index', 'commodity', 'crypto', 'other'], $keys);
+        $this->assertSame('Obbligazione', InvestmentAsset::TYPES['bond']);
     }
 }

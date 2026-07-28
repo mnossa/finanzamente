@@ -99,8 +99,11 @@ export default function AssetSearch({ onSelect, className, disabled }: AssetSear
         switch (type) {
             case 'stock': return '📈';
             case 'etf': return '📊';
+            case 'bond': return '🏛️';
             case 'crypto': return '₿';
             case 'index': return '📉';
+            case 'commodity': return '🥇';
+            case 'insurance': return '🛡️';
             default: return '💼';
         }
     };

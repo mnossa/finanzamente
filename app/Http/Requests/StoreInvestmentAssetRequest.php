@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\InvestmentAsset;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,7 +25,7 @@ class StoreInvestmentAssetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', Rule::in(['crypto', 'etf', 'stock', 'index', 'commodity', 'insurance', 'other'])],
+            'type' => ['required', Rule::in(array_keys(InvestmentAsset::TYPES))],
             'allocation_asset_class' => ['nullable', Rule::in(['equities', 'bonds', 'commodities', 'crypto', 'other'])],
             'symbol' => ['nullable', 'string', 'max:20'],
             'isin' => ['nullable', 'string', 'max:12', 'regex:/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/'],

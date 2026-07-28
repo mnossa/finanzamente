@@ -416,6 +416,7 @@ class YahooFinanceProvider implements AssetPriceProviderInterface
             $type === 'index' => 'index',
             $type === 'cryptocurrency' => 'crypto',
             $type === 'currency' => 'other',
+            $type === 'bond' || str_contains($display, 'bond') || str_contains($display, 'fixed income') => 'bond',
             str_contains($display, 'commodity') => 'commodity',
             default => 'other',
         };

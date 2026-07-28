@@ -80,14 +80,28 @@ export default function InvestmentCreateGuided({ accounts, assets, assetTypes }:
     }, [data.quantity, data.buy_price]);
 
     const groupedAssets = useMemo(() => {
-        return assets.reduce((acc, asset) => {
+        const byType = assets.reduce((acc, asset) => {
             if (!acc[asset.type]) {
                 acc[asset.type] = [];
             }
             acc[asset.type].push(asset);
             return acc;
         }, {} as Record<string, Asset[]>);
-    }, [assets]);
+
+        const ordered: Record<string, Asset[]> = {};
+        for (const type of Object.keys(assetTypes)) {
+            if (byType[type]?.length) {
+                ordered[type] = byType[type];
+            }
+        }
+        for (const [type, typeAssets] of Object.entries(byType)) {
+            if (!ordered[type]) {
+                ordered[type] = typeAssets;
+            }
+        }
+
+        return ordered;
+    }, [assets, assetTypes]);
 
     const fetchHistoricalPrice = async () => {
         if (!selectedAsset?.symbol || !data.buy_date) return;

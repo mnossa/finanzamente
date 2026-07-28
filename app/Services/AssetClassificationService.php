@@ -26,6 +26,7 @@ class AssetClassificationService
     public const ASSET_TYPE_RISK = [
         'etf' => 4,
         'stock' => 6,
+        'bond' => 2,
         'index' => 4,
         'commodity' => 5,
         'insurance' => 2,
@@ -37,6 +38,7 @@ class AssetClassificationService
     public const ASSET_TYPE_CLASS = [
         'etf' => 'equities',
         'stock' => 'equities',
+        'bond' => 'bonds',
         'index' => 'equities',
         'commodity' => 'commodities',
         'insurance' => 'bonds',

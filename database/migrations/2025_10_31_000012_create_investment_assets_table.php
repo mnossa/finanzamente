@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('investment_assets', function (Blueprint $table) {
             $table->id();
-            $table->enum('type', ['crypto', 'etf', 'stock', 'index', 'commodity', 'insurance', 'other'])->default('other');
+            $table->enum('type', ['etf', 'stock', 'bond', 'index', 'commodity', 'insurance', 'crypto', 'other'])->default('other');
             $table->string('symbol')->nullable();
             $table->string('name');
             $table->string('currency_code');

@@ -10,23 +10,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * InvestmentAsset
  *
- * Rappresenta un asset finanziario (crypto, azione, etf, commodity). Gli
- * asset vengono usati per tracciare investimenti e posizioni detenute.
+ * Rappresenta un asset finanziario (ETF, azione, obbligazione, crypto, …).
  */
 class InvestmentAsset extends Model
 {
     use DispatchesModelEvents, HasFactory, SoftDeletes;
 
     /**
-     * Tipi di asset disponibili.
+     * Tipi di asset disponibili (ordine UX: retail IT, crypto in basso, Altro ultimo).
      */
     public const TYPES = [
-        'crypto' => 'Criptovaluta',
         'etf' => 'ETF',
         'stock' => 'Azione',
+        'bond' => 'Obbligazione',
+        'insurance' => 'Assicurazione',
         'index' => 'Indice',
         'commodity' => 'Materia Prima',
-        'insurance' => 'Assicurazione',
+        'crypto' => 'Criptovaluta',
         'other' => 'Altro',
     ];
 
@@ -34,12 +34,13 @@ class InvestmentAsset extends Model
      * Icone per tipo di asset.
      */
     public const TYPE_ICONS = [
-        'crypto' => '₿',
         'etf' => '📊',
         'stock' => '📈',
+        'bond' => '🏛️',
+        'insurance' => '🛡️',
         'index' => '📉',
         'commodity' => '🥇',
-        'insurance' => '🛡️',
+        'crypto' => '₿',
         'other' => '💼',
     ];
 

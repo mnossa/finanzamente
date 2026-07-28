@@ -1,28 +1,26 @@
-# WFI-116 — Cedole e dividendi collegati a investimento
+# WFI-117 — Tipo Obbligazione (BTP) + ordine tipi asset UX
 
 ## Goal
-Associare stacchi cedola/dividendo a posizione investimento (BTP ecc.), totale ritorno, calendario manuale per ISIN (niente API a pagamento).
+BTP/obbligazioni = tipo dedicato; select tipologica per retail IT (crypto in basso).
 
 ## Plan
-- [x] Migration `investment_event` + schedule fields + backfill
-- [x] `InvestmentCouponService` + metrics total return
-- [x] Sync discriminato per event (coupon non sovrascritto da sale)
-- [x] Routes/controller store/destroy/schedule + Show props
-- [x] Show.tsx UI cedole + calendario
-- [x] Feature tests `InvestmentCouponTest`
-- [x] `make test` → `make pint-check` → `make playwright` (TS/UI)
-- [x] Jira WFI-116 → Completato
+- [x] `bond` in TYPES/TYPE_ICONS + riordino
+- [x] Validation + enum MySQL migration
+- [x] AssetClassificationService bond→bonds
+- [x] Optgroup/index order
+- [x] Unit tests
+- [x] make test + pint + build
+- [ ] make playwright
+- [ ] Jira Completato (comment/transition: approval se serve)
 
 ## Review
 ### Cosa
-- `transactions.investment_event`: purchase | sale | coupon
-- Cedola = entrata categoria «Cedole e dividendi», nel cashflow operativo
-- Show: lista, registra, elimina, KPI totale cedole + ritorno complessivo
-- Calendario manuale su asset (frequenza / prossima data / tasso %); preview prossime date
-- Nessun feed ISIN free universale → niente calendario auto
+- Nuovo tipo `bond` = **Obbligazione** (BTP, BOT, corporate, …)
+- Ordine: ETF → Azione → Obbligazione → Assicurazione → Indice → Materia Prima → Criptovaluta → Altro
+- Allocazione automatica `bonds`; icona 🏛️
 
 ### Verifica
-- PHPUnit: 1105 passed
+- PHPUnit: 1106 passed
 - Pint: pass
-- Playwright: green (exit 0)
-- Migrate + build OK
+- Build: OK
+- Migrate enum MySQL: OK

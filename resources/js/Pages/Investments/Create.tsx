@@ -153,16 +153,30 @@ export default function Create({ accounts, assets, assetTypes }: CreateProps) {
         post(route('investments.store'));
     };
 
-    // Raggruppa asset per tipo
+    // Raggruppa asset per tipo (ordine tipologico UX)
     const groupedAssets = useMemo(() => {
-        return assets.reduce((acc, asset) => {
+        const byType = assets.reduce((acc, asset) => {
             if (!acc[asset.type]) {
                 acc[asset.type] = [];
             }
             acc[asset.type].push(asset);
             return acc;
         }, {} as Record<string, Asset[]>);
-    }, [assets]);
+
+        const ordered: Record<string, Asset[]> = {};
+        for (const type of Object.keys(assetTypes)) {
+            if (byType[type]?.length) {
+                ordered[type] = byType[type];
+            }
+        }
+        for (const [type, typeAssets] of Object.entries(byType)) {
+            if (!ordered[type]) {
+                ordered[type] = typeAssets;
+            }
+        }
+
+        return ordered;
+    }, [assets, assetTypes]);
 
     return (
         <AuthenticatedLayout
