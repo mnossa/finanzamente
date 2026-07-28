@@ -77,6 +77,7 @@ class InvestmentAssetController extends Controller
             'types' => InvestmentAsset::TYPES,
             'typeIcons' => InvestmentAsset::TYPE_ICONS,
             'allocationClasses' => AssetClassificationService::CLASS_LABELS,
+            'incomePolicies' => InvestmentAsset::INCOME_POLICIES,
         ]);
     }
 
@@ -98,6 +99,9 @@ class InvestmentAssetController extends Controller
             'name' => $validated['name'],
             'currency_code' => $validated['currency_code'],
             'extra_data' => $validated['extra_data'] ?? null,
+            'income_policy' => in_array($validated['type'], ['etf', 'stock', 'bond'], true)
+                ? ($validated['income_policy'] ?? null)
+                : null,
         ]);
 
         return redirect()
@@ -125,11 +129,13 @@ class InvestmentAssetController extends Controller
                 'name' => $investmentAsset->name,
                 'currency_code' => $investmentAsset->currency_code,
                 'extra_data' => $investmentAsset->extra_data,
+                'income_policy' => $investmentAsset->income_policy,
             ],
             'currencies' => $currencies,
             'types' => InvestmentAsset::TYPES,
             'typeIcons' => InvestmentAsset::TYPE_ICONS,
             'allocationClasses' => AssetClassificationService::CLASS_LABELS,
+            'incomePolicies' => InvestmentAsset::INCOME_POLICIES,
         ]);
     }
 
@@ -151,6 +157,9 @@ class InvestmentAssetController extends Controller
             'name' => $validated['name'],
             'currency_code' => $validated['currency_code'],
             'extra_data' => $validated['extra_data'] ?? $investmentAsset->extra_data,
+            'income_policy' => in_array($validated['type'], ['etf', 'stock', 'bond'], true)
+                ? ($validated['income_policy'] ?? null)
+                : null,
         ]);
 
         return redirect()

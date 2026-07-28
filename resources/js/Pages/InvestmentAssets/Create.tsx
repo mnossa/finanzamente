@@ -34,9 +34,10 @@ interface CreateProps {
     types: Types;
     typeIcons: TypeIcons;
     allocationClasses: Record<string, string>;
+    incomePolicies?: Record<string, string>;
 }
 
-export default function Create({ currencies, types, typeIcons, allocationClasses }: CreateProps) {
+export default function Create({ currencies, types, typeIcons, allocationClasses, incomePolicies = { accumulating: 'Accumulo', distributing: 'Distribuzione' } }: CreateProps) {
     const { features } = usePage<PageProps & { features?: Record<string, boolean> }>().props;
 
     if (isGuidedCreateEnabled(features)) {
@@ -52,7 +53,12 @@ export default function Create({ currencies, types, typeIcons, allocationClasses
             >
                 <Head title="Nuovo Asset" />
                 <PageContent maxWidth="3xl">
-                    <InvestmentAssetCreateGuided currencies={currencies} types={types} typeIcons={typeIcons} />
+                    <InvestmentAssetCreateGuided
+                        currencies={currencies}
+                        types={types}
+                        typeIcons={typeIcons}
+                        incomePolicies={incomePolicies}
+                    />
                 </PageContent>
             </AuthenticatedLayout>
         );
@@ -66,7 +72,10 @@ export default function Create({ currencies, types, typeIcons, allocationClasses
         name: '',
         currency_code: 'EUR',
         allocation_asset_class: '',
+        income_policy: '',
     });
+
+    const showIncomePolicy = ['etf', 'stock', 'bond'].includes(data.type);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -234,6 +243,27 @@ export default function Create({ currencies, types, typeIcons, allocationClasses
                                     </select>
                                     <InputError message={errors.allocation_asset_class} className="mt-2" />
                                 </div>
+
+                                {showIncomePolicy && (
+                                    <div className="mb-6">
+                                        <InputLabel htmlFor="income_policy" value="Dividendi / cedole" />
+                                        <select
+                                            id="income_policy"
+                                            className="mt-2 w-full rounded-lg border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                            value={data.income_policy}
+                                            onChange={(e) => setData('income_policy', e.target.value)}
+                                        >
+                                            <option value="">— Non specificata —</option>
+                                            {Object.entries(incomePolicies).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Accumulo = proventi reinvestiti; Distribuzione = stacco cash.
+                                        </p>
+                                        <InputError message={errors.income_policy} className="mt-2" />
+                                    </div>
+                                )}
 
                                 {/* Valuta */}
                                 <div className="mb-6">

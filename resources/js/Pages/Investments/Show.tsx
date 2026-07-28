@@ -17,6 +17,11 @@ interface Currency {
     symbol: string;
 }
 
+interface RateStep {
+    from: string | null;
+    rate: number;
+}
+
 interface Asset {
     id: number;
     name: string;
@@ -29,7 +34,10 @@ interface Asset {
     coupon_frequency: string | null;
     next_coupon_date: string | null;
     coupon_rate_percent: number | null;
-    coupon_rate_steps: number[];
+    coupon_rate_steps: RateStep[];
+    income_policy: 'accumulating' | 'distributing' | null;
+    income_policy_label: string | null;
+    supports_income_policy: boolean;
 }
 
 interface Account {
@@ -60,8 +68,9 @@ interface CouponSchedule {
     next_items: CouponScheduleItem[];
     frequency: string | null;
     rate_percent: number | null;
-    rate_steps: number[];
+    rate_steps: RateStep[];
     is_step_up: boolean;
+    has_dated_steps: boolean;
 }
 
 interface Investment {
@@ -264,6 +273,19 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
     const hasSchedule = Boolean(
         investment.asset.coupon_frequency && investment.asset.next_coupon_date,
     );
+    const isEquityLike = ['stock', 'etf'].includes(investment.asset.type);
+    const incomeLabel = isEquityLike ? 'dividendo' : 'cedola';
+    const incomeLabelPlural = isEquityLike ? 'Dividendi' : 'Cedole';
+
+    const toFormSteps = (steps: RateStep[] | undefined): Array<{ from: string; rate: string }> => {
+        if (steps && steps.length > 0) {
+            return steps.map((step) => ({
+                from: step.from ?? '',
+                rate: step.rate?.toString() ?? '',
+            }));
+        }
+        return [{ from: investment.asset.next_coupon_date ?? '', rate: '' }];
+    };
 
     const couponForm = useForm({
         amount: '',
@@ -276,9 +298,8 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
         coupon_frequency: investment.asset.coupon_frequency ?? '',
         next_coupon_date: investment.asset.next_coupon_date ?? '',
         coupon_rate_percent: investment.asset.coupon_rate_percent?.toString() ?? '',
-        coupon_rate_steps: (investment.asset.coupon_rate_steps?.length
-            ? investment.asset.coupon_rate_steps
-            : ['']) as Array<number | string>,
+        coupon_rate_steps: toFormSteps(investment.asset.coupon_rate_steps),
+        income_policy: investment.asset.income_policy ?? '',
     });
 
     const frequencyLabel = (value: string | null) => {
@@ -313,8 +334,16 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                 ? (scheduleForm.data.coupon_rate_percent || null)
                 : null,
             coupon_rate_steps: rateMode === 'step_up'
-                ? scheduleForm.data.coupon_rate_steps.filter((v) => v !== '' && v !== null)
+                ? scheduleForm.data.coupon_rate_steps
+                    .filter((step) => step.rate !== '' && step.rate !== null)
+                    .map((step) => ({
+                        from: step.from || null,
+                        rate: step.rate,
+                    }))
                 : [],
+            income_policy: investment.asset.supports_income_policy
+                ? (scheduleForm.data.income_policy || null)
+                : null,
         }, {
             preserveScroll: true,
             onError: (errors) => scheduleForm.setError(errors),
@@ -333,7 +362,8 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                     coupon_frequency: '',
                     next_coupon_date: '',
                     coupon_rate_percent: '',
-                    coupon_rate_steps: [''],
+                    coupon_rate_steps: [{ from: '', rate: '' }],
+                    income_policy: scheduleForm.data.income_policy,
                 });
             },
         });
@@ -350,18 +380,21 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
     };
 
     const addRateStep = () => {
-        scheduleForm.setData('coupon_rate_steps', [...scheduleForm.data.coupon_rate_steps, '']);
+        scheduleForm.setData('coupon_rate_steps', [
+            ...scheduleForm.data.coupon_rate_steps,
+            { from: '', rate: '' },
+        ]);
     };
 
-    const updateRateStep = (index: number, value: string) => {
+    const updateRateStep = (index: number, field: 'from' | 'rate', value: string) => {
         const next = [...scheduleForm.data.coupon_rate_steps];
-        next[index] = value;
+        next[index] = { ...next[index], [field]: value };
         scheduleForm.setData('coupon_rate_steps', next);
     };
 
     const removeRateStep = (index: number) => {
         const next = scheduleForm.data.coupon_rate_steps.filter((_, i) => i !== index);
-        scheduleForm.setData('coupon_rate_steps', next.length > 0 ? next : ['']);
+        scheduleForm.setData('coupon_rate_steps', next.length > 0 ? next : [{ from: '', rate: '' }]);
     };
 
     return (
@@ -613,13 +646,13 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                             </h3>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                 Registra gli stacchi collegati a questa posizione. Il ritorno totale
-                                somma P/L di capitale e cedole.
+                                somma P/L di capitale e {incomeLabelPlural.toLowerCase()}.
                             </p>
                         </div>
                         <div className="space-y-4 p-6">
                             <div className={clsx(moneyKpiGrid2, 'gap-4')}>
                                 <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Totale cedole</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Totale {incomeLabelPlural.toLowerCase()}</p>
                                     <p className={clsx('text-xl font-bold text-emerald-600 dark:text-emerald-400', moneyTabular)}>
                                         {formatCurrency(investment.coupons_total, currencyCode)}
                                     </p>
@@ -641,7 +674,7 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                             Capitale {investment.capital_profit >= 0 ? '+' : ''}
                                             {formatCurrency(investment.capital_profit, currencyCode)}
-                                            {' + '}cedole {formatCurrency(investment.coupons_total, currencyCode)}
+                                            {' + '}{incomeLabelPlural.toLowerCase()} {formatCurrency(investment.coupons_total, currencyCode)}
                                         </p>
                                     )}
                                 </div>
@@ -654,6 +687,33 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                             </p>
 
                             <form onSubmit={submitSchedule} className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/40">
+                                {investment.asset.supports_income_policy && (
+                                    <div>
+                                        <InputLabel htmlFor="income_policy" value="Politica dividendi / cedole" />
+                                        <select
+                                            id="income_policy"
+                                            className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                                            value={scheduleForm.data.income_policy}
+                                            onChange={(e) => scheduleForm.setData('income_policy', e.target.value)}
+                                        >
+                                            <option value="">— Non specificata —</option>
+                                            <option value="accumulating">Accumulo (reinvestiti, senza stacco cash)</option>
+                                            <option value="distributing">Distribuzione (stacco cash)</option>
+                                        </select>
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Per ETF/azioni/obbligazioni: indica se i proventi sono in accumulo o distribuzione.
+                                        </p>
+                                        <InputError message={scheduleForm.errors.income_policy} className="mt-1" />
+                                    </div>
+                                )}
+
+                                {scheduleForm.data.income_policy === 'accumulating' && (
+                                    <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                                        Asset in accumulo: di solito non c&apos;è stacco cash. Puoi comunque registrare
+                                        eventuali proventi eccezionali sotto.
+                                    </p>
+                                )}
+
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <div>
                                         <InputLabel htmlFor="coupon_frequency" value="Frequenza" />
@@ -671,7 +731,7 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                         </select>
                                     </div>
                                     <div>
-                                        <InputLabel htmlFor="next_coupon_date" value="Prossima cedola" />
+                                        <InputLabel htmlFor="next_coupon_date" value={`Prossima ${incomeLabel}`} />
                                         <TextInput
                                             id="next_coupon_date"
                                             type="date"
@@ -727,24 +787,35 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        <InputLabel value="Tassi previsti per stacco (%)" />
+                                        <InputLabel value="Tassi per periodo (data di cambio + %)" />
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            In ordine di scadenza: il primo vale per la prossima cedola, poi i successivi.
-                                            Se finiscono, resta l&apos;ultimo tasso.
+                                            Per ogni cambio di cedola indica la data da cui vale il nuovo tasso
+                                            (es. BTP Valore). Se ometti la data, vale l&apos;ordine degli stacchi.
                                         </p>
                                         {scheduleForm.data.coupon_rate_steps.map((step, index) => (
-                                            <div key={`rate-step-${index}`} className="flex items-center gap-2">
-                                                <span className="w-16 shrink-0 text-xs text-gray-500">
+                                            <div
+                                                key={`rate-step-${index}`}
+                                                className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                            >
+                                                <span className="w-10 shrink-0 text-xs text-gray-500">
                                                     #{index + 1}
                                                 </span>
+                                                <TextInput
+                                                    type="date"
+                                                    className="w-full sm:max-w-[11rem]"
+                                                    value={step.from}
+                                                    onChange={(e) => updateRateStep(index, 'from', e.target.value)}
+                                                    aria-label={`Data cambio tasso ${index + 1}`}
+                                                />
                                                 <TextInput
                                                     type="number"
                                                     step="0.01"
                                                     min="0"
-                                                    className="w-full max-w-[10rem]"
-                                                    value={step}
-                                                    onChange={(e) => updateRateStep(index, e.target.value)}
+                                                    className="w-full sm:max-w-[8rem]"
+                                                    value={step.rate}
+                                                    onChange={(e) => updateRateStep(index, 'rate', e.target.value)}
                                                     placeholder="es. 3,25"
+                                                    aria-label={`Tasso percentuale ${index + 1}`}
                                                 />
                                                 <button
                                                     type="button"
@@ -761,7 +832,7 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                             onClick={addRateStep}
                                             className="text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400"
                                         >
-                                            + Aggiungi tasso
+                                            + Aggiungi cambio tasso
                                         </button>
                                         <InputError message={scheduleForm.errors.coupon_rate_steps} className="mt-1" />
                                     </div>
@@ -811,7 +882,7 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
 
                             <form onSubmit={submitCoupon} className="grid gap-3 border-t border-gray-100 pt-4 dark:border-gray-700 sm:grid-cols-2">
                                 <div>
-                                    <InputLabel htmlFor="coupon_amount" value="Importo stacco *" />
+                                    <InputLabel htmlFor="coupon_amount" value={`Importo ${incomeLabel} *`} />
                                     <TextInput
                                         id="coupon_amount"
                                         type="number"
@@ -859,19 +930,19 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                         className="mt-1 w-full"
                                         value={couponForm.data.description}
                                         onChange={(e) => couponForm.setData('description', e.target.value)}
-                                        placeholder="Es. cedola maggio"
+                                        placeholder={`Es. ${incomeLabel} maggio`}
                                     />
                                 </div>
                                 <div className="sm:col-span-2">
                                     <PrimaryButton disabled={couponForm.processing || accounts.length === 0}>
-                                        Registra cedola
+                                        {`Registra ${incomeLabel}`}
                                     </PrimaryButton>
                                 </div>
                             </form>
 
                             {coupons.length === 0 ? (
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Nessuna cedola registrata.
+                                    Nessun{isEquityLike ? ' dividendo' : 'a cedola'} registrat{isEquityLike ? 'o' : 'a'}.
                                 </p>
                             ) : (
                                 <ul className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -882,7 +953,7 @@ export default function Show({ investment, coupons, couponSchedule, accounts, va
                                                     {formatDate(coupon.date)}
                                                 </p>
                                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {coupon.description || 'Cedola'}
+                                                    {coupon.description || (isEquityLike ? 'Dividendo' : 'Cedola')}
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-3">

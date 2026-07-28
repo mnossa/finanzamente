@@ -33,6 +33,7 @@ class UpdateInvestmentAssetRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'currency_code' => ['required', 'string', 'exists:currencies,code'],
             'extra_data' => ['nullable', 'array'],
+            'income_policy' => ['nullable', 'string', Rule::in(array_keys(InvestmentAsset::INCOME_POLICIES))],
         ];
     }
 
@@ -54,6 +55,7 @@ class UpdateInvestmentAssetRequest extends FormRequest
             'name.max' => 'Il nome non può superare 255 caratteri.',
             'currency_code.required' => 'La valuta è obbligatoria.',
             'currency_code.exists' => 'La valuta selezionata non è valida.',
+            'income_policy.in' => 'Seleziona Accumulo o Distribuzione.',
         ];
     }
 }

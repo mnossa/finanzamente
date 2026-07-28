@@ -59,4 +59,23 @@ class PulseDashboardTest extends TestCase
             ->get('/pulse')
             ->assertForbidden();
     }
+
+    #[Test]
+    public function pulse_user_resolver_anonymizes_name_and_email(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Mario Rossi',
+            'email' => 'mario.rossi@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        $resolved = \Laravel\Pulse\Facades\Pulse::resolveUsers(collect([$user->id]));
+        $payload = $resolved->find($user->id);
+
+        $this->assertSame('Utente #'.$user->id, $payload->name);
+        $this->assertSame('', $payload->extra);
+        $this->assertSame('', $payload->avatar);
+        $this->assertStringNotContainsString('Mario', $payload->name);
+        $this->assertStringNotContainsString('mario.rossi@example.com', json_encode($payload));
+    }
 }

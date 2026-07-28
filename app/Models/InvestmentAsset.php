@@ -44,6 +44,11 @@ class InvestmentAsset extends Model
         'other' => '💼',
     ];
 
+    public const INCOME_POLICIES = [
+        'accumulating' => 'Accumulo',
+        'distributing' => 'Distribuzione',
+    ];
+
     protected $fillable = [
         'type',
         'allocation_asset_class',
@@ -57,6 +62,7 @@ class InvestmentAsset extends Model
         'next_coupon_date',
         'coupon_rate_percent',
         'coupon_rate_steps',
+        'income_policy',
     ];
 
     protected $casts = [
@@ -90,5 +96,19 @@ class InvestmentAsset extends Model
     public function getTypeIconAttribute(): string
     {
         return self::TYPE_ICONS[$this->type] ?? '💼';
+    }
+
+    public function getIncomePolicyLabelAttribute(): ?string
+    {
+        if ($this->income_policy === null) {
+            return null;
+        }
+
+        return self::INCOME_POLICIES[$this->income_policy] ?? $this->income_policy;
+    }
+
+    public function supportsIncomePolicy(): bool
+    {
+        return in_array($this->type, ['etf', 'stock', 'bond'], true);
     }
 }

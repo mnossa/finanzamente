@@ -28,11 +28,17 @@ interface Props {
     currencies: Currency[];
     types: Types;
     typeIcons: TypeIcons;
+    incomePolicies?: Record<string, string>;
 }
 
-const STEP_COUNT = 5;
+const STEP_COUNT = 6;
 
-export default function InvestmentAssetCreateGuided({ currencies, types, typeIcons }: Props) {
+export default function InvestmentAssetCreateGuided({
+    currencies,
+    types,
+    typeIcons,
+    incomePolicies = { accumulating: 'Accumulo', distributing: 'Distribuzione' },
+}: Props) {
     const [step, setStep] = useState(0);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -42,12 +48,15 @@ export default function InvestmentAssetCreateGuided({ currencies, types, typeIco
         exchange: '',
         name: '',
         currency_code: 'EUR',
+        income_policy: '',
     });
 
     const selectedCurrency = useMemo(
         () => currencies.find((currency) => currency.code === data.currency_code),
         [currencies, data.currency_code],
     );
+
+    const showIncomePolicy = ['etf', 'stock', 'bond'].includes(data.type);
 
     const handleAssetSelect = (asset: { symbol: string; name: string; type: string; currency: string; region?: string }) => {
         setData({
@@ -68,7 +77,21 @@ export default function InvestmentAssetCreateGuided({ currencies, types, typeIco
     };
 
     const goNext = () => {
-        if (step < STEP_COUNT - 1 && canNext()) setStep((s) => s + 1);
+        if (step < STEP_COUNT - 1 && canNext()) {
+            if (step === 3 && !showIncomePolicy) {
+                setStep(5);
+                return;
+            }
+            setStep((s) => s + 1);
+        }
+    };
+
+    const goBack = () => {
+        if (step === 5 && !showIncomePolicy) {
+            setStep(3);
+            return;
+        }
+        setStep((s) => Math.max(0, s - 1));
     };
 
     const meta = [
@@ -76,7 +99,8 @@ export default function InvestmentAssetCreateGuided({ currencies, types, typeIco
         { title: 'Nome e simbolo', subtitle: 'Nome obbligatorio, ticker opzionale.' },
         { title: 'ISIN e borsa', subtitle: 'Campi opzionali per identificazione.' },
         { title: 'Valuta', subtitle: "Valuta principale dell'asset." },
-        { title: 'Conferma', subtitle: "Controlla i dettagli prima del salvataggio." },
+        { title: 'Dividendi / cedole', subtitle: 'Accumulo o distribuzione (ETF, azioni, obbligazioni).' },
+        { title: 'Conferma', subtitle: 'Controlla i dettagli prima del salvataggio.' },
     ][step];
 
     return (
@@ -198,7 +222,28 @@ export default function InvestmentAssetCreateGuided({ currencies, types, typeIco
                     </div>
                 )}
 
-                {step === 4 && (
+                {step === 4 && showIncomePolicy && (
+                    <div>
+                        <InputLabel htmlFor="income_policy" value="Dividendi / cedole" />
+                        <select
+                            id="income_policy"
+                            className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                            value={data.income_policy}
+                            onChange={(e) => setData('income_policy', e.target.value)}
+                        >
+                            <option value="">— Non specificata —</option>
+                            {Object.entries(incomePolicies).map(([value, label]) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
+                        </select>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            Accumulo = proventi reinvestiti; Distribuzione = stacco cash.
+                        </p>
+                        <InputError message={errors.income_policy} className="mt-2" />
+                    </div>
+                )}
+
+                {step === 5 && (
                     <dl className="space-y-3 text-sm">
                         <div className="flex justify-between gap-4">
                             <dt className="text-gray-500">Tipo</dt>
@@ -230,6 +275,12 @@ export default function InvestmentAssetCreateGuided({ currencies, types, typeIco
                             <dt className="text-gray-500">Valuta</dt>
                             <dd>{selectedCurrency?.symbol || data.currency_code}</dd>
                         </div>
+                        {showIncomePolicy && data.income_policy && (
+                            <div className="flex justify-between gap-4">
+                                <dt className="text-gray-500">Dividendi</dt>
+                                <dd>{incomePolicies[data.income_policy] || data.income_policy}</dd>
+                            </div>
+                        )}
                     </dl>
                 )}
 
@@ -238,8 +289,8 @@ export default function InvestmentAssetCreateGuided({ currencies, types, typeIco
                     totalSteps={STEP_COUNT}
                     processing={processing}
                     canNext={canNext()}
-                    onBack={() => setStep((s) => Math.max(0, s - 1))}
-                    onSkip={step === 2 ? goNext : undefined}
+                    onBack={goBack}
+                    onSkip={step === 2 || step === 4 ? goNext : undefined}
                     cancelHref={route('investment-assets.index')}
                     submitLabel="Crea asset"
                 />
