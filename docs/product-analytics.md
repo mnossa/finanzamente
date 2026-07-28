@@ -32,6 +32,7 @@ La dashboard custom **non** sostituisce Pulse/Flare: aggrega conteggi privacy-sa
 
 ## Pulse
 - Storage: SQLite dedicato (`storage/pulse/pulse.sqlite`, connection `pulse`) — evita bug MySQL generated `md5`; in prod sul volume `storage`
+- Schema: creato anche se `PULSE_ENABLED=false` (l’flag spegne solo il recording)
 - Accesso: Gate `viewPulse` = email `MAGAZINE_ADMIN_EMAIL`
 - Env: `PULSE_ENABLED`, `PULSE_DB_CONNECTION=pulse`
 

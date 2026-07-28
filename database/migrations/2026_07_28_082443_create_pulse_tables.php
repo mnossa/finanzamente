@@ -7,11 +7,14 @@ use Laravel\Pulse\Support\PulseMigration;
 
 return new class extends PulseMigration
 {
+    /**
+     * Schema Pulse va sempre creato (se driver supportato).
+     * `pulse.enabled` controlla solo il recording, non le tabelle —
+     * altrimenti una migrate con Pulse spento marca la migration senza schema → 500 su /pulse.
+     */
     public function shouldRun(): bool
     {
-        if (! Config::get('pulse.enabled')) {
-            return false;
-        }
+        $this->ensureSqliteDatabaseFile();
 
         return parent::shouldRun();
     }
@@ -21,19 +24,10 @@ return new class extends PulseMigration
      */
     public function up(): void
     {
+        $this->ensureSqliteDatabaseFile();
+
         if (! $this->shouldRun()) {
             return;
-        }
-
-        $database = Config::get('database.connections.'.$this->getConnection().'.database');
-        if (is_string($database) && $database !== '' && ! str_contains($database, ':memory:')) {
-            $dir = dirname($database);
-            if (! is_dir($dir)) {
-                mkdir($dir, 0775, true);
-            }
-            if (! file_exists($database)) {
-                touch($database);
-            }
         }
 
         $schema = Schema::connection($this->getConnection());
@@ -108,5 +102,21 @@ return new class extends PulseMigration
         $schema->dropIfExists('pulse_values');
         $schema->dropIfExists('pulse_entries');
         $schema->dropIfExists('pulse_aggregates');
+    }
+
+    private function ensureSqliteDatabaseFile(): void
+    {
+        $database = Config::get('database.connections.'.$this->getConnection().'.database');
+        if (! is_string($database) || $database === '' || str_contains($database, ':memory:')) {
+            return;
+        }
+
+        $dir = dirname($database);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        if (! file_exists($database)) {
+            touch($database);
+        }
     }
 };
