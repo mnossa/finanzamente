@@ -1,26 +1,28 @@
-# WFI-117 — Tipo Obbligazione (BTP) + ordine tipi asset UX
+# Analytics mobile, Pulse anon, cedole date, dividendi Acc/Dist
 
 ## Goal
-BTP/obbligazioni = tipo dedicato; select tipologica per retail IT (crypto in basso).
+1. Product analytics mobile-friendly + dettaglio errori (dimensioni aggregate)
+2. Pulse: anonimizza nome/email in UI
+3. Cedole BTP: date di cambio tasso (cedola crescente)
+4. Azioni/obbligazioni/ETF: dividendi + accumulo/distribuzione
 
 ## Plan
-- [x] `bond` in TYPES/TYPE_ICONS + riordino
-- [x] Validation + enum MySQL migration
-- [x] AssetClassificationService bond→bonds
-- [x] Optgroup/index order
-- [x] Unit tests
-- [x] make test + pint + build
-- [ ] make playwright
-- [ ] Jira Completato (comment/transition: approval se serve)
+- [x] Product analytics: mobile cards + error detail (dimensions)
+- [x] Pulse::user() anonymization + test
+- [x] coupon_rate_steps → {from, rate} date-keyed + UI + preview
+- [x] income_policy (accumulating|distributing) on asset + UI
+- [x] make test + pint-check
+- [ ] make playwright (bloccato: stack E2E MySQL/network dopo restart dockerd)
+- [x] Commit / push / PR
 
 ## Review
 ### Cosa
-- Nuovo tipo `bond` = **Obbligazione** (BTP, BOT, corporate, …)
-- Ordine: ETF → Azione → Obbligazione → Assicurazione → Indice → Materia Prima → Criptovaluta → Altro
-- Allocazione automatica `bonds`; icona 🏛️
+- **Product analytics**: card layout mobile; click Errori → breakdown exception/route/status
+- **Pulse**: `Utente #{id}`, extra/avatar vuoti (no email/Gravatar)
+- **Cedole BTP**: step `{from, rate}`; preview per data; legacy lista float ancora ok
+- **Acc/Dist**: `income_policy` su ETF/stock/bond (create/edit + Show)
 
 ### Verifica
-- PHPUnit: 1106 passed
-- Pint: pass
-- Build: OK
-- Migrate enum MySQL: OK
+- PHPUnit: 1115 passed (+ focus 20/20 su analytics/pulse/cedole)
+- Pint: PASS
+- Playwright: non eseguito — MySQL E2E `Unable to lock ibdata1` / container networking dopo restart dockerd in Cloud VM

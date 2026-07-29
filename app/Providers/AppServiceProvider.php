@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
 use Laravel\Passkeys\Actions\GenerateRegistrationOptions;
 use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Laravel\Passkeys\Passkeys;
+use Laravel\Pulse\Facades\Pulse;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
@@ -125,5 +126,12 @@ class AppServiceProvider extends ServiceProvider
             return $ownerEmail !== ''
                 && strtolower($user->email) === strtolower($ownerEmail);
         });
+
+        // Pulse UI: nessun nome/email/Gravatar — solo ID anonimo.
+        Pulse::user(fn ($user) => [
+            'name' => 'Utente #'.$user->id,
+            'extra' => '',
+            'avatar' => '',
+        ]);
     }
 }

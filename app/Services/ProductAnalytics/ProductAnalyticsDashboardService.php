@@ -17,6 +17,7 @@ class ProductAnalyticsDashboardService
      *     by_kind: list<array{event_kind: string, event_count: int}>,
      *     friction: list<array{event_name: string, feature_key: string, event_count: int}>,
      *     errors: list<array{event_name: string, feature_key: string, event_count: int}>,
+     *     error_details: list<array{event_name: string, feature_key: string, event_count: int, dimensions: array<string, string>}>,
      *     bottlenecks: list<array{event_name: string, feature_key: string, event_count: int}>,
      *     daily_trend: list<array{day: string, event_kind: string, event_count: int}>,
      *     backlog_hints: list<array{feature_key: string, used: int, friction: int, errors: int, score: float}>
@@ -81,6 +82,7 @@ class ProductAnalyticsDashboardService
             'by_kind' => $byKind,
             'friction' => $friction,
             'errors' => $errors,
+            'error_details' => $this->errorDetails($fromDay, $toDay),
             'bottlenecks' => $bottlenecks,
             'daily_trend' => $dailyTrend,
             'backlog_hints' => $this->backlogHints($fromDay, $toDay),
@@ -106,6 +108,49 @@ class ProductAnalyticsDashboardService
                 'feature_key' => (string) $row->feature_key,
                 'event_count' => (int) $row->event_count,
             ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Breakdown errori per dimensioni sanitizzate (exception/route/status, senza messaggi/PII).
+     *
+     * @return list<array{event_name: string, feature_key: string, event_count: int, dimensions: array<string, string>}>
+     */
+    private function errorDetails(string $fromDay, string $toDay): array
+    {
+        return ProductAnalyticsDaily::query()
+            ->select(
+                'event_name',
+                'feature_key',
+                'dimensions_hash',
+                'dimensions',
+                DB::raw('SUM(event_count) as event_count')
+            )
+            ->whereDate('day', '>=', $fromDay)
+            ->whereDate('day', '<=', $toDay)
+            ->where('event_kind', 'error')
+            ->groupBy('event_name', 'feature_key', 'dimensions_hash', 'dimensions')
+            ->orderByDesc('event_count')
+            ->limit(40)
+            ->get()
+            ->map(function ($row) {
+                $dimensions = is_array($row->dimensions) ? $row->dimensions : [];
+                $safe = [];
+                foreach ($dimensions as $key => $value) {
+                    if (! is_string($key) || (! is_string($value) && ! is_numeric($value))) {
+                        continue;
+                    }
+                    $safe[$key] = (string) $value;
+                }
+
+                return [
+                    'event_name' => (string) $row->event_name,
+                    'feature_key' => (string) $row->feature_key,
+                    'event_count' => (int) $row->event_count,
+                    'dimensions' => $safe,
+                ];
+            })
             ->values()
             ->all();
     }

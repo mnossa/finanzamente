@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Laravel\Pulse\Facades\Pulse;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -58,5 +59,24 @@ class PulseDashboardTest extends TestCase
         $this->actingAs($user)
             ->get('/pulse')
             ->assertForbidden();
+    }
+
+    #[Test]
+    public function pulse_user_resolver_anonymizes_name_and_email(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Mario Rossi',
+            'email' => 'mario.rossi@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        $resolved = Pulse::resolveUsers(collect([$user->id]));
+        $payload = $resolved->find($user->id);
+
+        $this->assertSame('Utente #'.$user->id, $payload->name);
+        $this->assertSame('', $payload->extra);
+        $this->assertSame('', $payload->avatar);
+        $this->assertStringNotContainsString('Mario', $payload->name);
+        $this->assertStringNotContainsString('mario.rossi@example.com', json_encode($payload));
     }
 }

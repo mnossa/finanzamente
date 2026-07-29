@@ -221,7 +221,11 @@ class InvestmentCouponTest extends TestCase
             ->assertRedirect(route('investments.show', $this->investment));
 
         $this->asset->refresh();
-        $this->assertEquals([3.25, 3.5, 4.0], array_map('floatval', $this->asset->coupon_rate_steps ?? []));
+        $this->assertEquals([
+            ['from' => null, 'rate' => 3.25],
+            ['from' => null, 'rate' => 3.5],
+            ['from' => null, 'rate' => 4.0],
+        ], $this->asset->coupon_rate_steps);
         $this->assertNull($this->asset->coupon_rate_percent);
 
         $this->actingAs($this->user)
@@ -237,13 +241,70 @@ class InvestmentCouponTest extends TestCase
     }
 
     #[Test]
+    public function update_coupon_schedule_with_dated_step_up_rates(): void
+    {
+        $this->actingAs($this->user)
+            ->put(route('investments.coupons.schedule', $this->investment), [
+                'coupon_frequency' => 'semi_annual',
+                'next_coupon_date' => '2026-05-15',
+                'coupon_rate_percent' => null,
+                'coupon_rate_steps' => [
+                    ['from' => '2026-05-15', 'rate' => 3.25],
+                    ['from' => '2027-05-15', 'rate' => 4.0],
+                ],
+                'income_policy' => 'distributing',
+            ])
+            ->assertRedirect(route('investments.show', $this->investment));
+
+        $this->asset->refresh();
+        $this->assertSame('distributing', $this->asset->income_policy);
+        $this->assertEquals([
+            ['from' => '2026-05-15', 'rate' => 3.25],
+            ['from' => '2027-05-15', 'rate' => 4.0],
+        ], $this->asset->coupon_rate_steps);
+
+        $this->actingAs($this->user)
+            ->get(route('investments.show', $this->investment))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('couponSchedule.has_dated_steps', true)
+                ->where('couponSchedule.next_items.0.rate_percent', 3.25)
+                ->where('couponSchedule.next_items.1.rate_percent', 3.25)
+                ->where('couponSchedule.next_items.2.rate_percent', 4)
+                ->where('investment.asset.income_policy', 'distributing')
+            );
+    }
+
+    #[Test]
+    public function store_asset_persists_income_policy_for_etf(): void
+    {
+        $this->actingAs($this->user)
+            ->post(route('investment-assets.store'), [
+                'type' => 'etf',
+                'name' => 'VWCE Accumulating',
+                'currency_code' => 'EUR',
+                'income_policy' => 'accumulating',
+            ])
+            ->assertRedirect(route('investment-assets.index'));
+
+        $this->assertDatabaseHas('investment_assets', [
+            'name' => 'VWCE Accumulating',
+            'type' => 'etf',
+            'income_policy' => 'accumulating',
+        ]);
+    }
+
+    #[Test]
     public function destroy_coupon_schedule_clears_asset_fields(): void
     {
         $this->asset->update([
             'coupon_frequency' => 'annual',
             'next_coupon_date' => '2026-11-01',
             'coupon_rate_percent' => 4.0,
-            'coupon_rate_steps' => [3.0, 4.0],
+            'coupon_rate_steps' => [
+                ['from' => null, 'rate' => 3.0],
+                ['from' => null, 'rate' => 4.0],
+            ],
         ]);
 
         $this->actingAs($this->user)

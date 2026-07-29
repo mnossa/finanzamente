@@ -9,7 +9,7 @@
 | **Product analytics** (`/admin/product-analytics`) | Trend prodotto aggregati (usage/friction/error) | Priorità backlog, non stacktrace |
 | **Sentry / Flare** | Error tracking SaaS con stack + release | Opzionale, solo con DPA e valutazione privacy |
 
-La dashboard custom **non** sostituisce Pulse/Flare: aggrega conteggi privacy-safe. I 500 appaiono come `exception.server` (classe + route, **senza** messaggio/PII).
+La dashboard custom **non** sostituisce Pulse/Flare: aggrega conteggi privacy-safe. I 500 appaiono come `exception.server` (classe + route, **senza** messaggio/PII). Tocca una riga Errori per il breakdown dimensioni (exception/route/status).
 
 ## Cosa tracciamo (first-party)
 - Eventi prodotto aggregati per giorno: `used`, `friction`, `error`, `performance`
@@ -34,6 +34,7 @@ La dashboard custom **non** sostituisce Pulse/Flare: aggrega conteggi privacy-sa
 - Storage: SQLite dedicato (`storage/pulse/pulse.sqlite`, connection `pulse`) — evita bug MySQL generated `md5`; in prod sul volume `storage`
 - Schema: creato anche se `PULSE_ENABLED=false` (l’flag spegne solo il recording)
 - Accesso: Gate `viewPulse` = email `MAGAZINE_ADMIN_EMAIL`
+- UI utenti: anonima (`Utente #{id}`, niente email/Gravatar) via `Pulse::user()` in `AppServiceProvider`
 - Env: `PULSE_ENABLED`, `PULSE_DB_CONNECTION=pulse`
 
 ## Config

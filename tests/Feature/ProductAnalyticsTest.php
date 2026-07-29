@@ -141,6 +141,50 @@ class ProductAnalyticsTest extends TestCase
     }
 
     #[Test]
+    public function admin_dashboard_includes_error_details_breakdown(): void
+    {
+        ProductAnalyticsDaily::query()->create([
+            'day' => now()->toDateString(),
+            'event_kind' => 'error',
+            'feature_key' => 'investments',
+            'event_name' => 'exception.server',
+            'dimensions_hash' => 'abc',
+            'dimensions' => [
+                'exception' => 'RuntimeException',
+                'route' => 'investments.show',
+                'status' => '500',
+            ],
+            'event_count' => 3,
+        ]);
+
+        ProductAnalyticsDaily::query()->create([
+            'day' => now()->toDateString(),
+            'event_kind' => 'error',
+            'feature_key' => 'investments',
+            'event_name' => 'exception.server',
+            'dimensions_hash' => 'def',
+            'dimensions' => [
+                'exception' => 'QueryException',
+                'route' => 'investments.index',
+                'status' => '500',
+            ],
+            'event_count' => 2,
+        ]);
+
+        $this->actingAs($this->owner())
+            ->get(route('admin.product-analytics.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Admin/ProductAnalytics/Index')
+                ->where('analytics.errors.0.event_name', 'exception.server')
+                ->where('analytics.errors.0.event_count', 5)
+                ->has('analytics.error_details', 2)
+                ->where('analytics.error_details.0.dimensions.exception', 'RuntimeException')
+                ->where('analytics.error_details.0.dimensions.route', 'investments.show')
+            );
+    }
+
+    #[Test]
     public function retention_command_purges_old_aggregates(): void
     {
         $policy = RetentionPolicy::query()

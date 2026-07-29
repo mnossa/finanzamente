@@ -280,6 +280,9 @@ class InvestmentController extends Controller
                         ? (float) $asset->coupon_rate_percent
                         : null,
                     'coupon_rate_steps' => $this->investmentCouponService->normalizeRateSteps($asset->coupon_rate_steps),
+                    'income_policy' => $asset->income_policy,
+                    'income_policy_label' => $asset->income_policy_label,
+                    'supports_income_policy' => $asset->supportsIncomePolicy(),
                 ],
                 'account' => $investment->account ? [
                     'id' => $investment->account->id,

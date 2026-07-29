@@ -28,6 +28,7 @@ interface InvestmentAsset {
     name: string;
     currency_code: string;
     extra_data: object | null;
+    income_policy: string | null;
 }
 
 interface Types {
@@ -44,9 +45,10 @@ interface EditProps {
     types: Types;
     typeIcons: TypeIcons;
     allocationClasses: Record<string, string>;
+    incomePolicies?: Record<string, string>;
 }
 
-export default function Edit({ asset, currencies, types, typeIcons, allocationClasses }: EditProps) {
+export default function Edit({ asset, currencies, types, typeIcons, allocationClasses, incomePolicies = { accumulating: 'Accumulo', distributing: 'Distribuzione' } }: EditProps) {
     const { data, setData, put, processing, errors } = useForm({
         type: asset.type,
         allocation_asset_class: asset.allocation_asset_class_override || '',
@@ -55,7 +57,10 @@ export default function Edit({ asset, currencies, types, typeIcons, allocationCl
         exchange: asset.exchange || '',
         name: asset.name,
         currency_code: asset.currency_code,
+        income_policy: asset.income_policy || '',
     });
+
+    const showIncomePolicy = ['etf', 'stock', 'bond'].includes(data.type);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -124,6 +129,27 @@ export default function Edit({ asset, currencies, types, typeIcons, allocationCl
                                     </p>
                                     <InputError message={errors.allocation_asset_class} className="mt-2" />
                                 </div>
+
+                                {showIncomePolicy && (
+                                    <div className="mb-6">
+                                        <InputLabel htmlFor="income_policy" value="Dividendi / cedole" />
+                                        <select
+                                            id="income_policy"
+                                            className="mt-2 w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                            value={data.income_policy}
+                                            onChange={(e) => setData('income_policy', e.target.value)}
+                                        >
+                                            <option value="">— Non specificata —</option>
+                                            {Object.entries(incomePolicies).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
+                                        </select>
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                            Accumulo = proventi reinvestiti; Distribuzione = stacco cash.
+                                        </p>
+                                        <InputError message={errors.income_policy} className="mt-2" />
+                                    </div>
+                                )}
 
                                 {/* Nome */}
                                 <div className="mb-6">
