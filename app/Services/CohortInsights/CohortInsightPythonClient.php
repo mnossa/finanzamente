@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Invia lo snapshot al servizio Python (nessun accesso al DB da parte del linker).
+ * Invia lo snapshot al servizio Python (nessun accesso al DB da parte di FastAPI).
  */
 class CohortInsightPythonClient
 {

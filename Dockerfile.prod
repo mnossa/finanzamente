@@ -3,7 +3,7 @@
 # =============================================================================
 # Stage 1: Compilazione asset frontend (Node.js)
 # Stage 2: Installazione dipendenze PHP (Composer)
-# Stage 3: Pacchetti Python + download modello ML (sentence-transformers)
+# Stage 3: Pacchetti Python (FastAPI / uvicorn)
 # Stage 4: Immagine finale di produzione (PHP-FPM + Nginx + Python via supervisord)
 # =============================================================================
 
@@ -48,31 +48,16 @@ RUN composer install \
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
 
-# ─── Stage 3: Python deps + modello ML ────────────────────────────────────────
+# ─── Stage 3: Python deps ─────────────────────────────────────────────────────
 # NOTA: usare la stessa versione Python disponibile via apt nell'immagine di produzione
 # (php:8.5-fpm è basata su Debian Trixie che fornisce python3.13)
 FROM python:3.13-slim AS python-builder
 
 WORKDIR /build
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        gcc \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY python-services/requirements.txt .
 
-# Installa PyTorch CPU-only PRIMA di requirements.txt:
-# sentence-transformers tirerebbe la variante CUDA (~2GB), quella CPU è ~200MB.
-# Pip vedrà torch già soddisfatto e non lo reinstallerà.
-RUN pip install --no-cache-dir --target=/python-packages \
-        torch --index-url https://download.pytorch.org/whl/cpu
-
-# Installa le restanti dipendenze (torch è già presente, non verrà riscaricato)
-RUN pip install --no-cache-dir --target=/python-packages -r requirements.txt
-
-# Pre-scarica il modello nel HuggingFace cache (evita download a runtime)
-RUN PYTHONPATH=/python-packages python3 -c \
-    "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
+RUN pip install --no-cache-dir --only-binary=:all: --target=/python-packages -r requirements.txt
 
 # ─── Stage 4: Immagine di produzione ─────────────────────────────────────────
 FROM php:8.5-fpm AS production
@@ -128,9 +113,8 @@ COPY --from=node-builder --chown=www-data:www-data /app/public/build ./public/bu
 # Copia le dipendenze PHP dallo stage Composer
 COPY --from=composer-builder --chown=www-data:www-data /app/vendor ./vendor
 
-# Copia pacchetti Python e modello pre-scaricato dallo stage python-builder
+# Copia pacchetti Python dallo stage python-builder
 COPY --from=python-builder /python-packages /python-packages
-COPY --from=python-builder /root/.cache /root/.cache
 COPY python-services/main.py python-services/cohort_insights.py /python-services/
 
 # Imposta PYTHONPATH per uvicorn (servizi Python ausiliari)

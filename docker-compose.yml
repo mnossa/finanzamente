@@ -244,7 +244,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1500m   # sentence-transformers usa ~800MB a regime; 1.5GB è sicuro
+          memory: 512m
         reservations:
           memory: 256m
 
