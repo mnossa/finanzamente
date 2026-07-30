@@ -18,20 +18,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Admin Magazine
+    | Admin applicazione (Pulse, Telescope, menu admin)
     |--------------------------------------------------------------------------
     |
-    | Email dell'utente autorizzato a creare, modificare e cancellare articoli
-    | del magazine. Separata da PRE_LAUNCH_OWNER_EMAIL per chiarezza semantica:
-    | la modalità pre-lancio e la gestione editoriale sono concetti distinti.
+    | Email dell'utente autorizzato ad accedere a strumenti admin (Pulse, ecc.).
+    | Fallback legacy: MAGAZINE_ADMIN_EMAIL, poi PRE_LAUNCH_OWNER_EMAIL.
     |
-    | Se non impostata, ricade su PRE_LAUNCH_OWNER_EMAIL come fallback
-    | per garantire compatibilità con installazioni esistenti.
-    |
-    | MAGAZINE_ADMIN_EMAIL=tua@email.com
+    | APP_ADMIN_EMAIL=tua@email.com
     |
     */
-    'magazine_admin_email' => env('MAGAZINE_ADMIN_EMAIL', env('PRE_LAUNCH_OWNER_EMAIL', '')),
+    'admin_email' => env('APP_ADMIN_EMAIL', env('MAGAZINE_ADMIN_EMAIL', env('PRE_LAUNCH_OWNER_EMAIL', ''))),
 
     /*
     |--------------------------------------------------------------------------

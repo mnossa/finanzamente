@@ -17,22 +17,10 @@ use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Laravel\Passkeys\Actions\GenerateRegistrationOptions;
 use Laravel\Passkeys\Contracts\PasskeyLoginResponse;
 use Laravel\Passkeys\Passkeys;
 use Laravel\Pulse\Facades\Pulse;
-use League\CommonMark\Environment\Environment;
-use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
-use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
-use League\CommonMark\Extension\CommonMark\Renderer\Inline\LinkRenderer;
-use League\CommonMark\MarkdownConverter;
-use League\CommonMark\Node\Node;
-use League\CommonMark\Renderer\ChildNodeRendererInterface;
-use League\CommonMark\Renderer\NodeRendererInterface;
-use League\CommonMark\Util\HtmlElement;
-use League\Config\ConfigurationAwareInterface;
-use League\Config\ConfigurationInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -66,46 +54,6 @@ class AppServiceProvider extends ServiceProvider
         Passkeys::useUserModel(User::class);
 
         Vite::prefetch(concurrency: 1);
-        // Customizza il rendering dei link Markdown per aggiungere rel="nofollow" ai link esterni
-        Str::macro('markdownWithNofollow', function ($string, $options = []) {
-            $options = array_merge([
-                'html_input' => 'strip',
-                'allow_unsafe_links' => false,
-            ], $options);
-
-            $environment = new Environment($options);
-            $environment->addExtension(new CommonMarkCoreExtension);
-
-            // Custom LinkRenderer (delegazione perché LinkRenderer è final)
-            $environment->addRenderer(Link::class, new class(new LinkRenderer) implements ConfigurationAwareInterface, NodeRendererInterface
-            {
-                public function __construct(private readonly LinkRenderer $delegate) {}
-
-                public function setConfiguration(ConfigurationInterface $configuration): void
-                {
-                    $this->delegate->setConfiguration($configuration);
-                }
-
-                public function render(Node $node, ChildNodeRendererInterface $childRenderer): \Stringable|string|null
-                {
-                    $element = $this->delegate->render($node, $childRenderer);
-                    if ($element instanceof HtmlElement) {
-                        $href = $element->getAttribute('href');
-                        if ($href && preg_match('/^(https?:)?\/\//i', $href)) {
-                            $rel = $element->getAttribute('rel');
-                            $rel = $rel ? $rel.' nofollow' : 'nofollow';
-                            $element->setAttribute('rel', $rel);
-                        }
-                    }
-
-                    return $element;
-                }
-            });
-
-            $converter = new MarkdownConverter($environment);
-
-            return $converter->convert($string)->getContent();
-        });
 
         // Imposta la lingua italiana per Carbon (date)
         Carbon::setLocale('it');
@@ -121,10 +69,10 @@ class AppServiceProvider extends ServiceProvider
                 return false;
             }
 
-            $ownerEmail = config('prelaunch.magazine_admin_email', '');
+            $adminEmail = config('prelaunch.admin_email', '');
 
-            return $ownerEmail !== ''
-                && strtolower($user->email) === strtolower($ownerEmail);
+            return $adminEmail !== ''
+                && strtolower($user->email) === strtolower($adminEmail);
         });
 
         // Pulse UI: nessun nome/email/Gravatar — solo ID anonimo.

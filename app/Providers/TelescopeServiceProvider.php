@@ -65,10 +65,10 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
                 return false;
             }
 
-            $ownerEmail = config('prelaunch.magazine_admin_email', '');
+            $adminEmail = config('prelaunch.admin_email', '');
 
-            return $ownerEmail !== ''
-                && strtolower($user->email) === strtolower($ownerEmail);
+            return $adminEmail !== ''
+                && strtolower($user->email) === strtolower($adminEmail);
         });
     }
 }

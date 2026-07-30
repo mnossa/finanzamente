@@ -655,7 +655,7 @@ docker system df
 | `ADV_THROTTLE_SALT` | ✅ | Salt SHA256 rate limiting (min 32 char) |
 | `BACKUP_ENCRYPTION_KEY` | ✅ | Chiave AES-256 per dump cifrati (`openssl rand -base64 32`) |
 | `PRE_LAUNCH_OWNER_EMAIL` | — | Email owner per bypass waitlist pre-lancio |
-| `MAGAZINE_ADMIN_EMAIL` | — | Email admin magazine (CRUD articoli). Se vuota, usa `PRE_LAUNCH_OWNER_EMAIL` come fallback |
+| `APP_ADMIN_EMAIL` | — | Email admin (Pulse, Telescope). Fallback: `MAGAZINE_ADMIN_EMAIL`, poi `PRE_LAUNCH_OWNER_EMAIL` |
 | `IMAGE_TAG` | ✅ | Tag immagine Docker (gestito da CI/CD) |
 | `SKIP_INIT` | — | `true` nel container scheduler |
 
@@ -682,7 +682,7 @@ I dati non vanno mai persi perché tutto lo stato persistente è nei volumi Dock
 | Dato | Dove vive | Migrazione necessaria |
 |---|---|---|
 | Database MySQL | Volume `dbdata` | ✅ Dump + import |
-| Immagini magazine e upload | Volume `storage` | ✅ `rsync` o tar |
+| Immagini upload e storage app | Volume `storage` | ✅ `rsync` o tar |
 | Certificato TLS (Caddy) | Volume `caddy_data` | Opzionale (Caddy lo rigenera) |
 | Backup cifrati | Volume `backups` | Consigliato copiare |
 | Codice applicativo | Immagine Docker Hub | ❌ Si scarica da solo |

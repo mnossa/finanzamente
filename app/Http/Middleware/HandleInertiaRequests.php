@@ -99,7 +99,7 @@ class HandleInertiaRequests extends Middleware
                 'excess_households' => $user->excessHouseholdsCount(),
             ] : null,
             'isEarlyBird' => fn () => $user ? (bool) $user->is_early_bird : false,
-            'isAdmin' => fn () => $user ? strtolower($user->email) === strtolower(config('prelaunch.magazine_admin_email', '')) : false,
+            'isAdmin' => fn () => $user ? strtolower($user->email) === strtolower(config('prelaunch.admin_email', '')) : false,
             'privacy' => fn () => [
                 // Default prudente: analytics disabilitato finché non c'è consenso esplicito.
                 'analytics_enabled' => $user

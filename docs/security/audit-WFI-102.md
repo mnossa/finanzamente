@@ -69,7 +69,7 @@ Valutazione generale: **buon livello di sicurezza di base**, con diverse misure 
 - Middleware chiave:
   - `EnsureHasActiveHousehold`: obbliga ogni utente autenticato ad avere una household attiva, altrimenti redirect a creazione/selezione.
   - `RequiresPro`: blocca rotte Pro se `!$user->isPro()` (usa `User::isPro()` con controllo `plan_expires_at`).
-  - `EnsureCanModify`, `OwnerMiddleware` (non profondamente analizzati ma presenti per gating di permessi).
+  - Middleware di autorizzazione household / can-modify (gating permessi).
 - Model `User`:
   - `isPro()` tiene conto sia di `plan` sia di `plan_expires_at`.
   - Metodi come `excessAccountsCount()` e `excessHouseholdsCount()` rispettano i limiti del piano configurati.

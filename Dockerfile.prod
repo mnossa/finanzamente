@@ -131,7 +131,7 @@ COPY --from=composer-builder --chown=www-data:www-data /app/vendor ./vendor
 # Copia pacchetti Python e modello pre-scaricato dallo stage python-builder
 COPY --from=python-builder /python-packages /python-packages
 COPY --from=python-builder /root/.cache /root/.cache
-COPY python-services/main.py python-services/magazine_linker.py python-services/cohort_insights.py /python-services/
+COPY python-services/main.py python-services/cohort_insights.py /python-services/
 
 # Imposta PYTHONPATH per uvicorn (servizi Python ausiliari)
 ENV PYTHONPATH=/python-packages

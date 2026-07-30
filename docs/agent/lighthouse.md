@@ -25,7 +25,7 @@ Ottimizzazioni implementate (2026-06):
 - Fetch widget formula in batch parallelo
 - Registrazione SW post-idle (`PwaUpdatePrompt`)
 - Prefetch Vite ridotto (`concurrency: 1`)
-- Ziggy: `config/ziggy.php` esclude magazine/landing/webhook dal payload inline
+- Ziggy: `config/ziggy.php` esclude landing/webhook dal payload inline
 - Font Figtree 400+600 con `display=swap`
 
 ## Pagine pubbliche (SEO reale)
@@ -33,7 +33,7 @@ Ottimizzazioni implementate (2026-06):
 Eseguire Lighthouse su:
 
 - `/` (landing)
-- `/magazine` (se indicizzata)
+- `/simulazioni` (landing simulazioni)
 - Pagine Blade con `SEOMeta` (`guest.blade.php`)
 
 Comando esempio (Chrome CLI):

@@ -1015,32 +1015,15 @@ export default function Authenticated({
                                         </span>
                                     </Dropdown.Link>
                                     {isAdmin && (
-                                        <>
-                                            <Dropdown.Link href={route('admin.product-analytics.index')}>
-                                                <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                                                    <Icons.BarChart2 />
-                                                    Product analytics
-                                                </span>
-                                            </Dropdown.Link>
-                                            <a
-                                                href="/pulse"
-                                                className="block w-full px-4 py-2.5 text-start text-sm leading-5 text-slate-700 hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:bg-slate-50"
-                                            >
-                                                <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                                                    <Icons.BarChart2 />
-                                                    Pulse (debug runtime)
-                                                </span>
-                                            </a>
-                                            <a
-                                                href={route('admin.magazine.index')}
-                                                className="block w-full px-4 py-2.5 text-start text-sm leading-5 text-slate-700 hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:bg-slate-50"
-                                            >
-                                                <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                                                    <Icons.Shield />
-                                                    Admin magazine
-                                                </span>
-                                            </a>
-                                        </>
+                                        <a
+                                            href="/pulse"
+                                            className="block w-full px-4 py-2.5 text-start text-sm leading-5 text-slate-700 hover:bg-slate-50 transition-colors duration-200 focus:outline-none focus:bg-slate-50"
+                                        >
+                                            <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                                <Icons.BarChart2 />
+                                                Pulse (debug runtime)
+                                            </span>
+                                        </a>
                                     )}
                                     <form onSubmit={handleLogout} action={route('logout')} method="POST">
                                         <button

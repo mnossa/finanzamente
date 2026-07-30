@@ -27,7 +27,6 @@
 | File | Contenuto |
 |---|---|
 | [landing-pages.md](landing-pages.md) | Struttura e copy delle landing page per target |
-| [magazine-admin.md](magazine-admin.md) | Guida operativa admin magazine: articoli, categorie, env vars, ciclo di vita bozza/pubblicazione |
 | [servizi-integrati.md](servizi-integrati.md) | Servizi esterni integrati (Brevo, Mollie, Telegram, ecc.) |
 
 ## Funzionalità (specifiche tecniche)

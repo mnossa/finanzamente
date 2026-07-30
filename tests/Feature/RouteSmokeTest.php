@@ -16,8 +16,17 @@ class RouteSmokeTest extends TestCase
     public function public_routes_are_reachable(): void
     {
         $this->get(route('home'))->assertOk();
-        $this->get(route('magazine.index'))->assertOk();
         $this->get(route('waitlist.confirmed'))->assertOk();
+    }
+
+    #[Test]
+    public function legacy_magazine_urls_return_not_found(): void
+    {
+        $this->get('/magazine')->assertNotFound();
+        $this->get('/magazine/some-article')->assertNotFound();
+        $this->get('/admin/magazine')->assertNotFound();
+        $this->get('/admin/product-analytics')->assertNotFound();
+        $this->post('/product-analytics/events')->assertNotFound();
     }
 
     #[Test]
@@ -25,7 +34,6 @@ class RouteSmokeTest extends TestCase
     {
         $this->get(route('dashboard'))->assertRedirect(route('login'));
         $this->get(route('profile.subscription'))->assertRedirect(route('login'));
-        $this->get(route('admin.magazine.index'))->assertRedirect(route('login'));
     }
 
     #[Test]
@@ -61,20 +69,5 @@ class RouteSmokeTest extends TestCase
         // Tally: senza secret configurato il webhook è volutamente disabilitato (501).
         config(['services.tally.webhook_secret' => '']);
         $this->postJson(route('webhooks.tally'), [])->assertStatus(501);
-    }
-
-    #[Test]
-    public function magazine_admin_route_is_accessible_for_owner_user(): void
-    {
-        $owner = User::factory()->create([
-            'email' => 'owner-route-smoke@example.com',
-            'email_verified_at' => now(),
-        ]);
-
-        config(['prelaunch.magazine_admin_email' => $owner->email]);
-
-        $this->actingAs($owner)
-            ->get(route('admin.magazine.index'))
-            ->assertOk();
     }
 }

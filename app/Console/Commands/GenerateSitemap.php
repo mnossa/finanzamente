@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\MagazineArticle;
-use App\Models\MagazineCategory;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Spatie\Sitemap\Sitemap;
@@ -71,39 +69,6 @@ class GenerateSitemap extends Command
                     ->setPriority($priority)
             );
         }
-
-        // Magazine — index e pagine di categoria
-        $sitemap->add(
-            Url::create(route('magazine.index'))
-                ->setLastModificationDate($now)
-                ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
-                ->setPriority(0.9)
-        );
-
-        MagazineCategory::withCount('publishedArticles')
-            ->having('published_articles_count', '>', 0)
-            ->get()
-            ->each(function ($category) use ($sitemap, $now) {
-                $sitemap->add(
-                    Url::create(route('magazine.category', $category->slug))
-                        ->setLastModificationDate($now)
-                        ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
-                        ->setPriority(0.7)
-                );
-            });
-
-        // Magazine — singoli articoli pubblicati
-        MagazineArticle::published()
-            ->select(['slug', 'published_at', 'updated_at'])
-            ->orderByDesc('published_at')
-            ->each(function ($article) use ($sitemap) {
-                $sitemap->add(
-                    Url::create(route('magazine.show', $article->slug))
-                        ->setLastModificationDate($article->updated_at ?? $article->published_at)
-                        ->setChangeFrequency(Url::CHANGE_FREQUENCY_MONTHLY)
-                        ->setPriority(0.8)
-                );
-            });
 
         $sitemap->writeToFile(public_path('sitemap.xml'));
 
