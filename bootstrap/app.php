@@ -5,11 +5,8 @@ use App\Http\Middleware\EnsureCanModify;
 use App\Http\Middleware\EnsureHasActiveHousehold;
 use App\Http\Middleware\EnsureProfileCompleted;
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Http\Middleware\OwnerMiddleware;
 use App\Http\Middleware\PreLaunchMiddleware;
-use App\Http\Middleware\RecordSlowProductAnalytics;
 use App\Http\Middleware\RequiresPro;
-use App\Services\ProductAnalytics\ProductAnalyticsExceptionRecorder;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -35,7 +32,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            RecordSlowProductAnalytics::class,
         ]);
 
         $middleware->alias([
@@ -45,15 +41,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'adv-throttle' => AdvancedRateLimitWithDelay::class,
             'requires-pro' => RequiresPro::class,
             'pre-launch' => PreLaunchMiddleware::class,
-            'owner' => OwnerMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->reportable(function (Throwable $e) {
-            try {
-                app(ProductAnalyticsExceptionRecorder::class)->record($e, request());
-            } catch (Throwable) {
-                // Mai far fallire il reporting per errori analytics.
-            }
-        });
+        //
     })->create();

@@ -398,7 +398,7 @@ html.fm-hide-balances .fm-sensitive-amount {
     }
 }
 
-/* Link articoli magazine: colore primario e sottolineati */
+/* Link in contenuti .prose: colore primario e sottolineati */
 .prose a {
     color: #4f4ce5;
     text-decoration: underline;

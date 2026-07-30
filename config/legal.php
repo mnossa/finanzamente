@@ -10,5 +10,5 @@ return [
     | consent rows and events for GDPR accountability.
     |
     */
-    'privacy_policy_version' => '2026-07-27-v1',
+    'privacy_policy_version' => '2026-07-30-v1',
 ];

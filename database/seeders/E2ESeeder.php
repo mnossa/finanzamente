@@ -12,8 +12,6 @@ use App\Models\Household;
 use App\Models\Investment;
 use App\Models\InvestmentAsset;
 use App\Models\InvestmentPac;
-use App\Models\MagazineArticle;
-use App\Models\MagazineCategory;
 use App\Models\RecurringTransaction;
 use App\Models\Subscription;
 use App\Models\Transaction;
@@ -41,7 +39,6 @@ class E2ESeeder extends Seeder
         // Dipendenze richieste dall'app
         $this->call(CurrencySeeder::class);
         $this->call(CategorySeeder::class);
-        $this->call(MagazineCategorySeeder::class);
 
         $email = env('E2E_USER_EMAIL', 'e2e@finanzamente.test');
         $password = env('E2E_USER_PASSWORD', 'password');
@@ -244,8 +241,6 @@ class E2ESeeder extends Seeder
             ]
         );
 
-        // Articoli magazine di test
-        $this->seedMagazineArticles();
     }
 
     private function seedE2ETransactionSources(User $user, Household $household, InvestmentAsset $asset): void
@@ -355,64 +350,5 @@ class E2ESeeder extends Seeder
                 'recurring' => false,
             ]
         );
-    }
-
-    private function seedMagazineArticles(): void
-    {
-        $risparmio = MagazineCategory::where('slug', 'risparmio')->first();
-        $investimenti = MagazineCategory::where('slug', 'investimenti')->first();
-        $budgeting = MagazineCategory::where('slug', 'budgeting')->first();
-
-        if (! $risparmio || ! $investimenti || ! $budgeting) {
-            return;
-        }
-
-        $articles = [
-            [
-                'category_id' => $risparmio->id,
-                'slug' => 'fondo-emergenza-guida-e2e',
-                'title' => 'Come costruire un fondo di emergenza (articolo E2E)',
-                'excerpt' => 'Una guida pratica per accantonare 3-6 mesi di spese.',
-                'content' => "## Perché hai bisogno di un fondo di emergenza\n\nIl fondo di emergenza è la base di ogni piano finanziario solido.\n\n> Inizia con piccoli passi: anche 50 € al mese fanno la differenza.\n\n---\n\n## Quant'è abbastanza?\n\nL'obiettivo ideale è coprire da **3 a 6 mesi** di spese fisse.",
-                'author_name' => 'Team Finanzamente',
-                'reading_time_minutes' => 5,
-                'published_at' => now()->subDays(10),
-                'is_featured' => true,
-                'meta_title' => 'Fondo di emergenza: guida E2E',
-                'meta_description' => 'Guida pratica per il fondo di emergenza - articolo E2E test.',
-            ],
-            [
-                'category_id' => $investimenti->id,
-                'slug' => 'etf-per-principianti-e2e',
-                'title' => 'ETF per principianti (articolo E2E)',
-                'excerpt' => 'Tutto quello che devi sapere sugli ETF prima di iniziare.',
-                'content' => "## Cosa sono gli ETF\n\nGli ETF (Exchange Traded Fund) sono strumenti che replicano un indice di mercato.\n\n---\n\n## Vantaggi principali\n\n- Diversificazione automatica\n- Costi bassi\n- Liquidità elevata",
-                'author_name' => 'Team Finanzamente',
-                'reading_time_minutes' => 7,
-                'published_at' => now()->subDays(5),
-                'is_featured' => false,
-                'meta_title' => 'ETF per principianti - E2E',
-                'meta_description' => 'Guida agli ETF per principianti - articolo E2E test.',
-            ],
-            [
-                'category_id' => $budgeting->id,
-                'slug' => 'regola-50-30-20-e2e',
-                'title' => 'La regola 50/30/20 spiegata (articolo E2E)',
-                'excerpt' => 'Un metodo semplice per dividere il tuo stipendio.',
-                'content' => "## La regola 50/30/20\n\nDividi il reddito netto in tre categorie:\n\n- **50%** bisogni (affitto, cibo, bollette)\n- **30%** desideri (svago, abbonamenti)\n- **20%** risparmio e investimenti",
-                'author_name' => 'Team Finanzamente',
-                'reading_time_minutes' => 4,
-                'published_at' => now()->subDays(2),
-                'is_featured' => false,
-                'meta_title' => 'Regola 50/30/20 - E2E',
-                'meta_description' => 'La regola 50/30/20 per gestire il budget - articolo E2E test.',
-            ],
-        ];
-
-        foreach ($articles as $data) {
-            MagazineArticle::firstOrCreate(['slug' => $data['slug']], $data);
-        }
-
-        $this->command->info('Articoli magazine E2E creati: '.count($articles));
     }
 }

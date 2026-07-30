@@ -229,7 +229,7 @@ services:
     depends_on:
       - app_e2e
 
-  # Servizio FastAPI ausiliario: magazine (sentence-transformers) e cohort insights.
+  # Servizio FastAPI ausiliario: cohort insights.
   python-services:
     build:
       context: ./python-services

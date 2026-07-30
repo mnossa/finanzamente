@@ -153,7 +153,6 @@ export function resolveMobilePrimaryFab(
     const routePatternsWithoutFab = [
         'profile.*',
         'analytics.*',
-        'admin.product-analytics.*',
         'simulations.*',
         'recurrence-detection.*',
         'tax-deductions.*',

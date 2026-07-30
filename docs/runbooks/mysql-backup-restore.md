@@ -18,7 +18,7 @@ docker compose exec -T db mysqldump -ufinanzamente --password=finanzamente \
 
 # 2. Conta righe prima (esempio)
 docker compose exec -T db mysql -ufinanzamente --password=finanzamente finanzamente \
-  -e "SELECT COUNT(*) AS users FROM users; SELECT COUNT(*) AS articles FROM magazine_articles;"
+  -e "SELECT COUNT(*) AS users FROM users; SELECT COUNT(*) AS transactions FROM transactions;"
 
 # 3. Ripristino su DB temporaneo
 docker compose exec -T db mysql -uroot --password=root \
@@ -29,7 +29,7 @@ gunzip -c /tmp/finanzamente-test-backup.sql.gz \
 
 # 4. Verifica row count identico
 docker compose exec -T db mysql -uroot --password=root finanzamente_restore_test \
-  -e "SELECT COUNT(*) AS users FROM users; SELECT COUNT(*) AS articles FROM magazine_articles;"
+  -e "SELECT COUNT(*) AS users FROM users; SELECT COUNT(*) AS transactions FROM transactions;"
 
 # 5. Pulizia
 docker compose exec -T db mysql -uroot --password=root \
@@ -55,10 +55,9 @@ Dettaglio completo: [`docs/HETZNER_SETUP.md`](../HETZNER_SETUP.md) sezione rollb
 
 ## Checklist post-restore
 
-- [ ] Row count tabelle critiche: `users`, `transactions`, `magazine_articles`, `accounts`
+- [ ] Row count tabelle critiche: `users`, `transactions`, `accounts`
 - [ ] Login utente demo
 - [ ] Dashboard carica analytics mensili
-- [ ] Articolo magazine pubblicato visibile su `/magazine/{slug}`
 - [ ] `php artisan migrate:status` — nessuna migration pending inattesa
 
 ## Frequenza consigliata

@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Python on-demand per artisan manuale (magazine:link-suggestions, ecc.)
+      # Python on-demand per artisan manuale (cohort insights, ecc.)
       PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     # Porta 80 gestita da Caddy: il container è raggiungibile solo internamente
     # ports:
@@ -79,7 +79,7 @@ services:
     environment:
       # Non rieseguire migrate/optimize: già fatto dal container app
       SKIP_INIT: "true"
-      # Python on-demand nel container scheduler (comandi magazine / cohort)
+      # Python on-demand nel container scheduler (cohort insights)
       PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     volumes:
       - storage:/var/www/storage
@@ -114,7 +114,7 @@ services:
     environment:
       # Non rieseguire migrate/optimize: già fatto dal container app
       SKIP_INIT: "true"
-      # Python on-demand nel container scheduler (comandi magazine / cohort)
+      # Python on-demand nel container scheduler (cohort insights)
       PYTHON_SERVICES_URL: "http://127.0.0.1:8000"
     volumes:
       - storage:/var/www/storage

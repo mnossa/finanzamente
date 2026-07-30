@@ -46,28 +46,9 @@ Schedule::command('plans:notify-expiring')->dailyAt('08:00');
 Schedule::command('recurring:detect')->days([1, 4])->at('01:00');
 
 /**
- * Converte le immagini di copertina degli articoli in WebP e le ridimensiona a max 1200px.
- * Esegue solo su immagini non già in WebP.
- * Può essere eseguito manualmente con opzione --dry-run per vedere quali immagini verrebbero convertite.
- */
-Schedule::command('magazine:convert-images-to-webp')->twiceDailyAt(8, 15, 0);
-
-/**
- * Scansiona gli articoli magazine e suggerisce link interni tramite similarità semantica.
- * Esegue ogni domenica alle 03:00 per minimizzare l'impatto sulle performance.
- * I suggerimenti vengono inviati via email all'amministratore (config('mail.admin_address')) in formato leggibile.
- */
-Schedule::command('magazine:link-suggestions')->sundays()->at('03:00');
-
-/**
  * Applica retention su eventi consenso GDPR (anonymize + prune) ogni notte.
  */
 Schedule::command('consents:enforce-retention')->dailyAt('03:30');
-
-/**
- * Purge aggregati product analytics oltre la retention policy.
- */
-Schedule::command('product-analytics:enforce-retention')->dailyAt('03:40');
 
 /**
  * Insight di cohort anonimi (Extra vs mediana profili simili) tramite servizio Python.

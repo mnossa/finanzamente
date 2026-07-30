@@ -1,28 +1,32 @@
-# Analytics mobile, Pulse anon, cedole date, dividendi Acc/Dist
+# Remove Magazine + keep Pulse only
 
 ## Goal
-1. Product analytics mobile-friendly + dettaglio errori (dimensioni aggregate)
-2. Pulse: anonimizza nome/email in UI
-3. Cedole BTP: date di cambio tasso (cedola crescente)
-4. Azioni/obbligazioni/ETF: dividendi + accumulo/distribuzione
+- Remove Magazine + Product Analytics dashboard; keep Pulse
+- APP_ADMIN_EMAIL for Pulse/Telescope/isAdmin
+- Legacy URLs → 404; drop DB tables; cleanup deps; PR unico
 
 ## Plan
-- [x] Product analytics: mobile cards + error detail (dimensions)
-- [x] Pulse::user() anonymization + test
-- [x] coupon_rate_steps → {from, rate} date-keyed + UI + preview
-- [x] income_policy (accumulating|distributing) on asset + UI
-- [x] make test + pint-check
-- [ ] make playwright (bloccato: stack E2E MySQL/network dopo restart dockerd)
-- [x] Commit / push / PR
+- [x] Delete Magazine + Product Analytics code
+- [x] Rename admin email; Pulse-only menu
+- [x] Catch-all 404 + drop migration
+- [x] Privacy bump 2026-07-30-v1
+- [x] Remove intervention/image
+- [x] make test + pint-check + playwright
+- [x] Residual scan
+- [ ] PR
 
 ## Review
 ### Cosa
-- **Product analytics**: card layout mobile; click Errori → breakdown exception/route/status
-- **Pulse**: `Utente #{id}`, extra/avatar vuoti (no email/Gravatar)
-- **Cedole BTP**: step `{from, rate}`; preview per data; legacy lista float ancora ok
-- **Acc/Dist**: `income_policy` su ETF/stock/bond (create/edit + Show)
+- Magazine + link-suggestions + Unsplash + ImageProcessing + markdownWithNofollow: rimossi
+- Product Analytics (dashboard + ingest + table): rimossi; Umami resta
+- Admin menu: solo Pulse
+- `APP_ADMIN_EMAIL` (fallback legacy `MAGAZINE_ADMIN_EMAIL`)
+- Migration drop tables + covers; sitemap senza magazine
+- Privacy `2026-07-30-v1`
 
 ### Verifica
-- PHPUnit: 1115 passed (+ focus 20/20 su analytics/pulse/cedole)
+- PHPUnit: 1029 passed
 - Pint: PASS
-- Playwright: non eseguito — MySQL E2E `Unable to lock ibdata1` / container networking dopo restart dockerd in Cloud VM
+- Playwright: 281 passed
+- Locale: impostare `APP_ADMIN_EMAIL` in `.env` (fallback MAGAZINE_ADMIN_EMAIL ancora ok)
+- WFI-119 WIP resta in `git stash` (`WFI-119 WIP before magazine removal`)

@@ -34,7 +34,7 @@ class PulseDashboardTest extends TestCase
     #[Test]
     public function owner_can_open_pulse_dashboard(): void
     {
-        Config::set('prelaunch.magazine_admin_email', 'owner@example.com');
+        Config::set('prelaunch.admin_email', 'owner@example.com');
 
         $user = User::factory()->create([
             'email' => 'owner@example.com',
@@ -49,7 +49,7 @@ class PulseDashboardTest extends TestCase
     #[Test]
     public function non_owner_cannot_open_pulse_dashboard(): void
     {
-        Config::set('prelaunch.magazine_admin_email', 'owner@example.com');
+        Config::set('prelaunch.admin_email', 'owner@example.com');
 
         $user = User::factory()->create([
             'email' => 'other@example.com',

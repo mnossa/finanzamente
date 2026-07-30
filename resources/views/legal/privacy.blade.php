@@ -10,7 +10,6 @@
     $services = [
         ['name' => 'Laravel sessione e autenticazione', 'status' => 'Attivo', 'type' => 'Infrastruttura applicativa', 'data' => 'Dati di sessione, autenticazione, preferenze tecniche', 'purpose' => 'Accesso all’area autenticata, sicurezza, mantenimento della sessione'],
         ['name' => 'Umami Cloud', 'status' => filled(env('UMAMI_ID')) ? 'Attivo' : 'Futuro', 'type' => 'Analytics', 'data' => 'Dati di navigazione ed eventi di utilizzo', 'purpose' => 'Statistiche aggregate, misurazione pagine e CTA'],
-        ['name' => 'Product analytics first-party', 'status' => 'Attivo', 'type' => 'Analytics', 'data' => 'Solo conteggi aggregati per funzionalità (senza user_id, email, IP, importi o testi liberi)', 'purpose' => 'Analisi colli di bottiglia, frizione UX e priorità di prodotto'],
         ['name' => 'Brevo', 'status' => filled(config('services.brevo.api_key')) ? 'Attivo' : 'Futuro', 'type' => 'Email marketing / waitlist', 'data' => 'Email, stato double opt-in, attributi tecnici come SIGNATURE', 'purpose' => 'Gestione waitlist, accesso anticipato, email pre-lancio'],
         ['name' => 'Tally.so', 'status' => (filled(config('prelaunch.tally_form_id')) || filled(config('services.tally.webhook_secret'))) ? 'Attivo' : 'Futuro', 'type' => 'Form e survey', 'data' => 'Risposte al sondaggio ed eventuale email inserita', 'purpose' => 'Raccolta feedback e qualificazione della waitlist'],
         ['name' => 'Google Drive', 'status' => (filled(config('services.google_drive.client_id')) && filled(config('services.google_drive.api_key'))) ? 'Attivo' : 'Futuro', 'type' => 'Import file', 'data' => 'Access token OAuth, file selezionati e relativo contenuto importato', 'purpose' => 'Importazione dati bancari o di investimento da file Drive'],
@@ -25,7 +24,7 @@
 <x-legal-page-shell
     title="Privacy Policy"
     subtitle="Questa informativa descrive quali dati personali tratto in Finanzamente, per quali finalità e con quali fornitori esterni. I servizi senza credenziali attive nell’ambiente corrente sono indicati come futuri e non ancora operativi."
-    updated-at="27/07/2026"
+    updated-at="30/07/2026"
 >
     <section class="space-y-4">
         <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">1. Titolare del trattamento</h2>
@@ -92,7 +91,7 @@
     <section class="space-y-4">
         <h2 class="text-xl sm:text-2xl font-semibold text-surface-900">4. Statistiche aggregate, anonimizzazione e miglioramento del prodotto</h2>
         <p>Finanzamente può utilizzare informazioni relative all’uso del servizio anche dopo averle <strong>aggregate</strong> (riepiloghi statistici che non consentono di risalire al singolo utente) oppure <strong>anonimizzate</strong> secondo tecniche che rendono i dati non più riconducibili a una persona fisica identificata o identificabile.</p>
-        <p>Queste elaborazioni servono a finalità come: miglioramento dell’esperienza utente, affidabilità e sicurezza del servizio, comprensione macroscopica di come vengono usate le funzionalità e pianificazione del prodotto. In particolare, Finanzamente mantiene un archivio <strong>first-party</strong> di soli aggregati giornalieri (conteggi per funzionalità e tipo di evento), senza memorizzare identificativi utente, indirizzi IP in chiaro, importi o testi liberi. Quando il risultato è effettivamente <strong>non personale</strong>, non costituisce trattamento di dati personali ai sensi del GDPR (cfr. considerando 26 del Regolamento UE 2016/679).</p>
+        <p>Queste elaborazioni servono a finalità come: miglioramento dell’esperienza utente, affidabilità e sicurezza del servizio, comprensione macroscopica di come vengono usate le funzionalità e pianificazione del prodotto. Le statistiche di utilizzo passano principalmente tramite Umami (eventi e page view anonimi). Quando il risultato è effettivamente <strong>non personale</strong>, non costituisce trattamento di dati personali ai sensi del GDPR (cfr. considerando 26 del Regolamento UE 2016/679).</p>
         <p>Le fasi tecniche che precedono l’aggregazione o l’anonimizzazione possono comunque comportare il trattamento di dati personali (ad esempio log o eventi collegati all’account): per tali fasi si applicano le basi giuridiche già indicate in questa informativa per sicurezza, analytics e gestione del servizio. Non si effettuano decisioni che producono <strong>effetti giuridici o altri effetti significativi</strong> sull’interessato basate unicamente su trattamenti automatizzati di profilazione ai sensi dell’articolo 22 GDPR, salvo quanto diversamente previsto in futuro con informativa dedicata e, ove richiesto, consenso o altre misure di tutela.</p>
     </section>
 

@@ -27,8 +27,8 @@ docker compose exec -T db mysqldump -u"${DB_USER}" --password="${DB_PASS}" \
 
 echo "[+] Conteggio righe origine..."
 ORIG_USERS="$(docker compose exec -T db mysql -u"${DB_USER}" --password="${DB_PASS}" "${DB_NAME}" -N -e "SELECT COUNT(*) FROM users;")"
-ORIG_ARTICLES="$(docker compose exec -T db mysql -u"${DB_USER}" --password="${DB_PASS}" "${DB_NAME}" -N -e "SELECT COUNT(*) FROM magazine_articles;")"
-echo "    users=${ORIG_USERS} magazine_articles=${ORIG_ARTICLES}"
+ORIG_TX="$(docker compose exec -T db mysql -u"${DB_USER}" --password="${DB_PASS}" "${DB_NAME}" -N -e "SELECT COUNT(*) FROM transactions;")"
+echo "    users=${ORIG_USERS} transactions=${ORIG_TX}"
 
 echo "[+] Ripristino su ${RESTORE_DB}..."
 docker compose exec -T db mysql -uroot --password=root \
@@ -39,10 +39,10 @@ gunzip -c "$DUMP_FILE" \
 
 echo "[+] Conteggio righe restore..."
 REST_USERS="$(docker compose exec -T db mysql -uroot --password=root "${RESTORE_DB}" -N -e "SELECT COUNT(*) FROM users;")"
-REST_ARTICLES="$(docker compose exec -T db mysql -uroot --password=root "${RESTORE_DB}" -N -e "SELECT COUNT(*) FROM magazine_articles;")"
-echo "    users=${REST_USERS} magazine_articles=${REST_ARTICLES}"
+REST_TX="$(docker compose exec -T db mysql -uroot --password=root "${RESTORE_DB}" -N -e "SELECT COUNT(*) FROM transactions;")"
+echo "    users=${REST_USERS} transactions=${REST_TX}"
 
-if [[ "$ORIG_USERS" != "$REST_USERS" ]] || [[ "$ORIG_ARTICLES" != "$REST_ARTICLES" ]]; then
+if [[ "$ORIG_USERS" != "$REST_USERS" ]] || [[ "$ORIG_TX" != "$REST_TX" ]]; then
     echo "[!] ERRORE: row count non corrisponde dopo restore" >&2
     exit 1
 fi
