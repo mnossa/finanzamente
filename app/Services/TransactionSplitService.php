@@ -16,6 +16,7 @@ class TransactionSplitService
 {
     public function __construct(
         private readonly CurrencyConverter $currencyConverter,
+        private readonly MealVoucherLedgerService $mealVoucherLedger,
     ) {}
 
     /**
@@ -61,7 +62,12 @@ class TransactionSplitService
             ]);
         }
 
-        return DB::transaction(function () use ($user, $header, $lines, $category, $sign, $splitGroupId, $date, $accounts) {
+        $mealVoucherLines = array_map(fn ($line) => [
+            'lot_id' => (int) ($line['lot_id'] ?? 0),
+            'quantity' => (int) ($line['quantity'] ?? 0),
+        ], $header['meal_voucher_lines'] ?? []);
+
+        return DB::transaction(function () use ($user, $header, $lines, $category, $sign, $splitGroupId, $date, $accounts, $mealVoucherLines) {
             $transactions = collect();
             $tagIds = $header['tag_ids'] ?? [];
 
@@ -91,6 +97,14 @@ class TransactionSplitService
 
                 if (! empty($tagIds)) {
                     $transaction->tags()->sync($tagIds);
+                }
+
+                if ($account->isMealVoucher()) {
+                    if ($amount < 0) {
+                        $this->mealVoucherLedger->applySpend($account, $transaction, $mealVoucherLines);
+                    } else {
+                        $this->mealVoucherLedger->applyIncome($account, $transaction);
+                    }
                 }
 
                 $account->current_balance += $amount;

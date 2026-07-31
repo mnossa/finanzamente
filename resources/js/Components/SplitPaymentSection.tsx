@@ -112,7 +112,7 @@ export default function SplitPaymentSection({
             {enabled && (
                 <div className="space-y-3 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Es. parte in contanti e parte con carta. La somma delle righe deve essere uguale all&apos;importo totale.
+                        Es. parte in ticket (interi) e parte in contanti, oppure carta + contanti. La somma delle righe deve essere uguale all&apos;importo totale.
                     </p>
                     {splits.map((line, index) => {
                         const lineRemaining = remainingForLine(index);
