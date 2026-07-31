@@ -17,6 +17,10 @@ class UpdateAccountRequest extends FormRequest
                 'is_savings_deposit' => true,
             ]);
         }
+
+        if ($this->input('external_url') === '') {
+            $this->merge(['external_url' => null]);
+        }
     }
 
     /**
@@ -55,6 +59,12 @@ class UpdateAccountRequest extends FormRequest
                 'max:999999.99',
                 Rule::requiredIf(fn () => $this->input('type') === Account::MEAL_VOUCHER_TYPE),
             ],
+            'external_url' => [
+                'nullable',
+                'string',
+                'max:500',
+                'url',
+            ],
         ];
     }
 
@@ -84,6 +94,8 @@ class UpdateAccountRequest extends FormRequest
             'ticket_unit_value.numeric' => 'Il valore di un ticket deve essere un numero.',
             'ticket_unit_value.min' => 'Il valore di un ticket deve essere almeno 0,01.',
             'ticket_unit_value.max' => 'Il valore di un ticket è troppo alto.',
+            'external_url.url' => 'Inserisci un URL valido per l\'area riservata del fondo.',
+            'external_url.max' => 'L\'URL non può superare 500 caratteri.',
         ];
     }
 }

@@ -206,6 +206,7 @@ Route::middleware(['auth', 'verified', 'pre-launch', 'household'])->group(functi
         Route::delete('/conti/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
         Route::post('/conti/{account}/attiva-disattiva', [AccountController::class, 'toggleActive'])->name('accounts.toggle-active');
         Route::post('/conti/{account}/valore-ticket', [AccountController::class, 'storeUnitValue'])->name('accounts.meal-voucher-unit-value.store');
+        Route::post('/conti/{account}/posizione', [AccountController::class, 'updatePosition'])->name('accounts.position.update');
 
         // Transactions - modifica
         Route::get('/transazioni/anteprima-cambio', [TransactionController::class, 'fxPreview'])->name('transactions.fx-preview');

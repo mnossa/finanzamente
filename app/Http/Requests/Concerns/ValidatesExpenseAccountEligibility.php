@@ -17,7 +17,7 @@ trait ValidatesExpenseAccountEligibility
         }
 
         $category = Category::query()->find($categoryId);
-        if (! $category || $category->type !== 'expense') {
+        if (! $category || ! in_array($category->type, ['expense', 'income'], true)) {
             return;
         }
 
@@ -27,16 +27,24 @@ trait ValidatesExpenseAccountEligibility
         }
 
         $householdId = Auth::user()->active_household_id;
-        $hasBlockedAccount = Account::query()
+        $accounts = Account::query()
             ->where('household_id', $householdId)
             ->whereIn('id', $accountIds)
-            ->get()
-            ->contains(fn (Account $account) => $account->isSavingsDeposit());
+            ->get();
 
-        if ($hasBlockedAccount) {
+        if ($category->type === 'expense' && $accounts->contains(fn (Account $account) => $account->isSavingsDeposit())) {
             $validator->errors()->add(
                 'account_id',
                 'I conti deposito non possono essere usati per le uscite.',
+            );
+        }
+
+        if ($accounts->contains(fn (Account $account) => $account->isPensionFund())) {
+            $validator->errors()->add(
+                'account_id',
+                $category->type === 'expense'
+                    ? 'I fondi pensione non possono essere usati per le uscite. Usa un trasferimento o aggiorna la posizione.'
+                    : 'I fondi pensione non accettano entrate libere. Usa un trasferimento dal conto corrente o aggiorna la posizione.',
             );
         }
     }

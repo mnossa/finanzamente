@@ -18,7 +18,7 @@ import HubPageTransition from '@/Components/HubPageTransition';
 import { useMobileBottomNavSlots } from '@/hooks/useMobileBottomNav';
 import { renderHubTabIcon } from '@/utils/hubTabIcons';
 import type { MobileBottomNavDestination } from '@/config/mobileBottomNav';
-import { FM_MOBILE_PRIMARY_FORM_ID, dispatchMobileFabAction, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
+import { FM_MOBILE_PRIMARY_FORM_ID, dispatchMobileFabAction, FM_HIDE_MOBILE_PRIMARY_FAB_EVENT, isMobilePrimaryFabHiddenByPage, resolveMobilePrimaryFab } from '@/utils/mobilePrimaryFab';
 import { shouldHideMobileChromeForGuidedCreate } from '@/utils/guidedCreate';
 
 /** FAB azione primaria: floating sopra sticky bar (solo viewport < lg). Non in header né nel centro bar. */
@@ -1172,9 +1172,21 @@ function MobileFabSaveIcon() {
  * Solo mobile/tablet — su desktop la CTA resta nell'header pagina.
  */
 function MobilePrimaryFab({ features }: { features?: Record<string, boolean> }) {
+    const [hiddenByPage, setHiddenByPage] = useState(isMobilePrimaryFabHiddenByPage);
     const primaryFab = resolveMobilePrimaryFab(features);
 
-    if (!primaryFab) {
+    useEffect(() => {
+        const onHide = (event: Event) => {
+            const detail = (event as CustomEvent<{ hidden?: boolean }>).detail;
+            setHiddenByPage(Boolean(detail?.hidden));
+        };
+
+        window.addEventListener(FM_HIDE_MOBILE_PRIMARY_FAB_EVENT, onHide);
+
+        return () => window.removeEventListener(FM_HIDE_MOBILE_PRIMARY_FAB_EVENT, onHide);
+    }, []);
+
+    if (hiddenByPage || !primaryFab) {
         return null;
     }
 

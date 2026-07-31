@@ -53,6 +53,8 @@ interface Account {
     currency_code: string;
     ticket_unit_value: number | null;
     ticket_count: number | null;
+    external_url: string | null;
+    is_pension_fund: boolean;
     active: boolean;
     is_private: boolean;
     created_at: string;
@@ -165,6 +167,56 @@ function TransactionRow({
     );
 }
 
+function PensionFundPositionForm({
+    accountId,
+    currentBalance,
+    currencyCode,
+}: {
+    accountId: number;
+    currentBalance: number;
+    currencyCode: string;
+}) {
+    const { data, setData, post, processing, errors } = useForm({
+        position: String(currentBalance),
+    });
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                post(route('accounts.position.update', accountId), { preserveScroll: true });
+            }}
+            className="space-y-3"
+        >
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+                Inserisci il montante che vedi nell&apos;area riservata del fondo. I contributi aziendali e i
+                rendimenti restano nel numero: niente entrate/uscite libere su questo conto. Per un versamento
+                tuo dal corrente usa un trasferimento.
+            </p>
+            <div>
+                <InputLabel htmlFor="position" value="Posizione attuale" />
+                <TextInput
+                    id="position"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="mt-1 block w-full"
+                    value={data.position}
+                    onChange={(e) => setData('position', e.target.value)}
+                    required
+                />
+                <InputError message={errors.position} className="mt-2" />
+            </div>
+            <PrimaryButton type="submit" disabled={processing}>
+                {processing ? 'Aggiornamento…' : 'Aggiorna posizione'}
+            </PrimaryButton>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+                Saldo attuale: {formatCurrency(currentBalance, currencyCode)}
+            </p>
+        </form>
+    );
+}
+
 function MealVoucherUnitValueForm({ accountId }: { accountId: number }) {
     const today = new Date().toISOString().split('T')[0];
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -230,6 +282,7 @@ export default function Show({
     mealVoucherUnitValueHistory = [],
 }: ShowProps) {
     const isMealVoucher = account.type === 'meal_voucher';
+    const isPensionFund = account.is_pension_fund || account.type === 'pension_fund';
 
     return (
         <AuthenticatedLayout
@@ -262,14 +315,16 @@ export default function Show({
                             <p className="text-sm text-gray-600 dark:text-gray-300">
                                 {isMealVoucher
                                     ? 'Saldo in euro, lotti di buoni pasto e ultime operazioni.'
-                                    : 'Stato del conto, saldi e ultime operazioni in un unico riepilogo.'}
+                                    : isPensionFund
+                                        ? 'Posizione del fondo pensione: aggiornala dal portale e usa i trasferimenti per i versamenti dal corrente.'
+                                        : 'Stato del conto, saldi e ultime operazioni in un unico riepilogo.'}
                             </p>
                         </div>
                     </SectionCard>
                     <div className={moneyKpiGrid3}>
                         <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Saldo corrente
+                                {isPensionFund ? 'Posizione' : 'Saldo corrente'}
                             </p>
                             <p className={clsx('mt-1 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                                 {formatCurrency(account.current_balance, account.currency_code)}
@@ -296,6 +351,25 @@ export default function Show({
                                     </p>
                                 </CardBox>
                             </>
+                        ) : isPensionFund ? (
+                            <>
+                                <CardBox className="p-4 shadow-sm">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Tipo
+                                    </p>
+                                    <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+                                        {account.type_label}
+                                    </p>
+                                </CardBox>
+                                <CardBox className="p-4 shadow-sm">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Creato il
+                                    </p>
+                                    <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+                                        {account.created_at}
+                                    </p>
+                                </CardBox>
+                            </>
                         ) : (
                             <>
                                 <CardBox className="p-4 shadow-sm">
@@ -317,6 +391,34 @@ export default function Show({
                             </>
                         )}
                     </div>
+
+                    {isPensionFund && (
+                        <CardBox className="overflow-hidden p-4 shadow-sm">
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                <h3 className="font-semibold text-gray-900 dark:text-white">Aggiorna posizione</h3>
+                                {account.external_url && (
+                                    <a
+                                        href={account.external_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm font-medium text-emerald-600 underline hover:text-emerald-700 dark:text-emerald-400"
+                                    >
+                                        Apri area riservata
+                                    </a>
+                                )}
+                            </div>
+                            <PensionFundPositionForm
+                                accountId={account.id}
+                                currentBalance={account.current_balance}
+                                currencyCode={account.currency_code}
+                            />
+                            <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-700">
+                                <LinkButton href={route('transfers.create')}>
+                                    Trasferimento da/verso il fondo
+                                </LinkButton>
+                            </div>
+                        </CardBox>
+                    )}
 
                     {isMealVoucher && (
                         <>

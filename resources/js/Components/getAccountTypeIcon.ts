@@ -12,6 +12,7 @@ export function getAccountTypeIcon(type: string): string {
         crypto: '₿',
         savings_deposit: '🏦',
         meal_voucher: '🎫',
+        pension_fund: '🧓',
         other: '💰',
     };
     return icons[type] || '💰';

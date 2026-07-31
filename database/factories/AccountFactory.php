@@ -73,6 +73,17 @@ class AccountFactory extends Factory
         ]);
     }
 
+    public function pensionFund(?string $externalUrl = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => Account::PENSION_FUND_TYPE,
+            'interest_rate' => null,
+            'ticket_unit_value' => null,
+            'external_url' => $externalUrl,
+            'name' => $this->faker->randomElement(['Fondo pensione', 'Previdenza complementare', 'PIP']),
+        ]);
+    }
+
     /**
      * Indicate that the account is cash.
      */

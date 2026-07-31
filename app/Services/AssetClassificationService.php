@@ -16,7 +16,6 @@ class AssetClassificationService
     public const ALLOCATION_CLASSES = [
         'equities',
         'bonds',
-        'deposit',
         'commodities',
         'crypto',
         'other',
@@ -52,6 +51,7 @@ class AssetClassificationService
         'cash' => 1,
         'card' => 1,
         'crypto' => 7,
+        'pension_fund' => 3,
         'other' => 1,
     ];
 
@@ -61,6 +61,8 @@ class AssetClassificationService
         'cash' => 'liquidity',
         'card' => 'liquidity',
         'crypto' => 'crypto',
+        'pension_fund' => 'locked',
+        'meal_voucher' => 'liquidity',
         'other' => 'liquidity',
     ];
 
@@ -68,10 +70,13 @@ class AssetClassificationService
     public const CLASS_LABELS = [
         'equities' => 'Azionario',
         'bonds' => 'Obbligazionario',
-        'deposit' => 'Conti deposito',
+        'locked' => 'Vincolati',
+        // Alias legacy (snapshot vecchi / override): stessi colori/label di Vincolati
+        'deposit' => 'Vincolati',
+        'pension' => 'Vincolati',
         'commodities' => 'Commodities',
         'crypto' => 'Crypto',
-        'liquidity' => 'Liquidità',
+        'liquidity' => 'Liquidi',
         'other' => 'Altro',
     ];
 
@@ -79,7 +84,9 @@ class AssetClassificationService
     public const CLASS_COLORS = [
         'equities' => '#3b82f6', // blue
         'bonds' => '#10b981', // emerald
-        'deposit' => '#0ea5e9', // sky
+        'locked' => '#6366f1', // indigo
+        'deposit' => '#6366f1',
+        'pension' => '#6366f1',
         'commodities' => '#f59e0b', // amber
         'crypto' => '#8b5cf6', // violet
         'liquidity' => '#06b6d4', // cyan
@@ -158,5 +165,20 @@ class AssetClassificationService
             $index <= 6.5 => 'Alto',
             default => 'Molto Alto',
         };
+    }
+
+    /**
+     * Opzioni override classe allocazione per form asset investimento (no liquidi/vincolati).
+     *
+     * @return array<string, string>
+     */
+    public static function investmentAllocationClassLabels(): array
+    {
+        $labels = [];
+        foreach (self::ALLOCATION_CLASSES as $class) {
+            $labels[$class] = self::CLASS_LABELS[$class] ?? $class;
+        }
+
+        return $labels;
     }
 }

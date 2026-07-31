@@ -58,7 +58,9 @@ class PatrimonioController extends Controller
         $byClass = [];
 
         foreach ($positionGroups as $group) {
-            $class = $group['asset_class'] ?? 'other';
+            $class = PortfolioSnapshotService::normalizeAllocationClass(
+                (string) ($group['asset_class'] ?? 'other'),
+            );
             $byClass[$class][] = [
                 'key' => $group['key'] ?? $group['name'],
                 'name' => $group['name'],
@@ -73,7 +75,10 @@ class PatrimonioController extends Controller
         }
 
         foreach ($accounts as $account) {
-            $byClass['liquidity'][] = [
+            $class = PortfolioSnapshotService::normalizeAllocationClass(
+                (string) ($account['asset_class'] ?? 'liquidity'),
+            );
+            $byClass[$class][] = [
                 'key' => 'account_'.$account['id'],
                 'name' => $account['name'],
                 'symbol' => null,

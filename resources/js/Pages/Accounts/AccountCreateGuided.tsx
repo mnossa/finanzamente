@@ -25,22 +25,31 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
         initial_balance: '0',
         interest_rate: '',
         ticket_unit_value: '',
+        external_url: '',
         currency_code: defaultCurrency,
         is_private: false,
     });
 
     const isSavingsDeposit = data.type === 'savings_deposit';
     const isMealVoucher = data.type === 'meal_voucher';
-    const shouldShowDetailStep = isSavingsDeposit || isMealVoucher;
+    const isPensionFund = data.type === 'pension_fund';
+    const shouldShowDetailStep = isSavingsDeposit || isMealVoucher || isPensionFund;
     const lastStep = shouldShowDetailStep ? 3 : 2;
 
     const meta = [
         { title: 'Come si chiama il conto?', subtitle: 'Es. Conto corrente, Carta, Risparmi' },
         { title: 'Che tipo di conto è?', subtitle: "Scegli l'opzione più adatta." },
-        { title: 'Qual è il saldo iniziale?', subtitle: 'Puoi usare 0 se non sei sicuro.' },
+        {
+            title: isPensionFund ? 'Qual è la posizione attuale?' : 'Qual è il saldo iniziale?',
+            subtitle: isPensionFund
+                ? 'Il montante che vedi nel portale del fondo.'
+                : 'Puoi usare 0 se non sei sicuro.',
+        },
         isMealVoucher
             ? { title: 'Valore di un ticket', subtitle: 'Importo in euro di un singolo buono pasto.' }
-            : { title: 'Tasso del conto deposito', subtitle: 'Solo se scegli conto deposito. Altrimenti puoi lasciare vuoto.' },
+            : isPensionFund
+                ? { title: 'Area riservata', subtitle: 'Link opzionale al portale del fondo.' }
+                : { title: 'Tasso del conto deposito', subtitle: 'Solo se scegli conto deposito. Altrimenti puoi lasciare vuoto.' },
     ][step];
 
     return (
@@ -140,6 +149,20 @@ export default function AccountCreateGuided({ accountTypes, defaultCurrency }: P
                             I ticket disponibili si calcolano dal saldo del conto.
                         </p>
                         <InputError message={errors.ticket_unit_value} className="mt-2" />
+                    </div>
+                )}
+                {step === 3 && isPensionFund && (
+                    <div>
+                        <InputLabel htmlFor="external_url" value="URL area riservata (opzionale)" />
+                        <TextInput
+                            id="external_url"
+                            type="url"
+                            className="mt-1 block w-full"
+                            value={data.external_url}
+                            onChange={(e) => setData('external_url', e.target.value)}
+                            placeholder="https://..."
+                        />
+                        <InputError message={errors.external_url} className="mt-2" />
                     </div>
                 )}
                 <div className="mt-8 flex justify-end">

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('household_id')->constrained('households')->cascadeOnDelete();
             $table->string('name');
-            $table->enum('type', ['bank', 'cash', 'card', 'broker', 'crypto', 'meal_voucher', 'other'])->default('bank');
+            $table->enum('type', ['bank', 'cash', 'card', 'broker', 'crypto', 'meal_voucher', 'pension_fund', 'other'])->default('bank');
             $table->decimal('initial_balance', 12, 2)->default(0);
             $table->string('currency_code');
             $table->boolean('active')->default(true);

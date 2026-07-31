@@ -12,6 +12,34 @@ export const MOBILE_FAB_ACTION_INVESTMENT_ANALYSES_NEW = 'investment-analyses-ne
 
 export const FM_MOBILE_FAB_ACTION_EVENT = 'fm-mobile-fab-action';
 
+/** Evento: una pagina chiede di nascondere il FAB (es. personalizzazione dashboard). */
+export const FM_HIDE_MOBILE_PRIMARY_FAB_EVENT = 'fm-hide-mobile-primary-fab';
+
+const HIDE_MOBILE_PRIMARY_FAB_CLASS = 'fm-hide-mobile-primary-fab';
+
+/**
+ * Mostra/nasconde il FAB floating da una pagina (stato UI, non rotta).
+ * Cleanup obbligatorio allo smontaggio / fine modalità.
+ */
+export function setMobilePrimaryFabHidden(hidden: boolean): void {
+    if (typeof document === 'undefined') {
+        return;
+    }
+
+    document.documentElement.classList.toggle(HIDE_MOBILE_PRIMARY_FAB_CLASS, hidden);
+    window.dispatchEvent(
+        new CustomEvent(FM_HIDE_MOBILE_PRIMARY_FAB_EVENT, { detail: { hidden } }),
+    );
+}
+
+export function isMobilePrimaryFabHiddenByPage(): boolean {
+    if (typeof document === 'undefined') {
+        return false;
+    }
+
+    return document.documentElement.classList.contains(HIDE_MOBILE_PRIMARY_FAB_CLASS);
+}
+
 export type MobilePrimaryFab =
     | {
           mode: 'link';

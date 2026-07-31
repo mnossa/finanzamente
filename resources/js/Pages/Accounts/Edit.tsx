@@ -30,6 +30,7 @@ interface Account {
     initial_balance: number;
     interest_rate: number | null;
     ticket_unit_value: number | null;
+    external_url: string | null;
     currency_code: string;
     active: boolean;
     is_private: boolean;
@@ -57,6 +58,7 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
         initial_balance: String(account.initial_balance),
         interest_rate: account.interest_rate !== null ? String(account.interest_rate) : '',
         ticket_unit_value: account.ticket_unit_value !== null ? String(account.ticket_unit_value) : '',
+        external_url: account.external_url ?? '',
         currency_code: account.currency_code,
         active: account.active,
         is_private: account.is_private,
@@ -69,7 +71,8 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
 
     const isSavingsDeposit = data.type === 'savings_deposit';
     const isMealVoucher = data.type === 'meal_voucher';
-    const showExtraTypeField = isSavingsDeposit || isMealVoucher;
+    const isPensionFund = data.type === 'pension_fund';
+    const showExtraTypeField = isSavingsDeposit || isMealVoucher || isPensionFund;
 
     return (
         <AuthenticatedLayout
@@ -136,21 +139,23 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
 
                             {/* Saldo Iniziale e Valuta */}
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <InputLabel htmlFor="initial_balance" value="Saldo iniziale" />
-                                    <TextInput
-                                        id="initial_balance"
-                                        type="number"
-                                        step="0.01"
-                                        className="mt-1 block w-full"
-                                        value={data.initial_balance}
-                                        onChange={(e) => setData('initial_balance', e.target.value)}
-                                        required
-                                    />
-                                    <InputError message={errors.initial_balance} className="mt-2" />
-                                </div>
+                                {!isPensionFund && (
+                                    <div>
+                                        <InputLabel htmlFor="initial_balance" value="Saldo iniziale" />
+                                        <TextInput
+                                            id="initial_balance"
+                                            type="number"
+                                            step="0.01"
+                                            className="mt-1 block w-full"
+                                            value={data.initial_balance}
+                                            onChange={(e) => setData('initial_balance', e.target.value)}
+                                            required
+                                        />
+                                        <InputError message={errors.initial_balance} className="mt-2" />
+                                    </div>
+                                )}
 
-                                <div className={showExtraTypeField ? 'sm:col-span-2' : ''}>
+                                <div className={showExtraTypeField || isPensionFund ? 'sm:col-span-2' : ''}>
                                     {isSavingsDeposit && (
                                         <div className="mb-4">
                                             <InputLabel htmlFor="interest_rate" value="Tasso di interesse annuo (%)" />
@@ -186,6 +191,24 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
                                                 Importo in euro di un singolo buono pasto.
                                             </p>
                                             <InputError message={errors.ticket_unit_value} className="mt-2" />
+                                        </div>
+                                    )}
+
+                                    {isPensionFund && (
+                                        <div className="mb-4">
+                                            <InputLabel htmlFor="external_url" value="Area riservata (opzionale)" />
+                                            <TextInput
+                                                id="external_url"
+                                                type="url"
+                                                className="mt-1 block w-full"
+                                                value={data.external_url}
+                                                onChange={(e) => setData('external_url', e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Per aggiornare il montante usa «Aggiorna posizione» nella scheda del conto.
+                                            </p>
+                                            <InputError message={errors.external_url} className="mt-2" />
                                         </div>
                                     )}
 

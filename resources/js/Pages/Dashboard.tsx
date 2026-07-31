@@ -30,10 +30,11 @@ import DashboardWidgetShell, {
 } from '@/Components/Dashboard/DashboardWidgetShell';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
-import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { DashboardDragEndEvent } from '@/types/dashboardDrag';
 import { moneyTabular } from '@/utils/moneyGridClasses';
 import { formatCurrency, formatDateShort } from '@/utils/format';
+import { setMobilePrimaryFabHidden } from '@/utils/mobilePrimaryFab';
 
 const LifestyleWidget = lazy(() => import('@/Components/LifestyleWidget'));
 const ExpenseTreemap = lazy(() => import('@/Components/Charts/ExpenseTreemap'));
@@ -327,6 +328,12 @@ export default function Dashboard({
         canEdit: canEditLayout,
         startEditing,
     });
+
+    useEffect(() => {
+        setMobilePrimaryFabHidden(isEditing);
+
+        return () => setMobilePrimaryFabHidden(false);
+    }, [isEditing]);
 
     const { payloads: formulaWidgetPayloads, pendingWidgetIds: formulaWidgetPendingIds, error: formulaWidgetsError } =
         useDashboardFormulaPayloads(

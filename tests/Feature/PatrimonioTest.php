@@ -198,6 +198,65 @@ class PatrimonioTest extends TestCase
     }
 
     #[Test]
+    public function patrimonio_puts_deposit_and_pension_under_vincolati_not_liquidi(): void
+    {
+        $liquid = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'Conto corrente',
+            'type' => 'bank',
+            'initial_balance' => 2000,
+            'interest_rate' => null,
+            'currency_code' => 'EUR',
+        ]);
+
+        $deposit = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'Deposito vincolato',
+            'type' => 'bank',
+            'initial_balance' => 5000,
+            'interest_rate' => 3.5,
+            'currency_code' => 'EUR',
+        ]);
+
+        $pension = Account::factory()->pensionFund()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'Fondo pensione',
+            'initial_balance' => 8000,
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('patrimonio.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('liquidValue', 2000)
+                ->where('allocation', function ($allocation) use ($liquid, $deposit, $pension) {
+                    $byClass = collect($allocation)->keyBy('asset_class');
+
+                    if (! $byClass->has('liquidity') || ! $byClass->has('locked')) {
+                        return false;
+                    }
+
+                    $liquidNames = collect($byClass['liquidity']['instruments'] ?? [])->pluck('name');
+                    $lockedNames = collect($byClass['locked']['instruments'] ?? [])->pluck('name');
+
+                    return $byClass['liquidity']['label'] === 'Liquidi'
+                        && $byClass['locked']['label'] === 'Vincolati'
+                        && abs((float) $byClass['locked']['value'] - 13000.0) < 0.01
+                        && $liquidNames->contains($liquid->name)
+                        && ! $liquidNames->contains($deposit->name)
+                        && ! $liquidNames->contains($pension->name)
+                        && $lockedNames->contains($deposit->name)
+                        && $lockedNames->contains($pension->name)
+                        && $lockedNames->filter(fn ($n) => $n === $deposit->name)->count() === 1;
+                })
+            );
+    }
+
+    #[Test]
     public function dashboard_exposes_balance_breakdown(): void
     {
         $account = Account::factory()->create([

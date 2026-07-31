@@ -382,6 +382,9 @@ class InboxController extends Controller
                 if ($item->type === 'expense' && $selectedAccount?->isSavingsDeposit()) {
                     $accountId = null;
                 }
+                if ($selectedAccount?->isPensionFund()) {
+                    $accountId = null;
+                }
             }
 
             if (! $accountId) {
@@ -599,6 +602,8 @@ class InboxController extends Controller
             $selectedAccount = Account::find($accountId);
             if ($inboxItem->type === 'expense' && $selectedAccount?->isSavingsDeposit()) {
                 $accountId = null;
+            } elseif ($selectedAccount?->isPensionFund()) {
+                $accountId = null;
             } elseif ($selectedAccount) {
                 return $selectedAccount;
             }
@@ -676,13 +681,23 @@ class InboxController extends Controller
 
     private function savingsDepositExpenseError(?string $type, ?int $accountId): ?string
     {
-        if ($type !== 'expense' || ! $accountId) {
+        if (! $type || ! $accountId || ! in_array($type, ['expense', 'income'], true)) {
             return null;
         }
 
         $account = Account::query()->find($accountId);
-        if ($account && $account->isSavingsDeposit()) {
+        if (! $account) {
+            return null;
+        }
+
+        if ($type === 'expense' && $account->isSavingsDeposit()) {
             return 'I conti deposito non possono essere usati per le uscite.';
+        }
+
+        if ($account->isPensionFund()) {
+            return $type === 'expense'
+                ? 'I fondi pensione non possono essere usati per le uscite. Usa un trasferimento o aggiorna la posizione.'
+                : 'I fondi pensione non accettano entrate libere. Usa un trasferimento dal conto corrente o aggiorna la posizione.';
         }
 
         return null;

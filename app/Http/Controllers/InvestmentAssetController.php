@@ -76,7 +76,7 @@ class InvestmentAssetController extends Controller
             'currencies' => $currencies,
             'types' => InvestmentAsset::TYPES,
             'typeIcons' => InvestmentAsset::TYPE_ICONS,
-            'allocationClasses' => AssetClassificationService::CLASS_LABELS,
+            'allocationClasses' => AssetClassificationService::investmentAllocationClassLabels(),
             'incomePolicies' => InvestmentAsset::INCOME_POLICIES,
         ]);
     }
@@ -134,7 +134,7 @@ class InvestmentAssetController extends Controller
             'currencies' => $currencies,
             'types' => InvestmentAsset::TYPES,
             'typeIcons' => InvestmentAsset::TYPE_ICONS,
-            'allocationClasses' => AssetClassificationService::CLASS_LABELS,
+            'allocationClasses' => AssetClassificationService::investmentAllocationClassLabels(),
             'incomePolicies' => InvestmentAsset::INCOME_POLICIES,
         ]);
     }

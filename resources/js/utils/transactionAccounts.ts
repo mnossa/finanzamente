@@ -17,6 +17,7 @@ export interface TransactionAccount {
     currency_code: string;
     is_savings_deposit?: boolean;
     is_meal_voucher?: boolean;
+    is_pension_fund?: boolean;
     ticket_unit_value?: number | null;
     meal_voucher_lots?: MealVoucherLotOption[];
     meal_voucher_unit_value_history?: MealVoucherUnitValueHistoryRow[];
@@ -52,15 +53,27 @@ export function accountsForTransactionType(
     transactionType: 'income' | 'expense' | null | undefined,
     options?: { keepAccountId?: string | number | null },
 ): TransactionAccount[] {
-    if (transactionType !== 'expense') {
+    if (transactionType !== 'expense' && transactionType !== 'income') {
         return accounts;
     }
 
     const keepAccountId = options?.keepAccountId != null ? String(options.keepAccountId) : null;
 
-    return accounts.filter(
-        (account) => !account.is_savings_deposit || (keepAccountId !== null && String(account.id) === keepAccountId),
-    );
+    return accounts.filter((account) => {
+        if (keepAccountId !== null && String(account.id) === keepAccountId) {
+            return true;
+        }
+
+        if (account.is_pension_fund) {
+            return false;
+        }
+
+        if (transactionType === 'expense' && account.is_savings_deposit) {
+            return false;
+        }
+
+        return true;
+    });
 }
 
 export function resolveTransactionAccountId(

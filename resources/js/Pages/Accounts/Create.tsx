@@ -73,6 +73,7 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
         initial_balance: '0',
         interest_rate: '',
         ticket_unit_value: '',
+        external_url: '',
         currency_code: defaultCurrency,
         is_private: false,
     });
@@ -86,7 +87,8 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
 
     const isSavingsDeposit = data.type === 'savings_deposit';
     const isMealVoucher = data.type === 'meal_voucher';
-    const showExtraTypeField = isSavingsDeposit || isMealVoucher;
+    const isPensionFund = data.type === 'pension_fund';
+    const showExtraTypeField = isSavingsDeposit || isMealVoucher || isPensionFund;
 
     return (
         <AuthenticatedLayout
@@ -189,7 +191,10 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                             {/* Saldo Iniziale e Valuta */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <InputLabel htmlFor="initial_balance" value="Saldo iniziale" />
+                                    <InputLabel
+                                        htmlFor="initial_balance"
+                                        value={isPensionFund ? 'Posizione iniziale' : 'Saldo iniziale'}
+                                    />
                                     <TextInput
                                         id="initial_balance"
                                         name="initial_balance"
@@ -201,7 +206,9 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                         required
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Il saldo attuale del conto al momento della creazione
+                                        {isPensionFund
+                                            ? 'Montante attuale dal portale del fondo. Poi lo aggiorni dalla scheda conto.'
+                                            : 'Il saldo attuale del conto al momento della creazione'}
                                     </p>
                                     <InputError message={errors.initial_balance} className="mt-2" />
                                 </div>
@@ -249,6 +256,25 @@ export default function Create({ accountTypes, currencies, defaultCurrency, acco
                                                 Importo in euro di un singolo buono pasto. I ticket disponibili si calcolano dal saldo.
                                             </p>
                                             <InputError message={errors.ticket_unit_value} className="mt-2" />
+                                        </div>
+                                    )}
+
+                                    {isPensionFund && (
+                                        <div className="mb-4">
+                                            <InputLabel htmlFor="external_url" value="Area riservata (opzionale)" />
+                                            <TextInput
+                                                id="external_url"
+                                                name="external_url"
+                                                type="url"
+                                                className="mt-1 block w-full"
+                                                value={data.external_url}
+                                                onChange={(e) => setData('external_url', e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Link al portale del fondo per consultare la posizione. Niente entrate/uscite libere: solo trasferimenti e aggiornamento posizione.
+                                            </p>
+                                            <InputError message={errors.external_url} className="mt-2" />
                                         </div>
                                     )}
 

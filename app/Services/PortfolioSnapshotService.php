@@ -162,34 +162,46 @@ class PortfolioSnapshotService
 
         $liquidValue = 0.0;
         $depositValue = 0.0;
+        $pensionValue = 0.0;
         $allocationLiquidValue = 0.0;
 
         foreach ($accounts as $account) {
             $balance = $accountBalances[$account->id];
             $accountType = $account->type ?? 'other';
             $isSavingsDeposit = $account->isSavingsDeposit();
-            $assetClass = $isSavingsDeposit ? 'deposit' : (AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity');
+            $isPensionFund = $account->isPensionFund();
+            $isLocked = $isSavingsDeposit || $isPensionFund;
+            $assetClass = $isLocked
+                ? 'locked'
+                : (AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity');
             $risk = AssetClassificationService::ACCOUNT_TYPE_RISK[$accountType] ?? 1;
+            $typeLabel = $isSavingsDeposit
+                ? Account::uiTypes()[Account::SAVINGS_DEPOSIT_TYPE]
+                : (Account::TYPES[$accountType] ?? $accountType);
 
             $accountRows[] = [
                 'id' => $account->id,
                 'name' => $account->name,
                 'type' => $accountType,
-                'type_label' => Account::TYPES[$accountType] ?? $accountType,
+                'type_label' => $typeLabel,
                 'balance' => round($balance, 2),
                 'currency_code' => $account->currency_code,
                 'asset_class' => $assetClass,
                 'is_savings_deposit' => $isSavingsDeposit,
+                'is_pension_fund' => $isPensionFund,
             ];
 
             if ($balance <= 0) {
                 continue;
             }
 
-            if ($isSavingsDeposit) {
-                // I conti deposito sono trattati come \"investiti prudenti\":
-                // esclusi dal saldo conti liquido e inclusi tra gli investimenti.
-                $depositValue += $balance;
+            if ($isLocked) {
+                // Deposito e previdenza: esclusi dalla liquidità, nel patrimonio investito.
+                if ($isSavingsDeposit) {
+                    $depositValue += $balance;
+                } else {
+                    $pensionValue += $balance;
+                }
             } else {
                 $liquidValue += $balance;
                 $allocationLiquidValue += $balance;
@@ -201,7 +213,7 @@ class PortfolioSnapshotService
                 'name' => $account->name,
                 'symbol' => null,
                 'asset_type' => $accountType,
-                'asset_type_label' => Account::TYPES[$accountType] ?? $accountType,
+                'asset_type_label' => $typeLabel,
                 'asset_class' => $assetClass,
                 'asset_class_label' => AssetClassificationService::CLASS_LABELS[$assetClass] ?? $assetClass,
                 'risk' => $risk,
@@ -216,13 +228,13 @@ class PortfolioSnapshotService
             ];
         }
 
-        // I conti deposito vengono considerati come investimenti collegati al ledger
-        // ai fini del patrimonio totale e dei KPI di investimento.
-        $investedValue += $depositValue;
-        $investedLinkedValue += $depositValue;
+        // Conti deposito e fondi pensione = investimenti collegati al ledger.
+        $illiquidAccountValue = $depositValue + $pensionValue;
+        $investedValue += $illiquidAccountValue;
+        $investedLinkedValue += $illiquidAccountValue;
 
         $totalValue = $liquidValue + $investedLinkedValue;
-        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue + $depositValue;
+        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue + $illiquidAccountValue;
 
         foreach ($accountRows as &$accountRow) {
             $accountRow['portfolio_percentage'] = $totalValue > 0
@@ -237,7 +249,7 @@ class PortfolioSnapshotService
                 continue;
             }
 
-            $cls = $pos['asset_class'];
+            $cls = self::normalizeAllocationClass((string) ($pos['asset_class'] ?? 'other'));
             if (! isset($classMap[$cls])) {
                 $classMap[$cls] = [
                     'asset_class' => $cls,
@@ -302,6 +314,17 @@ class PortfolioSnapshotService
             'classColors' => AssetClassificationService::CLASS_COLORS,
             'classLabels' => AssetClassificationService::CLASS_LABELS,
         ];
+    }
+
+    /**
+     * Unifica deposit/pension legacy → locked (Vincolati).
+     */
+    public static function normalizeAllocationClass(string $class): string
+    {
+        return match ($class) {
+            'deposit', 'pension' => 'locked',
+            default => $class,
+        };
     }
 
     /**

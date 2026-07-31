@@ -33,12 +33,15 @@ class Account extends Model
         'broker' => 'Broker',
         'crypto' => 'Crypto',
         'meal_voucher' => 'Buoni pasto',
+        'pension_fund' => 'Fondo pensione / previdenza',
         'other' => 'Altro',
     ];
 
     public const SAVINGS_DEPOSIT_TYPE = 'savings_deposit';
 
     public const MEAL_VOUCHER_TYPE = 'meal_voucher';
+
+    public const PENSION_FUND_TYPE = 'pension_fund';
 
     protected $fillable = [
         'household_id',
@@ -52,6 +55,7 @@ class Account extends Model
         'owner_user_id',
         'interest_rate',
         'ticket_unit_value',
+        'external_url',
     ];
 
     protected $casts = [
@@ -84,6 +88,19 @@ class Account extends Model
     public function isMealVoucher(): bool
     {
         return $this->type === self::MEAL_VOUCHER_TYPE;
+    }
+
+    public function isPensionFund(): bool
+    {
+        return $this->type === self::PENSION_FUND_TYPE;
+    }
+
+    /**
+     * Conti esclusi da entrate/uscite libere (solo trasferimenti + aggiornamento posizione).
+     */
+    public function blocksStandaloneTransactions(): bool
+    {
+        return $this->isPensionFund();
     }
 
     public function mealVoucherLots()
@@ -136,15 +153,25 @@ class Account extends Model
     }
 
     /**
-     * Conti su cui è consentito registrare uscite (esclude i conti deposito).
+     * Conti su cui è consentito registrare uscite (esclude conti deposito e fondi pensione).
      * I buoni pasto sono eleggibili alle uscite.
      */
     public function scopeEligibleForExpenseTransactions($query)
     {
-        return $query->where(function ($q) {
-            $q->where('type', '!=', 'bank')
-                ->orWhereNull('interest_rate');
-        });
+        return $query
+            ->where('type', '!=', self::PENSION_FUND_TYPE)
+            ->where(function ($q) {
+                $q->where('type', '!=', 'bank')
+                    ->orWhereNull('interest_rate');
+            });
+    }
+
+    /**
+     * Conti su cui è consentito registrare entrate libere (esclude fondi pensione).
+     */
+    public function scopeEligibleForIncomeTransactions($query)
+    {
+        return $query->where('type', '!=', self::PENSION_FUND_TYPE);
     }
 
     /**
@@ -154,6 +181,7 @@ class Account extends Model
      *   currency_code: string,
      *   is_savings_deposit: bool,
      *   is_meal_voucher: bool,
+     *   is_pension_fund: bool,
      *   ticket_unit_value: float|null,
      *   meal_voucher_lots: list<array{id: int, unit_value: float, quantity_remaining: int, acquired_on: string, euro_value: float}>,
      *   meal_voucher_unit_value_history: list<array{unit_value: float, effective_from: string}>
@@ -167,6 +195,7 @@ class Account extends Model
             'currency_code' => $this->currency_code,
             'is_savings_deposit' => $this->isSavingsDeposit(),
             'is_meal_voucher' => $this->isMealVoucher(),
+            'is_pension_fund' => $this->isPensionFund(),
             'ticket_unit_value' => null,
             'meal_voucher_lots' => [],
             'meal_voucher_unit_value_history' => [],

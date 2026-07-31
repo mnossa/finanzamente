@@ -20,6 +20,15 @@ test.describe('Le mie dashboard', () => {
         await expect(page.getByText('Proiezione PAC').first()).toBeVisible();
     });
 
+    test('in personalizzazione dashboard il FAB nuova transazione scompare', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/dashboard/boards');
+        await page.getByTestId('board-customize-home').click();
+        await expect(page).toHaveURL(/edit=1/);
+        await expect(page.getByRole('region', { name: /modalità personalizzazione/i })).toBeVisible();
+        await expect(page.getByTestId('mobile-primary-fab')).toHaveCount(0);
+    });
+
     test('Personalizza apre board custom direttamente in modalità edit', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 800 });
         await page.goto('/dashboard');

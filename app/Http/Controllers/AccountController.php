@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAccountRequest;
 use App\Http\Requests\StoreMealVoucherUnitValueRequest;
 use App\Http\Requests\UpdateAccountRequest;
+use App\Http\Requests\UpdatePensionFundPositionRequest;
 use App\Models\Account;
 use App\Models\Currency;
 use App\Models\User;
@@ -120,6 +121,7 @@ class AccountController extends Controller
             ? $validated['interest_rate']
             : null;
         $validated = $this->normalizeMealVoucherFields($validated);
+        $validated = $this->normalizePensionFundFields($validated);
 
         $account = new Account($validated);
         $account->household_id = $user->active_household_id;
@@ -198,6 +200,8 @@ class AccountController extends Controller
                 'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
                 'ticket_unit_value' => $ticketUnitValue,
                 'ticket_count' => $ticketCount,
+                'external_url' => $account->external_url,
+                'is_pension_fund' => $account->isPensionFund(),
                 'active' => $account->active,
                 'is_private' => $account->is_private,
                 'created_at' => $account->created_at->format('d/m/Y'),
@@ -249,6 +253,7 @@ class AccountController extends Controller
                 'currency_code' => $account->currency_code,
                 'interest_rate' => $account->interest_rate !== null ? (float) $account->interest_rate : null,
                 'ticket_unit_value' => $account->ticket_unit_value !== null ? (float) $account->ticket_unit_value : null,
+                'external_url' => $account->external_url,
                 'active' => $account->active,
                 'is_private' => $account->is_private,
             ],
@@ -270,6 +275,7 @@ class AccountController extends Controller
             ? $validated['interest_rate']
             : null;
         $validated = $this->normalizeMealVoucherFields($validated, $account->type);
+        $validated = $this->normalizePensionFundFields($validated, $account->type);
 
         // Se cambia il saldo iniziale, ricalcola il saldo corrente
         if (isset($validated['initial_balance']) && $validated['initial_balance'] != $account->initial_balance) {
@@ -292,6 +298,30 @@ class AccountController extends Controller
     }
 
     /**
+     * Imposta la posizione assoluta di un fondo pensione (rettifica via initial_balance).
+     */
+    public function updatePosition(UpdatePensionFundPositionRequest $request, Account $account): RedirectResponse
+    {
+        $this->authorizeAccount($account);
+
+        if (! $account->isPensionFund()) {
+            abort(404);
+        }
+
+        $target = round((float) $request->validated('position'), 2);
+        $current = $this->accountBalanceService->computeBalance($account, Auth::user());
+        $delta = round($target - $current, 2);
+
+        $account->initial_balance = round((float) $account->initial_balance + $delta, 2);
+        $account->current_balance = $target;
+        $account->save();
+
+        return redirect()
+            ->route('accounts.show', $account)
+            ->with('success', 'Posizione del fondo aggiornata.');
+    }
+
+    /**
      * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
@@ -306,6 +336,29 @@ class AccountController extends Controller
             }
         } else {
             $validated['ticket_unit_value'] = null;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function normalizePensionFundFields(array $validated, ?string $fallbackType = null): array
+    {
+        $type = $validated['type'] ?? $fallbackType;
+
+        if ($type === Account::PENSION_FUND_TYPE) {
+            $validated['interest_rate'] = null;
+            $validated['ticket_unit_value'] = null;
+            if (array_key_exists('external_url', $validated) && $validated['external_url'] === '') {
+                $validated['external_url'] = null;
+            }
+        } elseif (array_key_exists('type', $validated) || array_key_exists('external_url', $validated)) {
+            if ($type !== Account::PENSION_FUND_TYPE) {
+                $validated['external_url'] = null;
+            }
         }
 
         return $validated;

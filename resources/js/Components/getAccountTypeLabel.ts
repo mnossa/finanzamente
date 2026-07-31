@@ -13,6 +13,7 @@ export function getAccountTypeLabel(type: string): string {
         crypto: 'Crypto',
         savings_deposit: 'Conto Deposito',
         meal_voucher: 'Buoni pasto',
+        pension_fund: 'Fondo pensione / previdenza',
         other: 'Altro',
     };
 

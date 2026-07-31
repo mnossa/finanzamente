@@ -597,7 +597,8 @@ class TelegramWebhookController extends Controller
         [$accountId, $resolvedAccount] = $this->resolveAccountByName($parsed['account_name'], $user);
         [$categoryId, $resolvedCategory] = $this->resolveCategoryByName($parsed['category_name'], $user);
 
-        if ($type === 'expense' && $resolvedAccount?->isSavingsDeposit()) {
+        if ($resolvedAccount?->isPensionFund()
+            || ($type === 'expense' && $resolvedAccount?->isSavingsDeposit())) {
             $accountId = null;
             $resolvedAccount = null;
         }
@@ -663,7 +664,9 @@ class TelegramWebhookController extends Controller
                     $namedAccount = Account::where('household_id', $user->active_household_id)
                         ->whereRaw('LOWER(name) = ?', [mb_strtolower($parsed['account_name'])])
                         ->first();
-                    if ($namedAccount?->isSavingsDeposit()) {
+                    if ($namedAccount?->isPensionFund()) {
+                        $extras[] = '⚠️ I fondi pensione non accettano entrate/uscite libere (usa trasferimento o aggiorna posizione)';
+                    } elseif ($namedAccount?->isSavingsDeposit()) {
                         $extras[] = '⚠️ I conti deposito non sono disponibili per le uscite';
                     } else {
                         $extras[] = "⚠️ Conto \"{$parsed['account_name']}\" non trovato";
@@ -953,6 +956,15 @@ class TelegramWebhookController extends Controller
                 if ($item) {
                     $account = Account::find($accountId);
                     $transactionType = (string) ($pending['type'] ?? $item->type ?? 'expense');
+                    if ($account?->isPensionFund()) {
+                        $this->telegram->answerCallbackQuery(
+                            $callbackId,
+                            'I fondi pensione non accettano entrate/uscite libere',
+                            true,
+                        );
+
+                        return;
+                    }
                     if ($transactionType === 'expense' && $account?->isSavingsDeposit()) {
                         $this->telegram->answerCallbackQuery(
                             $callbackId,
