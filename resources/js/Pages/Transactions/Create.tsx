@@ -27,6 +27,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import {
     accountsForTransactionType,
     mealVoucherUnitValueOnDate,
+    preferredTransactionAccountId,
     resolveTransactionAccountId,
     type TransactionAccount,
 } from '@/utils/transactionAccounts';
@@ -123,7 +124,10 @@ export default function Create({
 
     const today = new Date().toISOString().split('T')[0];
     const amountRef = useRef<HTMLInputElement>(null);
-    const prefillAccountId = debtCreditPrefill?.account_id || defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : '');
+    const prefillAccountId =
+        debtCreditPrefill?.account_id
+        || defaultAccountId
+        || preferredTransactionAccountId(accounts);
 
     const { data, setData, post, processing, errors, transform } = useForm({
         account_id: prefillAccountId,
@@ -150,7 +154,10 @@ export default function Create({
     const [splits, setSplits] = useState<SplitLine[]>(() => [
         { account_id: prefillAccountId, amount: debtCreditPrefill?.amount || '' },
         {
-            account_id: accounts[1] ? String(accounts[1].id) : (accounts[0] ? String(accounts[0].id) : ''),
+            account_id:
+                preferredTransactionAccountId(
+                    accounts.filter((account) => String(account.id) !== prefillAccountId),
+                ) || prefillAccountId,
             amount: '',
         },
     ]);

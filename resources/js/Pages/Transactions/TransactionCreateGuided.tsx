@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TagAutocomplete from '@/Components/TagAutocomplete';
 import TextInput from '@/Components/TextInput';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
+import MealVoucherSpendSection, { type MealVoucherLine } from '@/Components/MealVoucherSpendSection';
 import SplitPaymentSection, { type SplitLine } from '@/Components/SplitPaymentSection';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -13,6 +14,8 @@ import clsx from 'clsx';
 import { useMemo, useState, useEffect } from 'react';
 import {
     accountsForTransactionType,
+    mealVoucherUnitValueOnDate,
+    preferredTransactionAccountId,
     resolveTransactionAccountId,
     type TransactionAccount,
 } from '@/utils/transactionAccounts';
@@ -63,6 +66,54 @@ function formatItalianDate(dateStr: string): string {
     return formatDate(dateStr.includes('T') ? dateStr : `${dateStr}T12:00:00`);
 }
 
+function stepForValidationErrors(errors: Record<string, string>): number | null {
+    const keys = Object.keys(errors);
+    if (keys.length === 0) {
+        return null;
+    }
+
+    if (keys.some((k) => k === 'amount' || k.startsWith('amount.'))) {
+        return 1;
+    }
+    if (keys.some((k) => k === 'date' || k.startsWith('date.'))) {
+        return 2;
+    }
+    if (
+        keys.some(
+            (k) =>
+                k === 'account_id'
+                || k === 'splits'
+                || k.startsWith('splits.')
+                || k === 'meal_voucher_lines'
+                || k.startsWith('meal_voucher_lines.'),
+        )
+    ) {
+        return 3;
+    }
+    if (keys.some((k) => k === 'category_id' || k.startsWith('category_id.'))) {
+        return 4;
+    }
+    if (keys.some((k) => k === 'description' || k.startsWith('description.'))) {
+        return 5;
+    }
+    if (
+        keys.some(
+            (k) =>
+                k === 'is_private'
+                || k === 'is_tax_deductible'
+                || k.startsWith('tax_')
+                || k === 'tag_ids'
+                || k.startsWith('tag_ids.')
+                || k === 'new_tag_names'
+                || k.startsWith('new_tag_names.'),
+        )
+    ) {
+        return 6;
+    }
+
+    return STEP_COUNT - 1;
+}
+
 export default function TransactionCreateGuided({
     accounts,
     categories,
@@ -71,16 +122,24 @@ export default function TransactionCreateGuided({
 }: Props) {
     const today = new Date().toISOString().split('T')[0];
     const hasDebtPrefill = debtCreditPrefill !== null;
-    const initialAccountId = debtCreditPrefill?.account_id || defaultAccountId || (accounts.length > 0 ? String(accounts[0].id) : '');
+    const initialTxType = debtCreditPrefill?.transaction_type ?? 'expense';
+    const initialAccountId =
+        debtCreditPrefill?.account_id
+        || defaultAccountId
+        || preferredTransactionAccountId(accountsForTransactionType(accounts, initialTxType));
     const [step, setStep] = useState(hasDebtPrefill ? 1 : 0);
-    const [txType, setTxType] = useState<'income' | 'expense'>(debtCreditPrefill?.transaction_type ?? 'expense');
+    const [txType, setTxType] = useState<'income' | 'expense'>(initialTxType);
     const [selectedTagsList, setSelectedTagsList] = useState<Tag[]>([]);
 
     const [splitEnabled, setSplitEnabled] = useState(false);
     const [splits, setSplits] = useState<SplitLine[]>(() => [
         { account_id: initialAccountId, amount: debtCreditPrefill?.amount || '' },
         {
-            account_id: accounts[1] ? String(accounts[1].id) : (accounts[0] ? String(accounts[0].id) : ''),
+            account_id: preferredTransactionAccountId(
+                accountsForTransactionType(accounts, initialTxType).filter(
+                    (a) => String(a.id) !== initialAccountId,
+                ),
+            ) || initialAccountId,
             amount: '',
         },
     ]);
@@ -103,6 +162,7 @@ export default function TransactionCreateGuided({
         original_currency_code: debtCreditPrefill?.original_currency_code || '',
         manual_rate: '',
         splits: [] as Array<{ account_id: number; amount: string }>,
+        meal_voucher_lines: [] as MealVoucherLine[],
     });
 
     transform((formData) => ({
@@ -124,6 +184,10 @@ export default function TransactionCreateGuided({
     const selectedAccount = accounts.find((a) => String(a.id) === data.account_id);
     const selectedCategory = categories.find((c) => String(c.id) === data.category_id);
     const isExpense = txType === 'expense';
+    const isMealVoucherAccount = Boolean(selectedAccount?.is_meal_voucher);
+    const mealVoucherLots = selectedAccount?.meal_voucher_lots ?? [];
+    const mealVoucherUnit = mealVoucherUnitValueOnDate(selectedAccount, data.date);
+    const validationMessages = Object.values(errors).filter(Boolean);
 
     const selectableAccounts = useMemo(
         () => accountsForTransactionType(accounts, txType),
@@ -196,7 +260,15 @@ export default function TransactionCreateGuided({
                     return hasTwoLines && Math.abs(sum - total) <= 0.02;
                 }
 
-                return Boolean(data.account_id);
+                if (!data.account_id) {
+                    return false;
+                }
+
+                if (isMealVoucherAccount && isExpense) {
+                    return data.meal_voucher_lines.some((line) => line.quantity > 0);
+                }
+
+                return true;
             }
             case 4:
                 return Boolean(data.category_id);
@@ -219,7 +291,14 @@ export default function TransactionCreateGuided({
     };
 
     const submit = () => {
-        post(route('transactions.store'));
+        post(route('transactions.store'), {
+            onError: (errs) => {
+                const target = stepForValidationErrors(errs);
+                if (target !== null) {
+                    setStep(target);
+                }
+            },
+        });
     };
 
     const taxTypeLabel = TAX_DEDUCTION_TYPES.find((t) => t.value === data.tax_deduction_type)?.label;
@@ -361,7 +440,7 @@ export default function TransactionCreateGuided({
 
                     {step === 3 && (
                         <div className="space-y-4">
-                            {selectableAccounts.length >= 2 ? (
+                            {selectableAccounts.length >= 2 && !isMealVoucherAccount ? (
                                 <SplitPaymentSection
                                     enabled={splitEnabled}
                                     onToggle={setSplitEnabled}
@@ -372,9 +451,11 @@ export default function TransactionCreateGuided({
                                     errors={errors}
                                 />
                             ) : (
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Serve almeno un secondo conto per ripartire il pagamento su più conti.
-                                </p>
+                                selectableAccounts.length < 2 && (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Serve almeno un secondo conto per ripartire il pagamento su più conti.
+                                    </p>
+                                )
                             )}
                             {!splitEnabled && (
                                 <div className="max-h-[min(40vh,16rem)] space-y-2 overflow-y-auto">
@@ -382,7 +463,13 @@ export default function TransactionCreateGuided({
                                         <button
                                             key={account.id}
                                             type="button"
-                                            onClick={() => setData('account_id', String(account.id))}
+                                            onClick={() => {
+                                                setData('account_id', String(account.id));
+                                                setData('meal_voucher_lines', []);
+                                                if (account.is_meal_voucher) {
+                                                    setSplitEnabled(false);
+                                                }
+                                            }}
                                             className={clsx(
                                                 'w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors',
                                                 data.account_id === String(account.id)
@@ -395,8 +482,31 @@ export default function TransactionCreateGuided({
                                     ))}
                                 </div>
                             )}
+                            {isMealVoucherAccount && isExpense && !splitEnabled && (
+                                <MealVoucherSpendSection
+                                    lots={mealVoucherLots}
+                                    lines={data.meal_voucher_lines}
+                                    amount={data.amount}
+                                    currencyCode={selectedAccount?.currency_code ?? 'EUR'}
+                                    error={errors.meal_voucher_lines}
+                                    onAmountChange={(value) => setData('amount', value)}
+                                    onChange={(lines, euro) => {
+                                        setData('meal_voucher_lines', lines);
+                                        if (euro > 0) {
+                                            setData('amount', String(euro));
+                                        }
+                                    }}
+                                />
+                            )}
+                            {isMealVoucherAccount && !isExpense && mealVoucherUnit && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Accredito buoni: l&apos;importo deve essere un multiplo di{' '}
+                                    {formatCurrency(mealVoucherUnit)} (ticket interi).
+                                </p>
+                            )}
                             <InputError message={errors.account_id} />
                             <InputError message={errors.splits} />
+                            <InputError message={errors.meal_voucher_lines} />
                         </div>
                     )}
 
@@ -513,6 +623,16 @@ export default function TransactionCreateGuided({
 
                     {step === 7 && (
                         <dl className="space-y-3 text-sm">
+                            {validationMessages.length > 0 && (
+                                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-100">
+                                    <p className="font-medium">Non è stato possibile salvare:</p>
+                                    <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                                        {validationMessages.map((message) => (
+                                            <li key={message}>{message}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                             <div className="flex justify-between gap-4">
                                 <dt className="text-gray-500">Tipo</dt>
                                 <dd>{txType === 'income' ? 'Entrata' : 'Uscita'}</dd>

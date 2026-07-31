@@ -1,18 +1,25 @@
-# Split payment: saldo rimanente
+# Fix: salvataggio transazioni bloccato
 
 ## Goal
-Link «Saldo rimanente» dal 2° conto; blocca «Aggiungi conto» a totale raggiunto.
+Salva → loader → resta su stessa schermata (no redirect, no errore visibile).
+
+## Cause
+Guided create default = primo conto alfabetico = «Buoni pasto». Senza `meal_voucher_lines` → 422 silenzioso su step review.
 
 ## Plan
-- [x] SplitPaymentSection UX
-- [x] E2E transactions.spec
-- [x] make build + playwright (focused)
+- [x] Preferire conti liquidi come default (`transactionAccounts` + controller)
+- [x] Guided: errori su review + jump allo step; UI buoni pasto se conto MV
+- [x] Test helper + gate `make test` / pint / playwright focused
+- [x] Review
 
 ## Review
 ### Cosa
-- Dal 2° conto: link «Saldo rimanente» → fill importo = totale − altre righe
-- A totale raggiunto: nasconde «+ Aggiungi conto» + messaggio
+- Default form: banca/carta/contanti prima di buoni pasto / deposito / fondo pensione
+- Wizard: banner errori + salto allo step giusto; `MealVoucherSpendSection` su step conto
+- Test: `create_form_prefers_liquid_account_over_meal_voucher_as_default`
 
 ### Verifica
+- `make test` 1041 pass
+- `make pint-check` OK
 - `make build` OK
-- Playwright `pagamento su più conti` desktop+mobile: passed
+- Playwright focused transactions: pass

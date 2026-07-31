@@ -76,6 +76,37 @@ export function accountsForTransactionType(
     });
 }
 
+/**
+ * Preferisci conti «normali» (banca/carta/contanti) rispetto a deposito,
+ * buoni pasto e fondi pensione — evita default silenzioso su conti che
+ * richiedono campi extra (es. meal_voucher_lines) o sono non eleggibili.
+ */
+export function accountDefaultPreferenceScore(account: TransactionAccount): number {
+    if (account.is_pension_fund) {
+        return 3;
+    }
+    if (account.is_meal_voucher) {
+        return 2;
+    }
+    if (account.is_savings_deposit) {
+        return 1;
+    }
+
+    return 0;
+}
+
+export function preferredTransactionAccountId(accounts: TransactionAccount[]): string {
+    if (accounts.length === 0) {
+        return '';
+    }
+
+    const preferred = [...accounts].sort(
+        (a, b) => accountDefaultPreferenceScore(a) - accountDefaultPreferenceScore(b),
+    )[0];
+
+    return preferred ? String(preferred.id) : '';
+}
+
 export function resolveTransactionAccountId(
     accounts: TransactionAccount[],
     currentAccountId: string,
@@ -84,5 +115,5 @@ export function resolveTransactionAccountId(
         return currentAccountId;
     }
 
-    return accounts[0] ? String(accounts[0].id) : '';
+    return preferredTransactionAccountId(accounts);
 }

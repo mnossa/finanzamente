@@ -534,7 +534,7 @@ class TransactionController extends Controller
             'debtsCredits' => $debtsCredits,
             'currencies' => $this->currencyOptions(),
             'userDefaultCurrency' => $user->default_currency_code ?? CurrencyConverter::BASE_CURRENCY,
-            'defaultAccountId' => $request->query('account_id'),
+            'defaultAccountId' => $request->query('account_id') ?: $this->preferredTransactionFormAccountId($accounts),
             'defaultDebtCreditId' => $request->query('debt_credit_id'),
             'debtCreditPrefill' => $debtCreditPrefill,
         ]);
@@ -1433,5 +1433,42 @@ class TransactionController extends Controller
             ->map(fn (Account $account) => $account->toTransactionFormOption())
             ->values()
             ->all();
+    }
+
+    /**
+     * Preferisci conti liquidi rispetto a deposito / buoni pasto / fondo pensione.
+     *
+     * @param  array<int, array{id: int, is_savings_deposit?: bool, is_meal_voucher?: bool, is_pension_fund?: bool}>  $accounts
+     */
+    private function preferredTransactionFormAccountId(array $accounts): ?string
+    {
+        if ($accounts === []) {
+            return null;
+        }
+
+        usort($accounts, function (array $a, array $b): int {
+            return $this->transactionFormAccountPreferenceScore($a)
+                <=> $this->transactionFormAccountPreferenceScore($b);
+        });
+
+        return (string) $accounts[0]['id'];
+    }
+
+    /**
+     * @param  array{is_savings_deposit?: bool, is_meal_voucher?: bool, is_pension_fund?: bool}  $account
+     */
+    private function transactionFormAccountPreferenceScore(array $account): int
+    {
+        if (! empty($account['is_pension_fund'])) {
+            return 3;
+        }
+        if (! empty($account['is_meal_voucher'])) {
+            return 2;
+        }
+        if (! empty($account['is_savings_deposit'])) {
+            return 1;
+        }
+
+        return 0;
     }
 }

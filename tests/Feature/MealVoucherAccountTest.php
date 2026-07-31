@@ -282,6 +282,35 @@ class MealVoucherAccountTest extends TestCase
     }
 
     #[Test]
+    public function create_form_prefers_liquid_account_over_meal_voucher_as_default(): void
+    {
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'AAA Buoni pasto',
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+
+        $bank = Account::factory()->bank()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'ZZZ Conto corrente',
+            'initial_balance' => 100,
+            'current_balance' => 100,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('transactions.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Transactions/Create')
+                ->where('defaultAccountId', (string) $bank->id)
+            );
+    }
+
+    #[Test]
     public function expense_rejects_fractional_euro_without_matching_tickets(): void
     {
         $account = Account::factory()->mealVoucher(8)->create([
