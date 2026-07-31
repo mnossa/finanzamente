@@ -97,13 +97,22 @@ class AccountBalanceService
         });
     }
 
-    public function computeHouseholdTotal(User $user, ?Collection $accounts = null): float
+    /**
+     * Totale saldi household. Default = liquidità spendibile (esclude vincolati).
+     *
+     * @param  Collection<int, Account>|null  $accounts
+     */
+    public function computeHouseholdTotal(User $user, ?Collection $accounts = null, bool $includeLocked = false): float
     {
         $accounts ??= Account::query()
             ->where('household_id', $user->active_household_id)
             ->where('active', true)
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
             ->get();
+
+        if (! $includeLocked) {
+            $accounts = $accounts->reject(fn (Account $account) => $account->isLockedBalance())->values();
+        }
 
         $balances = $this->batchComputeBalances($accounts, $user);
 

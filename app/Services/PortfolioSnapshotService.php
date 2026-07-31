@@ -170,7 +170,7 @@ class PortfolioSnapshotService
             $accountType = $account->type ?? 'other';
             $isSavingsDeposit = $account->isSavingsDeposit();
             $isPensionFund = $account->isPensionFund();
-            $isLocked = $isSavingsDeposit || $isPensionFund;
+            $isLocked = $account->isLockedBalance();
             $assetClass = $isLocked
                 ? 'locked'
                 : (AssetClassificationService::ACCOUNT_TYPE_CLASS[$accountType] ?? 'liquidity');

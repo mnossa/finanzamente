@@ -1,23 +1,21 @@
-# Patrimonio: Liquidi vs Vincolati
+# Liquidità: escludi vincolati
 
 ## Goal
-Fix duplicate instruments under Liquidità; regroup deposit + pension as Vincolati.
+`household_balance` / widget Liquidità / dashboard total = solo spendibile (no deposito, no pensione).
 
 ## Plan
-- [x] Fix `enrichAllocationWithInstruments` → account under own `asset_class`
-- [x] Merge `deposit` + `pension` → `locked` / «Vincolati»; label liquidity → «Liquidi»
-- [x] Type label Conto Deposito for savings deposits in snapshot
-- [x] Investment form labels: only investment classes (no Vincolati triplicato)
-- [x] Tests Patrimonio + PensionFund
-- [x] `make test` + `make pint-check`
+- [x] `Account::isLockedBalance()`
+- [x] `computeHouseholdTotal(..., includeLocked: false)` default
+- [x] Accounts index: `includeLocked: true`
+- [x] `resolveLiquidAt` + patrimonio series include locked a parte
+- [x] NetWorth cash mode: solo liquidi
+- [x] Tests + pint
 
 ## Review
 ### Cosa
-- Bug: tutti i conti forzati in lista strumenti `liquidity` → duplicati
-- Classe unica `locked` (Vincolati): conti deposito + fondi pensione
-- Label allocazione: Liquidi / Vincolati
+Liquidità homepage allineata a Patrimonio `liquidValue`.
+Lista Conti mantiene somma di tutti i conti attivi.
 
 ### Verifica
 - Full PHPUnit: green
-- Filtered recheck: 21 passed
 - Pint: PASS

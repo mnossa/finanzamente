@@ -8,8 +8,10 @@ use App\Models\Household;
 use App\Models\User;
 use App\Services\AccountBalanceService;
 use App\Services\PortfolioSnapshotService;
+use App\Services\SystemVariableResolver;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -34,7 +36,10 @@ class PensionFundAccountTest extends TestCase
         parent::setUp();
         $this->withoutMiddleware(ValidateCsrfToken::class);
 
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->create([
+            'email_verified_at' => now(),
+            'profile_completed' => true,
+        ]);
         $this->household = Household::factory()->create(['owner_user_id' => $this->user->id]);
         $this->household->users()->attach($this->user->id, [
             'role' => 'owner',
@@ -199,5 +204,38 @@ class PensionFundAccountTest extends TestCase
         $this->assertNotNull($pensionPosition);
         $this->assertSame('locked', $pensionPosition['asset_class']);
         $this->assertSame('Vincolati', $pensionPosition['asset_class_label']);
+    }
+
+    #[Test]
+    public function household_balance_and_dashboard_exclude_pension_fund(): void
+    {
+        $this->assertSame(
+            5000.0,
+            app(AccountBalanceService::class)->computeHouseholdTotal($this->user),
+        );
+        $this->assertSame(
+            15000.0,
+            app(AccountBalanceService::class)->computeHouseholdTotal($this->user, includeLocked: true),
+        );
+
+        $today = now();
+        $this->assertSame(
+            5000.0,
+            app(SystemVariableResolver::class)->resolve(
+                $this->user,
+                'household_balance',
+                $today->copy()->startOfDay(),
+                $today,
+            ),
+        );
+
+        $this->actingAs($this->user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('totalBalance', 5000)
+                ->where('balanceBreakdown.total', 5000)
+                ->where('balanceBreakdown.patrimonioTotal', 15000)
+            );
     }
 }

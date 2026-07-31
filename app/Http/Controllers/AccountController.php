@@ -67,6 +67,7 @@ class AccountController extends Controller
         $totalBalance = $this->accountBalanceService->computeHouseholdTotal(
             $user,
             $accountModels->where('active', true),
+            includeLocked: true,
         );
 
         return Inertia::render('Accounts/Index', [

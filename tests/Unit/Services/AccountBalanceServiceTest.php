@@ -141,6 +141,37 @@ class AccountBalanceServiceTest extends TestCase
     }
 
     #[Test]
+    public function compute_household_total_excludes_locked_accounts_by_default(): void
+    {
+        Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 3000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        Account::factory()->savingsDeposit()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 4000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        Account::factory()->pensionFund()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 10000,
+            'active' => true,
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->assertSame(3000.0, $this->service->computeHouseholdTotal($this->user));
+        $this->assertSame(17000.0, $this->service->computeHouseholdTotal($this->user, includeLocked: true));
+    }
+
+    #[Test]
     public function map_accounts_with_balance_exposes_meal_voucher_labels_and_ticket_count(): void
     {
         $meal = Account::factory()->mealVoucher(8)->create([

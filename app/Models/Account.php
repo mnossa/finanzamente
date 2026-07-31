@@ -96,6 +96,15 @@ class Account extends Model
     }
 
     /**
+     * Saldo non spendibile a breve (deposito vincolato, previdenza).
+     * Escluso da «Liquidità attuale»; incluso in patrimonio / Vincolati.
+     */
+    public function isLockedBalance(): bool
+    {
+        return $this->isSavingsDeposit() || $this->isPensionFund();
+    }
+
+    /**
      * Conti esclusi da entrate/uscite libere (solo trasferimenti + aggiornamento posizione).
      */
     public function blocksStandaloneTransactions(): bool

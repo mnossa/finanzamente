@@ -36,9 +36,19 @@ class NetWorthSeriesService
             return [];
         }
 
-        $initialBalance = $accounts->sum(fn ($a) => (float) $a->initial_balance);
+        $cashAccounts = $mode === 'cash'
+            ? $accounts->reject(fn (Account $account) => $account->isLockedBalance())->values()
+            : $accounts;
 
-        $balanceBeforePeriod = (float) Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+        if ($cashAccounts->isEmpty() && $mode === 'cash') {
+            return [];
+        }
+
+        $initialBalance = $cashAccounts->sum(fn ($a) => (float) $a->initial_balance);
+
+        $cashAccountIds = $cashAccounts->pluck('id');
+
+        $balanceBeforePeriod = (float) Transaction::whereIn('account_id', $cashAccountIds)
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->where('date', '<', $startDate)
             ->sum('amount');
@@ -48,7 +58,7 @@ class NetWorthSeriesService
         $yearExpr = DatabaseDialect::yearExpr('date');
         $monthExpr = DatabaseDialect::monthExpr('date');
 
-        $monthlyTransactions = Transaction::whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+        $monthlyTransactions = Transaction::whereIn('account_id', $cashAccountIds)
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $userId))
             ->whereBetween('date', [$startDate, $endDate])
             ->selectRaw("{$yearExpr} as year, {$monthExpr} as month, SUM(amount) as net")

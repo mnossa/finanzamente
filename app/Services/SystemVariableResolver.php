@@ -171,12 +171,21 @@ class SystemVariableResolver
     private function resolvePatrimonioAt(User $user, Carbon $asOfDate): float
     {
         $liquid = $this->resolveLiquidAt($user, $asOfDate);
+        $locked = $this->resolveAccountsBalanceAt($user, $asOfDate, lockedOnly: true);
         $linked = $this->investmentLedgerService->linkedInvestedValueAt($user, $asOfDate);
 
-        return round($liquid + $linked, 2);
+        return round($liquid + $locked + $linked, 2);
     }
 
     private function resolveLiquidAt(User $user, Carbon $asOfDate): float
+    {
+        return $this->resolveAccountsBalanceAt($user, $asOfDate, lockedOnly: false);
+    }
+
+    /**
+     * @param  bool  $lockedOnly  true = solo vincolati; false = solo liquidi (default liquidità)
+     */
+    private function resolveAccountsBalanceAt(User $user, Carbon $asOfDate, bool $lockedOnly): float
     {
         $householdId = $user->active_household_id;
 
@@ -188,7 +197,8 @@ class SystemVariableResolver
             ->where('household_id', $householdId)
             ->where('active', true)
             ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
-            ->get();
+            ->get()
+            ->filter(fn (Account $account) => $account->isLockedBalance() === $lockedOnly);
 
         $total = 0.0;
 
