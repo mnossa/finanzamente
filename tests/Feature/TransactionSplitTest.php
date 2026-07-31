@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\Household;
+use App\Models\MealVoucherLot;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\MealVoucherLedgerService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -137,5 +139,95 @@ class TransactionSplitTest extends TestCase
         $this->accountB->refresh();
         $this->assertSame(80.0, (float) $this->accountA->current_balance);
         $this->assertSame(170.0, (float) $this->accountB->current_balance);
+    }
+
+    #[Test]
+    public function can_split_expense_between_meal_vouchers_and_cash(): void
+    {
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'name' => 'Buoni pasto',
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+        $lot = MealVoucherLot::query()->where('account_id', $meal->id)->firstOrFail();
+
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'account_id' => $meal->id,
+            'category_id' => $this->category->id,
+            'amount' => 50,
+            'date' => now()->toDateString(),
+            'description' => 'Pranzo misto ticket+contanti',
+            'splits' => [
+                ['account_id' => $meal->id, 'amount' => 32],
+                ['account_id' => $this->accountA->id, 'amount' => 18],
+            ],
+            'meal_voucher_lines' => [
+                ['lot_id' => $lot->id, 'quantity' => 4],
+            ],
+        ])->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $groupIds = Transaction::where('description', 'Pranzo misto ticket+contanti')
+            ->pluck('split_group_id')
+            ->unique()
+            ->filter();
+
+        $this->assertCount(1, $groupIds);
+        $this->assertCount(2, Transaction::where('split_group_id', $groupIds->first())->get());
+
+        $this->assertSame(6, (int) $lot->fresh()->quantity_remaining);
+        $this->assertSame(48.0, (float) $meal->fresh()->current_balance);
+        $this->assertSame(82.0, (float) $this->accountA->fresh()->current_balance);
+    }
+
+    #[Test]
+    public function rejects_meal_voucher_split_when_ticket_lines_missing(): void
+    {
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'category_id' => $this->category->id,
+            'amount' => 40,
+            'date' => now()->toDateString(),
+            'splits' => [
+                ['account_id' => $meal->id, 'amount' => 24],
+                ['account_id' => $this->accountA->id, 'amount' => 16],
+            ],
+        ])->assertSessionHasErrors('meal_voucher_lines');
+    }
+
+    #[Test]
+    public function rejects_meal_voucher_split_when_amount_not_matching_whole_tickets(): void
+    {
+        $meal = Account::factory()->mealVoucher(8)->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 80,
+            'current_balance' => 80,
+        ]);
+        app(MealVoucherLedgerService::class)->initializeAccount($meal);
+        $lot = MealVoucherLot::query()->where('account_id', $meal->id)->firstOrFail();
+
+        $this->actingAs($this->user)->post(route('transactions.store'), [
+            'category_id' => $this->category->id,
+            'amount' => 40,
+            'date' => now()->toDateString(),
+            'splits' => [
+                ['account_id' => $meal->id, 'amount' => 20],
+                ['account_id' => $this->accountA->id, 'amount' => 20],
+            ],
+            'meal_voucher_lines' => [
+                ['lot_id' => $lot->id, 'quantity' => 2],
+            ],
+        ])->assertSessionHasErrors('splits');
     }
 }

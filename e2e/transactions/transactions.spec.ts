@@ -127,7 +127,8 @@ test.describe('Transazioni', () => {
         await visibleHrefLocator(page, '/transazioni/crea').click();
         await expect(page).toHaveURL('/transazioni/crea');
 
-        // Split nascosto su conti buoni pasto (WFI-109): seleziona un conto corrente/carta.
+        // Split disponibile anche con buoni pasto (ticket interi + resto su altro conto).
+        // Preferisci un conto liquido come default per evitare UI ticket se non serve.
         const accountSelect = page.locator('#account_id');
         await expect(accountSelect).toBeVisible({ timeout: 8_000 });
         const options = accountSelect.locator('option');
@@ -151,6 +152,7 @@ test.describe('Transazioni', () => {
         await page.getByRole('button', { name: /pagamento su più conti/i }).click();
 
         const splitSection = page.locator('div.rounded-xl').filter({ hasText: /pagamento su più conti/i });
+        await expect(splitSection.getByText(/ticket \(interi\)/i)).toBeVisible();
         await expect(splitSection.getByRole('button', { name: /aggiungi conto/i })).toBeVisible();
 
         const splitAmounts = splitSection.locator('input[type="number"]');

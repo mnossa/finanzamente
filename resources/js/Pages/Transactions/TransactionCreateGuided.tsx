@@ -194,6 +194,33 @@ export default function TransactionCreateGuided({
         [accounts, txType],
     );
 
+    const splitMealVoucherAccount = useMemo(() => {
+        if (!splitEnabled) {
+            return null;
+        }
+        const mealLine = splits.find((line) => {
+            const account = accounts.find((a) => String(a.id) === line.account_id);
+            return Boolean(account?.is_meal_voucher);
+        });
+        if (!mealLine) {
+            return null;
+        }
+        return accounts.find((a) => String(a.id) === mealLine.account_id) ?? null;
+    }, [splitEnabled, splits, accounts]);
+
+    const splitMealVoucherLineIndex = useMemo(() => {
+        if (!splitMealVoucherAccount) {
+            return -1;
+        }
+        return splits.findIndex((line) => line.account_id === String(splitMealVoucherAccount.id));
+    }, [splitMealVoucherAccount, splits]);
+
+    const updateSplitLineAmount = (index: number, amount: string) => {
+        setSplits((current) =>
+            current.map((line, i) => (i === index ? { ...line, amount } : line)),
+        );
+    };
+
     useEffect(() => {
         const nextAccountId = resolveTransactionAccountId(selectableAccounts, data.account_id);
         if (nextAccountId !== data.account_id) {
@@ -257,7 +284,15 @@ export default function TransactionCreateGuided({
                     const sum = splits.reduce((acc, line) => acc + (parseFloat(line.amount) || 0), 0);
                     const hasTwoLines = splits.filter((l) => l.account_id && parseFloat(l.amount) > 0).length >= 2;
 
-                    return hasTwoLines && Math.abs(sum - total) <= 0.02;
+                    if (!hasTwoLines || Math.abs(sum - total) > 0.02) {
+                        return false;
+                    }
+
+                    if (isExpense && splitMealVoucherAccount) {
+                        return data.meal_voucher_lines.some((line) => line.quantity > 0);
+                    }
+
+                    return true;
                 }
 
                 if (!data.account_id) {
@@ -440,22 +475,36 @@ export default function TransactionCreateGuided({
 
                     {step === 3 && (
                         <div className="space-y-4">
-                            {selectableAccounts.length >= 2 && !isMealVoucherAccount ? (
+                            {selectableAccounts.length >= 2 ? (
                                 <SplitPaymentSection
                                     enabled={splitEnabled}
-                                    onToggle={setSplitEnabled}
+                                    onToggle={(enabled) => {
+                                        setSplitEnabled(enabled);
+                                        if (enabled) {
+                                            setData('meal_voucher_lines', []);
+                                        }
+                                    }}
                                     accounts={selectableAccounts}
                                     splits={splits}
-                                    onSplitsChange={setSplits}
+                                    onSplitsChange={(next) => {
+                                        const prevMealId = splits.find((line) =>
+                                            accounts.find((a) => String(a.id) === line.account_id)?.is_meal_voucher,
+                                        )?.account_id;
+                                        const nextMealId = next.find((line) =>
+                                            accounts.find((a) => String(a.id) === line.account_id)?.is_meal_voucher,
+                                        )?.account_id;
+                                        if (prevMealId !== nextMealId) {
+                                            setData('meal_voucher_lines', []);
+                                        }
+                                        setSplits(next);
+                                    }}
                                     totalAmount={data.amount}
                                     errors={errors}
                                 />
                             ) : (
-                                selectableAccounts.length < 2 && (
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        Serve almeno un secondo conto per ripartire il pagamento su più conti.
-                                    </p>
-                                )
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Serve almeno un secondo conto per ripartire il pagamento su più conti.
+                                </p>
                             )}
                             {!splitEnabled && (
                                 <div className="max-h-[min(40vh,16rem)] space-y-2 overflow-y-auto">
@@ -466,9 +515,6 @@ export default function TransactionCreateGuided({
                                             onClick={() => {
                                                 setData('account_id', String(account.id));
                                                 setData('meal_voucher_lines', []);
-                                                if (account.is_meal_voucher) {
-                                                    setSplitEnabled(false);
-                                                }
                                             }}
                                             className={clsx(
                                                 'w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors',
@@ -498,10 +544,33 @@ export default function TransactionCreateGuided({
                                     }}
                                 />
                             )}
-                            {isMealVoucherAccount && !isExpense && mealVoucherUnit && (
+                            {splitEnabled && isExpense && splitMealVoucherAccount && splitMealVoucherLineIndex >= 0 && (
+                                <MealVoucherSpendSection
+                                    lots={splitMealVoucherAccount.meal_voucher_lots ?? []}
+                                    lines={data.meal_voucher_lines}
+                                    amount={splits[splitMealVoucherLineIndex]?.amount ?? ''}
+                                    currencyCode={splitMealVoucherAccount.currency_code}
+                                    error={errors.meal_voucher_lines}
+                                    onAmountChange={(value) =>
+                                        updateSplitLineAmount(splitMealVoucherLineIndex, value)
+                                    }
+                                    onChange={(lines, euro) => {
+                                        setData('meal_voucher_lines', lines);
+                                        if (euro > 0) {
+                                            updateSplitLineAmount(splitMealVoucherLineIndex, String(euro));
+                                        }
+                                    }}
+                                />
+                            )}
+                            {isMealVoucherAccount && !isExpense && !splitEnabled && mealVoucherUnit && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     Accredito buoni: l&apos;importo deve essere un multiplo di{' '}
                                     {formatCurrency(mealVoucherUnit)} (ticket interi).
+                                </p>
+                            )}
+                            {splitEnabled && !isExpense && splitMealVoucherAccount && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    La riga buoni pasto deve essere un multiplo del valore ticket vigente (ticket interi).
                                 </p>
                             )}
                             <InputError message={errors.account_id} />
