@@ -92,7 +92,8 @@ class HomepageContentTest extends TestCase
 
         // L'onestà sui limiti fa parte del ton of voice: le funzioni a pagamento
         // devono essere riconoscibili già in home.
-        $response->assertSee('Detrazioni e 730', false);
+        $response->assertSee('Tracker spese detraibili', false);
+        $response->assertDontSee('Detrazioni e 730', false);
         $response->assertSee('La sezione investimenti fa parte del piano Pro', false);
     }
 

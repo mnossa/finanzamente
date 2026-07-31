@@ -10,6 +10,12 @@ html.fm-hide-balances .fm-sensitive-amount {
     pointer-events: none;
 }
 
+/* Assi Y Recharts (importi): la classe HTML non arriva sui tick SVG */
+html.fm-hide-balances .fm-sensitive-chart .recharts-yAxis .recharts-cartesian-axis-tick text {
+    filter: blur(10px);
+    user-select: none;
+}
+
 @layer base {
     /* Typography base - Font più leggibile per dati finanziari */
     html {

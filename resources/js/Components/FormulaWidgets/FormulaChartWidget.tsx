@@ -69,7 +69,7 @@ function ChartTooltip({
             </p>
             {payload.map((entry) => (
                 <p key={String(entry.name)} style={{ margin: '2px 0', color: entry.color ?? '#64748b' }}>
-                    {entry.name}: <strong>{formatEuro(Number(entry.value ?? 0))}</strong>
+                    {entry.name}: <strong className={moneyTabular}>{formatEuro(Number(entry.value ?? 0))}</strong>
                 </p>
             ))}
         </div>
@@ -99,7 +99,7 @@ function LineAreaView({
     }
 
     return (
-        <div className="w-full">
+        <div className="fm-sensitive-chart w-full">
             {lastValue !== null && (
                 <p className={clsx('mb-2 text-2xl font-bold text-gray-900 dark:text-white', moneyTabular)}>
                     {formatCurrency(lastValue)}
@@ -170,7 +170,7 @@ function BarView({
     }
 
     return (
-        <div className="w-full">
+        <div className="fm-sensitive-chart w-full">
             {!embedded && (
                 <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                     {payload.name} · {payload.periodLabel}
@@ -261,8 +261,21 @@ function PieView({ payload, embedded }: { payload: CategoryChartPayload; embedde
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value) => formatEuro(Number(value ?? 0))}
-                        contentStyle={getChartTooltipStyle(isDark)}
+                        content={({ active, payload: tipPayload }) => {
+                            if (!active || !tipPayload?.length) {
+                                return null;
+                            }
+                            const entry = tipPayload[0];
+
+                            return (
+                                <div style={getChartTooltipStyle(isDark)}>
+                                    <p className="font-semibold">{String(entry.name)}</p>
+                                    <p className={clsx('font-bold', moneyTabular)}>
+                                        {formatEuro(Number(entry.value ?? 0))}
+                                    </p>
+                                </div>
+                            );
+                        }}
                     />
                 </PieChart>
             </ResponsiveContainer>
@@ -349,7 +362,7 @@ function TreemapView({ payload, embedded }: { payload: CategoryChartPayload; emb
                             return (
                                 <div style={getChartTooltipStyle(isDark)}>
                                     <p className="font-semibold">{item.name}</p>
-                                    <p>{formatEuro(item.value)}</p>
+                                    <p className={clsx('font-bold', moneyTabular)}>{formatEuro(item.value)}</p>
                                     <p className="text-xs text-gray-500">{item.percentage.toFixed(1)}% del totale</p>
                                 </div>
                             );

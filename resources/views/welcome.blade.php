@@ -406,11 +406,11 @@
             <div class="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="bg-white rounded-2xl p-6 border border-surface-200">
                     <h3 class="font-semibold text-surface-900 mb-2">
-                        Detrazioni e 730
+                        Tracker spese detraibili
                         <span class="ml-1 align-middle inline-flex items-center px-1.5 py-0.5 rounded bg-accent-100 text-accent-700 text-xs font-semibold uppercase tracking-wide">Pro</span>
                     </h3>
                     <p class="text-sm text-surface-600">
-                        Marchi le spese detraibili durante l'anno ed esporti tutto in PDF, allegati compresi, quando arriva il momento della dichiarazione.
+                        Marchi le spese detraibili (mediche, mutuo…) durante l'anno ed esporti tutto in PDF, allegati compresi, quando serve al CAF o al commercialista.
                     </p>
                 </div>
                 <div class="bg-white rounded-2xl p-6 border border-surface-200">

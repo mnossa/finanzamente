@@ -17,7 +17,7 @@
                     <span class="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">una sola spesa detraibile</span>
                 </h1>
                 <p class="text-lg sm:text-xl text-surface-600 mb-8 leading-relaxed">
-                    Marca le spese durante l'anno: mediche, scolastiche, ristrutturazioni, mutuo. Quando arriva il 730, hai tutto pronto in PDF per il CAF — senza frenetiche ricerche di scontrini.
+                    Marca le spese durante l'anno: mediche, scolastiche, ristrutturazioni, mutuo. Quando serve la dichiarazione, hai tutto pronto in PDF per il CAF — senza frenetiche ricerche di scontrini.
                 </p>
                 @include('partials.landing.pro-cta-button', [
                     'label'         => 'Abbonati a Pro — traccia le spese detraibili',
@@ -119,9 +119,10 @@
                         </div>
                     </div>
                     <div class="p-3 bg-teal-50 rounded-xl border border-teal-100 flex justify-between items-center">
-                        <span class="text-sm font-semibold text-teal-800">Detrazione stimata</span>
-                        <span class="text-lg font-extrabold text-teal-700">€ 837</span>
+                        <span class="text-sm font-semibold text-teal-800">Totale spese marcate</span>
+                        <span class="text-lg font-extrabold text-teal-700">€ 4.392</span>
                     </div>
+                    <p class="mt-2 text-xs text-surface-500">Esempio illustrativo: l'app traccia e esporta le spese, non calcola la dichiarazione.</p>
                 </div>
             </div>
         </div>

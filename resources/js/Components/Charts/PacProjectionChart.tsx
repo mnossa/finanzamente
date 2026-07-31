@@ -8,6 +8,8 @@ import {
     YAxis,
 } from 'recharts';
 import { formatCurrency } from '@/utils/format';
+import { moneyTabular } from '@/utils/moneyGridClasses';
+import clsx from 'clsx';
 
 export interface PacProjectionPoint {
     month: string;
@@ -31,7 +33,7 @@ export default function PacProjectionChart({ series, currencyCode = 'EUR' }: Pac
     }
 
     return (
-        <div className="h-56 w-full">
+        <div className="fm-sensitive-chart h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
@@ -42,11 +44,26 @@ export default function PacProjectionChart({ series, currencyCode = 'EUR' }: Pac
                         width={72}
                     />
                     <Tooltip
-                        formatter={(value, name) => [
-                            formatCurrency(Number(value ?? 0), currencyCode),
-                            name === 'cumulative' ? 'Totale versamenti' : 'Versamento mese',
-                        ]}
-                        labelFormatter={(label) => String(label)}
+                        content={({ active, payload, label }) => {
+                            if (!active || !payload?.length) {
+                                return null;
+                            }
+
+                            return (
+                                <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-md dark:border-gray-700 dark:bg-gray-800">
+                                    <p className="mb-1 font-semibold text-gray-700 dark:text-gray-200">{String(label)}</p>
+                                    {payload.map((entry) => (
+                                        <p key={String(entry.name)} className="text-gray-600 dark:text-gray-300">
+                                            {entry.name === 'cumulative' ? 'Totale versamenti' : 'Versamento mese'}
+                                            {': '}
+                                            <span className={clsx('font-semibold', moneyTabular)}>
+                                                {formatCurrency(Number(entry.value ?? 0), currencyCode)}
+                                            </span>
+                                        </p>
+                                    ))}
+                                </div>
+                            );
+                        }}
                     />
                     <Area
                         type="monotone"

@@ -23,6 +23,7 @@ import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useDashboardFormulaPayloads } from '@/hooks/useDashboardFormulaPayloads';
 import { useDashboardDeferredWidgets } from '@/hooks/useDashboardDeferredWidgets';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
+import AddDashboardWidgetModal from '@/Components/Dashboard/AddDashboardWidgetModal';
 import DashboardWidgetShell, {
     dashboardWidgetEmptyClass as widgetEmptyClass,
     dashboardWidgetListBodyClass as widgetListBodyClass,
@@ -302,6 +303,7 @@ export default function Dashboard({
 }: DashboardProps) {
     const [hideModuleMessage, setHideModuleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [deleteFormulaWidgetTarget, setDeleteFormulaWidgetTarget] = useState<{ id: number; name: string } | null>(null);
+    const [showAddWidgetModal, setShowAddWidgetModal] = useState(false);
     const { isModuleEnabled, isModuleLocked } = useModules();
 
     const {
@@ -312,6 +314,7 @@ export default function Dashboard({
         saveError,
         cancelEditing,
         toggleWidgetVisibility,
+        addWidget,
         setWidgetSize,
         setWidgetRuntimeParam,
         persistWidgetRuntimeParam,
@@ -844,6 +847,14 @@ export default function Dashboard({
                                 )}
                                 <button
                                     type="button"
+                                    onClick={() => setShowAddWidgetModal(true)}
+                                    className="rounded-lg border border-emerald-500 bg-white px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500 dark:bg-gray-800 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                                    data-testid="dashboard-add-widget"
+                                >
+                                    Aggiungi widget
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={resetLayout}
                                     className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                                 >
@@ -903,6 +914,14 @@ export default function Dashboard({
                         </div>
                     )}
             </PageContent>
+
+            <AddDashboardWidgetModal
+                show={showAddWidgetModal}
+                onClose={() => setShowAddWidgetModal(false)}
+                presentWidgetIds={sortedWidgets.map((widget) => widget.id)}
+                onAdd={addWidget}
+                isModuleLocked={isModuleLocked}
+            />
 
             <ConfirmDeleteDialog
                 open={deleteFormulaWidgetTarget !== null}

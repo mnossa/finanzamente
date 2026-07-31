@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
-import { DashboardLayoutConfig, WidgetConfig, WidgetId, WidgetSize } from '@/types/dashboard';
+import { WIDGET_MAP } from '@/constants/widgetRegistry';
+import { DashboardLayoutConfig, KnownWidgetId, WidgetConfig, WidgetId, WidgetSize } from '@/types/dashboard';
 
 /** Reorder array item without @dnd-kit (keeps vendor-dnd off the dashboard critical path). */
 function arrayMove<T>(items: T[], fromIndex: number, toIndex: number): T[] {
@@ -26,6 +27,7 @@ interface UseDashboardLayoutReturn {
     toggleEditing: () => void;
     cancelEditing: () => void;
     toggleWidgetVisibility: (id: WidgetId) => void;
+    addWidget: (id: KnownWidgetId) => void;
     setWidgetSize: (id: WidgetId, size: WidgetSize) => void;
     setWidgetRuntimeParam: (id: WidgetId, key: string, value: string) => void;
     persistWidgetRuntimeParam: (id: WidgetId, key: string, value: string) => Promise<void>;
@@ -94,6 +96,36 @@ export function useDashboardLayout(
                 w.id === id ? { ...w, visible: !w.visible } : w
             ),
         }));
+    }, []);
+
+    const addWidget = useCallback((id: KnownWidgetId) => {
+        const definition = WIDGET_MAP[id];
+        if (!definition) {
+            return;
+        }
+
+        setConfig((prev) => {
+            const existing = prev.widgets.find((widget) => widget.id === id);
+            if (existing) {
+                return {
+                    widgets: prev.widgets.map((widget) =>
+                        widget.id === id ? { ...widget, visible: true } : widget
+                    ),
+                };
+            }
+
+            const nextWidgets = [
+                ...prev.widgets,
+                {
+                    id,
+                    visible: true,
+                    position: prev.widgets.length,
+                    size: definition.defaultSize,
+                } satisfies WidgetConfig,
+            ].map((widget, index) => ({ ...widget, position: index }));
+
+            return { widgets: nextWidgets };
+        });
     }, []);
 
     const setWidgetSize = useCallback((id: WidgetId, size: WidgetSize) => {
@@ -259,6 +291,7 @@ export function useDashboardLayout(
         toggleEditing,
         cancelEditing,
         toggleWidgetVisibility,
+        addWidget,
         setWidgetSize,
         setWidgetRuntimeParam,
         persistWidgetRuntimeParam,

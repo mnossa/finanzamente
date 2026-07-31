@@ -7,6 +7,7 @@ import {
 import { categoryPalette, formatEuro, getChartTooltipStyle, useChartDarkMode, useCompactChart } from './chartConfig';
 import { Link } from '@inertiajs/react';
 import clsx from 'clsx';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 
 const CHART_HEIGHT_DESKTOP = 256;
 const CHART_HEIGHT_MOBILE = 200;
@@ -91,7 +92,7 @@ function TreemapTooltip({ active, payload }: { active?: boolean; payload?: Toolt
             <p className="font-semibold">
                 {d.icon ?? '📁'} {d.name}
             </p>
-            <p className="text-blue-500 font-bold">{formatEuro(d.value)}</p>
+            <p className={clsx('text-blue-500 font-bold', moneyTabular)}>{formatEuro(d.value)}</p>
             <p className="text-gray-500 dark:text-gray-400 text-xs">{d.percentage?.toFixed(1)}% del totale</p>
         </div>
     );
@@ -142,7 +143,7 @@ export default function ExpenseTreemap({ data, className, month, embedded = fals
                     <span className="min-w-0 flex-1 truncate text-sm text-gray-700 dark:text-gray-300">
                         {d.icon ?? '📁'} {d.name}
                     </span>
-                    <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
+                    <span className={clsx('shrink-0 text-sm font-semibold text-gray-900 dark:text-white', moneyTabular)}>
                         {formatEuro(d.value)}
                     </span>
                     <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-400">
@@ -219,7 +220,7 @@ export default function ExpenseTreemap({ data, className, month, embedded = fals
                         </button>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                        <span className="font-bold text-gray-900 dark:text-white">{formatEuro(selected.value)}</span>
+                        <span className={clsx('font-bold text-gray-900 dark:text-white', moneyTabular)}>{formatEuro(selected.value)}</span>
                         <span className="text-gray-500 dark:text-gray-400">({selected.percentage.toFixed(1)}% del totale)</span>
                         {selected.category_id && (
                             <Link

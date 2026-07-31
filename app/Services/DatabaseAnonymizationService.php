@@ -66,6 +66,10 @@ class DatabaseAnonymizationService
                 'telegram_chat_id' => null,
                 'fiscal_code' => null,
                 'vat_number' => null,
+                // Debug locale: niente challenge 2FA dopo import anonimizzato.
+                'two_factor_secret' => null,
+                'two_factor_recovery_codes' => null,
+                'two_factor_confirmed_at' => null,
             ])->saveQuietly();
             $count++;
         }

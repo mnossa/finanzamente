@@ -4,6 +4,7 @@ import { Link, router, useForm } from '@inertiajs/react';
 import CardBox from '@/Components/CardBox';
 import DashboardWidgetShell from '@/Components/Dashboard/DashboardWidgetShell';
 import { formatCurrency } from '@/utils/format';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 
 export interface ExpenseDistributionBucket {
     amount: number;
@@ -317,7 +318,7 @@ export default function ExpenseDistributionWidget({ data, className, embedded = 
                                             <span className={clsx('font-semibold', b.color)}>
                                                 {pct.toFixed(1)}%
                                             </span>
-                                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                            <span className={clsx('text-xs text-gray-400 dark:text-gray-500', moneyTabular)}>
                                                 {formatCurrency(bucket.amount)}
                                             </span>
                                         </div>
@@ -357,7 +358,7 @@ export default function ExpenseDistributionWidget({ data, className, embedded = 
                                 <span className="text-gray-500 dark:text-gray-400">
                                     ❓ Non classificate
                                 </span>
-                                <span className="font-medium text-gray-600 dark:text-gray-400">
+                                <span className={clsx('font-medium text-gray-600 dark:text-gray-400', moneyTabular)}>
                                     {data.unclassified.percentage.toFixed(1)}% · {formatCurrency(data.unclassified.amount)}
                                 </span>
                             </p>

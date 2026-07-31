@@ -74,4 +74,4 @@ fi
 
 echo "[+] Import completato in ${LOCAL_DB_NAME}."
 echo "[i] Poi anonimizza con: make db-anonymize"
-echo "[i] Login dopo anonimizzazione: dev@finanzamente.local / password (porta 8080)"
+echo "[i] Login dopo anonimizzazione: dev@finanzamente.local / password (porta 8080; 2FA disabilitata)"

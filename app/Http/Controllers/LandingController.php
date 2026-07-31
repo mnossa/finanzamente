@@ -77,16 +77,16 @@ class LandingController extends Controller
 
     public function lavoratori(): View
     {
-        SEOMeta::setTitle('Finanzamente Pro per Lavoratori Dipendenti — Detrazioni fiscali e 730');
-        SEOMeta::setDescription('Marca le spese detraibili durante l\'anno ed esporta tutto in PDF per il 730. Nessuna spesa fiscale dimenticata con Finanzamente Pro.');
-        SEOMeta::setKeywords(['detrazioni fiscali', '730', 'spese detraibili', 'lavoratore dipendente finanze', 'dichiarazione redditi Italia']);
+        SEOMeta::setTitle('Finanzamente Pro per Lavoratori Dipendenti — Tracker spese detraibili');
+        SEOMeta::setDescription('Marca le spese detraibili durante l\'anno ed esporta tutto in PDF per il CAF. Nessuna spesa fiscale dimenticata con Finanzamente Pro.');
+        SEOMeta::setKeywords(['detrazioni fiscali', 'spese detraibili', 'lavoratore dipendente finanze', 'export CAF', 'spese mediche']);
         SEOMeta::setCanonical(url('/per-lavoratori'));
         OpenGraph::setTitle('Finanzamente Pro — Per lavoratori dipendenti');
-        OpenGraph::setDescription('Detrazioni fiscali e 730 senza sorprese. Marca le spese durante l\'anno, esporta in PDF al momento della dichiarazione.');
+        OpenGraph::setDescription('Tracker spese detraibili: marca le spese durante l\'anno, esporta in PDF per CAF o commercialista.');
         OpenGraph::setUrl(url('/per-lavoratori'));
         OpenGraph::addProperty('type', 'website');
         TwitterCard::setTitle('Finanzamente Pro per Lavoratori Dipendenti');
-        TwitterCard::setDescription('Non dimenticare più una spesa detraibile. Pronto per il 730.');
+        TwitterCard::setDescription('Non dimenticare più una spesa detraibile. Export PDF pronto per CAF o commercialista.');
         TwitterCard::addValue('card', 'summary_large_image');
 
         $this->structuredDataService->forLandingPage(url('/per-lavoratori'), 'Per Lavoratori Dipendenti');

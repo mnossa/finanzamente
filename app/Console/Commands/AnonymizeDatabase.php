@@ -50,6 +50,7 @@ class AnonymizeDatabase extends Command
             fn (User $user) => $this->line('  - '.$user->email)
         );
         $this->warn('Password per tutti gli utenti: '.DatabaseAnonymizationService::DEFAULT_PASSWORD);
+        $this->line('2FA disabilitata su tutti gli utenti (debug locale).');
 
         $primaryUser = User::withTrashed()->orderBy('id')->first();
         $loginVerified = $primaryUser !== null

@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import type { FormulaWidgetTablePayload } from '@/types/formulaWidget';
+import { moneyTabular } from '@/utils/moneyGridClasses';
 
 interface FormulaTableWidgetProps {
     payload: FormulaWidgetTablePayload;
@@ -132,7 +133,7 @@ export default function FormulaTableWidget({
                                                     'truncate px-1 py-2 text-gray-800 dark:text-gray-100',
                                                     columnWidthClass(column.key),
                                                     columnVisibilityClass(column.key),
-                                                    money && 'text-right tabular-nums',
+                                                    money && clsx('text-right', moneyTabular),
                                                     money && negative && 'text-rose-600 dark:text-rose-400',
                                                     money && !negative && typeof raw === 'number' && raw > 0
                                                         && 'text-emerald-700 dark:text-emerald-400',

@@ -24,6 +24,9 @@ class DatabaseAnonymizationTest extends TestCase
             'name' => 'Mario Rossi',
             'email' => 'mario.rossi@example.com',
             'fiscal_code' => 'RSSMRA80A01H501U',
+            'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
+            'two_factor_recovery_codes' => ['recovery-code-one', 'recovery-code-two'],
+            'two_factor_confirmed_at' => now(),
         ]);
 
         $household = Household::factory()->create([
@@ -58,6 +61,9 @@ class DatabaseAnonymizationTest extends TestCase
         $this->assertSame('Utente '.$user->id, $user->name);
         $this->assertTrue(Hash::check(DatabaseAnonymizationService::DEFAULT_PASSWORD, $user->password));
         $this->assertNull($user->fiscal_code);
+        $this->assertNull($user->two_factor_secret);
+        $this->assertNull($user->two_factor_recovery_codes);
+        $this->assertNull($user->two_factor_confirmed_at);
         $this->assertSame('Household '.$household->id, $household->name);
         $this->assertStringContainsString((string) $account->id, $account->name);
         $this->assertSame('Movimento #'.$transaction->id, $transaction->description);

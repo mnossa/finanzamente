@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
+import { moneyTabular } from '@/utils/moneyGridClasses';
+import { formatCurrency } from '@/utils/format';
 
 export interface LifestyleWidgetData {
     unlocked: boolean;
@@ -30,15 +32,6 @@ export interface LifestyleWidgetData {
 interface LifestyleWidgetProps {
     data: LifestyleWidgetData;
     className?: string;
-}
-
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(amount);
 }
 
 function getScoreBadgeClass(score: number | null): string {
@@ -231,13 +224,13 @@ export default function LifestyleWidget({ data, className }: LifestyleWidgetProp
                         <div className="space-y-1.5 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Reddito netto</span>
-                                <span className="font-medium text-gray-900 dark:text-white">
+                                <span className={clsx('font-medium text-gray-900 dark:text-white', moneyTabular)}>
                                     {formatCurrency(data.net_income)}
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-500 dark:text-gray-400">Spese effettive</span>
-                                <span className="font-medium text-red-700 dark:text-red-300">
+                                <span className={clsx('font-medium text-red-700 dark:text-red-300', moneyTabular)}>
                                     {formatCurrency(data.effective_expenses)}
                                 </span>
                             </div>

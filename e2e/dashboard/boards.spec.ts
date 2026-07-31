@@ -13,6 +13,11 @@ test.describe('Le mie dashboard', () => {
         await page.getByTestId('board-customize-home').click();
         await expect(page).toHaveURL(/edit=1/);
         await expect(page.getByRole('region', { name: /modalità personalizzazione/i })).toBeVisible();
+        await page.getByTestId('dashboard-add-widget').click();
+        await expect(page.getByRole('heading', { name: 'Aggiungi widget' })).toBeVisible();
+        await page.getByRole('button', { name: /Proiezione PAC/i }).click();
+        await expect(page.getByRole('heading', { name: 'Aggiungi widget' })).toHaveCount(0);
+        await expect(page.getByText('Proiezione PAC').first()).toBeVisible();
     });
 
     test('Personalizza apre board custom direttamente in modalità edit', async ({ page }) => {
