@@ -164,6 +164,7 @@ class PortfolioSnapshotService
         $depositValue = 0.0;
         $pensionValue = 0.0;
         $allocationLiquidValue = 0.0;
+        $allocationLockedValue = 0.0;
 
         foreach ($accounts as $account) {
             $balance = $accountBalances[$account->id];
@@ -191,7 +192,8 @@ class PortfolioSnapshotService
                 'is_pension_fund' => $isPensionFund,
             ];
 
-            if ($balance <= 0) {
+            // Zero: niente KPI/posizione. Negativi: contano in liquidità/vincolati (allineato a household_balance).
+            if (round($balance, 2) == 0.0) {
                 continue;
             }
 
@@ -202,9 +204,19 @@ class PortfolioSnapshotService
                 } else {
                     $pensionValue += $balance;
                 }
+                if ($balance > 0) {
+                    $allocationLockedValue += $balance;
+                }
             } else {
                 $liquidValue += $balance;
-                $allocationLiquidValue += $balance;
+                if ($balance > 0) {
+                    $allocationLiquidValue += $balance;
+                }
+            }
+
+            // Posizioni/allocazione: solo saldi positivi. I negativi restano nei KPI liquidità.
+            if ($balance < 0) {
+                continue;
             }
 
             $positions[] = [
@@ -234,7 +246,7 @@ class PortfolioSnapshotService
         $investedLinkedValue += $illiquidAccountValue;
 
         $totalValue = $liquidValue + $investedLinkedValue;
-        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue + $illiquidAccountValue;
+        $allocationTotalValue = $allocationLiquidValue + $allocationInvestedValue + $allocationLockedValue;
 
         foreach ($accountRows as &$accountRow) {
             $accountRow['portfolio_percentage'] = $totalValue > 0
@@ -245,7 +257,7 @@ class PortfolioSnapshotService
 
         $classMap = [];
         foreach ($positions as $pos) {
-            if (($pos['type'] ?? '') === 'investment' && ! ($pos['include_in_allocation'] ?? false)) {
+            if (! ($pos['include_in_allocation'] ?? false)) {
                 continue;
             }
 
@@ -277,8 +289,14 @@ class PortfolioSnapshotService
 
         usort($allocation, fn ($a, $b) => $b['value'] <=> $a['value']);
 
-        $allocationRisk = $this->computeRiskIndex($positions, fn (array $pos) => ($pos['include_in_allocation'] ?? false) || (($pos['type'] ?? '') === 'account' && ($pos['value'] ?? 0) > 0));
-        $patrimonioRisk = $this->computeRiskIndex($positions, fn (array $pos) => $pos['type'] === 'account' || ($pos['is_linked_to_ledger'] ?? false));
+        $allocationRisk = $this->computeRiskIndex($positions, fn (array $pos) => ($pos['include_in_allocation'] ?? false) && ($pos['value'] ?? 0) > 0);
+        $patrimonioRisk = $this->computeRiskIndex($positions, function (array $pos) {
+            if (($pos['type'] ?? '') === 'account') {
+                return ($pos['value'] ?? 0) > 0;
+            }
+
+            return (bool) ($pos['is_linked_to_ledger'] ?? false);
+        });
 
         foreach ($positions as &$pos) {
             if (($pos['type'] ?? '') === 'investment' && ! ($pos['include_in_allocation'] ?? false)) {

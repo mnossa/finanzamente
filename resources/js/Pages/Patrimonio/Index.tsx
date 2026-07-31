@@ -236,7 +236,7 @@ export default function PatrimonioIndex({
                         label="Saldo conti"
                         value={formatCurrency(liquidValue)}
                         valueClassName="text-cyan-600 dark:text-cyan-400"
-                        detail={<KpiHint>Somma saldi di tutti i conti attivi (negativi inclusi).</KpiHint>}
+                        detail={<KpiHint>Conti liquidi attivi (negativi inclusi; esclusi deposito e previdenza).</KpiHint>}
                     />
                     <IndexKpiCell
                         label="Investimenti"
