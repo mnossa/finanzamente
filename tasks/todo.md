@@ -1,19 +1,18 @@
-# Align liquidValue negatives with homepage
+# Split payment: saldo rimanente
 
 ## Goal
-Patrimonio `liquidValue` / `totalValue` = stessa regola di `household_balance` (negativi inclusi).
+Link «Saldo rimanente» dal 2° conto; blocca «Aggiungi conto» a totale raggiunto.
 
 ## Plan
-- [x] PortfolioSnapshotService: liquid KPI include negativi
-- [x] Allocazione/torta: solo saldi positivi (no pie rotta)
-- [x] Update FinancialConsistencyTest + hint UI
-- [x] make test + pint-check
+- [x] SplitPaymentSection UX
+- [x] E2E transactions.spec
+- [x] make build + playwright (focused)
 
 ## Review
 ### Cosa
-Homepage e Patrimonio «Saldo conti» stessa formula: liquidi non vincolati, negativi inclusi.
-Allocazione esclude saldi ≤0 dalla torta.
+- Dal 2° conto: link «Saldo rimanente» → fill importo = totale − altre righe
+- A totale raggiunto: nasconde «+ Aggiungi conto» + messaggio
 
 ### Verifica
-- Full PHPUnit green
-- Pint PASS
+- `make build` OK
+- Playwright `pagamento su più conti` desktop+mobile: passed

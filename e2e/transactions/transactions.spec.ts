@@ -146,6 +146,23 @@ test.describe('Transazioni', () => {
         expect(selected).toBeTruthy();
 
         await expect(page.getByText(/pagamento su più conti/i)).toBeVisible({ timeout: 8_000 });
+
+        await page.locator('#amount').fill('100');
+        await page.getByRole('button', { name: /pagamento su più conti/i }).click();
+
+        const splitSection = page.locator('div.rounded-xl').filter({ hasText: /pagamento su più conti/i });
+        await expect(splitSection.getByRole('button', { name: /aggiungi conto/i })).toBeVisible();
+
+        const splitAmounts = splitSection.locator('input[type="number"]');
+        await splitAmounts.nth(0).fill('40');
+
+        const remainingLink = splitSection.getByRole('button', { name: /saldo rimanente/i });
+        await expect(remainingLink).toBeVisible();
+        await remainingLink.click();
+        await expect(splitAmounts.nth(1)).toHaveValue('60.00');
+
+        await expect(splitSection.getByText(/totale raggiunto/i)).toBeVisible();
+        await expect(splitSection.getByRole('button', { name: /aggiungi conto/i })).toHaveCount(0);
     });
 
     test('il form di creazione espone il toggle "valuta diversa dal conto"', async ({ page }) => {
