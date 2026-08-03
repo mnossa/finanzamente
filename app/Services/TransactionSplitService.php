@@ -99,7 +99,6 @@ class TransactionSplitService
                     $transaction->tags()->sync($tagIds);
                 }
 
-<<<<<<< HEAD
                 if ($account->isMealVoucher()) {
                     if ($amount < 0) {
                         $this->mealVoucherLedger->applySpend($account, $transaction, $mealVoucherLines);
@@ -108,11 +107,6 @@ class TransactionSplitService
                     }
                 }
 
-                $account->current_balance += $amount;
-                $account->save();
-
-=======
->>>>>>> 1cea806 (Refactor account balance updates to improve performance and maintainability)
                 $transactions->push($transaction);
             }
 
