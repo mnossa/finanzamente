@@ -8,7 +8,6 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import EmptyState from '@/Components/EmptyState';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexEntityCard, {
     IndexEntityCardFooterButton,
     IndexEntityCardFooterLink,
@@ -116,11 +115,6 @@ export default function Index({ tags }: IndexProps) {
 
             <PageContent maxWidth="7xl">
                     <OrganizationHubNav active="tags" />
-                    <IndexIntroSection
-                        label="Etichette"
-                        icon={<span className="text-sm leading-none">🏷️</span>}
-                        description="Organizza le transazioni con etichette rapide e facili da filtrare."
-                    />
                     {tags.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState

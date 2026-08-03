@@ -87,15 +87,6 @@ export default function Edit({
             <Head title="Profilo" />
 
             <PageContent maxWidth="5xl" className="space-y-4">
-                <section className="rounded-2xl border border-emerald-200/70 bg-linear-to-br from-emerald-50 via-white to-teal-50 p-5 shadow-sm sm:p-7 dark:border-emerald-800/70 dark:from-emerald-950/30 dark:via-gray-900 dark:to-teal-950/20">
-                    <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                        Impostazioni account
-                    </h1>
-                    <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                        Aggiorna i tuoi dati personali, gestisci le preferenze privacy e configura la profilazione per ricevere un&apos;esperienza su misura.
-                    </p>
-                </section>
-
                 {successMessage && (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
                         {successMessage}

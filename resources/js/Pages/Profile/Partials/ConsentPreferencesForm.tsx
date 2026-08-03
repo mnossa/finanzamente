@@ -1,7 +1,6 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import InlineSuccessBadge from '@/Components/InlineSuccessBadge';
-import SectionBadge from '@/Components/SectionBadge';
 import { Transition } from '@headlessui/react';
 import { FormEventHandler } from 'react';
 import { useForm } from '@inertiajs/react';
@@ -27,24 +26,10 @@ export default function ConsentPreferencesForm({ className = '', consents }: Pro
 
     return (
         <section className={className}>
-            <header className="hidden sm:block space-y-2">
-                <SectionBadge
-                    label="Privacy"
-                    icon={(
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fillRule="evenodd" d="M10 1a1 1 0 01.707.293l6 6A1 1 0 0117 8v2c0 4.273-2.865 7.888-6.78 8.873a1 1 0 01-.44 0C5.865 17.888 3 14.273 3 10V8a1 1 0 01.293-.707l6-6A1 1 0 0110 1zm3.707 7.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                    )}
-                />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Preferenze privacy
-                </h2>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Gestisci i consensi opzionali per marketing e analytics.
-                </p>
-            </header>
-
-            <form onSubmit={submit} className="mt-6 space-y-4">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Preferenze privacy
+            </h2>
+            <form onSubmit={submit} className="space-y-4">
                 <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-gray-700 dark:bg-gray-900/40">
                     <label className="flex items-start gap-3">
                         <input

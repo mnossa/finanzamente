@@ -73,7 +73,7 @@ export default function Boards({ boards, boardLimit, canCreate }: BoardsPageProp
         >
             <Head title="Le mie dashboard" />
 
-            <PageContent maxWidth="3xl">
+            <PageContent maxWidth="7xl">
                 {flash?.success ? (
                     <p className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
                         {flash.success}

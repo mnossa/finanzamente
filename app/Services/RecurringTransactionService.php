@@ -186,7 +186,7 @@ class RecurringTransactionService
      */
     private function createTransactionFromRecurring(RecurringTransaction $recurringTransaction, Carbon $date): Transaction
     {
-        $transaction = Transaction::create([
+        return Transaction::create([
             'user_id' => $recurringTransaction->user_id,
             'account_id' => $recurringTransaction->account_id,
             'category_id' => $recurringTransaction->category_id,
@@ -203,13 +203,6 @@ class RecurringTransactionService
             'debt_credit_id' => $recurringTransaction->debt_credit_id,
             'is_private' => false,
         ]);
-
-        // Aggiorna il saldo del conto
-        $account = $recurringTransaction->account;
-        $account->current_balance += (float) $recurringTransaction->amount;
-        $account->save();
-
-        return $transaction;
     }
 
     /**

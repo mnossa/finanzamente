@@ -4,7 +4,6 @@ import OrganizationHubNav from '@/Components/OrganizationHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
 import PencilIcon from '@/Components/Icons/PencilIcon';
@@ -126,11 +125,6 @@ export default function Index({
 
             <PageContent maxWidth="7xl">
                     <OrganizationHubNav active="accounts" />
-                    <IndexIntroSection
-                        label="Panoramica conti"
-                        icon={<span className="text-sm leading-none">🏦</span>}
-                        description="Visualizza saldo totale, ripartizione per tipo e stato dei conti attivi o archiviati."
-                    />
                     {accounts.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState

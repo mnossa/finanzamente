@@ -3,7 +3,6 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import InlineSuccessBadge from '@/Components/InlineSuccessBadge';
-import SectionBadge from '@/Components/SectionBadge';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
@@ -53,26 +52,10 @@ export default function UpdatePasswordForm({
 
     return (
         <section className={className}>
-            <header className="hidden sm:block space-y-2">
-                <SectionBadge
-                    label="Sicurezza"
-                    icon={(
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fillRule="evenodd" d="M5 8V6a5 5 0 1110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2a3 3 0 10-6 0v2h6V6z" clipRule="evenodd" />
-                        </svg>
-                    )}
-                />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Aggiorna Password
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Assicurati che il tuo account utilizzi una password lunga e
-                    casuale per rimanere al sicuro.
-                </p>
-            </header>
-
-            <form onSubmit={updatePassword} className="mt-6 space-y-4">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Cambia password
+            </h2>
+            <form onSubmit={updatePassword} className="space-y-4">
                 <div>
                     <InputLabel
                         htmlFor="current_password"

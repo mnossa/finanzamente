@@ -6,7 +6,6 @@ import PlusIcon from '@/Components/Icons/PlusIcon';
 import EmptyState from '@/Components/EmptyState';
 import IndexCardGrid from '@/Components/Index/IndexCardGrid';
 import IndexEntityCard from '@/Components/Index/IndexEntityCard';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import { Head, router } from '@inertiajs/react';
@@ -158,11 +157,6 @@ export default function Index({ goals, stats, statuses }: IndexProps) {
 
             <PageContent maxWidth="7xl">
                     <PlanningHubNav active="goals" />
-                    <IndexIntroSection
-                        label="Obiettivi finanziari"
-                        icon={<span className="text-sm leading-none">🎯</span>}
-                        description="Pianifica i tuoi traguardi e segui avanzamento, importi e stato obiettivo."
-                    />
                     <IndexKpiStrip>
                         <IndexKpiCell label="Obiettivi Attivi" value={stats.in_progress} />
                         <IndexKpiCell

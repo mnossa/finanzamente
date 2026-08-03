@@ -3,7 +3,6 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import FormActionsBar from '@/Components/FormActionsBar';
 import Modal from '@/Components/Modal';
-import SectionBadge from '@/Components/SectionBadge';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
@@ -56,28 +55,16 @@ export default function DeleteUserForm({
     };
 
     return (
-        <section className={`space-y-6 ${className}`}>
-            <header className="hidden sm:block space-y-2">
-                <SectionBadge
-                    label="Zona pericolosa"
-                    tone="danger"
-                    icon={(
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.486 0l6.518 11.59c.75 1.334-.213 2.99-1.742 2.99H1.48c-1.53 0-2.492-1.656-1.742-2.99L8.257 3.1zM11 14a1 1 0 10-2 0 1 1 0 002 0zm-1-7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                    )}
-                />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Elimina Account
+        <section className={`space-y-4 ${className}`}>
+            <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Elimina account
                 </h2>
-
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Una volta eliminato il tuo account, tutte le sue risorse e
-                    i dati saranno cancellati in modo permanente. Prima di
-                    eliminare il tuo account, scarica tutti i dati o le
-                    informazioni che desideri conservare.
+                    Una volta eliminato l&apos;account, tutte le risorse e i dati
+                    saranno cancellati in modo permanente.
                 </p>
-            </header>
+            </div>
 
             <FormActionsBar sticky={false}>
                 <DangerButton onClick={confirmUserDeletion} className="rounded-xl">

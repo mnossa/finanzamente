@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\AccountBalanceService;
 use App\Services\MealVoucherLedgerService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -203,5 +204,49 @@ class AccountBalanceServiceTest extends TestCase
         $this->assertSame('Conto Bancario', $mapped[$bank->id]['type_label']);
         $this->assertFalse($mapped[$bank->id]['is_meal_voucher']);
         $this->assertNull($mapped[$bank->id]['ticket_count']);
+    }
+
+    #[Test]
+    public function apply_delta_updates_stored_balance(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 1000,
+            'current_balance' => 1000,
+            'currency_code' => 'EUR',
+        ]);
+
+        $this->service->applyDelta($account, -150.5);
+
+        $this->assertSame(849.5, (float) $account->fresh()->current_balance);
+    }
+
+    #[Test]
+    public function apply_delta_ignores_zero(): void
+    {
+        $account = Account::factory()->create([
+            'household_id' => $this->household->id,
+            'owner_user_id' => $this->user->id,
+            'initial_balance' => 1000,
+            'current_balance' => 1000,
+            'currency_code' => 'EUR',
+        ]);
+
+        $updatedAt = $account->fresh()->updated_at;
+        $this->service->applyDelta($account, 0.0);
+
+        $this->assertSame(1000.0, (float) $account->fresh()->current_balance);
+        $this->assertTrue($account->fresh()->updated_at->eq($updatedAt));
+    }
+
+    #[Test]
+    public function affects_stored_balance_excludes_future_dates(): void
+    {
+        Carbon::setTestNow('2026-06-15');
+
+        $this->assertTrue($this->service->affectsStoredBalance('2026-06-15'));
+        $this->assertTrue($this->service->affectsStoredBalance('2026-06-01'));
+        $this->assertFalse($this->service->affectsStoredBalance('2026-06-16'));
     }
 }

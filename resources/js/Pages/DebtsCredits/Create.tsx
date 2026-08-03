@@ -4,7 +4,6 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import DebtCreditCreateGuided from './DebtCreditCreateGuided';
@@ -85,11 +84,6 @@ export default function Create({ currencies, types }: CreateProps) {
 
             <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
-                        <header className="hidden sm:block space-y-2">
-                            <SectionBadge label="Debiti/Crediti" icon={<span className="text-sm leading-none">🤝</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo debito o credito</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Registra posizione aperta, importo e scadenza in modo tracciabile.</p>
-                        </header>
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             <div className="space-y-6">
                                 {/* Tipo */}

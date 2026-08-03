@@ -1,8 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
 import TrashIcon from '@/Components/Icons/TrashIcon';
@@ -141,15 +139,6 @@ export default function Show({
                         </LinkButton>
                     </IndexPageMobileToolbar>
                 ) : null}
-
-                <SectionCard className="hidden sm:block bg-linear-to-br from-purple-50 via-white to-pink-50 dark:from-purple-950/20 dark:via-gray-900 dark:to-pink-950/20">
-                    <div className="space-y-2">
-                        <SectionBadge label="Dettaglio tag" icon={<span className="text-sm leading-none">🏷️</span>} />
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
-                            Statistiche sulle transazioni con questo tag nel periodo selezionato.
-                        </p>
-                    </div>
-                </SectionCard>
 
                 <CardBox className="p-4 shadow-sm">
                     <div className="flex flex-wrap items-center gap-3">

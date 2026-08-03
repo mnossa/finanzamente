@@ -4,7 +4,6 @@ import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar, MobileCreateLinkButton } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
 import IndexListHeader from '@/Components/Index/IndexListHeader';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
@@ -123,11 +122,6 @@ export default function Index({ recurringTransactions, frequencies }: IndexProps
 
             <PageContent maxWidth="7xl">
                 <MovementsHubNav active="recurring" />
-                <IndexIntroSection
-                    label="Ricorrenze"
-                    icon={<span className="text-sm leading-none">🔁</span>}
-                    description="Gestisci operazioni periodiche automatiche e controlla le prossime scadenze."
-                />
                 <IndexPageMobileToolbar>
                     <LinkButton href={route('recurrence-detection.index')} variant="secondary" size="sm">
                         🔍 Rilevate

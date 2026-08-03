@@ -5,7 +5,6 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -88,11 +87,6 @@ export default function Edit({ account, accountTypes, currencies }: EditProps) {
 
             <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
-                        <header className="hidden sm:block space-y-2">
-                            <SectionBadge label="Conti" icon={<span className="text-sm leading-none">✏️</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aggiorna conto</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Modifica i dettagli principali del conto e il suo stato.</p>
-                        </header>
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Nome */}
                             <div>

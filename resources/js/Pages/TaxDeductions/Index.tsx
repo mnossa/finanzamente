@@ -1,7 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PlanningHubNav from '@/Components/PlanningHubNav';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexListCard from '@/Components/Index/IndexListCard';
 import IndexListRow from '@/Components/Index/IndexListRow';
@@ -133,11 +132,6 @@ export default function Index({ transactions = [], summary, year }: IndexProps) 
 
             <PageContent>
                 <PlanningHubNav active="tax-deductions" />
-                <IndexIntroSection
-                    label="Detrazioni fiscali"
-                    icon={<span className="text-sm leading-none">📋</span>}
-                    description="Riepilogo spese detraibili per anno fiscale, con export PDF e allegati per il commercialista."
-                />
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2">

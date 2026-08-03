@@ -4,7 +4,6 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import SectionBadge from '@/Components/SectionBadge';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FM_MOBILE_PRIMARY_FORM_ID } from '@/utils/mobilePrimaryFab';
 import clsx from 'clsx';
@@ -147,13 +146,6 @@ export default function Edit({ investment, accounts, assets, assetTypes }: EditP
                 {/* Mobile: flat (no card). Desktop: single surface. */}
                 <div className="sm:rounded-2xl sm:border sm:border-gray-200/80 sm:bg-white/95 sm:p-5 sm:shadow-sm sm:backdrop-blur-sm dark:sm:border-gray-700 dark:sm:bg-gray-800/95">
                     <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-5">
-                        <header className="hidden space-y-1 sm:block">
-                            <SectionBadge label="Investimenti" icon={<span className="text-sm leading-none">✏️</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                Modifica investimento
-                            </h2>
-                        </header>
-
                         <div>
                             <InputLabel htmlFor="asset_id" value="Asset *" />
                             <select

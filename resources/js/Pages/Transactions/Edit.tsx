@@ -5,7 +5,6 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TagAutocomplete from '@/Components/TagAutocomplete';
@@ -236,12 +235,6 @@ export default function Edit({
 
             <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
-                        {/* Titolo pagina visibile solo su desktop */}
-                        <header className="hidden sm:block space-y-1">
-                            <SectionBadge label="Transazioni" icon={<span className="text-sm leading-none">✏️</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Aggiorna transazione</h2>
-                        </header>
-
                         {/* Avvisi trasferimento */}
                         {isInterHouseholdTransfer && (
                             <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">

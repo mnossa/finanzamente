@@ -12,7 +12,6 @@ import TransactionSlideOver, {
 } from '@/Components/TransactionSlideOver';
 import TrashIcon from '@/Components/Icons/TrashIcon';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
 import MobileBottomSheet from '@/Components/MobileBottomSheet';
 import TransactionFiltersFields from '@/Components/TransactionFiltersFields';
@@ -1121,12 +1120,6 @@ export default function Index({
 
             <PageContent maxWidth="7xl">
                     <MovementsHubNav active="transactions" />
-                    {/* Intro decorativa — solo su desktop */}
-                    <IndexIntroSection
-                        label="Registro transazioni"
-                        icon={<span className="text-sm leading-none">📒</span>}
-                        description="Filtra, seleziona e gestisci i movimenti con operazioni singole o massive."
-                    />
                     {/* Banner importazioni in corso */}
                     {pendingImports.length > 0 && (
                         <div className="mb-2 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 sm:mb-3 sm:gap-3 sm:px-4 sm:py-3">

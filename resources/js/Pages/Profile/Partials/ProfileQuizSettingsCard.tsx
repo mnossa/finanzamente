@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SecondaryButton from '@/Components/SecondaryButton';
 
 interface Props {
@@ -20,26 +19,10 @@ export default function ProfileQuizSettingsCard({ className = '' }: Props) {
 
     return (
         <section className={className}>
-            <header className="hidden sm:block space-y-2">
-                <SectionBadge
-                    label="Profilazione"
-                    icon={(
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M10 2a1 1 0 01.894.553l1.382 2.8 3.089.449a1 1 0 01.554 1.706l-2.235 2.179.528 3.076a1 1 0 01-1.451 1.054L10 12.473l-2.761 1.452a1 1 0 01-1.451-1.054l.528-3.076L4.08 7.508a1 1 0 01.554-1.706l3.089-.449 1.382-2.8A1 1 0 0110 2z" />
-                        </svg>
-                    )}
-                />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Impostazioni di Profilazione
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Le tue preferenze per personalizzare l'interfaccia e i moduli
-                    disponibili.
-                </p>
-            </header>
-
-            <div className="mt-6 space-y-4">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Quiz profilo
+            </h2>
+            <div className="space-y-4">
                 {profileSettings ? (
                     <>
                         <div className="grid gap-4 sm:grid-cols-2">

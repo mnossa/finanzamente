@@ -35,6 +35,7 @@ class TransactionBulkDeleteTest extends TestCase
         $this->account = Account::factory()->create([
             'household_id' => $this->household->id,
             'owner_user_id' => $this->user->id,
+            'initial_balance' => 1000.00,
             'current_balance' => 1000.00,
         ]);
     }
@@ -88,13 +89,9 @@ class TransactionBulkDeleteTest extends TestCase
             'ids' => [$t1->id, $t2->id],
         ]);
 
-        // After deleting all transactions, balance is recalculated to initial_balance
+        // Dopo delete di tutte le tx, saldo torna al valore pre-create (initial == current)
         $this->account->refresh();
-        $this->assertEqualsWithDelta(
-            (float) $this->account->initial_balance,
-            (float) $this->account->current_balance,
-            0.01
-        );
+        $this->assertEqualsWithDelta(1000.00, (float) $this->account->current_balance, 0.01);
     }
 
     #[Test]

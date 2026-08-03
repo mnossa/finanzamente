@@ -3,8 +3,6 @@ import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import LinkButton from '@/Components/LinkButton';
 import PencilIcon from '@/Components/Icons/PencilIcon';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -14,7 +12,6 @@ import { Head, useForm } from '@inertiajs/react';
 import clsx from 'clsx';
 import CardBox from '@/Components/CardBox';
 import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
-import { getAccountTypeIcon } from '@/Components/getAccountTypeIcon';
 
 interface Category {
     id: number;
@@ -306,21 +303,6 @@ export default function Show({
                             Modifica
                         </LinkButton>
                     </IndexPageMobileToolbar>
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge
-                                label="Dettaglio conto"
-                                icon={<span className="text-sm leading-none">{getAccountTypeIcon(account.type)}</span>}
-                            />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                {isMealVoucher
-                                    ? 'Saldo in euro, lotti di buoni pasto e ultime operazioni.'
-                                    : isPensionFund
-                                        ? 'Posizione del fondo pensione: aggiornala dal portale e usa i trasferimenti per i versamenti dal corrente.'
-                                        : 'Stato del conto, saldi e ultime operazioni in un unico riepilogo.'}
-                            </p>
-                        </div>
-                    </SectionCard>
                     <div className={moneyKpiGrid3}>
                         <CardBox className="p-4 shadow-sm">
                             <p className="text-sm text-gray-500 dark:text-gray-400">

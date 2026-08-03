@@ -139,7 +139,6 @@ class InvestmentController extends Controller
             'stats' => $stats,
             'assetTypes' => InvestmentAsset::TYPES,
             'assetTypeIcons' => InvestmentAsset::TYPE_ICONS,
-            'valuationNote' => $this->valuationNoteMessage(),
         ]);
     }
 

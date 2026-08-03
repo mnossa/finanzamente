@@ -4,7 +4,6 @@ import LinkButton from '@/Components/LinkButton';
 import PageHeader from '@/Components/PageHeader';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
 import IndexFiltersPanel from '@/Components/Index/IndexFiltersPanel';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
 import InterHouseholdTransferListRow from '@/Components/InterHouseholdTransfers/InterHouseholdTransferListRow';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
@@ -134,11 +133,6 @@ export default function Index({ transfers, filters }: IndexProps) {
             <Head title="Trasferimenti tra Households" />
 
             <PageContent maxWidth="7xl">
-                <IndexIntroSection
-                    label="Trasferimenti household"
-                    icon={<span className="text-sm leading-none">🏠</span>}
-                    description="Supervisiona movimenti tra household con stato e direzione sempre chiari."
-                />
 
                 <IndexFiltersPanel
                     defaultOpen={hasFilters}

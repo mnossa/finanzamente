@@ -49,6 +49,7 @@ class FutureTransactionBalanceTest extends TestCase
         $balanceService = app(AccountBalanceService::class);
 
         $this->assertSame(900.0, $balanceService->computeBalance($account->fresh(), $user));
+        $this->assertSame(900.0, (float) $account->fresh()->current_balance);
     }
 
     #[Test]
@@ -64,6 +65,7 @@ class FutureTransactionBalanceTest extends TestCase
         $account = Account::factory()->create([
             'household_id' => $household->id,
             'initial_balance' => 1000,
+            'current_balance' => 1000,
         ]);
 
         Transaction::factory()->create([
@@ -76,5 +78,6 @@ class FutureTransactionBalanceTest extends TestCase
         $balanceService = app(AccountBalanceService::class);
 
         $this->assertSame(800.0, $balanceService->computeBalance($account->fresh(), $user));
+        $this->assertSame(800.0, (float) $account->fresh()->current_balance);
     }
 }

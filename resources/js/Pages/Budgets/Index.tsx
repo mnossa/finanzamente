@@ -13,7 +13,6 @@ import IndexEntityCard, {
     IndexEntityCardFooterButton,
     IndexEntityCardFooterLink,
 } from '@/Components/Index/IndexEntityCard';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import CardBox from '@/Components/CardBox';
 import { Head, router } from '@inertiajs/react';
@@ -185,11 +184,6 @@ export default function Index({ budgets, monthlyIncome }: IndexProps) {
 
             <PageContent maxWidth="7xl">
                     <PlanningHubNav active="budgets" />
-                    <IndexIntroSection
-                        label="Pianificazione budget"
-                        icon={<span className="text-sm leading-none">📊</span>}
-                        description="Monitora spese, progressi e superamenti in tempo reale per ogni categoria."
-                    />
                     {budgets.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState

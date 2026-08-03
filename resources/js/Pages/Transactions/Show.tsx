@@ -8,8 +8,6 @@ import clsx from 'clsx';
 import React from 'react';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import PageHeader from '@/Components/PageHeader';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import { TAX_DEDUCTION_TYPES } from '@/constants/taxDeductions';
 import CardBox from '@/Components/CardBox';
 
@@ -153,14 +151,6 @@ export default function Show({ transaction, indexQueryForReturn }: ShowProps) {
             />
 
             <PageContent maxWidth="3xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge label="Dettaglio transazione" icon={<span className="text-sm leading-none">🧾</span>} />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Visualizza importo, classificazione fiscale, privacy e stato rimborsi.
-                            </p>
-                        </div>
-                    </SectionCard>
                     {/* Banner trasferimento */}
                     {isTransfer && (
                         <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">

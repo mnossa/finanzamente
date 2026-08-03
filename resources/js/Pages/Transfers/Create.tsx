@@ -5,7 +5,6 @@ import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import TransferCreateGuided from './TransferCreateGuided';
@@ -137,11 +136,6 @@ export default function Create({ accounts }: CreateProps) {
 
             <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
-                        <header className="hidden sm:block space-y-2">
-                            <SectionBadge label="Trasferimenti" icon={<span className="text-sm leading-none">➕</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo trasferimento</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Compila origine, destinazione e importi per registrare il movimento.</p>
-                        </header>
                         {accounts.length < 2 ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">🏦</div>

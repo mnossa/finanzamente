@@ -3,7 +3,6 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
 import InlineSuccessBadge from '@/Components/InlineSuccessBadge';
-import SectionBadge from '@/Components/SectionBadge';
 import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
@@ -56,25 +55,10 @@ export default function UpdateProfileInformation({
 
     return (
         <section className={className}>
-            <header className="hidden sm:block space-y-2">
-                <SectionBadge
-                    label="Profilo"
-                    icon={(
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M10 2a4 4 0 100 8 4 4 0 000-8zm-6 15a6 6 0 1112 0H4z" />
-                        </svg>
-                    )}
-                />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Informazioni Profilo
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Aggiorna le informazioni del tuo profilo e l'indirizzo email.
-                </p>
-            </header>
-
-            <form onSubmit={submit} className="mt-6 space-y-4">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Informazioni profilo
+            </h2>
+            <form onSubmit={submit} className="space-y-4">
                 <div>
                     <InputLabel htmlFor="name" value="Nome" />
 

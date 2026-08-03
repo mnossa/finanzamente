@@ -5,7 +5,6 @@ import InputLabel from '@/Components/InputLabel';
 import LinkButton from '@/Components/LinkButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import RefundCreateGuided from './RefundCreateGuided';
@@ -229,13 +228,6 @@ export default function Create({ originalTransaction, refundableTransactions, to
 
             <PageContent>
                     <SectionCard className="space-y-4">
-                        <header className="hidden sm:block space-y-2">
-                            <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">➕</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Nuovo rimborso</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Scegli la spesa e indica quanto hai ricevuto: puoi registrare un rimborso totale o parziale.
-                            </p>
-                        </header>
                         {refundableTransactions.length === 0 && !originalTransaction ? (
                             <div className="py-8 text-center">
                                 <div className="mb-4 text-4xl">💸</div>

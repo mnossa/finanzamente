@@ -4,7 +4,6 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import FormActionsBar from '@/Components/FormActionsBar';
-import SectionBadge from '@/Components/SectionBadge';
 import SectionCard from '@/Components/SectionCard';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -91,11 +90,6 @@ export default function Edit({ refund }: EditProps) {
 
             <PageContent maxWidth="3xl">
                     <SectionCard className="space-y-4">
-                        <header className="hidden sm:block space-y-2">
-                            <SectionBadge label="Rimborsi" icon={<span className="text-sm leading-none">✏️</span>} />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Modifica rimborso</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Aggiorna importo, data e visibilità del rimborso registrato.</p>
-                        </header>
                         <form id={FM_MOBILE_PRIMARY_FORM_ID} onSubmit={submit} className="space-y-4">
                             {/* Transazione originale (solo lettura) */}
                             <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">

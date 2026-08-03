@@ -83,10 +83,8 @@ class RefundService
             // Limita l'importo al massimo rimborsabile
             $refundAmount = min($refundAmount, $maxRefundable);
 
-            // Blocca l'account per aggiornare il saldo
-            $account = Account::lockForUpdate()->find($originalTransaction->account_id);
-
-            if (! $account) {
+            // Verifica che il conto esista
+            if (! Account::query()->find($originalTransaction->account_id)) {
                 throw ValidationException::withMessages([
                     'original_transaction_id' => ['Il conto associato alla transazione non esiste.'],
                 ]);
@@ -115,10 +113,6 @@ class RefundService
                 'is_private' => $data['is_private'] ?? $originalTransaction->is_private,
                 'refund_id' => $refund->id,
             ]);
-
-            // Aggiorna il saldo del conto
-            $account->current_balance += $refundAmount;
-            $account->save();
 
             // Copia i tag dalla spesa originale sulla transazione di rimborso
             if ($originalTransaction->tags->isNotEmpty()) {
@@ -176,20 +170,13 @@ class RefundService
                 'description' => $data['description'] ?? $refund->description,
             ]);
 
-            // Aggiorna la transazione di rimborso
+            // Aggiorna la transazione di rimborso (saldo conto via UpdateAccountBalance)
             $refundTransaction->update([
                 'amount' => round($newAmount, 2),
                 'date' => $data['date'] ?? $refundTransaction->date,
                 'description' => $data['description'] ?? $refundTransaction->description,
                 'is_private' => $data['is_private'] ?? $refundTransaction->is_private,
             ]);
-
-            // Se l'importo è cambiato, aggiorna il saldo del conto
-            if (abs($amountDiff) > 0.001) {
-                $account = $refundTransaction->account;
-                $account->current_balance += $amountDiff;
-                $account->save();
-            }
 
             return $refund->fresh(['originalTransaction.account', 'originalTransaction.category', 'refundTransaction', 'user']);
         });
@@ -201,18 +188,7 @@ class RefundService
     public function deleteRefund(Refund $refund): bool
     {
         return DB::transaction(function () use ($refund) {
-            $refundTransaction = $refund->refundTransaction;
-
-            if ($refundTransaction) {
-                // Ripristina il saldo del conto
-                $account = $refundTransaction->account;
-                if ($account) {
-                    $account->current_balance -= (float) $refund->amount;
-                    $account->save();
-                }
-            }
-
-            // Il modello Refund si occupa di eliminare la transazione collegata nel booted()
+            // Il modello Refund elimina la transazione collegata nel booted() → UpdateAccountBalance
             return $refund->delete();
         });
     }

@@ -7,8 +7,6 @@ import { Head, Link, router } from '@inertiajs/react';
 import clsx from 'clsx';
 import React from 'react';
 import CardBox from '@/Components/CardBox';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import PageHeader from '@/Components/PageHeader';
 
@@ -120,14 +118,6 @@ export default function Show({ refund }: ShowProps) {
             />
 
             <PageContent>
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge label="Dettaglio rimborso" icon={<span className="text-sm leading-none">🧾</span>} />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Analizza rimborso, spesa originale e transazione collegata in modo completo.
-                            </p>
-                        </div>
-                    </SectionCard>
                     {/* Card principale rimborso */}
                     <CardBox className="overflow-hidden p-6 shadow-sm">
                         <div className="text-center">

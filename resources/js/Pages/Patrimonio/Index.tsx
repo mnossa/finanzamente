@@ -2,7 +2,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PageContent from '@/Components/PageContent';
 import PageHeader from '@/Components/PageHeader';
 import PatrimonioHubNav from '@/Components/PatrimonioHubNav';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import CardBox from '@/Components/CardBox';
@@ -221,11 +220,6 @@ export default function PatrimonioIndex({
             <Head title="Patrimonio" />
             <PageContent maxWidth="7xl">
                 <PatrimonioHubNav active="patrimonio" />
-                <IndexIntroSection
-                    label="Patrimonio"
-                    icon={<span className="text-sm leading-none">💰</span>}
-                    description="Saldo conti, investimenti collegati al ledger e allocazione per classe di rischio."
-                />
                 <IndexKpiStrip>
                     <IndexKpiCell
                         label="Patrimonio netto"

@@ -4,7 +4,6 @@ import PageContent from '@/Components/PageContent';
 import PacListCard from '@/Components/InvestmentPacs/PacListCard';
 import LinkButton from '@/Components/LinkButton';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import InvestmentHubNav from '@/Components/InvestmentHubNav';
 import { ConfirmDeleteDialog } from '@/Components/ConfirmDeleteDialog';
 import { Head, router } from '@inertiajs/react';
@@ -81,11 +80,6 @@ export default function InvestmentPacIndex({ pacs }: { pacs: Pac[] }) {
             />
             <PageContent>
                 <InvestmentHubNav active="pacs" />
-                <IndexIntroSection
-                    label="PAC"
-                    icon={<span className="text-sm leading-none">📈</span>}
-                    description="Versamenti ricorrenti su ETF, fondi e altri strumenti. Ogni esecuzione genera un movimento nello storico investimenti."
-                />
 
                 {pacs.length === 0 ? (
                     <IndexEmptyList

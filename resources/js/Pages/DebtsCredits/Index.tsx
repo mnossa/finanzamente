@@ -8,7 +8,6 @@ import IndexEntityCard, {
     IndexEntityCardFooterButton,
     IndexEntityCardFooterLink,
 } from '@/Components/Index/IndexEntityCard';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import LinkButton from '@/Components/LinkButton';
 import PlusIcon from '@/Components/Icons/PlusIcon';
@@ -215,11 +214,6 @@ export default function Index({ debtsCredits, summary, types, statuses }: IndexP
 
             <PageContent maxWidth="7xl">
                 <PlanningHubNav active="debts" />
-                    <IndexIntroSection
-                        label="Debiti e crediti"
-                        icon={<span className="text-sm leading-none">💸</span>}
-                        description="Controlla quanto devi e quanto devi ricevere con stato e scadenze sempre visibili."
-                    />
                     {debtsCredits.length === 0 ? (
                         <CardBox className="overflow-hidden shadow-sm">
                             <EmptyState

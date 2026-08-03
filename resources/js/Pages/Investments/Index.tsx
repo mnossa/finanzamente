@@ -4,7 +4,6 @@ import InvestmentHubNav from '@/Components/InvestmentHubNav';
 import PatrimonioHubNav from '@/Components/PatrimonioHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions, IndexPageMobileToolbar } from '@/Components/IndexPageListToolbars';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexKpiCell from '@/Components/Index/IndexKpiCell';
 import IndexKpiStrip from '@/Components/Index/IndexKpiStrip';
 import LinkButton from '@/Components/LinkButton';
@@ -103,7 +102,6 @@ interface IndexProps {
     stats: Stats;
     assetTypes: AssetTypes;
     assetTypeIcons: AssetTypeIcons;
-    valuationNote: string;
 }
 
 // function formatCurrency(amount: number, currency: string = 'EUR'): string {
@@ -414,7 +412,6 @@ export default function Index({
     stats,
     assetTypes,
     assetTypeIcons,
-    valuationNote,
 }: IndexProps) {
     const pacGroups = useMemo<PacGroup[]>(() => {
         const grouped = new Map<number, PacGroup>();
@@ -478,14 +475,6 @@ export default function Index({
             <PageContent maxWidth="7xl">
                     <PatrimonioHubNav active="positions" />
                     <InvestmentHubNav active="positions" />
-                    <IndexIntroSection
-                        label="Portafoglio investimenti"
-                        icon={<span className="text-sm leading-none">📊</span>}
-                        description="Monitora posizioni aperte e chiuse con metriche di rendimento e costi."
-                        extra={
-                            <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{valuationNote}</p>
-                        }
-                    />
 
                     <IndexPageMobileToolbar>
                         <LinkButton

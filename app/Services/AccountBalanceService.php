@@ -127,6 +127,37 @@ class AccountBalanceService
         return $account;
     }
 
+    /**
+     * Applica un delta O(1) al saldo memorizzato (con lock).
+     * Usato dal listener su create/update/delete invece del SUM completo.
+     */
+    public function applyDelta(Account $account, float $delta): void
+    {
+        if (round($delta, 2) == 0.0) {
+            return;
+        }
+
+        $locked = Account::query()->whereKey($account->id)->lockForUpdate()->first();
+        if (! $locked instanceof Account) {
+            return;
+        }
+
+        $locked->current_balance = round((float) $locked->current_balance + $delta, 2);
+        $locked->save();
+
+        $account->current_balance = $locked->current_balance;
+    }
+
+    /**
+     * Le transazioni future non entrano nel saldo corrente (stessa regola di computeBalance).
+     */
+    public function affectsStoredBalance(Carbon|string $date): bool
+    {
+        $parsed = $date instanceof Carbon ? $date->copy() : Carbon::parse($date);
+
+        return $parsed->startOfDay()->lte(Carbon::today());
+    }
+
     private function transactionQueryForAccount(Account $account, ?User $viewer): Builder
     {
         return Transaction::query()

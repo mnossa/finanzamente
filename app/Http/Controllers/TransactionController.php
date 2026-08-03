@@ -344,21 +344,31 @@ class TransactionController extends Controller
         $summaryExpenses = (float) abs((float) (clone $summaryQuery)->where('transactions.amount', '<', 0)->sum('transactions.amount'));
         $summaryCount = (int) (clone $summaryQuery)->count();
 
-        $householdAccounts = Account::query()
-            ->where('household_id', $householdId)
-            ->where('active', true)
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
-            ->get();
-        $balanceService = app(AccountBalanceService::class);
-        $settledBalances = $balanceService->batchComputeBalances($householdAccounts, $user);
-        $futureTransactionsByAccount = Transaction::query()
-            ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
-            ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
-            ->whereDate('date', '>', $today)
-            ->orderBy('date')
-            ->orderBy('created_at')
-            ->get(['id', 'account_id', 'amount', 'date'])
-            ->groupBy('account_id');
+        // projected_balance_after serve solo per righe future nella pagina.
+        // Con showUpcoming (o to <= today) la lista non può contenerle → skip SUM batch.
+        $listMayContainFuture = ! $showUpcoming
+            && (! $request->filled('to') || Carbon::parse((string) $request->input('to'))->gt($today));
+
+        $settledBalances = [];
+        $futureTransactionsByAccount = collect();
+
+        if ($listMayContainFuture) {
+            $householdAccounts = Account::query()
+                ->where('household_id', $householdId)
+                ->where('active', true)
+                ->where(fn ($q) => $q->where('is_private', false)->orWhere('owner_user_id', $user->id))
+                ->get();
+            $balanceService = app(AccountBalanceService::class);
+            $settledBalances = $balanceService->batchComputeBalances($householdAccounts, $user);
+            $futureTransactionsByAccount = Transaction::query()
+                ->whereHas('account', fn ($q) => $q->where('household_id', $householdId))
+                ->where(fn ($q) => $q->where('is_private', false)->orWhere('user_id', $user->id))
+                ->whereDate('date', '>', $today)
+                ->orderBy('date')
+                ->orderBy('created_at')
+                ->get(['id', 'account_id', 'amount', 'date'])
+                ->groupBy('account_id');
+        }
 
         $transactions = $query
             ->orderBy('date', 'desc')
@@ -683,10 +693,6 @@ class TransactionController extends Controller
             }
         }
 
-        // Aggiorna il saldo del conto
-        $account->current_balance += $amount;
-        $account->save();
-
         // Se la transazione è collegata a un debito/credito, torna alla sua pagina
         if ($transaction->debt_credit_id) {
             return redirect()
@@ -958,7 +964,6 @@ class TransactionController extends Controller
                 $currencyFields,
                 $isTransfer,
                 $oldAmount,
-                $oldAccountId,
                 $spendLines,
             ) {
                 // Aggiorna la transazione
@@ -1008,29 +1013,7 @@ class TransactionController extends Controller
                             'description' => $validated['description'] ?? null,
                             'is_private' => $validated['is_private'] ?? false,
                         ]);
-
-                        // Aggiorna il saldo del conto collegato
-                        $linkedAccount = $linkedTransaction->account;
-                        $linkedAccount->current_balance += ($linkedNewAmount - $linkedOldAmount);
-                        $linkedAccount->save();
                     }
-                }
-
-                // Aggiorna i saldi dei conti
-                if ($oldAccountId === $validated['account_id']) {
-                    // Stesso conto: aggiorna la differenza
-                    $account = Account::find($validated['account_id']);
-                    $account->current_balance += ($newAmount - $oldAmount);
-                    $account->save();
-                } else {
-                    // Conti diversi: rimuovi dal vecchio, aggiungi al nuovo
-                    $oldAccount = Account::find($oldAccountId);
-                    $oldAccount->current_balance -= $oldAmount;
-                    $oldAccount->save();
-
-                    $movedToAccount = Account::find($validated['account_id']);
-                    $movedToAccount->current_balance += $newAmount;
-                    $movedToAccount->save();
                 }
 
                 app(MealVoucherLedgerService::class)->resyncTransaction(
@@ -1164,14 +1147,6 @@ class TransactionController extends Controller
                             ->first();
 
                         if ($newAccount) {
-                            // Storna dal conto vecchio
-                            $transaction->account->current_balance -= (float) $transaction->amount;
-                            $transaction->account->save();
-
-                            // Accredita sul nuovo conto
-                            $newAccount->current_balance += (float) $transaction->amount;
-                            $newAccount->save();
-
                             $fields['account_id'] = $newAccountId;
                         }
                     }
@@ -1272,10 +1247,7 @@ class TransactionController extends Controller
                     $deletedCount++;
                 }
             } else {
-                $account = $transaction->account;
                 app(MealVoucherLedgerService::class)->reverseTransaction($transaction);
-                $account->current_balance -= (float) $transaction->amount;
-                $account->save();
                 $transaction->delete();
                 $deletedCount++;
             }
@@ -1320,13 +1292,10 @@ class TransactionController extends Controller
                 ->with('success', 'Transazione e trasferimento inter-household eliminati con successo.');
         }
 
-        // Aggiorna il saldo del conto
         $account = $transaction->account;
         if ($account?->isMealVoucher()) {
             app(MealVoucherLedgerService::class)->reverseTransaction($transaction);
         }
-        $account->current_balance -= (float) $transaction->amount;
-        $account->save();
 
         $transaction->delete();
 

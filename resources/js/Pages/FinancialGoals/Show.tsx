@@ -12,8 +12,6 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import { FormEventHandler, useState } from 'react';
 import CardBox from '@/Components/CardBox';
 import { moneyKpiGrid3, moneyTabular } from '@/utils/moneyGridClasses';
-import SectionBadge from '@/Components/SectionBadge';
-import SectionCard from '@/Components/SectionCard';
 
 interface Currency {
     code: string;
@@ -222,14 +220,6 @@ export default function Show({ goal, statuses }: ShowProps) {
             <Head title={goal.name} />
 
             <PageContent maxWidth="4xl">
-                    <SectionCard className="hidden sm:block bg-linear-to-br from-emerald-50 via-white to-teal-50 dark:from-emerald-950/20 dark:via-gray-900 dark:to-teal-950/20">
-                        <div className="space-y-2">
-                            <SectionBadge label="Dettaglio obiettivo" icon={<span className="text-sm leading-none">🎯</span>} />
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                Segui progresso, contributi e stato del tuo traguardo finanziario.
-                            </p>
-                        </div>
-                    </SectionCard>
                     {/* Progress Card */}
                     <CardBox className="overflow-hidden shadow-sm">
                         <div className="p-6 sm:p-8">

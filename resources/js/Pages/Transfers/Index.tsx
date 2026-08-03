@@ -4,7 +4,6 @@ import MovementsHubNav from '@/Components/MovementsHubNav';
 import PageHeader from '@/Components/PageHeader';
 import { IndexPageHeaderActions } from '@/Components/IndexPageListToolbars';
 import IndexEmptyList from '@/Components/Index/IndexEmptyList';
-import IndexIntroSection from '@/Components/Index/IndexIntroSection';
 import IndexListCard from '@/Components/Index/IndexListCard';
 import TransferListRow from '@/Components/Transfers/TransferListRow';
 import LinkButton from '@/Components/LinkButton';
@@ -108,11 +107,6 @@ export default function Index({ transfers }: IndexProps) {
 
             <PageContent maxWidth="7xl">
                 <MovementsHubNav active="transfers" />
-                <IndexIntroSection
-                    label="Trasferimenti"
-                    icon={<span className="text-sm leading-none">🔄</span>}
-                    description="Sposta fondi tra conti con tracciamento completo importi, valute e commissioni."
-                />
                 <IndexListCard
                     isEmpty={isEmpty}
                     empty={
