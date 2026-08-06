@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\Account;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class StoreAccountRequest extends FormRequest
+{
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('type') === Account::SAVINGS_DEPOSIT_TYPE) {
+            $this->merge([
+                'type' => 'bank',
+                'is_savings_deposit' => true,
+            ]);
+        }
+
+        if ($this->input('external_url') === '') {
+            $this->merge(['external_url' => null]);
+        }
+    }
+
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'string', Rule::in(array_keys(Account::TYPES))],
+            'initial_balance' => ['required', 'numeric', 'min:-999999999.99', 'max:999999999.99'],
+            'currency_code' => ['required', 'string', 'exists:currencies,code'],
+            'is_private' => ['boolean'],
+            'interest_rate' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:100',
+                Rule::requiredIf(fn () => (bool) $this->input('is_savings_deposit', false)),
+            ],
+            'ticket_unit_value' => [
+                'nullable',
+                'numeric',
+                'min:0.01',
+                'max:999999.99',
+                Rule::requiredIf(fn () => $this->input('type') === Account::MEAL_VOUCHER_TYPE),
+            ],
+            'external_url' => [
+                'nullable',
+                'string',
+                'max:500',
+                'url',
+            ],
+        ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            if ($this->input('type') !== Account::MEAL_VOUCHER_TYPE) {
+                return;
+            }
+
+            $unit = (float) $this->input('ticket_unit_value', 0);
+            $balance = (float) $this->input('initial_balance', 0);
+            if ($unit <= 0 || $balance == 0.0) {
+                return;
+            }
+
+            $ratio = $balance / $unit;
+            if (abs($ratio - round($ratio)) >= 0.0001) {
+                $validator->errors()->add(
+                    'initial_balance',
+                    'Il saldo iniziale deve essere un multiplo del valore di un ticket (i buoni non sono frazionabili).'
+                );
+            }
+        });
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Il nome del conto è obbligatorio.',
+            'name.max' => 'Il nome del conto non può superare 255 caratteri.',
+            'type.required' => 'Il tipo di conto è obbligatorio.',
+            'type.in' => 'Il tipo di conto selezionato non è valido.',
+            'initial_balance.required' => 'Il saldo iniziale è obbligatorio.',
+            'initial_balance.numeric' => 'Il saldo iniziale deve essere un numero.',
+            'initial_balance.min' => 'Il saldo iniziale è troppo basso.',
+            'initial_balance.max' => 'Il saldo iniziale è troppo alto.',
+            'currency_code.required' => 'La valuta è obbligatoria.',
+            'currency_code.exists' => 'La valuta selezionata non è valida.',
+            'interest_rate.required' => 'Il tasso di interesse è obbligatorio per i conti deposito.',
+            'interest_rate.numeric' => 'Il tasso di interesse deve essere un numero.',
+            'interest_rate.min' => 'Il tasso di interesse non può essere negativo.',
+            'interest_rate.max' => 'Il tasso di interesse non può superare il 100%.',
+            'ticket_unit_value.required' => 'Il valore di un ticket è obbligatorio per i buoni pasto.',
+            'ticket_unit_value.numeric' => 'Il valore di un ticket deve essere un numero.',
+            'ticket_unit_value.min' => 'Il valore di un ticket deve essere almeno 0,01.',
+            'ticket_unit_value.max' => 'Il valore di un ticket è troppo alto.',
+            'external_url.url' => 'Inserisci un URL valido per l\'area riservata del fondo.',
+            'external_url.max' => 'L\'URL non può superare 500 caratteri.',
+        ];
+    }
+}

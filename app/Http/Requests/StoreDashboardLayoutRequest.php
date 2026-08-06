@@ -1,0 +1,139 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Models\DashboardLayout;
+use App\Models\FormulaWidget;
+use App\Services\FormulaWidgetLayoutNormalizer;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
+
+class StoreDashboardLayoutRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
+    {
+        return [
+            'config' => ['required', 'array'],
+            'config.widgets' => ['required', 'array', 'min:1', 'max:50'],
+            'config.widgets.*.id' => ['required', 'string', 'max:64'],
+            'config.widgets.*.visible' => ['required', 'boolean'],
+            'config.widgets.*.position' => ['required', 'integer', 'min:0'],
+            'config.widgets.*.size' => ['required', 'string', 'in:sm,md,lg,xl'],
+            'config.widgets.*.runtime_params' => ['sometimes', 'array'],
+            'config.widgets.*.runtime_params.*' => ['nullable', 'string', 'max:64'],
+        ];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     */
+    public function messages(): array
+    {
+        return [
+            'config.required' => 'La configurazione è obbligatoria.',
+            'config.array' => 'La configurazione deve essere un oggetto valido.',
+            'config.widgets.required' => 'La lista dei widget è obbligatoria.',
+            'config.widgets.array' => 'La lista dei widget deve essere un array.',
+            'config.widgets.min' => 'Deve essere presente almeno un widget.',
+            'config.widgets.max' => 'Il numero massimo di widget è 50.',
+            'config.widgets.*.id.required' => 'Ogni widget deve avere un identificatore.',
+            'config.widgets.*.id.string' => 'L\'identificatore del widget deve essere una stringa.',
+            'config.widgets.*.visible.required' => 'Il campo visibilità del widget è obbligatorio.',
+            'config.widgets.*.visible.boolean' => 'Il campo visibilità deve essere vero o falso.',
+            'config.widgets.*.position.required' => 'La posizione del widget è obbligatoria.',
+            'config.widgets.*.position.integer' => 'La posizione deve essere un numero intero.',
+            'config.widgets.*.size.required' => 'La dimensione del widget è obbligatoria.',
+            'config.widgets.*.size.in' => 'La dimensione del widget deve essere sm, md, lg o xl.',
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $user = $this->user();
+        $config = $this->input('config');
+
+        if ($user === null || ! is_array($config)) {
+            return;
+        }
+
+        $sanitized = app(FormulaWidgetLayoutNormalizer::class)->sanitizeFormulaWidgets(
+            $user,
+            DashboardLayout::stripUnsupportedWidgets($config),
+        );
+
+        $this->merge(['config' => $sanitized]);
+    }
+
+    /**
+     * Ensure only allowed widget IDs are accepted.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        // Deve essere allineata a: resources/js/constants/widgetRegistry.ts (WIDGET_REGISTRY)
+        // e a DashboardLayout::defaultConfig()
+        $allowedIds = [
+            'lifestyle_widget',
+            'accounts',
+            'recent_transactions',
+            'active_budgets',
+            'debts_credits',
+            'asset_allocation',
+            'expense_treemap',
+            'financial_goals',
+            'expense_distribution',
+            'pac_projection',
+        ];
+
+        $validator->after(function ($v) use ($allowedIds) {
+            $widgets = $this->input('config.widgets', []);
+            $ids = array_column((array) $widgets, 'id');
+            $unknownIds = [];
+
+            foreach ($ids as $id) {
+                if (in_array($id, DashboardLayout::TIER_A_LEGACY_WIDGET_IDS, true)
+                    || in_array($id, DashboardLayout::REMOVED_WIDGET_IDS, true)) {
+                    $unknownIds[] = $id;
+
+                    continue;
+                }
+
+                if (in_array($id, $allowedIds, true)) {
+                    continue;
+                }
+
+                if (preg_match('/^formula_widget_(\d+)$/', (string) $id, $matches)) {
+                    $owned = FormulaWidget::query()
+                        ->where('id', (int) $matches[1])
+                        ->where('user_id', $this->user()?->id)
+                        ->exists();
+
+                    if (! $owned) {
+                        $unknownIds[] = $id;
+                    }
+
+                    continue;
+                }
+
+                $unknownIds[] = $id;
+            }
+
+            if (! empty($unknownIds)) {
+                $v->errors()->add(
+                    'config.widgets',
+                    'Uno o più widget non sono riconosciuti: '.implode(', ', $unknownIds)
+                );
+            }
+        });
+    }
+}

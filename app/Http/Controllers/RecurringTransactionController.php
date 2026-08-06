@@ -1,0 +1,480 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreRecurringTransactionRequest;
+use App\Http\Requests\UpdateRecurringTransactionRequest;
+use App\Jobs\SyncRecurringTransactionJob;
+use App\Models\Account;
+use App\Models\Category;
+use App\Models\DebtCredit;
+use App\Models\RecurringTransaction;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Services\RecurringTransactionService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class RecurringTransactionController extends Controller
+{
+    /**
+     * Frequenze disponibili per le transazioni ricorrenti.
+     */
+    public const FREQUENCIES = [
+        'daily' => 'Giornaliera',
+        'weekly' => 'Settimanale',
+        'monthly' => 'Mensile',
+        'yearly' => 'Annuale',
+    ];
+
+    /**
+     * Service per la gestione delle transazioni ricorrenti.
+     */
+    protected RecurringTransactionService $recurringService;
+
+    public function __construct(RecurringTransactionService $recurringService)
+    {
+        $this->recurringService = $recurringService;
+    }
+
+    /**
+     * Mostra l'elenco delle transazioni ricorrenti della household attiva.
+     */
+    public function index(): Response
+    {
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        $recurringTransactions = RecurringTransaction::with([
+            'account:id,name,currency_code',
+            'category:id,name,color,icon,type',
+            'user:id,name',
+        ])
+            ->whereHas('account', function ($q) use ($householdId) {
+                $q->where('household_id', $householdId);
+            })
+            ->orderBy('start_date', 'desc')
+            ->get()
+            ->map(function ($rt) {
+                $nextDue = $this->recurringService->calculateNextDueDate($rt);
+                $isActive = $this->recurringService->isActive($rt);
+
+                return [
+                    'id' => $rt->id,
+                    'amount' => (float) $rt->amount,
+                    'frequency' => $rt->frequency,
+                    'frequency_label' => self::FREQUENCIES[$rt->frequency] ?? $rt->frequency,
+                    'day_of_month_mode' => $rt->day_of_month_mode,
+                    'day_of_month' => $rt->day_of_month,
+                    'non_working_day_policy' => $rt->non_working_day_policy,
+                    'start_date' => $rt->start_date->format('Y-m-d'),
+                    'end_date' => $rt->end_date?->format('Y-m-d'),
+                    'description' => $rt->description,
+                    'next_due_date' => $nextDue?->format('Y-m-d'),
+                    'is_active' => $isActive,
+                    'category' => $rt->category ? [
+                        'id' => $rt->category->id,
+                        'name' => $rt->category->name,
+                        'color' => $rt->category->color,
+                        'icon' => $rt->category->icon,
+                        'type' => $rt->category->type,
+                    ] : null,
+                    'account' => [
+                        'id' => $rt->account->id,
+                        'name' => $rt->account->name,
+                        'currency_code' => $rt->account->currency_code,
+                    ],
+                    'user' => [
+                        'id' => $rt->user->id,
+                        'name' => $rt->user->name,
+                    ],
+                ];
+            });
+
+        return Inertia::render('RecurringTransactions/Index', [
+            'recurringTransactions' => $recurringTransactions,
+            'frequencies' => self::FREQUENCIES,
+        ]);
+    }
+
+    /**
+     * Mostra il form per creare una nuova transazione ricorrente.
+     */
+    public function create(): Response
+    {
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        $accounts = Account::where('household_id', $householdId)
+            ->where('active', true)
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)
+                    ->orWhere('owner_user_id', $user->id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'currency_code']);
+
+        $categories = Category::where(function ($q) use ($householdId) {
+            $q->where('household_id', $householdId)
+                ->orWhereNull('household_id');
+        })
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'color', 'icon']);
+
+        $debtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('due_date', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'counterparty', 'amount', 'initial_amount', 'paid_amount', 'type', 'status', 'due_date', 'currency_code'])
+            ->map(function ($dc) {
+                return [
+                    'id' => $dc->id,
+                    'counterparty' => $dc->counterparty,
+                    'amount' => (float) $dc->amount,
+                    'remaining_amount' => $dc->getRemainingAmount(),
+                    'type' => $dc->type,
+                    'status' => $dc->status,
+                    'due_date' => $dc->due_date ? $dc->due_date->format('Y-m-d') : null,
+                    'currency_code' => $dc->currency_code,
+                ];
+            });
+
+        return Inertia::render('RecurringTransactions/Create', [
+            'accounts' => $accounts,
+            'categories' => $categories,
+            'debtsCredits' => $debtsCredits,
+            'frequencies' => self::FREQUENCIES,
+        ]);
+    }
+
+    /**
+     * Salva una nuova transazione ricorrente.
+     */
+    public function store(StoreRecurringTransactionRequest $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $validated = $request->validated();
+
+        // Determina il segno dell'importo in base al tipo di categoria
+        $category = Category::find($validated['category_id']);
+        $amount = abs($validated['amount']);
+        if ($category && $category->type === 'expense') {
+            $amount = -$amount;
+        }
+
+        $account = Account::find($validated['account_id']);
+
+        $recurringTransaction = RecurringTransaction::create([
+            'user_id' => $user->id,
+            'account_id' => $validated['account_id'],
+            'category_id' => $validated['category_id'],
+            'amount' => $amount,
+            'currency_code' => $account->currency_code,
+            'frequency' => $validated['frequency'],
+            'day_of_month_mode' => $validated['day_of_month_mode'],
+            'day_of_month' => $validated['day_of_month_mode'] === RecurringTransaction::DAY_OF_MONTH_MODE_FIXED
+                ? $validated['day_of_month']
+                : null,
+            'non_working_day_policy' => $validated['non_working_day_policy'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
+        ]);
+
+        // Genera automaticamente tutte le transazioni fino a oggi
+        $count = $this->recurringService->generateTransactionsUntil($recurringTransaction);
+
+        $message = $count > 0
+            ? "Transazione ricorrente creata con successo. Generate {$count} transazioni."
+            : 'Transazione ricorrente creata con successo.';
+
+        return redirect()
+            ->route('recurring-transactions.index')
+            ->with('success', $message);
+    }
+
+    /**
+     * Mostra i dettagli di una transazione ricorrente.
+     */
+    public function show(RecurringTransaction $recurringTransaction): Response
+    {
+        $this->authorizeRecurringTransaction($recurringTransaction);
+
+        $recurringTransaction->load([
+            'account:id,name,currency_code',
+            'category:id,name,color,icon,type',
+            'user:id,name',
+        ]);
+
+        $nextDue = $this->recurringService->calculateNextDueDate($recurringTransaction);
+        $isActive = $this->recurringService->isActive($recurringTransaction);
+
+        // Conta le transazioni generate da questa ricorrente
+        $generatedCount = Transaction::where('recurring_transaction_id', $recurringTransaction->id)->count();
+
+        return Inertia::render('RecurringTransactions/Show', [
+            'recurringTransaction' => [
+                'id' => $recurringTransaction->id,
+                'amount' => (float) $recurringTransaction->amount,
+                'frequency' => $recurringTransaction->frequency,
+                'frequency_label' => self::FREQUENCIES[$recurringTransaction->frequency] ?? $recurringTransaction->frequency,
+                'day_of_month_mode' => $recurringTransaction->day_of_month_mode,
+                'day_of_month' => $recurringTransaction->day_of_month,
+                'non_working_day_policy' => $recurringTransaction->non_working_day_policy,
+                'start_date' => $recurringTransaction->start_date->format('Y-m-d'),
+                'end_date' => $recurringTransaction->end_date?->format('Y-m-d'),
+                'description' => $recurringTransaction->description,
+                'next_due_date' => $nextDue?->format('Y-m-d'),
+                'is_active' => $isActive,
+                'generated_count' => $generatedCount,
+                'created_at' => $recurringTransaction->created_at->format('d/m/Y H:i'),
+                'updated_at' => $recurringTransaction->updated_at->format('d/m/Y H:i'),
+                'category' => $recurringTransaction->category,
+                'account' => $recurringTransaction->account,
+                'user' => $recurringTransaction->user,
+            ],
+            'frequencies' => self::FREQUENCIES,
+        ]);
+    }
+
+    /**
+     * Mostra il form per modificare una transazione ricorrente.
+     */
+    public function edit(RecurringTransaction $recurringTransaction): Response
+    {
+        $this->authorizeRecurringTransaction($recurringTransaction);
+
+        $user = Auth::user();
+        $householdId = $user->active_household_id;
+
+        $accounts = Account::where('household_id', $householdId)
+            ->where('active', true)
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)
+                    ->orWhere('owner_user_id', $user->id);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'currency_code']);
+
+        $categories = Category::where(function ($q) use ($householdId) {
+            $q->where('household_id', $householdId)
+                ->orWhereNull('household_id');
+        })
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'color', 'icon']);
+
+        $debtsCredits = DebtCredit::where('household_id', $householdId)
+            ->whereIn('status', ['open', 'overdue'])
+            ->orderBy('due_date', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get(['id', 'counterparty', 'amount', 'initial_amount', 'paid_amount', 'type', 'status', 'due_date', 'currency_code'])
+            ->map(function ($dc) {
+                return [
+                    'id' => $dc->id,
+                    'counterparty' => $dc->counterparty,
+                    'amount' => (float) $dc->amount,
+                    'remaining_amount' => $dc->getRemainingAmount(),
+                    'type' => $dc->type,
+                    'status' => $dc->status,
+                    'due_date' => $dc->due_date ? $dc->due_date->format('Y-m-d') : null,
+                    'currency_code' => $dc->currency_code,
+                ];
+            });
+
+        return Inertia::render('RecurringTransactions/Edit', [
+            'recurringTransaction' => [
+                'id' => $recurringTransaction->id,
+                'account_id' => $recurringTransaction->account_id,
+                'category_id' => $recurringTransaction->category_id,
+                'amount' => abs((float) $recurringTransaction->amount),
+                'frequency' => $recurringTransaction->frequency,
+                'day_of_month_mode' => $recurringTransaction->day_of_month_mode,
+                'day_of_month' => $recurringTransaction->day_of_month,
+                'non_working_day_policy' => $recurringTransaction->non_working_day_policy,
+                'start_date' => $recurringTransaction->start_date->format('Y-m-d'),
+                'end_date' => $recurringTransaction->end_date?->format('Y-m-d'),
+                'description' => $recurringTransaction->description,
+                'debt_credit_id' => $recurringTransaction->debt_credit_id,
+            ],
+            'accounts' => $accounts,
+            'categories' => $categories,
+            'debtsCredits' => $debtsCredits,
+            'frequencies' => self::FREQUENCIES,
+            'nextEffectiveDate' => $this->recurringService
+                ->defaultEffectiveDateForAmountChange($recurringTransaction)
+                ->format('Y-m-d'),
+        ]);
+    }
+
+    /**
+     * Aggiorna una transazione ricorrente esistente.
+     */
+    public function update(UpdateRecurringTransactionRequest $request, RecurringTransaction $recurringTransaction): RedirectResponse
+    {
+        $this->authorizeRecurringTransaction($recurringTransaction);
+
+        $validated = $request->validated();
+
+        $scheduleChanged = $recurringTransaction->start_date->toDateString() !== $validated['start_date']
+            || ($recurringTransaction->end_date?->toDateString() ?? null) !== ($validated['end_date'] ?? null)
+            || $recurringTransaction->frequency !== $validated['frequency']
+            || $recurringTransaction->day_of_month_mode !== $validated['day_of_month_mode']
+            || (int) ($recurringTransaction->day_of_month ?? 0) !== (int) ($validated['day_of_month'] ?? 0)
+            || $recurringTransaction->non_working_day_policy !== $validated['non_working_day_policy'];
+
+        $linkedCount = $this->recurringService->countLinkedTransactions($recurringTransaction);
+
+        // Determina il segno dell'importo
+        $category = Category::find($validated['category_id']);
+        $amount = abs($validated['amount']);
+        if ($category && $category->type === 'expense') {
+            $amount = -$amount;
+        }
+
+        $amountChanged = abs((float) $recurringTransaction->amount - (float) $amount) > 0.001;
+
+        if ($amountChanged) {
+            try {
+                $effectiveDate = ! empty($validated['effective_date'])
+                    ? Carbon::parse($validated['effective_date'])
+                    : $this->recurringService->defaultEffectiveDateForAmountChange($recurringTransaction);
+
+                $account = Account::findOrFail($validated['account_id']);
+
+                $newRecurring = $this->recurringService->forkOnAmountChange($recurringTransaction, [
+                    'account_id' => (int) $validated['account_id'],
+                    'category_id' => (int) $validated['category_id'],
+                    'amount' => $amount,
+                    'currency_code' => $account->currency_code ?? 'EUR',
+                    'frequency' => $validated['frequency'],
+                    'day_of_month_mode' => $validated['day_of_month_mode'],
+                    'day_of_month' => $validated['day_of_month_mode'] === RecurringTransaction::DAY_OF_MONTH_MODE_FIXED
+                        ? (int) $validated['day_of_month']
+                        : null,
+                    'non_working_day_policy' => $validated['non_working_day_policy'],
+                    'description' => $validated['description'] ?? null,
+                    'debt_credit_id' => $validated['debt_credit_id'] ?? null,
+                ], $effectiveDate);
+
+                return redirect()
+                    ->route('recurring-transactions.edit', $newRecurring)
+                    ->with(
+                        'success',
+                        'Importo aggiornato: la ricorrenza precedente è stata chiusa e ne è stata creata una nuova dal '
+                        .$effectiveDate->format('d/m/Y').'. Le transazioni già registrate mantengono l\'importo storico.'
+                    );
+            } catch (\InvalidArgumentException $e) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->withErrors(['effective_date' => $e->getMessage()]);
+            }
+        }
+
+        $recurringTransaction->update([
+            'account_id' => $validated['account_id'],
+            'category_id' => $validated['category_id'],
+            'amount' => $amount,
+            'frequency' => $validated['frequency'],
+            'day_of_month_mode' => $validated['day_of_month_mode'],
+            'day_of_month' => $validated['day_of_month_mode'] === RecurringTransaction::DAY_OF_MONTH_MODE_FIXED
+                ? $validated['day_of_month']
+                : null,
+            'non_working_day_policy' => $validated['non_working_day_policy'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'debt_credit_id' => $validated['debt_credit_id'] ?? null,
+        ]);
+
+        if ($linkedCount >= 10) {
+            SyncRecurringTransactionJob::dispatch(
+                $recurringTransaction->id,
+                (int) Auth::id(),
+                $scheduleChanged
+            );
+
+            return redirect()
+                ->route('recurring-transactions.index')
+                ->with('success', 'Ricorrenza salvata. L\'aggiornamento delle transazioni collegate è in corso: riceverai una notifica al termine.');
+        }
+
+        $result = $this->recurringService->syncAndReconcile($recurringTransaction, $scheduleChanged);
+        $syncedCount = $result['synced'];
+        $reconcile = $result['reconcile'];
+
+        $message = 'Transazione ricorrente aggiornata con successo.';
+        if ($syncedCount > 0) {
+            $message .= " {$syncedCount} transazioni collegate sono state allineate.";
+        }
+        if ($reconcile->totalChanges() > 0) {
+            $message .= " Occorrenze: {$reconcile->created} aggiunte, {$reconcile->removed} rimosse.";
+        }
+
+        return redirect()
+            ->route('recurring-transactions.index')
+            ->with('success', $message);
+    }
+
+    /**
+     * Elimina una transazione ricorrente (soft delete).
+     */
+    public function destroy(RecurringTransaction $recurringTransaction): RedirectResponse
+    {
+        $this->authorizeRecurringTransaction($recurringTransaction);
+
+        $recurringTransaction->delete();
+
+        return redirect()
+            ->route('recurring-transactions.index')
+            ->with('success', 'Transazione ricorrente eliminata con successo.');
+    }
+
+    /**
+     * Genera manualmente la prossima transazione dalla ricorrente.
+     */
+    public function generate(RecurringTransaction $recurringTransaction): RedirectResponse
+    {
+        $this->authorizeRecurringTransaction($recurringTransaction);
+
+        if (! $this->recurringService->isActive($recurringTransaction)) {
+            return redirect()
+                ->route('recurring-transactions.show', $recurringTransaction)
+                ->with('error', 'Questa transazione ricorrente non è più attiva.');
+        }
+
+        $transaction = $this->recurringService->generateNextTransaction($recurringTransaction);
+
+        if (! $transaction) {
+            return redirect()
+                ->route('recurring-transactions.show', $recurringTransaction)
+                ->with('error', 'Nessuna transazione disponibile da generare o già esistente.');
+        }
+
+        return redirect()
+            ->route('recurring-transactions.show', $recurringTransaction)
+            ->with('success', 'Transazione generata con successo.');
+    }
+
+    /**
+     * Verifica che l'utente possa accedere alla transazione ricorrente.
+     */
+    private function authorizeRecurringTransaction(RecurringTransaction $recurringTransaction): void
+    {
+        $user = Auth::user();
+        $account = $recurringTransaction->account;
+
+        // Deve appartenere alla household attiva
+        if ($account->household_id !== $user->active_household_id) {
+            abort(403, 'Non hai accesso a questa transazione ricorrente.');
+        }
+    }
+}

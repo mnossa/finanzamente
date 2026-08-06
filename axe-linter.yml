@@ -1,0 +1,32 @@
+# axe-linter.yml
+# Configurazione base per axe Accessibility Linter
+
+# File e cartelle da includere/escludere
+files:
+  include:
+    - "resources/views/**/*.blade.php"
+    - "resources/js/**/*.tsx"
+    - "resources/js/**/*.jsx"
+    - "resources/js/**/*.ts"
+    - "resources/js/**/*.js"
+  exclude:
+    - "node_modules/**"
+    - "vendor/**"
+    - "public/**"
+    - "build/**"
+    - "storage/**"
+
+# Regole axe-core da applicare (puoi personalizzare)
+rules:
+  # Esempio: disabilita una regola specifica
+  # color-contrast:
+  #   enabled: false
+
+# Livello di severità (error, warning, notice)
+severity:
+  error: [critical, serious]
+  warning: [moderate]
+  notice: [minor]
+
+# Opzioni aggiuntive
+# Puoi aggiungere qui altre configurazioni avanzate se necessario

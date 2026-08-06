@@ -1,0 +1,256 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Account;
+use App\Models\Household;
+use App\Models\Transaction;
+use App\Models\User;
+use App\Support\LocalEnvironmentGuard;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class DatabaseAnonymizationService
+{
+    public const DEFAULT_PASSWORD = 'password';
+
+    public const OWNER_DEV_EMAIL = 'dev@finanzamente.local';
+
+    /**
+     * @return array<string, int>
+     */
+    public function run(): array
+    {
+        $this->assertSafeEnvironment();
+
+        $counts = [];
+
+        DB::transaction(function () use (&$counts) {
+            $counts['users'] = $this->anonymizeUsers();
+            $counts['households'] = $this->anonymizeHouseholds();
+            $counts['accounts'] = $this->anonymizeAccounts();
+            $counts['transactions'] = $this->anonymizeTransactions();
+            $counts['investments'] = $this->anonymizeInvestments();
+            $counts['debts_credits'] = $this->anonymizeDebtsCredits();
+            $counts['invitations'] = $this->anonymizeHouseholdInvitations();
+            $counts['inbox_items'] = $this->anonymizeInboxItems();
+            $counts['sessions'] = $this->truncateTable('sessions');
+            $counts['password_reset_tokens'] = $this->truncateTable('password_reset_tokens');
+            $counts['telegram_link_tokens'] = $this->truncateTable('telegram_link_tokens');
+        });
+
+        return $counts;
+    }
+
+    public function assertSafeEnvironment(): void
+    {
+        LocalEnvironmentGuard::assertLocalDevelopment('db:anonymize');
+    }
+
+    private function anonymizeUsers(): int
+    {
+        $ownerEmail = strtolower(trim((string) config('app.admin_email', '')));
+        $systemUserEmail = strtolower(trim((string) config('financial_variables.system_user_email', '')));
+        $users = User::withTrashed()->orderBy('id')->get();
+        $devUserId = $this->resolveDevUserId($users, $ownerEmail, $systemUserEmail);
+        $count = 0;
+
+        foreach ($users as $user) {
+            $user->forceFill([
+                'name' => 'Utente '.$user->id,
+                'email' => $this->resolveAnonymizedEmail($user, $devUserId, $systemUserEmail),
+                'email_verified_at' => now(),
+                'password' => self::DEFAULT_PASSWORD,
+                'remember_token' => null,
+                'telegram_chat_id' => null,
+                'fiscal_code' => null,
+                'vat_number' => null,
+                // Debug locale: niente challenge 2FA dopo import anonimizzato.
+                'two_factor_secret' => null,
+                'two_factor_recovery_codes' => null,
+                'two_factor_confirmed_at' => null,
+            ])->saveQuietly();
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * @param  iterable<int, User>  $users
+     */
+    private function resolveDevUserId(iterable $users, string $ownerEmail, string $systemUserEmail): ?int
+    {
+        if ($ownerEmail !== '') {
+            foreach ($users as $user) {
+                if ($this->isSystemUser($user, $systemUserEmail)) {
+                    continue;
+                }
+
+                if (strtolower($user->email) === $ownerEmail) {
+                    return $user->id;
+                }
+            }
+        }
+
+        foreach ($users as $user) {
+            if (! $this->isSystemUser($user, $systemUserEmail)) {
+                return $user->id;
+            }
+        }
+
+        return null;
+    }
+
+    private function isSystemUser(User $user, string $systemUserEmail): bool
+    {
+        return $systemUserEmail !== '' && strtolower($user->email) === $systemUserEmail;
+    }
+
+    private function resolveAnonymizedEmail(User $user, ?int $devUserId, string $systemUserEmail): string
+    {
+        if ($this->isSystemUser($user, $systemUserEmail)) {
+            return 'system'.$user->id.'@anon.finanzamente.local';
+        }
+
+        if ($devUserId !== null && $user->id === $devUserId) {
+            return self::OWNER_DEV_EMAIL;
+        }
+
+        return 'user'.$user->id.'@anon.finanzamente.local';
+    }
+
+    private function anonymizeHouseholds(): int
+    {
+        $count = 0;
+
+        Household::query()->orderBy('id')->each(function (Household $household) use (&$count) {
+            $household->forceFill([
+                'name' => 'Household '.$household->id,
+            ])->saveQuietly();
+            $count++;
+        });
+
+        return $count;
+    }
+
+    private function anonymizeAccounts(): int
+    {
+        $count = 0;
+
+        Account::query()->orderBy('id')->each(function (Account $account) use (&$count) {
+            $typeLabel = Account::TYPES[$account->type] ?? 'Conto';
+            $account->forceFill([
+                'name' => $typeLabel.' '.$account->id,
+            ])->saveQuietly();
+            $count++;
+        });
+
+        return $count;
+    }
+
+    private function anonymizeTransactions(): int
+    {
+        $count = 0;
+
+        Transaction::withTrashed()->orderBy('id')->chunkById(200, function ($transactions) use (&$count) {
+            foreach ($transactions as $transaction) {
+                $transaction->forceFill([
+                    'description' => 'Movimento #'.$transaction->id,
+                ])->saveQuietly();
+                $count++;
+            }
+        });
+
+        return $count;
+    }
+
+    private function anonymizeInvestments(): int
+    {
+        if (! Schema::hasTable('investments')) {
+            return 0;
+        }
+
+        $count = 0;
+        if (Schema::hasColumn('investments', 'notes')) {
+            $count += DB::table('investments')->whereNotNull('notes')->update(['notes' => null]);
+        }
+
+        if (Schema::hasTable('investment_pacs') && Schema::hasColumn('investment_pacs', 'notes')) {
+            $count += DB::table('investment_pacs')->whereNotNull('notes')->update(['notes' => null]);
+        }
+
+        return $count;
+    }
+
+    private function anonymizeDebtsCredits(): int
+    {
+        if (! Schema::hasTable('debts_credits')) {
+            return 0;
+        }
+
+        $updated = 0;
+        DB::table('debts_credits')->orderBy('id')->chunkById(200, function ($rows) use (&$updated) {
+            foreach ($rows as $row) {
+                DB::table('debts_credits')->where('id', $row->id)->update([
+                    'counterparty' => 'Controparte '.$row->id,
+                    'description' => $row->description !== null ? 'Debito/credito anonimizzato' : null,
+                ]);
+                $updated++;
+            }
+        });
+
+        return $updated;
+    }
+
+    private function anonymizeHouseholdInvitations(): int
+    {
+        if (! Schema::hasTable('household_invitations')) {
+            return 0;
+        }
+
+        $count = 0;
+        DB::table('household_invitations')->orderBy('id')->chunkById(200, function ($rows) use (&$count) {
+            foreach ($rows as $row) {
+                DB::table('household_invitations')->where('id', $row->id)->update([
+                    'email' => 'invite+'.$row->id.'@anon.finanzamente.local',
+                ]);
+                $count++;
+            }
+        });
+
+        return $count;
+    }
+
+    private function anonymizeInboxItems(): int
+    {
+        if (! Schema::hasTable('inbox_items')) {
+            return 0;
+        }
+
+        $payload = [];
+        foreach (['raw_text', 'image_path', 'ai_payload', 'description'] as $column) {
+            if (Schema::hasColumn('inbox_items', $column)) {
+                $payload[$column] = null;
+            }
+        }
+
+        if ($payload === []) {
+            return 0;
+        }
+
+        return DB::table('inbox_items')->update($payload);
+    }
+
+    private function truncateTable(string $table): int
+    {
+        if (! Schema::hasTable($table)) {
+            return 0;
+        }
+
+        $count = (int) DB::table($table)->count();
+        DB::table($table)->delete();
+
+        return $count;
+    }
+}

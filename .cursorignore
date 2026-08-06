@@ -1,0 +1,30 @@
+# Dipendenze e build
+node_modules/
+vendor/
+.next/
+dist/
+build/
+storage/
+.vscode/
+public/images/
+public/pwa/
+public/storage/
+
+# File di log e database locali
+*.log
+.storage/
+*.cache
+*.csv
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+*.p12
+*.pfx
+*.p12
+*.pfx
+
+# File .md
+docs/confronto-agenti-ai.md
